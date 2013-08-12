@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>DBreeze - NOSQL ACID embedded database management system for .NET 3.0&gt; and MONO by hhblaze</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>DBreeze - NOSQL ACID embedded database management system for .NET 3.0&gt; and MONO</h1>
+        <p>C# .NET MONO NOSQL ACID embedded database management system.</p>
+
+        <p class="view"><a href="https://github.com/hhblaze/DBreeze">View the Project on GitHub <small>hhblaze/DBreeze</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/hhblaze/DBreeze/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/hhblaze/DBreeze/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/hhblaze/DBreeze">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p><img src="https://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&amp;DownloadId=375768&amp;Build=20686" alt="DBreeze"><strong>DBreeze - C# .NET ACID NOSQL embedded database management system</strong></p>
+
+<p>Professional, open-source, NoSql (embedded Key/Value storage), transactional, ACID-compliant, multi-threaded, object database management system for
+C# .NET 3.0&gt; MONO.</p>
+
+<ul>
+<li><p>It's a free software for those, who thinks that it should be free.</p></li>
+<li><p>Since June 2012 is used in our own production environment.</p></li>
+<li><p>Follow the project, to be in touch with the recent optimizations and enhancements.</p></li>
+<li><p>Read "Changes in versions" document.</p></li>
+</ul><p>Its homepage is <a href="http://dbreeze.tiesky.com">http://dbreeze.tiesky.com</a> or <a href="http://dbreeze.codeplex.com">http://dbreeze.codeplex.com</a></p>
+
+<ul>
+<li>
+<a href="https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw">Documentation (HTML, actual)</a> </li>
+<li><a href="https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM">Benchmark (HTML, actual)</a></li>
+<li><a href="https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o">Changes in versions</a></li>
+<li><a href="https://dbreeze.codeplex.com/discussions">Discussion on the forum</a></li>
+</ul><p>Key features:</p>
+
+<ul>
+<li>Fully managed code, platform independent and without reference to other libraries.</li>
+<li>ACID compliant.</li>
+<li>Multi-threaded, with a solution for deadlocks resolving/elimination, parallel reads and synchronized writes/reads.</li>
+<li>No fixed scheme for table names (construction and access on the fly).</li>
+<li>Tables can reside in mixed locations: different folders, hard drives, memory.</li>
+<li>Database indexes (keys) never need to be defragmented. Speed of insert/update/remove operations doesn't grow up during the time.</li>
+<li>Ability to access Key/Value pair of a table by physical link, what can economize time for joining necessary data structures.</li>
+<li>No limits for database size (except "long" size for each table and physical resources constraints).</li>
+<li>Low physical space consumption, also while random inserts and updates. Updates reside the same physical space, if possible.</li>
+<li>High performance of CRUD operations. When you need, unleash DBreeze power and get 500000 key/value pairs insert or 260K updates per second per core into sorted table on the hard drive of standard PC.</li>
+<li>High speed of random keys batch insert and updates (batch must be sorted in memory ascending and non-overwrite flag must be set).</li>
+<li>Range selects / Traversing (Forward, Backward, From/To, Skip, StartsWith etc). Remove keys, change keys.</li>
+<li>Keys and values, on the low level, are always byte arrays.</li>
+<li>Max. key size is 65KB, max. value size is 2GB. Value can be represented as a set of columns, where can be stored data types of fixed or dynamic length. Every dynamic datablock can be of size 2GB.</li>
+<li>Rich set of conversion functions from/to between byte[] and other data types.</li>
+<li>Nested / Fractal tables which can reside inside of master tables values.</li>
+<li>Incremental backup/restore option.</li>
+<li>DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.</li>
+</ul><p><a href="mailto:hhblaze@gmail.com">hhblaze@gmail.com</a></p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/hhblaze">hhblaze</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
