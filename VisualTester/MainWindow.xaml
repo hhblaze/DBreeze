@@ -1,0 +1,38 @@
+﻿<Window x:Class="VisualTester.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        
+        <StackPanel Grid.Row="0" VerticalAlignment="Top" Orientation="Horizontal">
+            <Button Name="btTest1" Margin="5,5,5,0" Height="30" Width="80" Content="Insert" Click="btTest1_Click"></Button>
+            <Button Name="btTest2" Margin="5,5,5,0" Height="30" Width="80" Content="Read" Click="btTest2_Click"></Button>
+            <Button Name="btTest3" Margin="5,5,5,0" Height="30" Width="80" Content="test1" Click="btTest3_Click"></Button>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Top" Orientation="Horizontal">
+            <Button Name="btTest4" Margin="5,5,5,0" Height="30" Width="80" Content="OpenDBreeze" Click="btTest4_Click"></Button>
+            <Button Name="btTest5" Margin="5,5,5,0" Height="30" Width="80" Content="StartTest" Click="btTest5_Click"></Button>
+            <Button Name="btTest6" Margin="5,5,5,0" Height="30" Width="80" Content="DocuEx" Click="btTest6_Click"></Button>
+            <Button Name="btTest13" Margin="5,5,5,0" Height="30" Width="80" Content="Benchmark" Click="btTest13_Click"></Button>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" VerticalAlignment="Top" Orientation="Horizontal">
+            <Button Name="btTest7" Margin="5,5,5,0" Height="30"  Content="Thread1" Click="btTest7_Click"></Button>
+            <Button Name="btTest8" Margin="5,5,5,0" Height="30"  Content="Thread2" Click="btTest8_Click"></Button>
+            <Button Name="btTest9" Margin="5,5,5,0" Height="30"  Content="Thread3" Click="btTest9_Click"></Button>
+            <Button Name="btTest10" Margin="5,5,5,0" Height="30"  Content="test1" Click="btTest10_Click"></Button>
+            <Button Name="btTest11" Margin="5,5,5,0" Height="30"  Content="test1" Click="btTest11_Click"></Button>
+            <Button Name="btTest12" Margin="5,5,5,0" Height="30"  Content="test1" Click="btTest12_Click"></Button>
+            <Button Name="btRestoreBackup" Margin="5,5,5,0" Height="30"  Content="RestoreBackup" Click="btRestoreBackup_Click"></Button>
+        </StackPanel>
+
+        <TextBlock Name="tbShow" Grid.Row="3" Text="Hello"></TextBlock>
+    </Grid>
+</Window>

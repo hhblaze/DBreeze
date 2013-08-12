@@ -1,0 +1,4 @@
+﻿Compiling for different .NET Frameworks and MONO
+
+- to make DBreeze running on .NET 4> and MONO add global #define: NET40
+- to make DBreeze running on .NET 3.5 add global #define: NET35 (remove NET40)

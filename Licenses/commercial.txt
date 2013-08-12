@@ -1,0 +1,75 @@
+Commercial License
+DBreeze database
+Version 3, April 2012 (C) dbreeze.tiesky.com / Alex Solovyov
+
+1. Introduction
+
+This document is a license agreement ("LICENSE") between You (either an individual or a single entity) 
+and dbreeze.tiesky.com ("COMPANY") for the "DBreeze database" product ("PRODUCT"), 
+which includes computer software, its source code, associated media, printed materials, 
+and "online" or electronic documentation.
+
+The PRODUCT "DBreeze database" includes the software, license files and electronic documentation.
+
+No modification may be made to this LICENSE except in additional signed agreement between COMPANY and You.
+
+This LICENSE is not transferable unless additionally acquired explicit permission from COMPANY to transfer. 
+This LICENSE also applies only for the versions of the PRODUCT You have acquired from COMPANY, including updates for 12 months after purchase. 
+If You use any later versions than what You have legally acquired from COMPANY 
+the GPL 2 license terms will take over and effectively render this LICENSE invalid.
+
+The purpose of this LICENSE is to give You a commercial path to utilizing the PRODUCT acquired from COMPANY in closed source applications 
+You are developing or take part in developing. It is also motivated by Your freedom to be able to modify the PRODUCT 
+if You should want to but does not grant You the rights to distribute those modifications in any way other than in binary form.
+
+This LICENSE doesn't concern goverments of any country, social non-profit organizations, educational organizations who want to use 
+the PRODUCT in their own needs, but not for reselling.
+
+2. License Terms
+
+COMPANY grants to You a non-exclusive, non-transferable license to use, copy and modify the PRODUCT only as authorized below. 
+
+The PRODUCT and all of it's source files remain the intellectual property of COMPANY.
+
+3. PRODUCT License Scope
+
+The PRODUCT is licensed per running instance. 
+
+4. PRODUCT Source Code
+
+You can modify the source files of the PRODUCT as You wish however You may not redistribute those modifications 
+to anyone else other than those that have acquired a commercial license to the same version of the PRODUCT as You have. 
+
+5. Permissions and Prohibitions
+
+You can create any number of applications based on the version that You have acquired and distribute those applications 
+as You wish without any restrictions. However every running instance of the PRODUCT inside of Your distributed software 
+must acquire a valid license from the COMPANY.
+
+Under no circumstances You may use the PRODUCT or its source code as the basis for or in connection with a product that delivers the same, 
+or substantially the same, functionality as the PRODUCT.
+
+You will not owe the COMPANY any royalties for Your distribution of the PRODUCT in accordance with this License Agreement.
+
+6. Termination
+
+This License Agreement and Your right to use the PRODUCT and Modifications will terminate immediately without notice if You fail to comply with the terms and conditions of this License Agreement. Upon termination, the GPL 2 license terms will take over and effectively render this License invalid. 
+
+7. Warranties
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, DEVELOPER AND ITS SUPPLIERS DISCLAIM ALL WARRANTIES AND CONDITIONS, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT, WITH REGARD TO THE SOFTWARE. DEVELOPER DOES NOT GUARANTEE THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE, AND YOU ACKNOWLEDGE THAT IT IS NOT TECHNICALLY PRACTICABLE FOR DEVELOPER TO DO SO.
+
+8. Liabilities
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL DEVELOPER OR ITS SUPPLIERS BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES 
+FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION OR ANY OTHER PECUNIARY LAW) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF DEVELOPER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. 
+
+9. Concluding provisions 
+
+Ukrainian law applies to the legal relationship between COMPANY and You as well as to the respective terms and conditions. Place of jurisdiction for both parties is - in so far as permitted by law - Ukraine. If You are a consumer and are not resident of the Ukraine, Ukraine is also the place of jurisdiction. In dealings with consumers in the European Union, the law at the residence of the end user may also apply if mandatory provisions under consumer law are concerned. 
+
+You have no right of offset unless the claim is not in dispute or has been determined with legal effect by a court of law. If You are a businessman within the meaning of the Commercial Code or a body under public law, then the place of fulfilment for deliveries and payments and the place of jurisdiction are Ukraine.
+
+10. Severability
+
+If any part of these Terms of Service is held to be invalid or unenforceable under any applicable statute or rule of law, the unenforceable part shall be given effect to the greatest extent possible and the remainder will remain in full force and effect.
