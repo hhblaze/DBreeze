@@ -57,6 +57,9 @@ namespace DBreeze.LianaTrie
         //public byte[] Key { get; set; }
         public byte[] Key = null;
 
+        public bool ValueIsReadOut = false;
+        public byte[] Value = null;
+
         ///// <summary>
         ///// Default is null
         ///// </summary>
@@ -114,7 +117,13 @@ namespace DBreeze.LianaTrie
         /// <param name="useCache">if true, then only committed data will be shown</param>
         /// <returns></returns>
         public byte[] GetPartialValue(uint startIndex, uint length, bool useCache)
-        {            
+        {
+            if (ValueIsReadOut)
+            {
+                if (this.Value == null)
+                    return null;
+                return this.Value.Substring((int)startIndex, (int)length);
+            }
 
             if (Exists)
                 return this._root.Tree.Cache.ReadValuePartially(this.LinkToValue, startIndex, length, useCache, out ValueStartPointer, out ValueFullLength);
@@ -130,7 +139,11 @@ namespace DBreeze.LianaTrie
         /// <returns></returns>
         public byte[] GetFullValue(bool useCache)
         {
-            
+            if (ValueIsReadOut)
+            {
+                return this.Value;
+            }
+
             if (Exists)
                 return this._root.Tree.Cache.ReadValue(this.LinkToValue, useCache, out ValueStartPointer, out ValueFullLength);
             

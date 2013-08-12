@@ -16,9 +16,16 @@ namespace DBreeze.LianaTrie.Iterations
     {
         LTrieRootNode _root = null;
 
+        /// <summary>
+        /// If we use load Key already With Value, or just key and link to the value
+        /// </summary>
+        public bool ReturnKeyValuePair = false; 
+
         public Forward(LTrieRootNode root)
         {
             _root = root;
+
+            ReturnKeyValuePair = !_root.Tree.ValuesLazyLoadingIsOn;
         }
 
         byte[] endKey = null;
@@ -37,6 +44,9 @@ namespace DBreeze.LianaTrie.Iterations
             byte[] key = null;
             LTrieRow row = null;
             byte[] gml = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
             {
@@ -44,11 +54,23 @@ namespace DBreeze.LianaTrie.Iterations
                 {
                     //Value Kid
                     //Raise Up Counter, iterate further if counter permits
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    if (ReturnKeyValuePair)
+                    {
+                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                    }
+                    else
+                    {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    }
                     //Console.WriteLine("KN: {0}", key.ToBytesString(""));
 
 
                     row = new LTrieRow(this._root);
+                    if (ReturnKeyValuePair)
+                    {
+                        row.Value = xValue;
+                        row.ValueIsReadOut = true;
+                    }
                     row.Key = key;
                     row.LinkToValue = kd.Ptr;
                     yield return row;
@@ -106,6 +128,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieGenerationNode gn1 = null;
             byte[] key = null;
             LTrieRow row = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
             {
@@ -113,11 +138,24 @@ namespace DBreeze.LianaTrie.Iterations
                 //if value link we can count 1 up
                 if (kd.ValueKid || !kd.LinkToNode)
                 {
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+
+                    if (ReturnKeyValuePair)
+                    {
+                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                    }
+                    else
+                    {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    }
                     //Console.WriteLine("KN: {0}", key.ToBytesString(""));
 
                     //cnt++;
                     row = new LTrieRow(this._root);
+                    if (ReturnKeyValuePair)
+                    {
+                        row.Value = xValue;
+                        row.ValueIsReadOut = true;
+                    }
                     row.Key = key;
                     row.LinkToValue = kd.Ptr;
                     yield return row;
@@ -155,7 +193,9 @@ namespace DBreeze.LianaTrie.Iterations
             byte[] key = null;
             LTrieRow row = null;
             byte[] gml = null;
-                     
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             int startFrom = 0;
             if (keyIsFound)
@@ -181,19 +221,33 @@ namespace DBreeze.LianaTrie.Iterations
                 {
                     //Value Kid    
 
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    
 
                     if (keyIsFound)
                     {
                         //We return this one key
+                        if (ReturnKeyValuePair)
+                        {
+                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                        }
+                        else
+                        {
+                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        }
 
                         row = new LTrieRow(this._root);
+                        if (ReturnKeyValuePair)
+                        {
+                            row.Value = xValue;
+                            row.ValueIsReadOut = true;
+                        }
                         row.Key = key;
                         row.LinkToValue = kd.Ptr;
                         yield return row;
                     }
                     else
                     {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
                         //Checking if key equals to the found element, bigger or smaller
 
                         //Key is still not found 
@@ -266,7 +320,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieGenerationNode gn1 = null;
             byte[] key = null;
             LTrieRow row = null;
-                    
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             //Starting from first key. It's interesting inside of RecursiveYieldReturn to look Starting from value
             //If intialKey index already bigger then its own length
@@ -279,14 +335,27 @@ namespace DBreeze.LianaTrie.Iterations
                 //if value link we can count 1 up
                 if (kd.ValueKid || !kd.LinkToNode)
                 {
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                   
 
                     if (keyIsFound)
                     {
                         //We return this one key
+                        if (ReturnKeyValuePair)
+                        {
+                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                        }
+                        else
+                        {
+                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        }
 
                         //cnt++;
                         row = new LTrieRow(this._root);
+                        if (ReturnKeyValuePair)
+                        {
+                            row.Value = xValue;
+                            row.ValueIsReadOut = true;
+                        }
                         row.Key = key;
                         row.LinkToValue = kd.Ptr;
                         yield return row;
@@ -294,7 +363,7 @@ namespace DBreeze.LianaTrie.Iterations
                     else
                     {
                         //Checking if key equals to the found element, bigger or smaller
-
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
                         //Key is still not found 
 
                         if ((includeStartKey) ? key.IfStringArrayBiggerOrEqualThen(initialKey) : key.IfStringArrayBiggerThen(initialKey))
@@ -352,6 +421,9 @@ namespace DBreeze.LianaTrie.Iterations
             byte[] key = null;
             LTrieRow row = null;
             byte[] gml = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             int startFrom = 0;
             if (keyIsFound)
@@ -377,7 +449,14 @@ namespace DBreeze.LianaTrie.Iterations
                 {
                     //Value Kid    
 
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    if (ReturnKeyValuePair)
+                    {
+                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                    }
+                    else
+                    {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    }
 
                     if (keyIsFound)
                     {
@@ -385,6 +464,11 @@ namespace DBreeze.LianaTrie.Iterations
                         if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
                         {
                             row = new LTrieRow(this._root);
+                            if (ReturnKeyValuePair)
+                            {
+                                row.Value = xValue;
+                                row.ValueIsReadOut = true;
+                            }
                             row.Key = key;
                             row.LinkToValue = kd.Ptr;
                             yield return row;
@@ -408,6 +492,11 @@ namespace DBreeze.LianaTrie.Iterations
                             {
                                 //We return this one key                        
                                 row = new LTrieRow(this._root);
+                                if (ReturnKeyValuePair)
+                                {
+                                    row.Value = xValue;
+                                    row.ValueIsReadOut = true;
+                                }
                                 row.Key = key;
                                 row.LinkToValue = kd.Ptr;
                                 yield return row;
@@ -473,7 +562,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieGenerationNode gn1 = null;
             byte[] key = null;
             LTrieRow row = null;
-
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             //Starting from first key. It's interesting inside of RecursiveYieldReturn to look Starting from value
             //If intialKey index already bigger then its own length
@@ -486,7 +577,14 @@ namespace DBreeze.LianaTrie.Iterations
                 //if value link we can count 1 up
                 if (kd.ValueKid || !kd.LinkToNode)
                 {
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    if (ReturnKeyValuePair)
+                    {
+                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                    }
+                    else
+                    {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    }
 
                     if (keyIsFound)
                     {
@@ -495,6 +593,11 @@ namespace DBreeze.LianaTrie.Iterations
                         if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
                         {
                             row = new LTrieRow(this._root);
+                            if (ReturnKeyValuePair)
+                            {
+                                row.Value = xValue;
+                                row.ValueIsReadOut = true;
+                            }
                             row.Key = key;
                             row.LinkToValue = kd.Ptr;
                             yield return row;
@@ -518,6 +621,11 @@ namespace DBreeze.LianaTrie.Iterations
                             if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
                             {
                                 row = new LTrieRow(this._root);
+                                if (ReturnKeyValuePair)
+                                {
+                                    row.Value = xValue;
+                                    row.ValueIsReadOut = true;
+                                }
                                 row.Key = key;
                                 row.LinkToValue = kd.Ptr;
                                 yield return row;
@@ -566,6 +674,9 @@ namespace DBreeze.LianaTrie.Iterations
             byte[] key = null;
             LTrieRow row = null;
             byte[] gml = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
             {
@@ -573,11 +684,23 @@ namespace DBreeze.LianaTrie.Iterations
                 {
                     //Value Kid
                     //Raise Up Counter, iterate further if counter permits
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    if (ReturnKeyValuePair)
+                    {
+                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                    }
+                    else
+                    {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    }
                     //Console.WriteLine("KN: {0}", key.ToBytesString(""));
 
 
                     row = new LTrieRow(this._root);
+                    if (ReturnKeyValuePair)
+                    {
+                        row.Value = xValue;
+                        row.ValueIsReadOut = true;
+                    }
                     row.Key = key;
                     row.LinkToValue = kd.Ptr;
                     yield return row;
@@ -631,6 +754,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieGenerationNode gn1 = null;
             byte[] key = null;
             LTrieRow row = new LTrieRow(this._root);
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
             {
@@ -638,11 +764,23 @@ namespace DBreeze.LianaTrie.Iterations
                 //if value link we can count 1 up
                 if (kd.ValueKid || !kd.LinkToNode)
                 {
-                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    if (ReturnKeyValuePair)
+                    {
+                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                    }
+                    else
+                    {
+                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                    }
                     //Console.WriteLine("KN: {0}", key.ToBytesString(""));
 
                     //cnt++;
                     row = new LTrieRow(this._root);
+                    if (ReturnKeyValuePair)
+                    {
+                        row.Value = xValue;
+                        row.ValueIsReadOut = true;
+                    }
                     row.Key = key;
                     row.LinkToValue = kd.Ptr;
                     return row;
@@ -683,6 +821,9 @@ namespace DBreeze.LianaTrie.Iterations
             byte[] key = null;
             LTrieRow row = null;
             byte[] gml = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             int startFrom = 0;
             if (keyIsFound)
@@ -716,9 +857,21 @@ namespace DBreeze.LianaTrie.Iterations
 
                         if (skippedCnt > skippingTotal)
                         {
-                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                            if (ReturnKeyValuePair)
+                            {
+                                this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                            }
+                            else
+                            {
+                                key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                            }
 
                             row = new LTrieRow(this._root);
+                            if (ReturnKeyValuePair)
+                            {
+                                row.Value = xValue;
+                                row.ValueIsReadOut = true;
+                            }
                             row.Key = key;
                             row.LinkToValue = kd.Ptr;
                             yield return row;
@@ -743,7 +896,7 @@ namespace DBreeze.LianaTrie.Iterations
 
                                 if (skippedCnt > skippingTotal)
                                 {
-                                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                                    //key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
 
                                     row = new LTrieRow(this._root);
                                     row.Key = key;
@@ -810,7 +963,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieGenerationNode gn1 = null;
             byte[] key = null;
             LTrieRow row = null;
-
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             //Starting from first key. It's interesting inside of RecursiveYieldReturn to look Starting from value
             //If intialKey index already bigger then its own length
@@ -832,10 +987,22 @@ namespace DBreeze.LianaTrie.Iterations
 
                         if (skippedCnt > skippingTotal)
                         {
-                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                            if (ReturnKeyValuePair)
+                            {
+                                this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                            }
+                            else
+                            {
+                                key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                            }
 
                             //cnt++;
                             row = new LTrieRow(this._root);
+                            if (ReturnKeyValuePair)
+                            {
+                                row.Value = xValue;
+                                row.ValueIsReadOut = true;
+                            }
                             row.Key = key;
                             row.LinkToValue = kd.Ptr;
                             yield return row;
@@ -907,6 +1074,9 @@ namespace DBreeze.LianaTrie.Iterations
             byte[] key = null;
             LTrieRow row = null;
             byte[] gml = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
             {
@@ -917,11 +1087,23 @@ namespace DBreeze.LianaTrie.Iterations
                     if (skippedCnt > skippingTotal)
                     {
                         //Value Kid                        
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        if (ReturnKeyValuePair)
+                        {
+                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                        }
+                        else
+                        {
+                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        }
 
                         //Console.WriteLine("KN: {0}", key.ToBytesString(""));
 
                         row = new LTrieRow(this._root);
+                        if (ReturnKeyValuePair)
+                        {
+                            row.Value = xValue;
+                            row.ValueIsReadOut = true;
+                        }
                         row.Key = key;
                         row.LinkToValue = kd.Ptr;
                         yield return row;
@@ -976,6 +1158,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieGenerationNode gn1 = null;
             byte[] key = null;
             LTrieRow row = null;
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
             {
@@ -987,11 +1172,23 @@ namespace DBreeze.LianaTrie.Iterations
 
                     if (skippedCnt > skippingTotal)
                     {
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        if (ReturnKeyValuePair)
+                        {
+                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                        }
+                        else
+                        {
+                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        }
                         //Console.WriteLine("KN: {0}", key.ToBytesString(""));
 
                         //cnt++;
                         row = new LTrieRow(this._root);
+                        if (ReturnKeyValuePair)
+                        {
+                            row.Value = xValue;
+                            row.ValueIsReadOut = true;
+                        }
                         row.Key = key;
                         row.LinkToValue = kd.Ptr;
                         yield return row;
@@ -1033,7 +1230,9 @@ namespace DBreeze.LianaTrie.Iterations
             LTrieRow row = null;
 
             byte[] gml = null;
-
+            long valueStartPtr = 0;
+            uint valueLength = 0;
+            byte[] xValue = null;
 
 
             foreach (var kd in gn.KidsInNode.GetKidsForward())
@@ -1050,8 +1249,21 @@ namespace DBreeze.LianaTrie.Iterations
                     {
                         //visualize all possible
 
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        if (ReturnKeyValuePair)
+                        {
+                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                        }
+                        else
+                        {
+                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                        }
+
                         row = new LTrieRow(this._root);
+                        if (ReturnKeyValuePair)
+                        {
+                            row.Value = xValue;
+                            row.ValueIsReadOut = true;
+                        }
                         row.Key = key;
                         row.LinkToValue = kd.Ptr;
                         yield return row;
@@ -1084,9 +1296,21 @@ namespace DBreeze.LianaTrie.Iterations
                             {
                                 //visualize
 
-                                key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                                if (ReturnKeyValuePair)
+                                {
+                                    this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                                }
+                                else
+                                {
+                                    key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                                }
 
                                 row = new LTrieRow(this._root);
+                                if (ReturnKeyValuePair)
+                                {
+                                    row.Value = xValue;
+                                    row.ValueIsReadOut = true;
+                                }
                                 row.Key = key;
                                 row.LinkToValue = kd.Ptr;
                                 yield return row;

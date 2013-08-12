@@ -296,9 +296,16 @@ namespace DBreeze.LianaTrie
             }
         }
 
-        
 
-        public byte[] AddKey(ref byte[] key, ref byte[] value, out bool WasUpdated)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="WasUpdated">true means that value existed and was updated</param>
+        /// <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
+        /// <returns></returns>
+        public byte[] AddKey(ref byte[] key, ref byte[] value, out bool WasUpdated, bool dontUpdateIfExists)
         {
             //indicates that key we insert, already existed in the system and was updated
             WasUpdated = false;
@@ -343,7 +350,7 @@ namespace DBreeze.LianaTrie
             if (key.Length == 0)
             {
                 //Saving byte[0] key
-                res = _generationMap[0].SetupKidWithValue((byte)0, true, ref key, ref value, false, out WasUpdated);
+                res = _generationMap[0].SetupKidWithValue((byte)0, true, ref key, ref value, false, out WasUpdated, dontUpdateIfExists);
 
                 return res.ValueLink;
             }
@@ -406,11 +413,11 @@ namespace DBreeze.LianaTrie
 
                     if ((res.KeyOldKid.Length - 1) < i)
                     {
-                        _generationMap[i].SetupKidWithValue((byte)0, true, ref key1, ref val1, true, out WasUpdated);
+                        _generationMap[i].SetupKidWithValue((byte)0, true, ref key1, ref val1, true, out WasUpdated, dontUpdateIfExists);
                     }
                     else
                     {
-                        _generationMap[i].SetupKidWithValue(res.KeyOldKid[i], false, ref key1, ref val1, true, out WasUpdated);
+                        _generationMap[i].SetupKidWithValue(res.KeyOldKid[i], false, ref key1, ref val1, true, out WasUpdated, dontUpdateIfExists);
                     }
 
                     //Cleaning up KeyOldKid - probably not necessary, de bene esse (just in case)
@@ -419,7 +426,7 @@ namespace DBreeze.LianaTrie
 
 
                 //One more only then we setup value, otherwise we bind to the kid, Check Docs in fileDb LtrieSpreadExample1.jpg
-                res = _generationMap[i].SetupKidWithValue(((i == key.Length) ? (byte)0 : key[i]), (i == key.Length), ref key, ref value, false, out WasUpdated);
+                res = _generationMap[i].SetupKidWithValue(((i == key.Length) ? (byte)0 : key[i]), (i == key.Length), ref key, ref value, false, out WasUpdated, dontUpdateIfExists);
 
                 if (!res.IterateFurther)
                 {
@@ -684,7 +691,7 @@ namespace DBreeze.LianaTrie
                 byte[] deletedValue = null;
                 this.RemoveKey(ref oldKey, out WasRemoved, false, out deletedValue);
                 bool WasUpdated = false;
-                refToInsertedValue = this.AddKey(ref newKey, ref oldKeyValue,out WasUpdated);
+                refToInsertedValue = this.AddKey(ref newKey, ref oldKeyValue,out WasUpdated,false);
 
                 refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
 
@@ -1014,13 +1021,31 @@ namespace DBreeze.LianaTrie
 
                     if (!kidDef.LinkToNode)
                     {
-                        //byte[] storedKey = _generationMap[i].ReadKidKeyFromValPtr(kidDef.Ptr);
-                                               
-                        byte[] storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
+                        //byte[] storedKey = _generationMap[i].ReadKidKeyFromValPtr(kidDef.Ptr);                                               
+                        long valueStartPtr = 0;
+                        uint valueLength = 0;
+                        byte[] xValue = null;
+                        byte[] storedKey = null;
+
+                        if (!this.Tree.ValuesLazyLoadingIsOn)
+                        {
+                            this.Tree.Cache.ReadKeyValue(useCache, kidDef.Ptr, out valueStartPtr, out valueLength, out storedKey, out xValue);
+                        }
+                        else
+                        {
+                            storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
+                        }
+
+                       // byte[] storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
 
                         if (key.Length != storedKey.Length || !key._ByteArrayEquals(storedKey))
                             return kv;
 
+                        if (!this.Tree.ValuesLazyLoadingIsOn)
+                        {
+                            kv.Value = xValue;
+                            kv.ValueIsReadOut = true;
+                        }
                         kv.LinkToValue = kidDef.Ptr;
                         return kv;
                     }

@@ -66,6 +66,13 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal bool OverWriteIsAllowed = true;
 
+        /// <summary>
+        /// When it's on iterators, Select and SelectDirect return Row with the key and a pointer to the value.
+        /// <par>Value will be read out when we call it Row.Value.</par>
+        /// <pa>When it's off we read value together with the key in one round</pa>
+        /// </summary>
+        public bool ValuesLazyLoadingIsOn = true;
+
         public LTrie(IStorage storage)
         {
             Storage = storage;
@@ -384,14 +391,20 @@ namespace DBreeze.LianaTrie
         public byte[] Add(byte[] key, byte[] value)
         {
             bool WasUpdated = false;
-            return this.Add(ref key, ref value, out WasUpdated);            
+            return this.Add(ref key, ref value, out WasUpdated,false);            
         }
 
         public byte[] Add(ref byte[] key, ref byte[] value)
         {
             bool WasUpdated = false;
-            return this.Add(ref key, ref value, out WasUpdated);   
+            return this.Add(ref key, ref value, out WasUpdated, false);   
         }
+
+        public byte[] Add(ref byte[] key, ref byte[] value, out bool WasUpdated)
+        {
+            return this.Add(ref key, ref value, out WasUpdated, false);   
+        }
+
 
         /// <summary>
         /// Adds key
@@ -399,8 +412,9 @@ namespace DBreeze.LianaTrie
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+        /// <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
         /// <returns>returns physical link to value</returns>
-        public byte[] Add(ref byte[] key, ref byte[] value, out bool WasUpdated)
+        public byte[] Add(ref byte[] key, ref byte[] value, out bool WasUpdated, bool dontUpdateIfExists)
         {
             //indicates that key we insert, already existed in the system and was updated
             WasUpdated = false;
@@ -413,7 +427,7 @@ namespace DBreeze.LianaTrie
                 //Only available for Writing root
                 try
                 {
-                    linkToVal = rn.AddKey(ref key, ref value, out WasUpdated);
+                    linkToVal = rn.AddKey(ref key, ref value, out WasUpdated, dontUpdateIfExists);
                 }
                 catch (Exception ex1) 
                 {

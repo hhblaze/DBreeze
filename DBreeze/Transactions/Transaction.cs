@@ -91,6 +91,18 @@ namespace DBreeze.Transactions
             }
         }
 
+        private bool _valuesLazyLoadingIsOn = true;
+        /// <summary>
+        /// When it's on iterators return Row with the key and a pointer to the value.
+        /// <par>Value will be read out when we call it Row.Value.</par>
+        /// <pa>When it's off we read value together with the key in one round</pa>
+        /// </summary>
+        public bool ValuesLazyLoadingIsOn
+        {
+            get { return _valuesLazyLoadingIsOn; }
+            set { _valuesLazyLoadingIsOn = value; }
+        }
+
 
         #region "Reserving tables for write, to avoid Deadlocks"
 
@@ -659,7 +671,7 @@ namespace DBreeze.Transactions
         {
             byte[] refToInsertedValue = null;
             bool WasUpdated = false;
-            this.Insert(tableName, key, value, out refToInsertedValue, out WasUpdated);
+            this.Insert(tableName, key, value, out refToInsertedValue, out WasUpdated, false);
         }
 
         /// <summary>
@@ -675,7 +687,7 @@ namespace DBreeze.Transactions
         {
             refToInsertedValue = null;
             bool WasUpdated = false;
-            this.Insert(tableName, key, value, out refToInsertedValue, out WasUpdated);
+            this.Insert(tableName, key, value, out refToInsertedValue, out WasUpdated, false);
 
             //refToInsertedValue = null;
             //LTrie table = GetWriteTableFromBuffer(tableName);
@@ -710,6 +722,22 @@ namespace DBreeze.Transactions
         /// <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
         public void Insert<TKey, TValue>(string tableName, TKey key, TValue value, out byte[] refToInsertedValue, out bool WasUpdated)
         {
+            this.Insert(tableName, key, value, out refToInsertedValue, out WasUpdated,false);
+        }
+
+        /// <summary>
+        /// Inserts or updates the key
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tableName"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+        /// <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+        /// <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then value exists, if false - we have inserted new one</param>
+        public void Insert<TKey, TValue>(string tableName, TKey key, TValue value, out byte[] refToInsertedValue, out bool WasUpdated, bool dontUpdateIfExists)
+        {
             refToInsertedValue = null;
             WasUpdated = false;
             
@@ -727,7 +755,7 @@ namespace DBreeze.Transactions
             //DBreeze.Test.TestStatic.StopCounter("KEYS COMPUTE");
 
             //DBreeze.Test.TestStatic.StartCounter("VALUE ADD");
-            refToInsertedValue = table.Add(ref btKey, ref btValue, out WasUpdated);
+            refToInsertedValue = table.Add(ref btKey, ref btValue, out WasUpdated, dontUpdateIfExists);
             //DBreeze.Test.TestStatic.StopCounter("VALUE ADD");
             if (refToInsertedValue != null)
                 refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
@@ -860,8 +888,10 @@ namespace DBreeze.Transactions
             byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
             LTrieRow row = table.GetKey(ref btKey, null);
-
-            return table.GetTable(row,ref btKey, tableIndex, null, true, false); //<-masterTrie argument equals to null in case if it is a first level of nested tables
+                        
+            var nt = table.GetTable(row,ref btKey, tableIndex, null, true, false); //<-masterTrie argument equals to null in case if it is a first level of nested tables
+            nt.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+            return nt;
 
             //return table.InsertTable(btKey, tableIndex,null); //<-masterTrie argument equals to null in case if it is a first level of nested tables
 
@@ -898,8 +928,9 @@ namespace DBreeze.Transactions
                  * !(readRoot == null) means 
                  * (readRoot == null) ? WRITING TABLE TRANSACTION, doesn't use cache for getting value : READING TABLE TRANSACTION, always uses value via cache
                  */
-
-                return table.GetTable(row,ref btKey, tableIndex, null, false, !(readRoot == null));
+                var nt = table.GetTable(row,ref btKey, tableIndex, null, false, !(readRoot == null));
+                nt.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+                return nt;
 
             }
 
@@ -1169,6 +1200,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 LTrieRow row = table.IterateBackwardForMaximal(readRoot);
                 /*
                  * !(readRoot == null) means 
@@ -1201,6 +1233,8 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+
                 LTrieRow row = table.IterateForwardForMinimal(readRoot);
                 /*
                  * !(readRoot == null) means 
@@ -1281,6 +1315,8 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
                 LTrieRow row = table.GetKey(ref btKey, readRoot);
@@ -1320,26 +1356,33 @@ namespace DBreeze.Transactions
 
 
             if (table == null)
-            {                
-                //
-                //return new KeyValuePair<TKey, TValue>(DataTypesConvertor.ConvertBack<TKey>(null), DataTypesConvertor.ConvertBack<TValue>(null));
-                //return DataTypesConvertor.ConvertBack<TValue>(null);
+            {               
+                
                 return new Row<TKey, TValue>(null, null, false);
             }
             else
             {
-                //long valueStartPtr=0;
-                //uint valueLen=0;
-
-                //byte[] res = table.Cache.ReadValue(ptrToValue, !(readRoot == null), out valueStartPtr, out valueLen);
-
+                
                 LTrieRow ltr=new LTrieRow(((readRoot == null) ? table.rn : (LTrieRootNode)readRoot));
-                ltr.Key = table.Cache.ReadKey(!(readRoot == null), refToInsertedValue);
-                ltr.LinkToValue = refToInsertedValue;
 
-                //Row<TKey, TValue> r = new Row<TKey, TValue>(ltr, null, !(readRoot == null));
+                byte[] xKey=null;
+                byte[] xValue=null;
+                long valueStartPtr=0;
+                uint ValueLength = 0;
+
+                //new
+                table.Cache.ReadKeyValue(!(readRoot == null), refToInsertedValue, out valueStartPtr, out ValueLength, out xKey, out xValue);
+                ltr.LinkToValue = refToInsertedValue;
+                ltr.Value = xValue;
+                ltr.ValueIsReadOut = true;
+                ltr.Key = xKey;
+
+                //was before
+                //ltr.Key = table.Cache.ReadKey(!(readRoot == null), refToInsertedValue);                
+                //ltr.LinkToValue = refToInsertedValue;
+
                 return new Row<TKey, TValue>(ltr, null, !(readRoot == null));
-                //return DataTypesConvertor.ConvertBack<TValue>(res);
+                
             }
         }
 
@@ -1403,6 +1446,8 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+
                 //readRoot can be either filled or null
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForward(readRoot))
@@ -1467,6 +1512,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 //readRoot can be either filled or null
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackward(readRoot))
@@ -1539,6 +1585,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
                 //readRoot can be either filled or null
@@ -1613,6 +1660,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
                 //readRoot can be either filled or null
@@ -1690,6 +1738,8 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
                 byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
 
@@ -1768,6 +1818,8 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
+
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
                 byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
 
@@ -1840,6 +1892,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btStartWithKeyPart = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
 
                 //readRoot can be either filled or null
@@ -1915,6 +1968,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btStartWithKeyPart = DataTypesConvertor.ConvertKey<TKey>(startWithClosestPrefix);
 
                 //readRoot can be either filled or null
@@ -1990,6 +2044,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btStartWithKeyPart = DataTypesConvertor.ConvertKey<TKey>(startWithClosestPrefix);
 
                 //readRoot can be either filled or null
@@ -2067,6 +2122,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btStartWithKeyPart = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
 
                 //readRoot can be either filled or null
@@ -2139,6 +2195,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 //readRoot can be either filled or null
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardSkip(skippingQuantity, readRoot))
@@ -2206,6 +2263,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 //readRoot can be either filled or null
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardSkip(skippingQuantity, readRoot))
@@ -2277,6 +2335,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
                 //readRoot can be either filled or null
@@ -2349,6 +2408,7 @@ namespace DBreeze.Transactions
             }
             else
             {
+                table.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
                 //readRoot can be either filled or null

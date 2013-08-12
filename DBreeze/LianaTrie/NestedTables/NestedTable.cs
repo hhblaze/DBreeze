@@ -27,6 +27,24 @@ namespace DBreeze.DataTypes
             _tableExists = tableExists;
         }
 
+
+        /// <summary>
+        /// When it's on iterators return Row with the key and a pointer to the value.
+        /// <par>Value will be read out when we call it Row.Value.</par>
+        /// <pa>When it's off we read value together with the key in one round</pa>
+        /// </summary>
+        public bool ValuesLazyLoadingIsOn
+        {
+            get { return (_tbl == null) ? true : _tbl.table.ValuesLazyLoadingIsOn; }
+            set
+            {
+                if (_tbl != null)
+                {
+                    _tbl.table.ValuesLazyLoadingIsOn = value;
+                }
+            }
+        }
+
         /// <summary>
         /// You are already in the table
         /// <para>This function will help to access another table by parent table key and its value index</para>
@@ -106,7 +124,7 @@ namespace DBreeze.DataTypes
             byte[] refToInsertedValue = null;
             bool WasUpdated = false;
 
-            return this.Insert<TKey, TValue>(key, value, out refToInsertedValue, out WasUpdated);
+            return this.Insert<TKey, TValue>(key, value, out refToInsertedValue, out WasUpdated, false);
         }
 
         /// <summary>
@@ -123,46 +141,8 @@ namespace DBreeze.DataTypes
             refToInsertedValue = null;
             bool WasUpdated = false;
 
-            return this.Insert<TKey, TValue>(key, value, out refToInsertedValue, out WasUpdated); 
+            return this.Insert<TKey, TValue>(key, value, out refToInsertedValue, out WasUpdated, false); 
 
-
-            //refToInsertedValue = null;
-
-            //if (!this._tableExists)
-            //    return new NestedTable(null, false, false);
-
-            //if (!_insertAllowed)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            //}
-         
-
-            ////Special check of null of nulls is integrated inside of the convertor
-            ////For keys and values different convertors.
-
-            //byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-            //byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(value);
-
-            //refToInsertedValue = _tbl.table.Add(ref btKey, ref btValue);
-
-            //if (refToInsertedValue != null)
-            //    refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
-
-            //return this;
-        }
-
-        /// <summary>
-        /// <para>After the end of transaction overwrite will be allowed again.</para>
-        /// <para>Concerns overwriting of values, trie search nodes and dataBlocks.</para>
-        /// <para>ref. documentation from [20130412]</para>
-        /// </summary>
-        /// <param name="isAllowed"></param>
-        public void Technical_SetTable_OverwriteIsNotAllowed()
-        {
-            if (!this._tableExists)
-                return;
-
-            _tbl.table.OverWriteIsAllowed = false;
         }
 
         /// <summary>
@@ -172,10 +152,26 @@ namespace DBreeze.DataTypes
         /// <typeparam name="TValue"></typeparam>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        /// <param name="refToInsertedValue"></param>
-        /// <param name="WasUpdated"></param>
+        /// <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+        /// <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
         /// <returns></returns>
         public NestedTable Insert<TKey, TValue>(TKey key, TValue value, out byte[] refToInsertedValue, out bool WasUpdated)
+        {
+            return this.Insert<TKey, TValue>(key, value, out refToInsertedValue, out WasUpdated,false); 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+        /// <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+        /// <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then value exists, if false - we have inserted new one</param>
+        /// <returns></returns>
+        public NestedTable Insert<TKey, TValue>(TKey key, TValue value, out byte[] refToInsertedValue, out bool WasUpdated, bool dontUpdateIfExists)
         {
             WasUpdated = false;
             refToInsertedValue = null;
@@ -195,13 +191,29 @@ namespace DBreeze.DataTypes
             byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
             byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(value);
 
-            refToInsertedValue = _tbl.table.Add(ref btKey, ref btValue, out WasUpdated);
+            refToInsertedValue = _tbl.table.Add(ref btKey, ref btValue, out WasUpdated, dontUpdateIfExists);
 
             if (refToInsertedValue != null)
                 refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
 
             return this;
         }
+
+        /// <summary>
+        /// <para>After the end of transaction overwrite will be allowed again.</para>
+        /// <para>Concerns overwriting of values, trie search nodes and dataBlocks.</para>
+        /// <para>ref. documentation from [20130412]</para>
+        /// </summary>
+        /// <param name="isAllowed"></param>
+        public void Technical_SetTable_OverwriteIsNotAllowed()
+        {
+            if (!this._tableExists)
+                return;
+
+            _tbl.table.OverWriteIsAllowed = false;
+        }
+
+        
 
 
         #region "Specific structures"

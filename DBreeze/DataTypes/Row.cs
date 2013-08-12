@@ -97,13 +97,17 @@ namespace DBreeze.DataTypes
             if(nestedTable == null)
             {
                 //Master row select
-                return _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, false, this._useCache);
+                var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, false, this._useCache);
+                nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
+                return nt;
             }
             else
             {
                 
                 //Nested table
-                return _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, nestedTable._insertAllowed, this._useCache);
+                var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, nestedTable._insertAllowed, this._useCache);
+                nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
+                return nt;
             }
 
             
@@ -131,6 +135,7 @@ namespace DBreeze.DataTypes
         /// <returns></returns>
         public byte[] GetValuePart(uint startIndex, uint length)
         {
+
             if (_exists)
             {
                 //Bringing arguments to int scope
@@ -138,6 +143,10 @@ namespace DBreeze.DataTypes
                 {
                     length = Int32.MaxValue - startIndex;
                 }
+
+                if (_row.ValueIsReadOut)
+                    return _row.GetPartialValue(startIndex, length, true);  //Cache plays no role here
+
 
                 long valueStartPointer = 0;
                 uint valueFullLength = 0;
@@ -165,6 +174,8 @@ namespace DBreeze.DataTypes
                     length = Int32.MaxValue - startIndex;
                 }
 
+                if (_row.ValueIsReadOut)
+                    return _row.GetFullValue(true); //Cache plays no role here
 
                 long valueStartPointer = 0;
                 uint valueFullLength = 0;
@@ -202,11 +213,23 @@ namespace DBreeze.DataTypes
         /// <returns></returns>
         public byte[] GetDataBlock(uint startIndex)
         {
+            byte[] dataBlockId = null;
+
             if (_exists)
             {
+                if (_row.ValueIsReadOut)
+                {
+                    if (_row.Value == null)
+                        return null;
+
+                    dataBlockId = _row.Value.Substring((int)startIndex, 16);
+
+                    return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+                }
+
                 long valueStartPointer = 0;
                 uint valueFullLength = 0;
-                byte[] dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
                 return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
             }
 
@@ -226,6 +249,11 @@ namespace DBreeze.DataTypes
             {
                 if (_exists)
                 {
+                    if (_row.ValueIsReadOut)
+                    {
+                        return DataTypesConvertor.ConvertBack<TValue>(_row.Value); ;
+                    }
+
                     long valueStartPointer = 0;
                     uint valueFullLength = 0;
                     //Console.WriteLine("UseCache " + this._useCache);

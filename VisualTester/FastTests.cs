@@ -934,8 +934,8 @@ namespace VisualTester
 
                     DBreezeConfiguration conf = new DBreezeConfiguration()
                     {
-                        //DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",                        
-                        DBreezeDataFolderName = @"E:\temp\DBreezeTest\DBR1",                        
+                        DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",                        
+                       // DBreezeDataFolderName = @"E:\temp\DBreezeTest\DBR1",                        
                        // DBreezeDataFolderName = @"C:\tmp",
                         Storage = DBreezeConfiguration.eStorage.DISK,
                     // Storage = DBreezeConfiguration.eStorage.MEMORY,
@@ -973,7 +973,7 @@ namespace VisualTester
 
             //testF_004();
            // testF_003();
-            testF_007();
+            testF_009();
 
            // testF_001();
             //testC14();
@@ -1124,6 +1124,71 @@ namespace VisualTester
 
         #endregion
 
+        private void testF_009()
+        {
+            byte[] ptr = null;
+
+            //using (var tran = engine.GetTransaction())
+            //{
+            //    //tran.Insert<int, int>("A", 256, 458, out ptr);
+            //    //tran.Commit();    
+
+            //    for (int i = 0; i < 100000; i++)
+            //    {
+            //        tran.Insert<int, byte[]>("A", i, new byte[2000]);
+            //    }
+            //    tran.Commit();
+            //}
+
+
+            using (var tran = engine.GetTransaction())
+            {
+                tran.ValuesLazyLoadingIsOn = false;
+
+                DBreeze.Diagnostic.SpeedStatistic.StartCounter("a");
+                 foreach (var row in tran.SelectForward<int, byte[]>("A"))
+                 {
+                     ptr = row.Value;
+                     //Console.WriteLine("K: {0} - {1}", row.Key, row.Value);
+                 }
+                 DBreeze.Diagnostic.SpeedStatistic.PrintOut("a", true);
+
+                //var row = tran.Select<int, int>("A", 256);
+
+                //if (row.Exists)
+                //{
+                //    Console.WriteLine("K: {0} - {1}", row.Key, row.Value);
+                //}
+            }
+
+        }
+
+        private void testF_008()
+        {
+            DBreeze.Diagnostic.SpeedStatistic.StartCounter("a");
+            using (var tran = engine.GetTransaction())
+            {
+                //tran.Technical_SetTable_OverwriteIsNotAllowed("A");
+                byte[] ref2val=null;
+                bool wasUpdated=false;
+                for (int i = 1; i < 1000000; i++)
+                {
+                    tran.Insert<int, byte>("A", i, 3);
+                    //tran.Insert<int, byte>("A", i, 3, out ref2val, out wasUpdated,true);
+                }
+
+                tran.Commit();
+            }
+            DBreeze.Diagnostic.SpeedStatistic.PrintOut("a", true);
+
+            //using (var tran = engine.GetTransaction())
+            //{
+            //    foreach (var row in tran.SelectForward<int, byte>("A").Take(10))
+            //    {
+            //        Console.WriteLine("K: {0} - {1}", row.Key,row.Value);
+            //    }
+            //}
+        }
 
         private void testF_007()
         {

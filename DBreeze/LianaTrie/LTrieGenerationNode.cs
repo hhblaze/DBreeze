@@ -105,9 +105,10 @@ namespace DBreeze.LianaTrie
         /// <param name="fullKey"></param>
         /// <param name="value"></param>
         /// <param name="useExistingPointerToValue"></param>
-        /// <param name="WasUpdated">means that value existed and was updated</param>
+        /// <param name="WasUpdated">true means that value existed and was updated</param>
+        /// <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
         /// <returns></returns>
-        public LTrieSetupKidResult SetupKidWithValue(byte kid, bool lastElementOfTheKey, ref byte[] fullKey, ref byte[] value, bool useExistingPointerToValue,out bool WasUpdated)
+        public LTrieSetupKidResult SetupKidWithValue(byte kid, bool lastElementOfTheKey, ref byte[] fullKey, ref byte[] value, bool useExistingPointerToValue,out bool WasUpdated,bool dontUpdateIfExists)
         {
             //useExistingPointerToValue is used to move previously saved kid to the new place
             ToWrite = true;
@@ -128,7 +129,7 @@ namespace DBreeze.LianaTrie
                 {
                     //Here we also can decide if kid existed, probably we could overwrite it (in total 3 places also in the bottom)                  
                     lKid = KidsInNode.GetKidValue();
-
+                    
                     if (!lKid.Exists)
                     {
                         tryToOverWrite = false;
@@ -136,12 +137,29 @@ namespace DBreeze.LianaTrie
                     }
 
                     WasUpdated = tryToOverWrite;
-                    ptr = this.WriteKidValue(ref fullKey, ref value, tryToOverWrite, lKid.Ptr);
+
+                    if (WasUpdated && dontUpdateIfExists)
+                    {
+                        //Value exists, but we don't want to update it
+                        ptr = lKid.Ptr;
+                    }
+                    else
+                    {
+                        ptr = this.WriteKidValue(ref fullKey, ref value, tryToOverWrite, lKid.Ptr);
+                    }
                 }
                 else
                     ptr = value;
 
-                KidsInNode.AddKid(256, ptr);
+                if (WasUpdated && dontUpdateIfExists)
+                {
+                    //Value exists, but we don't want to update it
+                }
+                else
+                {
+                    KidsInNode.AddKid(256, ptr);
+                }
+
                 res.ValueLink = ptr;
                 res.IterateFurther = false;
                 return res;
@@ -173,9 +191,18 @@ namespace DBreeze.LianaTrie
 
                             //We write for now always on the new place value and update reference
                             WasUpdated = true;
-                            ptr = this.WriteKidValue(ref fullKey, ref value, true, lKid.Ptr);
 
-                            KidsInNode.AddKid(kid, ptr);
+                            if (dontUpdateIfExists)
+                            {
+                                ptr = lKid.Ptr;
+                            }
+                            else
+                            {
+                                ptr = this.WriteKidValue(ref fullKey, ref value, true, lKid.Ptr);
+
+                                KidsInNode.AddKid(kid, ptr);
+                            }
+
                             res.ValueLink = ptr;
                             res.IterateFurther = false;
                             return res;
@@ -209,12 +236,28 @@ namespace DBreeze.LianaTrie
                         }
 
                         WasUpdated = tryToOverWrite;
-                        ptr = this.WriteKidValue(ref fullKey, ref value, tryToOverWrite,lKid.Ptr);
+
+                        if (WasUpdated && dontUpdateIfExists)
+                        {
+                            //Value exists, but we don't want to update it
+                            ptr = lKid.Ptr;
+                        }
+                        else
+                        {
+                            ptr = this.WriteKidValue(ref fullKey, ref value, tryToOverWrite, lKid.Ptr);
+                        }
                     }
                     else
                         ptr = value;       //Hack for oldKid link replacement
 
-                    KidsInNode.AddKid(kid, ptr);
+                    if (WasUpdated && dontUpdateIfExists)
+                    {
+                        //Value exists, but we don't want to update it
+                    }
+                    else
+                    {
+                        KidsInNode.AddKid(kid, ptr);
+                    }
                     res.ValueLink = ptr;
                     res.IterateFurther = false;
                     return res;
