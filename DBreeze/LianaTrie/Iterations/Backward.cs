@@ -59,6 +59,9 @@ namespace DBreeze.LianaTrie.Iterations
                     if (ReturnKeyValuePair)
                     {
                         this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr,out valueStartPtr, out valueLength, out key, out xValue);
+
+                        row.ValueStartPointer = valueStartPtr;
+                        row.ValueFullLength = valueLength;
                         row.Value = xValue;
                         row.ValueIsReadOut = true;
                     }
@@ -143,6 +146,9 @@ namespace DBreeze.LianaTrie.Iterations
                     if (ReturnKeyValuePair)
                     {
                         this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+
+                        row.ValueStartPointer = valueStartPtr;
+                        row.ValueFullLength = valueLength;
                         row.Value = xValue;
                         row.ValueIsReadOut = true;
                     }
@@ -234,6 +240,8 @@ namespace DBreeze.LianaTrie.Iterations
 
                         if (ReturnKeyValuePair)
                         {
+                            row.ValueStartPointer = valueStartPtr;
+                            row.ValueFullLength = valueLength;
                             row.Value = xValue;
                             row.ValueIsReadOut = true;
                         }
@@ -259,6 +267,8 @@ namespace DBreeze.LianaTrie.Iterations
 
                             if (ReturnKeyValuePair)
                             {
+                                row.ValueStartPointer = valueStartPtr;
+                                row.ValueFullLength = valueLength;
                                 row.Value = xValue;
                                 row.ValueIsReadOut = true;
                             }
@@ -348,6 +358,9 @@ namespace DBreeze.LianaTrie.Iterations
                         if (ReturnKeyValuePair)
                         {
                             this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+
+                            row.ValueStartPointer = valueStartPtr;
+                            row.ValueFullLength = valueLength;
                             row.Value = xValue;
                             row.ValueIsReadOut = true;
                         }
@@ -386,6 +399,8 @@ namespace DBreeze.LianaTrie.Iterations
                             row = new LTrieRow(this._root);
                             if (ReturnKeyValuePair)
                             {
+                                row.ValueStartPointer = valueStartPtr;
+                                row.ValueFullLength = valueLength;
                                 row.Value = xValue;
                                 row.ValueIsReadOut = true;
                             }
@@ -485,6 +500,8 @@ namespace DBreeze.LianaTrie.Iterations
 
                             if (ReturnKeyValuePair)
                             {
+                                row.ValueStartPointer = valueStartPtr;
+                                row.ValueFullLength = valueLength;
                                 row.Value = xValue;
                                 row.ValueIsReadOut = true;
                             }
@@ -511,6 +528,8 @@ namespace DBreeze.LianaTrie.Iterations
                                 row = new LTrieRow(this._root);
                                 if (ReturnKeyValuePair)
                                 {
+                                    row.ValueStartPointer = valueStartPtr;
+                                    row.ValueFullLength = valueLength;
                                     row.Value = xValue;
                                     row.ValueIsReadOut = true;
                                 }
@@ -613,6 +632,8 @@ namespace DBreeze.LianaTrie.Iterations
                             row = new LTrieRow(this._root);
                             if (ReturnKeyValuePair)
                             {
+                                row.ValueStartPointer = valueStartPtr;
+                                row.ValueFullLength = valueLength;
                                 row.Value = xValue;
                                 row.ValueIsReadOut = true;
                             }
@@ -640,6 +661,8 @@ namespace DBreeze.LianaTrie.Iterations
                                 row = new LTrieRow(this._root);
                                 if (ReturnKeyValuePair)
                                 {
+                                    row.ValueStartPointer = valueStartPtr;
+                                    row.ValueFullLength = valueLength;
                                     row.Value = xValue;
                                     row.ValueIsReadOut = true;
                                 }
@@ -710,8 +733,11 @@ namespace DBreeze.LianaTrie.Iterations
                     }
 
                     row = new LTrieRow(this._root);
+
                     if (ReturnKeyValuePair)
                     {
+                        row.ValueStartPointer = valueStartPtr;
+                        row.ValueFullLength = valueLength;
                         row.Value = xValue;
                         row.ValueIsReadOut = true;
                     }
@@ -795,6 +821,8 @@ namespace DBreeze.LianaTrie.Iterations
                     row = new LTrieRow(this._root);
                     if (ReturnKeyValuePair)
                     {
+                        row.ValueStartPointer = valueStartPtr;
+                        row.ValueFullLength = valueLength;
                         row.Value = xValue;
                         row.ValueIsReadOut = true;
                     }
@@ -888,6 +916,8 @@ namespace DBreeze.LianaTrie.Iterations
                             row = new LTrieRow(this._root);
                             if (ReturnKeyValuePair)
                             {
+                                row.ValueStartPointer = valueStartPtr;
+                                row.ValueFullLength = valueLength;
                                 row.Value = xValue;
                                 row.ValueIsReadOut = true;
                             }
@@ -1020,6 +1050,8 @@ namespace DBreeze.LianaTrie.Iterations
                             row = new LTrieRow(this._root);
                             if (ReturnKeyValuePair)
                             {
+                                row.ValueStartPointer = valueStartPtr;
+                                row.ValueFullLength = valueLength;
                                 row.Value = xValue;
                                 row.ValueIsReadOut = true;
                             }
@@ -1119,6 +1151,8 @@ namespace DBreeze.LianaTrie.Iterations
                         row = new LTrieRow(this._root);
                         if (ReturnKeyValuePair)
                         {
+                            row.ValueStartPointer = valueStartPtr;
+                            row.ValueFullLength = valueLength;
                             row.Value = xValue;
                             row.ValueIsReadOut = true;
                         }
@@ -1206,6 +1240,8 @@ namespace DBreeze.LianaTrie.Iterations
                         row = new LTrieRow(this._root);
                         if (ReturnKeyValuePair)
                         {
+                            row.ValueStartPointer = valueStartPtr;
+                            row.ValueFullLength = valueLength;
                             row.Value = xValue;
                             row.ValueIsReadOut = true;
                         }
@@ -1282,6 +1318,8 @@ namespace DBreeze.LianaTrie.Iterations
                         row.Key = key;
                         if (ReturnKeyValuePair)
                         {
+                            row.ValueStartPointer = valueStartPtr;
+                            row.ValueFullLength = valueLength;
                             row.Value = xValue;
                             row.ValueIsReadOut = true;
                         }
@@ -1328,6 +1366,8 @@ namespace DBreeze.LianaTrie.Iterations
                                 row = new LTrieRow(this._root);
                                 if (ReturnKeyValuePair)
                                 {
+                                    row.ValueStartPointer = valueStartPtr;
+                                    row.ValueFullLength = valueLength;
                                     row.Value = xValue;
                                     row.ValueIsReadOut = true;
                                 }

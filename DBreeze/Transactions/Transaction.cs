@@ -1372,6 +1372,8 @@ namespace DBreeze.Transactions
 
                 //new
                 table.Cache.ReadKeyValue(!(readRoot == null), refToInsertedValue, out valueStartPtr, out ValueLength, out xKey, out xValue);
+                ltr.ValueStartPointer = valueStartPtr;
+                ltr.ValueFullLength = ValueLength;
                 ltr.LinkToValue = refToInsertedValue;
                 ltr.Value = xValue;
                 ltr.ValueIsReadOut = true;

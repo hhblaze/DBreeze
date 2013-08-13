@@ -98,7 +98,10 @@ namespace DBreeze.DataTypes
             {
                 //Master row select
                 var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, false, this._useCache);
-                nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
+
+                if (_masterTrie != null)
+                    nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
+
                 return nt;
             }
             else

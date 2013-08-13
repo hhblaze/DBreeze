@@ -1043,6 +1043,8 @@ namespace DBreeze.LianaTrie
 
                         if (!this.Tree.ValuesLazyLoadingIsOn)
                         {
+                            kv.ValueStartPointer = valueStartPtr;
+                            kv.ValueFullLength = valueLength;
                             kv.Value = xValue;
                             kv.ValueIsReadOut = true;
                         }
