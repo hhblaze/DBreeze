@@ -11,10 +11,10 @@ C# .NET 3.0> MONO.
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
-- Documentation (HTML, actual)
-- Benchmark (HTML, actual)
-- Changes in versions
-- Discussion on the forum
+- Documentation (HTML, actual) https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw
+- Benchmark (HTML, actual) https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM
+- Changes in versions https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o
+- Discussion on the forum https://dbreeze.codeplex.com/discussions
 
 Key features:
 
