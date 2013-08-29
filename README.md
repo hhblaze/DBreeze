@@ -1,4 +1,13 @@
+<table border="0">
+<tr>
+<td>
+<img src='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717'></img>
+</td>
+<td>
 DBreeze Database
+</td>
+</tr>
+<table>
 =====================
 
 Professional, open-source, NoSql (embedded Key/Value storage), transactional, ACID-compliant, multi-threaded, object database management system for
@@ -11,10 +20,10 @@ C# .NET 3.0> MONO.
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
-- <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank" style="font-size:20px">Documentation (HTML, actual)</a>
-- Benchmark (HTML, actual) https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM
-- Changes in versions https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o
-- Discussion on the forum https://dbreeze.codeplex.com/discussions
+- <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
+- <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
+- <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
+- <a href='https://dbreeze.codeplex.com/discussions' target="_blank">Discussion on the forum </a>
 
 Key features:
 
