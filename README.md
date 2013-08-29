@@ -1,15 +1,14 @@
 <table border="0">
 <tr>
 <td>
-<img src='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717'></img>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717"></img>
 </td>
 <td>
-DBreeze Database
+<b>DBreeze Database</b>
 </td>
 </tr>
-<table>
+</table>
 =====================
-
 Professional, open-source, NoSql (embedded Key/Value storage), transactional, ACID-compliant, multi-threaded, object database management system for
 C# .NET 3.0> MONO.
 
