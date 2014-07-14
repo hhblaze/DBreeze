@@ -319,11 +319,11 @@ namespace VisualTester
                         identity = row.Key;
 
                     identity++;
-                    
-                    Article art=new Article()
+
+                    Article art = new Article()
                     {
-                         Id = identity,
-                         Name = "PC"
+                        Id = identity,
+                        Name = "PC"
                     };
                     tran.Insert<uint, DbMJSON<Article>>("Articles", identity, art);
 
@@ -350,9 +350,9 @@ namespace VisualTester
             {
                 try
                 {
-                    uint id=0;
+                    uint id = 0;
 
-                   
+
                     Article art = new Article()
                     {
                         Name = "Notebook",
@@ -373,14 +373,14 @@ namespace VisualTester
                         Price = 10.0f
                     };
 
-                     id++;
+                    id++;
                     tran.Insert<uint, DbMJSON<Article>>("Articles", id, art);
 
                     idAsByte = id.To_4_bytes_array_BigEndian();
                     priceKey = art.Price.To_4_bytes_array_BigEndian().Concat(idAsByte);
                     Console.WriteLine("{0}; Id: {1}; IdByte[]: {2}; btPriceKey: {3}", art.Name, id, idAsByte.ToBytesString(""), priceKey.ToBytesString(""));
                     tran.Insert<byte[], byte[]>("Prices", priceKey, null);
-                    
+
 
                     art = new Article()
                     {
@@ -388,7 +388,7 @@ namespace VisualTester
                         Price = 10.0f
                     };
 
-                     id++;
+                    id++;
                     tran.Insert<uint, DbMJSON<Article>>("Articles", id, art);
 
                     idAsByte = id.To_4_bytes_array_BigEndian();
@@ -402,7 +402,7 @@ namespace VisualTester
                         Price = 200.0f
                     };
 
-                     id++;
+                    id++;
                     tran.Insert<uint, DbMJSON<Article>>("Articles", id, art);
 
                     idAsByte = id.To_4_bytes_array_BigEndian();
@@ -446,11 +446,11 @@ namespace VisualTester
 
                     byte[] searchKey = price.To_4_bytes_array_BigEndian().Concat(fakeId.To_4_bytes_array_BigEndian());
 
-                    Article art=null;
-                    
+                    Article art = null;
+
                     foreach (var row in tran.SelectForwardStartFrom<byte[], byte[]>("Prices", searchKey, true))
                     {
-                        Console.WriteLine("Found key: {0};",row.Key.ToBytesString(""));
+                        Console.WriteLine("Found key: {0};", row.Key.ToBytesString(""));
 
                         var artRow = tran.Select<uint, DbMJSON<Article>>("Articles", row.Key.Substring(4, 4).To_UInt32_BigEndian());
 

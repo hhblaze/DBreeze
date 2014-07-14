@@ -530,7 +530,7 @@ namespace DBreeze.Transactions
         public void Commit(int transactionThreadId)
         {
             if (!this._engine.DBisOperable)
-                return;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE);
 
             TransactionUnit transactionUnit = this.GetTransactionUnit(transactionThreadId);
 

@@ -26,6 +26,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,6 +36,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -46,12 +48,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataTypes\DbMJSON.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DataTypes\Row.cs" />
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTable.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableInternal.cs" />
-    <Compile Include="DataTypes\DbMJSON.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableStorage.cs" />
@@ -102,7 +106,9 @@
     <Compile Include="Utils\DbReaderWriterLock.cs" />
     <Compile Include="Utils\DbReaderWriterSpinLock.cs" />
     <Compile Include="Utils\DbThreadsGator.cs" />
-    <Compile Include="Utils\MJsonSerializator.cs" />
+    <Compile Include="Utils\MJsonSerializator.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\StringProcessing.cs" />
     <Compile Include="Utils\XmlSerializator.cs" />

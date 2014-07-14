@@ -36,6 +36,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="protobuf-net">
+      <HintPath>..\..\GpsCarControl\lib\Net45\Protobuf\protobuf-net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -51,6 +54,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ProtobufSerializatorExtension.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Page Include="DBreezeBackupRestorer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

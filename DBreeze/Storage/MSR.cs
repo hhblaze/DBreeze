@@ -280,8 +280,12 @@ namespace DBreeze.Storage
                 {
                     if (inBuf.Length != data.Length)
                     {
+                        //OLD solution
                         //it means we overwrite second time the same position with different length of data - what is not allowed
-                        throw new Exception("MSR.WriteByOffset: inBuf.Length != data.Length");
+                        //throw new Exception("MSR.WriteByOffset: inBuf.Length != data.Length");
+
+                        //Solution from 20140425
+                        //we just overwrite offset value with the new data
                     }
 
                     //setting new value for such offset

@@ -973,7 +973,9 @@ namespace VisualTester
 
             //testF_004();
            // testF_003();
-            testF_009();
+            //testF_009();
+
+            testF_010();
 
            // testF_001();
             //testC14();
@@ -1123,6 +1125,62 @@ namespace VisualTester
         }
 
         #endregion
+
+
+         [ProtoBuf.ProtoContract]
+         public class XYZ
+         {
+             public XYZ()
+             {
+                 P1 = 12;
+                 P2 = "sdfs";
+             }
+
+             [ProtoBuf.ProtoMember(1, IsRequired = true)]
+             public int P1 { get; set; }
+             [ProtoBuf.ProtoMember(2, IsRequired = true)]
+             public string P2 { get; set; }
+         }
+
+        private void testF_010()
+        {
+            if (DBreeze.Utils.CustomSerializator.ByteArraySerializator == null)
+            {
+                DBreeze.Utils.CustomSerializator.ByteArraySerializator = WSN_DistributedApplication.Protobuf.ProtobufSerializer.SerializeProtobuf;
+                DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = WSN_DistributedApplication.Protobuf.ProtobufSerializer.DeserializeProtobuf;
+            }
+
+            //using (var tran = engine.GetTransaction())
+            //{
+
+            //    // tran.Insert<int, DbCustomSerializer<XYZ>>("t1", 1, new XYZ());
+            //   // tran.Insert<int, XYZ>("t1", 1, new XYZ() { P1 = 44, P2 = "well" });
+            //    tran.Insert<int, XYZ>("t1", 1, new XYZ() { P1 = 44, P2 = "well" });
+            //    tran.Commit();
+            //}
+
+
+            Type t1 = typeof(DBreeze.DataTypes.DbUTF8);
+            Type t2 = typeof(String);
+            Type t3 = typeof(float?);
+            Type t4 = typeof(int);
+            Type t5 = typeof(XYZ);
+            Type t6 = typeof(Guid);
+            Type t7 = typeof(string);
+            Type t8 = typeof(Int32);
+
+            using (var tran = engine.GetTransaction())
+            {
+                tran.Select<float?, string>("t1", 1f);
+
+                //var row = tran.Select<int, XYZ>("t1", 1);
+                //if (row.Exists)
+                //{
+                //    var tr = row.Value;
+                //}
+            }
+        }
+
 
         private void testF_009()
         {

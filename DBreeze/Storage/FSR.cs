@@ -510,9 +510,14 @@ namespace DBreeze.Storage
                 File.Delete(this._fileName + ".rol");
                 File.Delete(this._fileName + ".rhp");
 
-                File.Move(newTableFullPath, this._fileName);
-                File.Move(newTableFullPath + ".rol", this._fileName + ".rol");
-                File.Move(newTableFullPath + ".rhp", this._fileName + ".rhp");
+                if (File.Exists(newTableFullPath))
+                    File.Move(newTableFullPath, this._fileName);
+
+                if(File.Exists(newTableFullPath + ".rol"))
+                    File.Move(newTableFullPath + ".rol", this._fileName + ".rol");
+
+                if (File.Exists(newTableFullPath + ".rhp"))
+                    File.Move(newTableFullPath + ".rhp", this._fileName + ".rhp");
 
                 InitFiles();
 
@@ -713,8 +718,12 @@ namespace DBreeze.Storage
                 {
                     if (inBuf.Length != data.Length)
                     {
+                        //OLD solution
                         //it means we overwrite second time the same position with different length of data - what is not allowed
-                        throw new Exception("FSR.WriteByOffset: inBuf.Length != data.Length");
+                        //throw new Exception("FSR.WriteByOffset: inBuf.Length != data.Length");
+
+                        //Solution from 20140425
+                        //we just overwrite offset value with the new data
                     }
 
                     //setting new value for such offset

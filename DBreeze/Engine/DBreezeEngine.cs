@@ -26,7 +26,8 @@ namespace DBreeze
         /// <summary>
         /// DBreeze version number
         /// </summary>        
-        public static string Version = "01.060.20130813";
+        //public static string Version = "01.061.20131120";
+        public static string Version = "01.063.20140603";
         #endregion
 
    

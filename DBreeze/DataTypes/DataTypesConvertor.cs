@@ -160,13 +160,14 @@ namespace DBreeze.DataTypes
 
             try
             {
+               
 
                 if (td == TYPE_BYTE_ARRAY)
                 {
                     ret = ((byte[])((object)data));
                 }
                 else if (td.Name == "DbMJSON`1" || td.Name == "DbCustomSerializer`1" || td.Name == "DbXML`1")
-                {
+                {                    
                     return ((IDBConvertable)((object)data)).GetBytes();
                 }
                 else if (td == TYPE_ULONG)
@@ -302,7 +303,11 @@ namespace DBreeze.DataTypes
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
                 }
                 else
-                {                    
+                {          
+                    //Trying byte serialization for unknown object, in case if byte serializer is set
+                    if (CustomSerializator.ByteArraySerializator != null)
+                        return CustomSerializator.ByteArraySerializator(data);
+          
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
                 }
             }
@@ -326,7 +331,7 @@ namespace DBreeze.DataTypes
             byte[] ret = null;
 
             Type td = typeof(TData);
-
+            
             if (data == null)
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.KEY_CANT_BE_NULL, td.ToString(), null);
 
@@ -437,6 +442,7 @@ namespace DBreeze.DataTypes
 
             Type td = typeof(TData);
 
+           
 
             if (td == TYPE_BYTE_ARRAY)
             {
@@ -585,6 +591,10 @@ namespace DBreeze.DataTypes
             }
             else
             {
+                //Trying byte deserialization for unknown object, in case if byte serializer is set
+                if (CustomSerializator.ByteArrayDeSerializator != null)
+                    return (TData)CustomSerializator.ByteArrayDeSerializator(dt, td);
+
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
             }
 

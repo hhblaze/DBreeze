@@ -15,3 +15,4 @@
 21.05.2012 - added nested tables (fractal table structure)
 08.06.2012 - starting to use DBreeze in own production environment
 10.09.2012 - DBreeze database is now free.
+30.01.2014 - DBreeze is added into NUGET and XAMARIN repositories

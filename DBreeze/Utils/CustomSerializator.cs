@@ -33,6 +33,16 @@ namespace DBreeze.Utils
         public static Func<string, Type, object> Deserializator = null;
 
         /// <summary>
+        /// Into byte array serializator can be supplied (Usually Protobuf.NET)
+        /// </summary>
+        public static Func<object, byte[]> ByteArraySerializator = null;
+        /// <summary>
+        /// From byte[] deserializator can be used (Usually Protobuf.NET)
+        /// </summary>
+        public static Func<byte[], Type, object> ByteArrayDeSerializator = null;
+
+
+        /// <summary>
         /// Serializes object to JSON from Microsoft
         /// </summary>
         /// <param name="objectForSerialization"></param>
@@ -49,6 +59,7 @@ namespace DBreeze.Utils
             }
 
         }
+             
 
         /// <summary>
         /// Deserializes object from Microsoft JSON string
@@ -69,5 +80,6 @@ namespace DBreeze.Utils
             }
 
         }
+
     }
 }
