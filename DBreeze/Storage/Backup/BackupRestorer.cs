@@ -255,7 +255,7 @@ namespace DBreeze.Storage
                     break;
                 case 1:
                     //write into rollback file
-                    lfs = this.GetFileStream(filename + ".rhp");
+                    lfs = this.GetFileStream(filename + ".rol");
 
                     if (lfs == null)
                     {
@@ -271,7 +271,7 @@ namespace DBreeze.Storage
                     break;
                 case 2:
                     //write into rollbackhelper
-                    lfs = this.GetFileStream(filename + ".rol");
+                    lfs = this.GetFileStream(filename + ".rhp");
 
                     if (lfs == null)
                     {

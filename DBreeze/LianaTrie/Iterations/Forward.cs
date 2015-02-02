@@ -423,7 +423,13 @@ namespace DBreeze.LianaTrie.Iterations
         #region "Iterate Forward From-To Key"
 
 
-
+        /// <summary>
+        /// ItFrwFromTo
+        /// </summary>
+        /// <param name="gn"></param>
+        /// <param name="generationMapLine"></param>
+        /// <param name="useCache"></param>
+        /// <returns></returns>
         private IEnumerable<LTrieRow> ItFrwFromTo(LTrieGenerationNode gn, byte[] generationMapLine, bool useCache)
         {
             byte[] key = null;
@@ -484,7 +490,10 @@ namespace DBreeze.LianaTrie.Iterations
                             yield return row;
                         }
                         else
+                        {
+                            yield return null;
                             break;
+                        }
                     }
                     else
                     {
@@ -514,7 +523,10 @@ namespace DBreeze.LianaTrie.Iterations
                                 yield return row;
                             }
                             else
+                            {
+                                yield return null;
                                 break;
+                            }
                         }
                         //else
                         //    break;
@@ -524,7 +536,7 @@ namespace DBreeze.LianaTrie.Iterations
                 {
                     if (!keyIsFound && startFrom != 256 && startFrom < kd.Val)
                         keyIsFound = true;
-                   
+
 
                     //It's a Link To Node, gettign new generation Node
                     LTrieGenerationNode gn1 = new LTrieGenerationNode(this._root);
@@ -538,13 +550,26 @@ namespace DBreeze.LianaTrie.Iterations
                     //foreach (var xr in ItFrwFromTo(gn1, generationMapLine, useCache))
                     foreach (var xr in ItFrwFromTo(gn1, gml, useCache))
                     {
+                        if (xr == null)
+                        {
+                            yield return null;
+                            break;
+                        }
                         yield return xr;
                     }
                 }
             }
         }
 
-
+        /// <summary>
+        /// IterateForwardFromTo
+        /// </summary>
+        /// <param name="initKey"></param>
+        /// <param name="stopKey"></param>
+        /// <param name="inclStartKey"></param>
+        /// <param name="inclStopKey"></param>
+        /// <param name="useCache"></param>
+        /// <returns></returns>
         public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] initKey, byte[] stopKey, bool inclStartKey, bool inclStopKey, bool useCache)
         {
             LTrieGenerationNode gn = null;
@@ -558,13 +583,13 @@ namespace DBreeze.LianaTrie.Iterations
 
             //if (_generationMap.Count() == 0)
             //{
-                //Loading it from Link TO ZERO Pointer
-                gn = new LTrieGenerationNode(this._root);
-                gn.Pointer = this._root.LinkToZeroNode;
-                //gn.Value=0; - default
-                _generationMap.Add(0, gn);
+            //Loading it from Link TO ZERO Pointer
+            gn = new LTrieGenerationNode(this._root);
+            gn.Pointer = this._root.LinkToZeroNode;
+            //gn.Value=0; - default
+            _generationMap.Add(0, gn);
 
-                gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(0));
+            gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(0));
             //}
 
             //ulong cnt = 0; //NEED ONLY FOR SKIP
@@ -673,6 +698,10 @@ namespace DBreeze.LianaTrie.Iterations
                     foreach (var xr in ItFrwFromTo(gn1, gml, useCache))
                     {
                         //cnt++;      //NEED ONLY FOR SKIP
+                        if (xr == null)
+                        {
+                            break;
+                        }
                         yield return xr;
                     }
                 }

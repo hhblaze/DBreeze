@@ -530,7 +530,7 @@ namespace DBreeze.Transactions
         public void Commit(int transactionThreadId)
         {
             if (!this._engine.DBisOperable)
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE);
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,this._engine.DBisOperableReason,new Exception());
 
             TransactionUnit transactionUnit = this.GetTransactionUnit(transactionThreadId);
 
@@ -548,9 +548,15 @@ namespace DBreeze.Transactions
                      {                         
                          tablesForTransaction[0].SingleCommit();
                      }
+                     catch (System.Threading.ThreadAbortException ex)
+                     {
+                         //We don'T make DBisOperable = false;                         
+                         throw ex;
+                     }
                      catch (TableNotOperableException ex1)
                      {
                          this._engine.DBisOperable = false;
+                         this._engine.DBisOperableReason = "TransactionsCoordinator.Commit tablesForTransaction.Count = 1";
                          //CASCADE, WHICH MUST BRING TO DB is not opearatbale state
                          throw ex1;
                      }
@@ -589,10 +595,16 @@ namespace DBreeze.Transactions
 
                                  this._engine._transactionsJournal.RemoveTransactionFromDictionary(tranNumber);
                              }
+                             catch (System.Threading.ThreadAbortException ex1)
+                             {
+                                 //We don'T make DBisOperable = false;                         
+                                 throw ex1;
+                             }
                              catch (Exception ex1)
                              {
                                  //CASCADE, WHICH MUST BRING TO DB is not opearatbale state
                                  this._engine.DBisOperable = false;
+                                 this._engine.DBisOperableReason = "TransactionsCoordinator.Commit tablesForTransaction.Count > 1";
                                  throw new Exception(ex.ToString() +" --> " + ex1.ToString());
                              }
 
@@ -611,10 +623,15 @@ namespace DBreeze.Transactions
                      {
                          this._engine._transactionsJournal.FinishTransaction(tranNumber);
                      }
+                     catch (System.Threading.ThreadAbortException ex)
+                     {
+                         //We don'T make DBisOperable = false;                         
+                         throw ex;
+                     }
                      catch (Exception ex)
                      {
                          this._engine.DBisOperable = false;
-                         //CASCADE, WHICH MUST BRING TO DB is not opearatbale state
+                         this._engine.DBisOperableReason = "TransactionsCoordinator.Commit FinishTransaction";                       
                          throw ex;
                      }                   
 
@@ -647,9 +664,15 @@ namespace DBreeze.Transactions
                     {
                         tablesForTransaction[0].SingleRollback();
                     }
+                    catch (System.Threading.ThreadAbortException ex)
+                    {
+                        //We don'T make DBisOperable = false;                         
+                        throw ex;
+                    }
                     catch (Exception ex)
                     {
                         this._engine.DBisOperable = false;
+                        this._engine.DBisOperableReason = "TransactionsCoordinator.Rollback tablesForTransaction.Count = 1";
                         //CASCADE, WHICH MUST BRING TO DB is not opearatbale state
                         throw ex;
                     }
@@ -665,10 +688,16 @@ namespace DBreeze.Transactions
                             tt1.SingleRollback();
                         }
                     }
+                    catch (System.Threading.ThreadAbortException ex1)
+                    {
+                        //We don'T make DBisOperable = false;                         
+                        throw ex1;
+                    }
                     catch (Exception ex1)
                     {
                         //CASCADE, WHICH MUST BRING TO DB is not opearatbale state
                         this._engine.DBisOperable = false;
+                        this._engine.DBisOperableReason = "TransactionsCoordinator.Rollback tablesForTransaction.Count > 1";
                         throw ex1;
                     }
                 }
@@ -686,6 +715,7 @@ namespace DBreeze.Transactions
         public void StopEngine()
         {
             this._engine.DBisOperable = false;
+            this._engine.DBisOperableReason = "TransactionsCoordinator.StopEngine";
 
             this.UnregisterAllTransactions();
 

@@ -576,6 +576,11 @@ namespace DBreeze.DataTypes
         }
 
         /// <summary>
+        /// TO be used in Select with ReadVisibilityScope as True. Is created only once per instantiated nested table. 
+        /// </summary>
+        LTrieRootNode readRootNode = null;
+
+        /// <summary>
         /// 
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
@@ -601,7 +606,18 @@ namespace DBreeze.DataTypes
             if (AsReadVisibilityScope)
                 useCache = true;
 
-            LTrieRow row = _tbl.table.GetKey(btKey, useCache);
+            LTrieRow row = null;
+            if (useCache)
+            {
+                if (readRootNode == null)
+                    readRootNode = new LTrieRootNode(_tbl.table);
+
+                row = readRootNode.GetKey(btKey, true);
+            }
+            else
+                row = _tbl.table.GetKey(btKey, useCache);
+
+            //LTrieRow row = _tbl.table.GetKey(btKey, useCache);
             Row<TKey, TValue> rw = new Row<TKey, TValue>(row, _tbl._masterTrie, useCache);
             //Row<TKey, TValue> rw = new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, useCache);
 

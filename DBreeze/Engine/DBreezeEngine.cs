@@ -27,7 +27,8 @@ namespace DBreeze
         /// DBreeze version number
         /// </summary>        
         //public static string Version = "01.061.20131120";
-        public static string Version = "01.063.20140603";
+        //public static string Version = "01.068.20141205";
+        public static string Version = "01.069.20150121";
         #endregion
 
    
@@ -36,6 +37,10 @@ namespace DBreeze
         internal Scheme DBreezeSchema = null;
         internal TransactionsCoordinator _transactionsCoordinator = null;
         internal bool DBisOperable = true;
+        /// <summary>
+        /// must be filled with a text note who brought to DBisOperable = false
+        /// </summary>
+        internal string DBisOperableReason = "";
         internal TransactionsJournal _transactionsJournal = null;
         internal TransactionTablesLocker _transactionTablesLocker = null;
         bool disposed = false;
@@ -123,6 +128,7 @@ namespace DBreeze
             catch (Exception ex)
             {
                 DBisOperable = false;
+                DBisOperableReason = "InitDb";
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.CREATE_DB_FOLDER_FAILED, ex);
             }
 
@@ -135,6 +141,7 @@ namespace DBreeze
                 return;
 
             DBisOperable = false;
+            DBisOperableReason = "DBreezeEngine.Dispose";
             disposed = true;
 
             //Disposing all transactions
@@ -161,7 +168,7 @@ namespace DBreeze
         public Transaction GetTransaction()
         {
             if (!DBisOperable)
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE);              
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,DBisOperableReason,new Exception());              
 
             //User receives new transaction from the engine
             return this._transactionsCoordinator.GetTransaction(0, eTransactionTablesLockTypes.SHARED);
@@ -180,7 +187,7 @@ namespace DBreeze
         public Transaction GetTransaction(eTransactionTablesLockTypes tablesLockType, params string[] tables)
         {
             if (!DBisOperable)
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE);
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE, DBisOperableReason, new Exception());
 
             //User receives new transaction from the engine
             return this._transactionsCoordinator.GetTransaction(1, tablesLockType, tables);

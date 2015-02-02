@@ -216,9 +216,9 @@ namespace DBreeze.Transactions
             if (table == null)
             {
                 table = this._transactionUnit.TransactionsCoordinator.GetTable_WRITE(tableName, this.ManagedThreadId);
-
+                
                 if (table == null)
-                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE);
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE, this._transactionUnit.TransactionsCoordinator.GetSchema.Engine.DBisOperableReason,new Exception());
 
                 //Adding to Open Table Counter
                 AddOpenTable(tableName);

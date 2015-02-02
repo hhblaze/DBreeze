@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DBreeze</RootNamespace>
     <AssemblyName>DBreeze</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NET35</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET40</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -32,7 +32,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;NET35</DefineConstants>
+    <DefineConstants>TRACE;NET40</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
@@ -60,6 +60,7 @@
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableStorage.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTablesCoordinator.cs" />
+    <Compile Include="SchemeInternal\Scheme.CachedTableNames.cs" />
     <Compile Include="SchemeInternal\Sheme.OpenTable.cs" />
     <Compile Include="SchemeInternal\Sheme.UserTable.cs" />
     <Compile Include="DataTypes\DbXML.cs" />

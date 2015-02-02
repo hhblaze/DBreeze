@@ -177,11 +177,11 @@ namespace DBreeze.Exceptions
             {
                 //General
                 case eDBreezeExceptions.GENERAL_EXCEPTION_DB_NOT_OPERABLE:
-                    return new DBreezeException("Database is not operable, please find out the problem and restart the engine!", innerException);
-
+                    return new DBreezeException(String.Format("Database is not operable, please find out the problem and restart the engine! {0}",message), innerException);
+                    
                 //Enging
                 case eDBreezeExceptions.DB_IS_NOT_OPERABLE:
-                    return new DBreezeException("Database is not operable, please find out the problem and restart the engine!", innerException);
+                    return new DBreezeException(String.Format("Database is not operable, please find out the problem and restart the engine! {0}", message), innerException);
                 case eDBreezeExceptions.CREATE_DB_FOLDER_FAILED:
                     return new DBreezeException("Creation of the database folder failed!", innerException);
                 // return new DBreezeException(String.Format("{0}creation of the database folder failed: {1}", ExceptionHeader, originalException.ToString()));

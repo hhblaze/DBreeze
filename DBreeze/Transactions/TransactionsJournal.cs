@@ -166,11 +166,16 @@ namespace DBreeze.Transactions
                 //If all ok, recreate file
                 LTrie.RemoveAll(true);
             }
+            catch (System.Threading.ThreadAbortException ex)
+            {
+                //We don'T make DBisOperable = false;                         
+                throw ex;
+            }
             catch (Exception ex)
             {
                 //BRINGS TO DB NOT OPERATABLE
                 this.Engine.DBisOperable = false;
-
+                this.Engine.DBisOperableReason = "TransactionsCoordinator.RestoreNotFinishedTransaction";
                 //NOT CASCADE ADD EXCEPTION
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.CLEAN_ROLLBACK_FILES_FOR_FINISHED_TRANSACTIONS_FAILED);
             }
