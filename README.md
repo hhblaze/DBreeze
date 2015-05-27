@@ -1,27 +1,20 @@
-<table border="0">
-<tr>
-<td>
-<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717"></img>
-</td>
-<td>
-<b>DBreeze Database</b>
-</td>
-</tr>
-</table>
+DBeeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717) Database
 =====================
-Professional, open-source, NoSql (embedded Key / Value storage), transactional, ACID-compliant, multi-threaded, object database management system for
+DBreeze Database is a professional, open-source, NoSql (embedded Key / Value storage), transactional, ACID-compliant, multi-threaded, object database management system for
 .NET 3.5> XAMARIN MONO . Written in C# 
 
 - It's a free software for those, who think that it should be free.
 - Since June 2012 is used in our own production environment.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via NuGet since Januar 2014
-- Works on Linux, Windows, OS X. Via Xamarin on Android, iOS. Check downloads region.  
+- Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in nosql-database.org
 - Read "Changes in versions" document.
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
+- <a href = 'https://github.com/hhblaze/DBreeze/tree/master/DBreeze/bin/Release'  target='_blank'>Assemblies location</a> 
+- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=882289' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
