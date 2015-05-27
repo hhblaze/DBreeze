@@ -927,34 +927,34 @@ namespace VisualTester
         public void StartTest()
         {
 
-            lock (lockInitDb)
-            {
-                if (engine == null)
-                {
+            //lock (lockInitDb)
+            //{
+            //    if (engine == null)
+            //    {
 
-                    DBreezeConfiguration conf = new DBreezeConfiguration()
-                    {
-                        DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",                        
-                       // DBreezeDataFolderName = @"E:\temp\DBreezeTest\DBR1",                        
-                       // DBreezeDataFolderName = @"C:\tmp",
-                        Storage = DBreezeConfiguration.eStorage.DISK,
-                    // Storage = DBreezeConfiguration.eStorage.MEMORY,
-                        //Backup = new Backup()
-                        //{
-                        //    BackupFolderName = @"D:\temp\DBreezeTest\DBR1\Bup",
-                        //    IncrementalBackupFileIntervalMin = 30
-                        //}
-                    };
+            //        DBreezeConfiguration conf = new DBreezeConfiguration()
+            //        {
+            //            DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",                        
+            //           // DBreezeDataFolderName = @"E:\temp\DBreezeTest\DBR1",                        
+            //           // DBreezeDataFolderName = @"C:\tmp",
+            //            Storage = DBreezeConfiguration.eStorage.DISK,
+            //        // Storage = DBreezeConfiguration.eStorage.MEMORY,
+            //            //Backup = new Backup()
+            //            //{
+            //            //    BackupFolderName = @"D:\temp\DBreezeTest\DBR1\Bup",
+            //            //    IncrementalBackupFileIntervalMin = 30
+            //            //}
+            //        };
 
-                    //conf.AlternativeTablesLocations.Add("t11",@"D:\temp\DBreezeTest\DBR1\INT");
-                    //conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
-                    //conf.AlternativeTablesLocations.Add("t2", @"D:\temp\DBreezeTest\DBR1\INT");
-                    //conf.AlternativeTablesLocations.Add("t*", @"D:\temp\DBreezeTest\DBR1\INT");
+            //        //conf.AlternativeTablesLocations.Add("t11",@"D:\temp\DBreezeTest\DBR1\INT");
+            //        //conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
+            //        //conf.AlternativeTablesLocations.Add("t2", @"D:\temp\DBreezeTest\DBR1\INT");
+            //        //conf.AlternativeTablesLocations.Add("t*", @"D:\temp\DBreezeTest\DBR1\INT");
 
-                   engine = new DBreezeEngine(conf);
+            //       engine = new DBreezeEngine(conf);
 
-                }
-            }
+            //    }
+            //}
 
             //MATRIX_BUILD();
            // MATRIX_READOUT_V2();
@@ -998,7 +998,235 @@ namespace VisualTester
             //TestBackUp();
             //TestSelectBackwardStartWith_WRITE();
             //TestSelectBackwardStartWith_READ();
+
+            //TR();
+
+
+            NetworkTest();
+            //NetworkTestDisk();
         }
+
+        public class RemoteInstanceCommunicator : DBreeze.Storage.RemoteInstance.IRemoteInstanceCommunicator
+        {
+            DBreeze.Storage.RemoteInstance.RemoteTablesHandler rth = new DBreeze.Storage.RemoteInstance.RemoteTablesHandler(@"D:\temp\DBreezeTest");
+
+            public byte[] Send(byte[] data)
+            {
+                return rth.ParseProtocol(data);
+            }
+        }
+
+        DBreezeRemoteEngine remoteEngine = null;
+
+        // <summary>
+        /// 
+        /// </summary>
+        public void NetworkTest()
+        {
+            if (remoteEngine == null)
+            {
+
+                DBreezeConfiguration conf = new DBreezeConfiguration()
+                {
+                   // DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",
+                    DBreezeDataFolderName = @"TestPuppy", //Here must be folder name in protoected database, later we have to take care alternative locations.
+                    Storage = DBreezeConfiguration.eStorage.RemoteInstance,                    
+                };
+
+                conf.RICommunicator = new RemoteInstanceCommunicator();
+                remoteEngine = new DBreezeRemoteEngine(conf);
+
+            }
+
+
+
+
+            //using (var tran = remoteEngine.GetTransaction())
+            //{
+            //    for (int i = 1; i < 100000; i++)
+            //        tran.Insert<int, string>("t1", i, "ds" + i);
+            //    tran.Commit();
+            //}
+
+
+            using (var tran = remoteEngine.GetTransaction())
+            {
+                Console.WriteLine(tran.Count("t1"));
+                var row = tran.Select<int, string>("t1", 700);
+                if (row.Exists)
+                    Console.WriteLine(row.Value);
+            }
+        }
+
+
+
+
+        public void NetworkTestDisk()
+        {
+            if (engine == null)
+            {
+
+                DBreezeConfiguration conf = new DBreezeConfiguration()
+                {
+                    DBreezeDataFolderName = @"D:\temp\DBreezeTest\TestPuppy",                    
+                    Storage = DBreezeConfiguration.eStorage.DISK,
+                };
+
+                engine = new DBreezeEngine(conf);
+
+            }
+
+
+            //using (var tran = engine.GetTransaction())
+            //{
+            //    tran.Insert<int, string>("t1", 1, "dsfsfsdfsdfsdf");
+            //    tran.Commit();
+            //}
+
+
+            using (var tran = engine.GetTransaction())
+            {
+                Console.WriteLine(tran.Count("t1"));
+                var row = tran.Select<int, string>("t1", 1);
+                if (row.Exists)
+                    Console.WriteLine(row.Value);
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+        public void TR()
+        {
+            string path = @"D:\temp\DBreezeTest\DBR1";
+
+            for (var ctr = 1; ctr < 3; ctr++)
+            {
+                var databasePath = Path.Combine(path, ctr.ToString());        
+                this.UseValues(databasePath, 1, 1);
+            }
+        }
+
+
+        private void UseValues(string databasePath, int key, int val)
+        {
+
+            using (var engine = new DBreeze.DBreezeEngine(databasePath))
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    //var row = transaction.Select<int, int>("t", key);
+
+                    transaction.Insert("t", key, val);
+
+                    transaction.Commit();
+                }
+            }
+
+            using (var engine = new DBreeze.DBreezeEngine(databasePath))
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    var row = transaction.Select<int, int>("t", key);
+
+                    if (!row.Exists)
+                    {
+                        Console.WriteLine("Stored value incorrect");
+                    }
+                }
+            }
+        }
+
+        //public void TR()
+        //{
+        //    string path = @"D:\temp\DBreezeTest\DBR1";
+
+        //    for (var ctr = 0; ctr < 10; ctr++)
+        //    {
+        //        var databasePath = Path.Combine(path, ctr.ToString());
+        //        this.UseDatabase(databasePath);
+        //    }
+        //}
+
+        //private void UseDatabase(string databasePath)
+        //{
+        //    Console.WriteLine("Testing with database at {0}", databasePath);
+
+        //    string oldVal = null;
+        //    for (var ctr = 0; ctr < 5; ctr++)
+        //    {
+        //        var val = string.Format("xxx{0}xxx", ctr);
+
+        //        this.UseValues(databasePath, 555, val, oldVal);
+
+        //        oldVal = val;
+        //    }
+
+        //    Console.WriteLine("============================================");
+        //}
+
+
+        //private void UseValues(string databasePath, int key, string val, string oldVal)
+        //{
+        //    //var actualKey = key;
+        //    var actualKey = BitConverter.GetBytes(key);
+
+        //    //var actualVal = val;
+        //    var actualVal = Encoding.UTF8.GetBytes(val);
+
+        //    using (var engine = new DBreeze.DBreezeEngine(databasePath))
+        //    {
+        //        using (var transaction = engine.GetTransaction())
+        //        {
+        //            var row = transaction.Select<byte[], byte[]>("t", actualKey);
+
+        //            string storedValue = null;
+        //            if (row.Exists)
+        //            {
+        //                //storedValue = row.Value;
+        //                storedValue = Encoding.UTF8.GetString(row.Value);
+        //            }
+
+        //            if (storedValue == oldVal)
+        //                Console.Write("Old value correct, {0}; ", oldVal);
+        //            else
+        //                Console.Write("Old value incorrect, expected {0}, got {1}; ", oldVal, storedValue);
+
+        //            transaction.Insert("t", actualKey, actualVal);
+
+        //            transaction.Commit();
+        //        }
+        //    }
+
+        //    using (var engine = new DBreeze.DBreezeEngine(databasePath))
+        //    {
+        //        using (var transaction = engine.GetTransaction())
+        //        {
+        //            var row = transaction.Select<byte[], byte[]>("t", actualKey);
+
+        //            string storedValue = null;
+        //            if (row.Exists)
+        //            {
+        //                //storedValue = row.Value;
+        //                storedValue = Encoding.UTF8.GetString(row.Value);
+        //            }
+
+        //            if (storedValue == val)
+        //                Console.WriteLine("Stored value correct, {0}", val);
+        //            else
+        //                Console.WriteLine("Stored value incorrect, expected {0}, got {1}", val, storedValue);
+        //        }
+        //    }
+        //}
+
+
 
         /// <summary>
         /// Without backup

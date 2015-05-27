@@ -14,12 +14,21 @@ using DBreeze.Utils;
 
 namespace DBreeze.DataTypes
 {
+    /// <summary>
+    /// NestedTable
+    /// </summary>
     public class NestedTable:IDisposable
     {
         private NestedTableInternal _tbl = null;
-        public bool _insertAllowed = false;
+        internal bool _insertAllowed = false;
         private bool _tableExists = false;
         
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="nt"></param>
+        /// <param name="insertTablesAllowed"></param>
+        /// <param name="tableExists"></param>
         internal NestedTable(NestedTableInternal nt, bool insertTablesAllowed, bool tableExists)
         {
             _tbl = nt;
@@ -61,6 +70,9 @@ namespace DBreeze.DataTypes
             return _tbl.GetTable(key, tableIndex, this._insertAllowed);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void Dispose()
         {
             this.CloseTable();

@@ -358,6 +358,11 @@
             <param name="key"></param>
             <returns></returns>
         </member>
+        <member name="F:DBreeze.DataTypes.NestedTable.readRootNode">
+            <summary>
+            TO be used in Select with ReadVisibilityScope as True. Is created only once per instantiated nested table. 
+            </summary>
+        </member>
         <member name="M:DBreeze.DataTypes.NestedTable.Select``2(``0,System.Boolean)">
             <summary>
             
@@ -984,6 +989,30 @@
             Cascade remove all of all nested and sub-nested tables under the key
             </summary>
             <param name="key"></param>
+        </member>
+        <member name="T:DBreeze.SchemeInternal.CachedTableNames">
+            <summary>
+            serves, cache of physical file names and corresponding virtual user table names
+            </summary>
+        </member>
+        <member name="M:DBreeze.SchemeInternal.CachedTableNames.Add(System.String,System.UInt64)">
+            <summary>
+            
+            </summary>
+            <param name="userTableName"></param>
+            <param name="fileName"></param>
+        </member>
+        <member name="M:DBreeze.SchemeInternal.CachedTableNames.Remove(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="userTableName"></param>
+        </member>
+        <member name="M:DBreeze.SchemeInternal.CachedTableNames.GetFileName(System.String)">
+            <summary>
+            Returns 0, if can't find
+            </summary>
+            <param name="userTableName"></param>
         </member>
         <member name="F:DBreeze.SchemeInternal.OpenTable.qOpen">
             <summary>
@@ -1796,10 +1825,50 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.ItBwdFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+            <summary>
+            ItBwdFromTo
+            </summary>
+            <param name="gn"></param>
+            <param name="generationMapLine"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            IterateBackwardFromTo
+            </summary>
+            <param name="initKey"></param>
+            <param name="stopKey"></param>
+            <param name="inclStartKey"></param>
+            <param name="inclStopKey"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
         <member name="F:DBreeze.LianaTrie.Iterations.Forward.ReturnKeyValuePair">
             <summary>
             If we use load Key already With Value, or just key and link to the value
             </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.ItFrwFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+            <summary>
+            ItFrwFromTo
+            </summary>
+            <param name="gn"></param>
+            <param name="generationMapLine"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            IterateForwardFromTo
+            </summary>
+            <param name="initKey"></param>
+            <param name="stopKey"></param>
+            <param name="inclStartKey"></param>
+            <param name="inclStopKey"></param>
+            <param name="useCache"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32)">
             <summary>
@@ -2526,6 +2595,11 @@
             <summary>
             DBreeze version number
             </summary>        
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
+            <summary>
+            must be filled with a text note who brought to DBisOperable = false
+            </summary>
         </member>
         <member name="F:DBreeze.DBreezeEngine.Configuration">
             <summary>
@@ -4710,6 +4784,16 @@
         <member name="F:DBreeze.Utils.CustomSerializator.Deserializator">
             <summary>
             Must be setup to be used together with DbCustomSerializer
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.CustomSerializator.ByteArraySerializator">
+            <summary>
+            Into byte array serializator can be supplied (Usually Protobuf.NET)
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator">
+            <summary>
+            From byte[] deserializator can be used (Usually Protobuf.NET)
             </summary>
         </member>
         <member name="M:DBreeze.Utils.CustomSerializator.SerializeCustom(System.Object)">

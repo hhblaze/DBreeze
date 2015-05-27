@@ -2622,6 +2622,11 @@
             DBreeze version number
             </summary>        
         </member>
+        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
+            <summary>
+            must be filled with a text note who brought to DBisOperable = false
+            </summary>
+        </member>
         <member name="F:DBreeze.DBreezeEngine.Configuration">
             <summary>
             Dbreeze Configuration.

@@ -14,17 +14,17 @@ namespace DBreeze.SchemeInternal
     /// <summary>
     /// serves, cache of physical file names and corresponding virtual user table names
     /// </summary>
-    internal static class CachedTableNames
+    internal class CachedTableNames
     {
-        static ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
-        static Dictionary<string, ulong> cache = new Dictionary<string, ulong>();
+        ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
+        Dictionary<string, ulong> cache = new Dictionary<string, ulong>();
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="userTableName"></param>
         /// <param name="fileName"></param>
-        public static void Add(string userTableName, ulong fileName)
+        public void Add(string userTableName, ulong fileName)
         {
             _sync.EnterWriteLock();
             try
@@ -41,7 +41,7 @@ namespace DBreeze.SchemeInternal
         /// 
         /// </summary>
         /// <param name="userTableName"></param>
-        public static void Remove(string userTableName)
+        public void Remove(string userTableName)
         {
             _sync.EnterWriteLock();
             try
@@ -58,7 +58,7 @@ namespace DBreeze.SchemeInternal
         /// Returns 0, if can't find
         /// </summary>
         /// <param name="userTableName"></param>
-        public static ulong GetFileName(string userTableName)
+        public ulong GetFileName(string userTableName)
         {
             _sync.EnterReadLock();
             try
@@ -74,5 +74,7 @@ namespace DBreeze.SchemeInternal
                 _sync.ExitReadLock();
             }
         }
+
+
     }
 }

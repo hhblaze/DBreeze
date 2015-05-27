@@ -15,11 +15,11 @@ using DBreeze.Exceptions;
 namespace DBreeze.Storage
 {
     /// <summary>
-    /// DBreeze random and sequential disk IO buffers implementation.
+    /// DBreeze Remote Instance SR implementation
     /// Specially designed for DBreeze specific storage format.
     /// Not for common usage.
     /// </summary>
-    internal class FSR : IStorage
+    internal class RISR : IStorage
     {        
         //!!try catches can be taken away from reads and writes, when procs are fully balanced
         
@@ -73,11 +73,13 @@ namespace DBreeze.Storage
         string _fileName = String.Empty;
         ulong ulFileName = 0;   //ulong file name, for backup purposes
         object lock_fs = new object();
-        int _fileStreamBufferSize = 8192;
+        //int _fileStreamBufferSize = 8192;
 
-        FileStream _fsData = null;
-        FileStream _fsRollback = null;
-        FileStream _fsRollbackHelper = null;
+        //FileStream _fsData = null;
+        //FileStream _fsRollback = null;
+        //FileStream _fsRollbackHelper = null;
+
+
         /// <summary>
         /// Pointer to the end of file, before current commit
         /// </summary>
@@ -97,19 +99,24 @@ namespace DBreeze.Storage
         /// </summary>
         DateTime _storageFixTime = DateTime.UtcNow;
 
+        DBreeze.Storage.RemoteInstance.RemoteInstanceCommander RIC = null;
+
         #endregion
 
-        public FSR(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
+        public RISR(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
         {
             this._fileName = fileName;
             this._configuration = configuration;
             this._trieSettings = trieSettings;
             DefaultPointerLen = this._trieSettings.POINTER_LENGHT;
-
+                        
             _backupIsActive = this._configuration.Backup.IsActive;
 
             //Transforms fileName into ulong digit
             ulFileName = this._configuration.Backup.BackupFNP.ParseFilename(Path.GetFileNameWithoutExtension(this._fileName));
+
+            //Setting up RemoteCommander
+            RIC = new DBreeze.Storage.RemoteInstance.RemoteInstanceCommander(configuration.RICommunicator);
 
             InitFiles();
         }
@@ -161,26 +168,28 @@ namespace DBreeze.Storage
         {
             lock (lock_fs)
             {
-                if (_fsData != null)
-                {
-                    _fsData.Close();
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
+                RIC.CloseRemoteTable();
 
-                if (_fsRollback != null)
-                {
-                    _fsRollback.Close();
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
+                //if (_fsData != null)
+                //{
+                //    _fsData.Close();
+                //    _fsData.Dispose();
+                //    _fsData = null;
+                //}
 
-                if (_fsRollbackHelper != null)
-                {
-                    _fsRollbackHelper.Close();
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
+                //if (_fsRollback != null)
+                //{
+                //    _fsRollback.Close();
+                //    _fsRollback.Dispose();
+                //    _fsRollback = null;
+                //}
+
+                //if (_fsRollbackHelper != null)
+                //{
+                //    _fsRollbackHelper.Close();
+                //    _fsRollbackHelper.Dispose();
+                //    _fsRollbackHelper = null;
+                //}
 
                 _seqBuf.Dispose();
                 _rollbackCache.Clear();
@@ -196,18 +205,23 @@ namespace DBreeze.Storage
           
             try
             {
-                this._fsData = new FileStream(this._fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
-                this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
-                this._fsRollbackHelper = new FileStream(this._fileName + ".rhp", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                RIC.OpenRemoteTable(this._fileName);
+
+                //this._fsData = new FileStream(this._fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                //this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                //this._fsRollbackHelper = new FileStream(this._fileName + ".rhp", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
 
                 //!!!!We dont have this value in root yet, could have and economize tail of the file in case if rollback occured
 
-                if (this._fsData.Length == 0)
+                //if (this._fsData.Length == 0)
+                if (RIC.DataFileLength == 0)
                 {
                     //Writing initial root data
 
-                    _fsData.Position = 0;
-                    _fsData.Write(new byte[this._trieSettings.ROOT_SIZE], 0, this._trieSettings.ROOT_SIZE);
+                    RIC.DataFilePosition = 0;
+                    RIC.DataFileWrite(new byte[this._trieSettings.ROOT_SIZE], 0, this._trieSettings.ROOT_SIZE, false);
+                    //_fsData.Position = 0;
+                    //_fsData.Write(new byte[this._trieSettings.ROOT_SIZE], 0, this._trieSettings.ROOT_SIZE);
 
 
                     if (_backupIsActive)
@@ -218,17 +232,15 @@ namespace DBreeze.Storage
                     //no flush here
                 }
 
-                eofData = this._fsData.Length;
+                eofData = RIC.DataFileLength;
+                //eofData = this._fsData.Length;
                                
                 //Check is .rhp is empty add 0 pointer
-                if (this._fsRollbackHelper.Length == 0)
+                //if (this._fsRollbackHelper.Length == 0)
+                if (RIC.RollbackHelperFileLength == 0)
                 {
                     //no sense to write here
 
-                    //_fsRollbackHelper.Position = 0;
-                    //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
-
-                    //NET_Flush(_fsRollbackHelper);
                 }
                 else
                 {
@@ -241,7 +253,7 @@ namespace DBreeze.Storage
             catch (Exception ex)
             {
                 IsOperable = false;
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE, "FSR INIT FAILED: " + this._fileName, ex);
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE, "RISR INIT FAILED: " + this._fileName, ex);
             }
 
         }
@@ -256,17 +268,22 @@ namespace DBreeze.Storage
         private void InitRollback()
         {
             byte[] btWork = new byte[8];
-            _fsRollbackHelper.Position = 0;
-            _fsRollbackHelper.Read(btWork, 0, 8);
+
+            RIC.RollbackHelperFilePosition = 0;
+            RIC.RollbackHelperFileRead(btWork, 0, 8);
+            //_fsRollbackHelper.Position = 0;
+            //_fsRollbackHelper.Read(btWork, 0, 8);
             eofRollback = btWork.To_Int64_BigEndian();
 
             if (eofRollback == 0)
             {
-                if (this._fsRollback.Length >= MaxRollbackFileSize)
+                //if (this._fsRollback.Length >= MaxRollbackFileSize)
+                if (RIC.RollbackFileLength >= MaxRollbackFileSize)
                 {
-                    this._fsRollback.Close();
-                    File.Delete(this._fileName + ".rol");
-                    this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                    RIC.RollbackFileRecreate();
+                    //this._fsRollback.Close();
+                    //File.Delete(this._fileName + ".rol");
+                    //this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
                     
                     //no sense to do anything with backup
                 }
@@ -281,32 +298,25 @@ namespace DBreeze.Storage
             RestoreInitRollback();
 
             //Checking if we can recreate rollback file
-            if (this._fsRollback.Length >= MaxRollbackFileSize)
+            //if (this._fsRollback.Length >= MaxRollbackFileSize)
+            if (RIC.RollbackFileLength >= MaxRollbackFileSize)
             {
-                this._fsRollback.Close();
-                this._fsRollback.Dispose();
-
-                File.Delete(this._fileName + ".rol");
-                this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                RIC.RollbackFileRecreate();
+                //this._fsRollback.Close();
+                //this._fsRollback.Dispose();
+                //File.Delete(this._fileName + ".rol");
+                //this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
 
                 //no sense to do anything with backup
             }
 
             eofRollback = 0;
-            _fsRollbackHelper.Position = 0;
-            _fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
 
-            NET_Flush(_fsRollbackHelper);
-
-            //try
-            //{
-
-            //}
-            //catch (Exception ex)
-            //{
-            //    IsOperable = false;
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.RESTORE_ROLLBACK_DATA_FAILED, this._fileName, ex);
-            //}
+            RIC.RollbackHelperFilePosition = 0;
+            RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+            //_fsRollbackHelper.Position = 0;
+            //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
+            //NET_Flush(_fsRollbackHelper);
 
         }
 
@@ -323,8 +333,10 @@ namespace DBreeze.Storage
 
             do
             {
-                this._fsRollback.Position = fsPosition;
-                readOut = this._fsRollback.Read(rba, 0, rba.Length);
+                RIC.RollbackFilePosition = fsPosition;
+                readOut = RIC.RollbackFileRead(rba, 0, rba.Length);
+                //this._fsRollback.Position = fsPosition;
+                //readOut = this._fsRollback.Read(rba, 0, rba.Length);
 
 
                 /*************************************************************  Support dynamic size ************************/
@@ -345,7 +357,8 @@ namespace DBreeze.Storage
 
             } while (true);
 
-            NET_Flush(this._fsData);
+            RIC.DataFileFlush();
+            //NET_Flush(this._fsData);
 
         }
 
@@ -378,7 +391,7 @@ namespace DBreeze.Storage
                         }
                         break;
                     default:
-                        throw new Exception("ROLLBACK.ParseRollBackFile: unknown protocol, p1");
+                        throw new Exception("RISR ROLLBACK.ParseRollBackFile: unknown protocol, p1");
                 }
             }
             else
@@ -393,7 +406,7 @@ namespace DBreeze.Storage
                         }
                         break;
                     default:
-                        throw new Exception("ROLLBACK.ParseRollBackFile: unknown protocol, p2");
+                        throw new Exception("RISR ROLLBACK.ParseRollBackFile: unknown protocol, p2");
                 }
             }
         }
@@ -432,8 +445,10 @@ namespace DBreeze.Storage
                 //Writing data back
                 //Console.WriteLine("Of: {0}; DL: {1}", offset.ToBytesString(""), data.Length.To_4_bytes_array_BigEndian().ToBytesString(""));
 
-                this._fsData.Position = (long)offset.DynamicLength_To_UInt64_BigEndian();
-                this._fsData.Write(data, 0, data.Length);
+                RIC.DataFilePosition = (long)offset.DynamicLength_To_UInt64_BigEndian();
+                RIC.DataFileWrite(data, 0, data.Length,false);
+                //this._fsData.Position = (long)offset.DynamicLength_To_UInt64_BigEndian();
+                //this._fsData.Write(data, 0, data.Length);
             }
             else
                 return null;
@@ -445,27 +460,29 @@ namespace DBreeze.Storage
         }
         #endregion
 
-        #region "NET FLUSH"
-#if NET40
-        public static void NET_Flush(FileStream mfs)
-        {
-            mfs.Flush(true);
-        }
-#else
+//        #region "NET FLUSH"
+//#if NET40
+//        public static void NET_Flush(FileStream mfs)
+//        {
+//            mfs.Flush(true);
+//        }
+//#else
 
-        [System.Runtime.InteropServices.DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
-        private static extern bool FlushFileBuffers(IntPtr hFile);
+//        [System.Runtime.InteropServices.DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+//        private static extern bool FlushFileBuffers(IntPtr hFile);
 
-        public static void NET_Flush(FileStream mfs)
-        {
-            mfs.Flush();
-            IntPtr handle = mfs.SafeFileHandle.DangerousGetHandle();
+//        public static void NET_Flush(FileStream mfs)
+//        {
+//            mfs.Flush();
+//            IntPtr handle = mfs.SafeFileHandle.DangerousGetHandle();
 
-            if (!FlushFileBuffers(handle))
-                throw new System.ComponentModel.Win32Exception();
-        }
-#endif
-        #endregion
+//            if (!FlushFileBuffers(handle))
+//                throw new System.ComponentModel.Win32Exception();
+//        }
+//#endif
+//        #endregion
+
+
 
         #region "RestoreTableFromTheOtherTable"
 
@@ -475,53 +492,55 @@ namespace DBreeze.Storage
         /// <param name="newTableFullPath"></param>
         public void RestoreTableFromTheOtherTable(string newTableFullPath)
         {
-            lock (lock_fs)
-            {
-                if (_fsData != null)
-                {
-                    _fsData.Close();
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
+            throw new Exception("RestoreTableFromTheOtherTable currently not available in RISR mode");
 
-                if (_fsRollback != null)
-                {
-                    _fsRollback.Close();
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
+            //lock (lock_fs)
+            //{
+            //    if (_fsData != null)
+            //    {
+            //        _fsData.Close();
+            //        _fsData.Dispose();
+            //        _fsData = null;
+            //    }
 
-                if (_fsRollbackHelper != null)
-                {
-                    _fsRollbackHelper.Close();
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
+            //    if (_fsRollback != null)
+            //    {
+            //        _fsRollback.Close();
+            //        _fsRollback.Dispose();
+            //        _fsRollback = null;
+            //    }
 
-                _randBuf.Clear();
-                _rollbackCache.Clear();
-                usedBufferSize = 0;
-                eofRollback = 0;
-                eofData = 0;
-                _seqBuf.Clear(true);
+            //    if (_fsRollbackHelper != null)
+            //    {
+            //        _fsRollbackHelper.Close();
+            //        _fsRollbackHelper.Dispose();
+            //        _fsRollbackHelper = null;
+            //    }
+
+            //    _randBuf.Clear();
+            //    _rollbackCache.Clear();
+            //    usedBufferSize = 0;
+            //    eofRollback = 0;
+            //    eofData = 0;
+            //    _seqBuf.Clear(true);
                 
 
-                File.Delete(this._fileName);
-                File.Delete(this._fileName + ".rol");
-                File.Delete(this._fileName + ".rhp");
+            //    File.Delete(this._fileName);
+            //    File.Delete(this._fileName + ".rol");
+            //    File.Delete(this._fileName + ".rhp");
 
-                if (File.Exists(newTableFullPath))
-                    File.Move(newTableFullPath, this._fileName);
+            //    if (File.Exists(newTableFullPath))
+            //        File.Move(newTableFullPath, this._fileName);
 
-                if(File.Exists(newTableFullPath + ".rol"))
-                    File.Move(newTableFullPath + ".rol", this._fileName + ".rol");
+            //    if(File.Exists(newTableFullPath + ".rol"))
+            //        File.Move(newTableFullPath + ".rol", this._fileName + ".rol");
 
-                if (File.Exists(newTableFullPath + ".rhp"))
-                    File.Move(newTableFullPath + ".rhp", this._fileName + ".rhp");
+            //    if (File.Exists(newTableFullPath + ".rhp"))
+            //        File.Move(newTableFullPath + ".rhp", this._fileName + ".rhp");
 
-                InitFiles();
+            //    InitFiles();
 
-            }
+            //}
         }
         #endregion
 
@@ -534,26 +553,27 @@ namespace DBreeze.Storage
         {
             lock (lock_fs)
             {
-                if (_fsData != null)
-                {
-                    _fsData.Close();
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
+                RIC.DeleteRemoteTable();
+                //if (_fsData != null)
+                //{
+                //    _fsData.Close();
+                //    _fsData.Dispose();
+                //    _fsData = null;
+                //}
 
-                if (_fsRollback != null)
-                {
-                    _fsRollback.Close();
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
+                //if (_fsRollback != null)
+                //{
+                //    _fsRollback.Close();
+                //    _fsRollback.Dispose();
+                //    _fsRollback = null;
+                //}
 
-                if (_fsRollbackHelper != null)
-                {
-                    _fsRollbackHelper.Close();
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
+                //if (_fsRollbackHelper != null)
+                //{
+                //    _fsRollbackHelper.Close();
+                //    _fsRollbackHelper.Dispose();
+                //    _fsRollbackHelper = null;
+                //}
 
                 _randBuf.Clear();
                 _rollbackCache.Clear();
@@ -562,9 +582,9 @@ namespace DBreeze.Storage
                 eofData = 0;
                 _seqBuf.Clear(true);
 
-                File.Delete(this._fileName);
-                File.Delete(this._fileName + ".rol");
-                File.Delete(this._fileName + ".rhp");
+                //File.Delete(this._fileName);
+                //File.Delete(this._fileName + ".rol");
+                //File.Delete(this._fileName + ".rhp");
                 
                 InitFiles();
 
@@ -582,10 +602,14 @@ namespace DBreeze.Storage
 
             if (_seqBuf.EOF == 0)
                 return;
-            
-            long pos = _fsData.Length;
-            _fsData.Position = pos;
-            _fsData.Write(_seqBuf.RawBuffer, 0, _seqBuf.EOF);
+
+            long pos = RIC.DataFileLength;
+            RIC.DataFilePosition = pos;
+            RIC.DataFileWrite(_seqBuf.RawBuffer, 0, _seqBuf.EOF,false);
+
+            //long pos = _fsData.Length;
+            //_fsData.Position = pos;
+            //_fsData.Write(_seqBuf.RawBuffer, 0, _seqBuf.EOF);
             
             if (_backupIsActive)
             {               
@@ -626,8 +650,12 @@ namespace DBreeze.Storage
                 if (data.Length > _seqBufCapacity)
                 {
                     FlushSequentialBuffer();
-                    _fsData.Position = position = _fsData.Length;
-                    _fsData.Write(data, 0, data.Length);
+
+                    RIC.DataFilePosition = position = RIC.DataFileLength;
+                    RIC.DataFileWrite(data, 0, data.Length, false);
+
+                    //_fsData.Position = position = _fsData.Length;
+                    //_fsData.Write(data, 0, data.Length);
 
                     return ((ulong)position).To_8_bytes_array_BigEndian().Substring(8 - DefaultPointerLen, DefaultPointerLen);
                 }
@@ -640,7 +668,8 @@ namespace DBreeze.Storage
 
                 //Writing into buffer
 
-                position = _fsData.Length + _seqBuf.EOF;
+                position = RIC.DataFileLength + _seqBuf.EOF;
+                //position = _fsData.Length + _seqBuf.EOF;
 
                 _seqBuf.Write_ToTheEnd(data);
                 
@@ -689,28 +718,32 @@ namespace DBreeze.Storage
 
             if (data == null || data.Length == 0)
             {
-                throw new Exception("FSR.WriteByOffset: data == null || data.Length == 0");
+                throw new Exception("RISR.WriteByOffset: data == null || data.Length == 0");
             }
 
             lock (lock_fs)
             {
 
-                if (offset >= _fsData.Length)
+                //if (offset >= _fsData.Length)
+                if (offset >= RIC.DataFileLength)
                 {
                     //Overwriting sequential buffer
-                    _seqBuf.Write_ByOffset(Convert.ToInt32(offset - _fsData.Length), data);                    
+                    //_seqBuf.Write_ByOffset(Convert.ToInt32(offset - _fsData.Length), data);                    
+                    _seqBuf.Write_ByOffset(Convert.ToInt32(offset - RIC.DataFileLength), data);                    
                     return;
                 }
 
-                if (offset < _fsData.Length && offset + data.Length > _fsData.Length)
+                //if (offset < _fsData.Length && offset + data.Length > _fsData.Length)
+                if (offset < RIC.DataFileLength && offset + data.Length > RIC.DataFileLength)
                 {
-                    throw new Exception("FSR.WriteByOffset: offset < _fsData.Length && offset + data.Length > _fsData.Length");
+                    throw new Exception("RISR.WriteByOffset: offset < _fsData.Length && offset + data.Length > _fsData.Length");
                 }
 
-                if (offset + data.Length > (_fsData.Length + _seqBuf.EOF))
+                //if (offset + data.Length > (_fsData.Length + _seqBuf.EOF))
+                if (offset + data.Length > (RIC.DataFileLength + _seqBuf.EOF))
                 {
                     //DB RULE1. We cant update and go out of the end of file. Only if we write into empty file root in the beginning
-                    throw new Exception("FSR.WriteByOffset: offset + data.Length > (_fsData.Length + seqEOF)");
+                    throw new Exception("RISR.WriteByOffset: offset + data.Length > (_fsData.Length + seqEOF)");
                 }
 
                 byte[] inBuf = null;
@@ -774,9 +807,11 @@ namespace DBreeze.Storage
                 //Reading from dataFile values which must be rolled back
                 btRoll = new byte[de.Value.Length];
 
-                _fsData.Position = de.Key;
-                _fsData.Read(btRoll, 0, btRoll.Length);
+                RIC.DataFilePosition = de.Key;
+                RIC.DataFileRead(btRoll, 0, btRoll.Length);
                 //Console.WriteLine("2;{0};{1}", de.Key, ((btRoll == null) ? -1 : btRoll.Length));
+                //_fsData.Position = de.Key;
+                //_fsData.Read(btRoll, 0, btRoll.Length);
 
                 //Forming protocol for rollback
                 btRoll = new byte[] { 1 }
@@ -787,8 +822,10 @@ namespace DBreeze.Storage
                            );
 
                 //Writing rollback
-                _fsRollback.Position = eofRollback;
-                _fsRollback.Write(btRoll, 0, btRoll.Length);
+                RIC.RollbackFilePosition = eofRollback;
+                RIC.RollbackFileWrite(btRoll, 0, btRoll.Length,false);
+                //_fsRollback.Position = eofRollback;
+                //_fsRollback.Write(btRoll, 0, btRoll.Length);
 
                 if (_backupIsActive)
                 {
@@ -807,14 +844,16 @@ namespace DBreeze.Storage
             {
 
                 //Flushing rollback
-                NET_Flush(_fsRollback);
+                RIC.RollbackFileFlush();
+                //NET_Flush(_fsRollback);
 
                 //Writing into helper
-                _fsRollbackHelper.Position = 0;
-                _fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
-
-                //Flushing rollback helper
-                NET_Flush(_fsRollbackHelper);
+                RIC.RollbackHelperFilePosition = 0;
+                RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+                //_fsRollbackHelper.Position = 0;
+                //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
+                ////Flushing rollback helper
+                //NET_Flush(_fsRollbackHelper);
 
 
                 if (_backupIsActive)
@@ -827,8 +866,10 @@ namespace DBreeze.Storage
             //second loop for saving data
             foreach (var de in _randBuf.OrderBy(r => r.Key))      //sorting can mean nothing here, only takes extra time
             {
-                _fsData.Position = de.Key;
-                _fsData.Write(de.Value, 0, de.Value.Length);
+                RIC.DataFilePosition = de.Key;
+                RIC.DataFileWrite(de.Value, 0, de.Value.Length,false);
+                //_fsData.Position = de.Key;
+                //_fsData.Write(de.Value, 0, de.Value.Length);
 
                 if (_backupIsActive)
                 {
@@ -899,31 +940,42 @@ namespace DBreeze.Storage
 
                     //reading full byte[] from original file and putting on top keys
                     //We use full length of the file
-                    if (offset + count > _fsData.Length + _seqBuf.EOF)
-                        res = new byte[_fsData.Length + _seqBuf.EOF - offset];
+                    if (offset + count > RIC.DataFileLength + _seqBuf.EOF)
+                        res = new byte[RIC.DataFileLength + _seqBuf.EOF - offset];
                     else
                         res = new byte[count];
+                    //if (offset + count > _fsData.Length + _seqBuf.EOF)
+                    //    res = new byte[_fsData.Length + _seqBuf.EOF - offset];
+                    //else
+                    //    res = new byte[count];
 
                     byte[] btWork = null;
 
-                    if (offset < _fsData.Length)
+                    //if (offset < _fsData.Length)
+                    if (offset < RIC.DataFileLength)
                     {
                         //Starting reading from file
-                        _fsData.Position = offset;
+                        //_fsData.Position = offset;
+                        RIC.DataFilePosition = offset;
 
-                        if (offset + res.Length <= _fsData.Length)
+                        //if (offset + res.Length <= _fsData.Length)
+                        if (offset + res.Length <= RIC.DataFileLength)
                         {
                             //must be taken completely from file
-                            _fsData.Read(res, 0, res.Length);
+                            //_fsData.Read(res, 0, res.Length);
+                            RIC.DataFileRead(res, 0, res.Length);
                             //Console.WriteLine("3;{0};{1}", offset, ((res == null) ? -1 : res.Length));
                         }
                         else
                         {
                             //partly from file, partly from sequential cache
-                            int v1 = Convert.ToInt32(_fsData.Length - offset);
-                            _fsData.Read(res, 0, v1);
+                            //int v1 = Convert.ToInt32(_fsData.Length - offset);
+                            //_fsData.Read(res, 0, v1);
+                            int v1 = Convert.ToInt32(RIC.DataFileLength - offset);
+                            RIC.DataFileRead(res, 0, v1);
                             //Console.WriteLine("4;{0};{1}", offset, ((res == null) ? -1 : res.Length));
                             Buffer.BlockCopy(_seqBuf.RawBuffer, 0, res, v1, res.Length - v1);
+                            
                         }
                     }
                     else
@@ -931,7 +983,8 @@ namespace DBreeze.Storage
                         //!!! threat if seqBuf is empty, should not happen thou
 
                         //completely taken from seqbuf
-                        Buffer.BlockCopy(_seqBuf.RawBuffer, Convert.ToInt32(offset - _fsData.Length), res, 0, res.Length);
+                        //Buffer.BlockCopy(_seqBuf.RawBuffer, Convert.ToInt32(offset - _fsData.Length), res, 0, res.Length);
+                        Buffer.BlockCopy(_seqBuf.RawBuffer, Convert.ToInt32(offset - RIC.DataFileLength), res, 0, res.Length);
                     }
 
 
@@ -1026,9 +1079,11 @@ namespace DBreeze.Storage
                             //Probably not finished transaction and SelectDirect case. We return value,
                             //because at this momont all transaction table have successfully gone through TransactionalCommit() procedure.
 
-                            if (offset + count > this._fsData.Length)
+                            //if (offset + count > this._fsData.Length)
+                            if (offset + count > RIC.DataFileLength)
                             {
-                                res = new byte[this._fsData.Length - offset];
+                                //res = new byte[this._fsData.Length - offset];
+                                res = new byte[RIC.DataFileLength - offset];
                             }
                             else
                             {
@@ -1044,9 +1099,11 @@ namespace DBreeze.Storage
                         res = new byte[count];
                     ///////
 
-                    _fsData.Position = offset;
-                    _fsData.Read(res, 0, res.Length);
+                    RIC.DataFilePosition = offset;
+                    RIC.DataFileRead(res, 0, res.Length);
                     //Console.WriteLine("1;{0};{1}", offset, ((res == null) ? -1 : res.Length));
+                    //_fsData.Position = offset;
+                    //_fsData.Read(res, 0, res.Length);
 
                     byte[] btWork = null;
                     r rb = null;
@@ -1057,8 +1114,10 @@ namespace DBreeze.Storage
                         //reading from rollback
                         btWork = new byte[rb.l];
 
-                        _fsRollback.Position = rb.o;
-                        _fsRollback.Read(btWork, 0, btWork.Length);
+                        RIC.RollbackFilePosition = rb.o;
+                        RIC.RollbackFileRead(btWork, 0, btWork.Length);
+                        //_fsRollback.Position = rb.o;
+                        //_fsRollback.Read(btWork, 0, btWork.Length);
 
                         bool cut = false;
                         int start = 0;
@@ -1104,7 +1163,8 @@ namespace DBreeze.Storage
                 FlushSequentialBuffer();
                 FlushRandomBuffer();
 
-                NET_Flush(_fsData);
+                RIC.DataFileFlush();
+                //NET_Flush(_fsData);
 
                 if (_backupIsActive)
                 {
@@ -1116,10 +1176,11 @@ namespace DBreeze.Storage
                     //Finalizing rollback helper
 
                     eofRollback = 0;
-                    _fsRollbackHelper.Position = 0;
-                    _fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
-
-                    NET_Flush(_fsRollbackHelper);
+                    RIC.RollbackHelperFilePosition = 0;
+                    RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+                    //_fsRollbackHelper.Position = 0;
+                    //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
+                    //NET_Flush(_fsRollbackHelper);
 
                     if (_backupIsActive)
                     {
@@ -1130,7 +1191,8 @@ namespace DBreeze.Storage
 
                 _rollbackCache.Clear();
 
-                eofData = this._fsData.Length;
+                //eofData = this._fsData.Length;
+                eofData = RIC.DataFileLength;
                                
             }
         }
@@ -1150,7 +1212,8 @@ namespace DBreeze.Storage
                 FlushSequentialBuffer();
                 FlushRandomBuffer();
 
-                NET_Flush(_fsData);
+                //NET_Flush(_fsData);
+                RIC.DataFileFlush();
 
                 TransactionalCommitIsStarted = true;
             }
@@ -1173,10 +1236,15 @@ namespace DBreeze.Storage
                     //Finalizing rollback helper
 
                     eofRollback = 0;
-                    _fsRollbackHelper.Position = 0;
-                    _fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
 
-                    NET_Flush(_fsRollbackHelper);
+                    RIC.RollbackHelperFilePosition = 0;
+                    RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+
+                    //_fsRollbackHelper.Position = 0;
+                    //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
+                    //NET_Flush(_fsRollbackHelper);
+
+
 
                     if (_backupIsActive)
                     {
@@ -1187,7 +1255,8 @@ namespace DBreeze.Storage
 
                 _rollbackCache.Clear();
 
-                eofData = this._fsData.Length;
+                //eofData = this._fsData.Length;
+                eofData = RIC.DataFileLength;
 
                 TransactionalCommitIsStarted = false;
             }
@@ -1227,11 +1296,16 @@ namespace DBreeze.Storage
                         foreach (var rb in _rollbackCache)
                         {
                             btWork = new byte[rb.Value.l];
-                            _fsRollback.Position = rb.Value.o;
-                            _fsRollback.Read(btWork, 0, btWork.Length);
 
-                            _fsData.Position = rb.Key;
-                            _fsData.Write(btWork, 0, btWork.Length);
+                            RIC.RollbackFilePosition = rb.Value.o;
+                            RIC.RollbackFileRead(btWork, 0, btWork.Length);
+                            //_fsRollback.Position = rb.Value.o;
+                            //_fsRollback.Read(btWork, 0, btWork.Length);
+
+                            RIC.DataFilePosition = rb.Key;
+                            RIC.DataFileWrite(btWork, 0, btWork.Length,false);
+                            //_fsData.Position = rb.Key;
+                            //_fsData.Write(btWork, 0, btWork.Length);
 
                             if (_backupIsActive)
                             {
@@ -1239,7 +1313,8 @@ namespace DBreeze.Storage
                             }
                         }
 
-                        NET_Flush(_fsData);
+                        RIC.DataFileFlush();
+                       // NET_Flush(_fsData);
 
                          if (_backupIsActive)
                         {
@@ -1248,10 +1323,12 @@ namespace DBreeze.Storage
 
                         //Restoring rhp
                         eofRollback = 0;
-                        _fsRollbackHelper.Position = 0;
-                        _fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
 
-                        NET_Flush(_fsRollbackHelper);
+                        RIC.RollbackHelperFilePosition = 0;
+                        RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+                        //_fsRollbackHelper.Position = 0;
+                        //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
+                        //NET_Flush(_fsRollbackHelper);
 
                         if (_backupIsActive)
                         {

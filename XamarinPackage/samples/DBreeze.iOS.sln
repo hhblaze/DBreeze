@@ -1,1 +1,36 @@
-Look at https://dbreeze.codeplex.com/
+//Look at https://dbreeze.codeplex.com/
+using DBreeze;
+
+DBreezeEngine engine=null;
+
+void Main()
+{
+			DBreezeConfiguration conf = new DBreezeConfiguration()
+                    {
+                        DBreezeDataFolderName = @"D:\DBR1",                                              
+                        Storage = DBreezeConfiguration.eStorage.DISK,                    
+                    };
+
+                   engine = new DBreezeEngine(conf);				   
+				   
+}
+
+void Insert()
+{
+	    using (var tran = engine.GetTransaction())
+        {        
+			tran.Insert<int, string>("t1", 1, "well 1");
+			tran.Insert<int, string>("t1", 2, "well 2 ");
+			tran.Insert<int, string>("t1", 3, "well 3");
+			tran.Commit();
+        }
+}
+
+void Select()
+{
+	    using (var tran = engine.GetTransaction())
+        {        
+			foreach(var row in tran.SelectForward<int, string>("t1"))
+				Console.Writeline("{0} {1}",row.Key,row.Value);
+        }
+}

@@ -19,6 +19,9 @@ using DBreeze.Utils;
 
 namespace DBreeze.LianaTrie
 {    
+    /// <summary>
+    /// Liana Trie
+    /// </summary>
     public class LTrie:ITrie,ITransactable,IDisposable
     {
         internal IStorage Storage;
@@ -73,6 +76,10 @@ namespace DBreeze.LianaTrie
         /// </summary>
         public bool ValuesLazyLoadingIsOn = true;
 
+        /// <summary>
+        /// Liana Trie
+        /// </summary>
+        /// <param name="storage"></param>
         public LTrie(IStorage storage)
         {
             Storage = storage;
@@ -177,6 +184,9 @@ namespace DBreeze.LianaTrie
 
         object lock_rollback = new object();
 
+        /// <summary>
+        /// RollBack
+        /// </summary>
         public void RollBack()
         {
             this.CheckTableIsOperable();

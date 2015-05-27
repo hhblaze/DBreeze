@@ -28,7 +28,7 @@ namespace DBreeze
         /// </summary>        
         //public static string Version = "01.061.20131120";
         //public static string Version = "01.068.20141205";
-        public static string Version = "01.069.20150121";
+        //public static string Version = "01.072.20150522"; //Get it from assembly
         #endregion
 
    
@@ -44,6 +44,11 @@ namespace DBreeze
         internal TransactionsJournal _transactionsJournal = null;
         internal TransactionTablesLocker _transactionTablesLocker = null;
         bool disposed = false;
+        /// <summary>
+        /// Initialized from DBreezeRemoteEngine
+        /// </summary>
+        internal bool RemoteEngine = false;
+
 
         /// <summary>
         /// Dbreeze Configuration.
@@ -51,15 +56,52 @@ namespace DBreeze
         /// Later can be added special settings for each entity defined by string pattern.
         /// </summary>
         internal DBreezeConfiguration Configuration = new DBreezeConfiguration();
-        
+
+        /// <summary>
+        /// For DbreezeRemoteEngine wrapper
+        /// </summary>
+        internal DBreezeEngine() { }
+
         /// <summary>
         /// Dbreeze instantiator
         /// </summary>
         /// <param name="dbreezeConfiguration"></param>
         public DBreezeEngine(DBreezeConfiguration dbreezeConfiguration)
         {
-            if (Configuration != null)
+            ConstructFromConfiguration(dbreezeConfiguration);
+
+            //if (Configuration != null)
+            //    Configuration = dbreezeConfiguration;
+            
+            ////Setting up in backup DbreezeFolderName, there must be found at least TransJournal and Scheme.
+            ////Configuration.Backup.SynchronizeBackup has more information
+            //if (Configuration.Backup.IsActive)
+            //{
+            //    Configuration.Backup.DBreezeFolderName = Configuration.DBreezeDataFolderName;
+
+            //    ////Running backup synchronization
+            //    //Configuration.Backup.SynchronizeBackup();
+            //}
+
+            //MainFolder = Configuration.DBreezeDataFolderName;
+
+            //InitDb();
+
+            ////Console.WriteLine("DBreeze notification: Don't forget in the dispose function of your DLL or main application thread");
+            ////Console.WriteLine("                      to dispose DBreeze engine:  if(_engine != null) _engine.Dispose(); ");
+            ////Console.WriteLine("                      to get graceful finilization of all working threads! ");
+        }
+
+        /// <summary>
+        /// Constructing Dbreeze from dbreezeConfiguration
+        /// </summary>
+        /// <param name="dbreezeConfiguration"></param>
+        internal void ConstructFromConfiguration(DBreezeConfiguration dbreezeConfiguration)
+        {
+             if (Configuration != null)
                 Configuration = dbreezeConfiguration;
+             else
+                 throw new Exception("DBreeze.DBreezeEngine.DBreezeEngine: please supply DBreezeConfiguration");
             
             //Setting up in backup DbreezeFolderName, there must be found at least TransJournal and Scheme.
             //Configuration.Backup.SynchronizeBackup has more information
@@ -70,6 +112,9 @@ namespace DBreeze
                 ////Running backup synchronization
                 //Configuration.Backup.SynchronizeBackup();
             }
+                        
+            if (dbreezeConfiguration.Storage == DBreezeConfiguration.eStorage.RemoteInstance && !RemoteEngine)
+                throw new Exception("DBreeze.DBreezeEngine.DBreezeEngine: remote instance must be initiated via new DBreezeRemoteEngine");
 
             MainFolder = Configuration.DBreezeDataFolderName;
 
@@ -96,6 +141,9 @@ namespace DBreeze
             //Console.WriteLine("                      to get graceful finilization of all working threads! ");
         }
 
+        /// <summary>
+        /// InitDb
+        /// </summary>
         private void InitDb()
         {
             //trying to check and create folder
@@ -135,6 +183,9 @@ namespace DBreeze
             
         }
 
+        /// <summary>
+        /// Dispose
+        /// </summary>
         public void Dispose()
         {
             if (disposed)

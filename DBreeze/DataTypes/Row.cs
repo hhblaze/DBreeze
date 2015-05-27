@@ -14,6 +14,11 @@ using DBreeze.Utils;
 
 namespace DBreeze.DataTypes
 {
+    /// <summary>
+    /// Row
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
     public class Row<TKey,TValue>
     {
         //LTrieRootNode _root = null;
@@ -67,12 +72,17 @@ namespace DBreeze.DataTypes
         //        _key = DataTypesConvertor.ConvertBack<TKey>(key);
         //}
 
-
+        /// <summary>
+        /// Exists
+        /// </summary>
         public bool Exists
         {
             get { return _exists; }
         }
 
+        /// <summary>
+        /// Key
+        /// </summary>
         public TKey Key
         {
             get
@@ -93,7 +103,7 @@ namespace DBreeze.DataTypes
 
             ///////////  FOR NOW allow insert from master is always false, later we have to change Transaction.Insert, and insertPart to return also a row???
 
-            ///FOR NOW NOW DIFFERENCE
+            //FOR NOW NOW DIFFERENCE
             if(nestedTable == null)
             {
                 //Master row select

@@ -38,6 +38,12 @@
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -54,6 +60,7 @@
     <Compile Include="DataTypes\Row.cs" />
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
+    <Compile Include="Engine\DBreezeRemoteEngine.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTable.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableInternal.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />
@@ -71,6 +78,11 @@
     <Compile Include="Exceptions\DBreezeException.cs" />
     <Compile Include="Exceptions\TableNotOperableException.cs" />
     <Compile Include="Diagnostic\SpeedStatistic.cs" />
+    <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommunicator.cs" />
+    <Compile Include="Storage\RemoteInstance\RemoteInstanceCommander.cs" />
+    <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />
+    <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
+    <Compile Include="Storage\RISR.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Storage\Backup\Backup.cs" />
     <Compile Include="Storage\Backup\BackupRestorer.cs" />
@@ -119,7 +131,9 @@
     <Content Include="!!!ReadMe.txt" />
     <Content Include="!!!ToDo.txt" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="signature.snk" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

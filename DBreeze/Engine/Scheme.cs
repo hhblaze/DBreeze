@@ -24,6 +24,8 @@ namespace DBreeze
     {
         internal DBreezeEngine Engine = null;
 
+        CachedTableNames cachedTableNames = new CachedTableNames();
+        
         /// <summary>
         /// Flag that closes file of the table if threads don't use it for reading or writing.
         /// </summary>
@@ -339,7 +341,7 @@ namespace DBreeze
                     byte[] btTableName = GetUserTableNameAsByte(userTableName);
 
                     //Trying to get fileName from cache
-                    fileName = CachedTableNames.GetFileName(tableName);
+                    fileName = this.cachedTableNames.GetFileName(tableName);
                     // LTrieRow row = null;
                     bool tableExists = false;
 
@@ -401,7 +403,7 @@ namespace DBreeze
 
                             fileName = LastFileNumber;
 
-                            CachedTableNames.Add(tableName, fileName);
+                            this.cachedTableNames.Add(tableName, fileName);
                         }
                     }
                     else
@@ -746,7 +748,7 @@ namespace DBreeze
         public void DeleteTable(string userTableName)
         {
             string tableName = GetUserTableNameAsString(userTableName);
-            CachedTableNames.Remove(tableName);
+            this.cachedTableNames.Remove(tableName);
 
             //Blocking Schema
             _sync_openTablesHolder.EnterWriteLock();
@@ -884,7 +886,7 @@ namespace DBreeze
                 LTrie.ChangeKey(ref btOldTableName, ref btNewTableName);
                 LTrie.Commit();
 
-                CachedTableNames.Remove(oldTableName);
+                this.cachedTableNames.Remove(oldTableName);
 
                 if (inMemory && ot != null)
                 {

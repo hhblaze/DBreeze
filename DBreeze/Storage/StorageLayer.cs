@@ -28,6 +28,11 @@ namespace DBreeze.Storage
                         _tableStorage = (IStorage)new MSR(fileName, trieSettings, configuration);
 
                         break;
+                    case DBreezeConfiguration.eStorage.RemoteInstance:
+
+                        _tableStorage = (IStorage)new RISR(fileName, trieSettings, configuration);
+
+                        break;
                 }
             }
             else
@@ -42,6 +47,11 @@ namespace DBreeze.Storage
                     case DBreezeConfiguration.eStorage.MEMORY:
 
                         _tableStorage = (IStorage)new MSR(fileName, trieSettings, configuration);
+
+                        break;
+                    case DBreezeConfiguration.eStorage.RemoteInstance:
+
+                        _tableStorage = (IStorage)new RISR(fileName, trieSettings, configuration);
 
                         break;
                 }
