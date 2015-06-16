@@ -45,6 +45,6 @@ Key features:
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 DBreeze projects:
-- <a href='https://dbreezebased.codeplex.com/' target="_blank">DBreezeBased - Document database and a Text Search Engine based on DBreeze database.</a>
+- <a href='https://github.com/hhblaze/DBreezeBased' target="_blank">DBreezeBased - Document database and a Text Search Engine based on DBreeze database.</a>
 
 hhblaze@gmail.com
