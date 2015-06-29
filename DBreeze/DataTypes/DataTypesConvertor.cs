@@ -56,6 +56,8 @@ namespace DBreeze.DataTypes
         public static Type TYPE_CHAR = typeof(char);
         public static Type TYPE_CHAR_NULL = typeof(char?);
 
+        public static Type TYPE_GUID = typeof(Guid);        
+
         //static Type TYPE_DBINTABLE = typeof(DbInTable);
 
 
@@ -297,17 +299,60 @@ namespace DBreeze.DataTypes
                 else if (td == TYPE_CHAR_NULL)
                 {
                     ret = ((char?)((object)data)).To_3_byte_array();
+                }
+                else if (td == TYPE_GUID)
+                {
+                    ret = ((Guid)((object)data)).ToByteArray();                 
                 } 
                 else if (td == TYPE_OBJECT)
                 {
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
                 }
+                else if (td.IsEnum)
+                {
+                    var enumtype = Enum.GetUnderlyingType(td);
+
+                    if (enumtype == TYPE_INT)
+                    {
+                        ret = ((int)((object)data)).To_4_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_LONG)
+                    {
+                        ret = ((long)((object)data)).To_8_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_UINT)
+                    {
+                        ret = ((uint)((object)data)).To_4_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_ULONG)
+                    {
+                        ret = ((ulong)((object)data)).To_8_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_USHORT)
+                    {
+                        ret = ((ushort)((object)data)).To_2_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_SHORT)
+                    {
+                        ret = ((short)((object)data)).To_2_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_BYTE)
+                    {
+                        ret = ((byte)((object)data)).To_1_byte_array();  
+                    }
+                    else if (enumtype == TYPE_SBYTE)
+                    {
+                        ret = ((sbyte)((object)data)).To_1_byte_array();
+                    } 
+                    else
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
+                }
                 else
-                {          
+                {
                     //Trying byte serialization for unknown object, in case if byte serializer is set
                     if (CustomSerializator.ByteArraySerializator != null)
                         return CustomSerializator.ByteArraySerializator(data);
-          
+
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
                 }
             }
@@ -408,6 +453,49 @@ namespace DBreeze.DataTypes
                 else if (td == TYPE_CHAR)
                 {
                     ret = ((char)((object)data)).To_2_byte_array();
+                }
+                else if (td == TYPE_GUID)
+                {
+                    ret = ((Guid)((object)data)).ToByteArray();
+                } 
+                else if (td.IsEnum)
+                {
+                    var enumtype = Enum.GetUnderlyingType(td);
+
+                    if (enumtype == TYPE_INT)
+                    {
+                        ret = ((int)((object)data)).To_4_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_LONG)
+                    {
+                        ret = ((long)((object)data)).To_8_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_UINT)
+                    {
+                        ret = ((uint)((object)data)).To_4_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_ULONG)
+                    {
+                        ret = ((ulong)((object)data)).To_8_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_USHORT)
+                    {
+                        ret = ((ushort)((object)data)).To_2_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_SHORT)
+                    {
+                        ret = ((short)((object)data)).To_2_bytes_array_BigEndian();
+                    }
+                    else if (enumtype == TYPE_BYTE)
+                    {
+                        ret = ((byte)((object)data)).To_1_byte_array(); 
+                    }
+                    else if (enumtype == TYPE_SBYTE)
+                    {
+                        ret = ((sbyte)((object)data)).To_1_byte_array();
+                    }
+                    else
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
                 }
                 else
                 {
@@ -585,9 +673,52 @@ namespace DBreeze.DataTypes
             {
                 return (TData)((object)dt.To_Char_NULL());
             }
+            else if (td == TYPE_GUID)
+            {
+                return (TData)((object)new Guid(dt));                
+            } 
             else if (td == TYPE_OBJECT)
             {
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
+            }          
+            else if (td.IsEnum)
+            {
+                var enumtype = Enum.GetUnderlyingType(td);
+
+                if (enumtype == TYPE_INT)
+                {
+                    return (TData)((object)dt.To_Int32_BigEndian());         
+                }
+                else if (enumtype == TYPE_LONG)
+                {
+                    return (TData)((object)dt.To_Int64_BigEndian()); 
+                }
+                else if (enumtype == TYPE_UINT)
+                {
+                    return (TData)((object)dt.To_UInt32_BigEndian());
+                }
+                else if (enumtype == TYPE_ULONG)
+                {
+                    return (TData)((object)dt.To_UInt64_BigEndian());
+                }
+                else if (enumtype == TYPE_USHORT)
+                {
+                    return (TData)((object)dt.To_UInt16_BigEndian());
+                }
+                else if (enumtype == TYPE_SHORT)
+                {
+                    return (TData)((object)dt.To_Int16_BigEndian());
+                }
+                else if (enumtype == TYPE_BYTE)
+                {
+                    return (TData)((object)dt.To_Byte());    
+                }
+                else if (enumtype == TYPE_SBYTE)
+                {
+                    return (TData)((object)dt.To_SByte()); 
+                }
+                else
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
             }
             else
             {

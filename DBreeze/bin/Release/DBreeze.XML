@@ -5380,21 +5380,10 @@
             Temporar wrapper
             </summary>
         </member>
-        <member name="T:DBreeze.Utils.DbThreadsGator">
-            <summary>
-            ManualResetEventSlim wrapper
-            </summary>
-        </member>
         <member name="M:DBreeze.Utils.DbThreadsGator.#ctor">
             <summary>
             Creates open Gate
             </summary>
-        </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.#ctor(System.Boolean)">
-            <summary>
-            Constructor
-            </summary>
-            <param name="gateIsOpen"></param>
         </member>
         <member name="M:DBreeze.Utils.DbThreadsGator.PutGateHere">
             <summary>
@@ -5409,20 +5398,13 @@
             <param name="milliseconds"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.OpenGate">
+        <member name="M:DBreeze.Utils.DbThreadsGator.PutGateHere(System.Int32,System.Boolean)">
             <summary>
-            OpenGate
+            If gate is closed then it will be closed timeout time in milliseconds
             </summary>
-        </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.CloseGate">
-            <summary>
-            CloseGate
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.Dispose">
-            <summary>
-            Dispose
-            </summary>
+            <param name="milliseconds"></param>
+            <param name="milliseconds">exitContext</param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.JavascriptSerializator.SerializeMJSON(System.Object)">
             <summary>

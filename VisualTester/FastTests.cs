@@ -921,40 +921,80 @@ namespace VisualTester
         }
 
 
+        //enum enumss:ushort
+        //{
+        //    sdf,
+        //    df,
+        //    dsf
+        //}
+
+        void enumtest()
+        {
+            //using (var tran = engine.GetTransaction())
+            //{
+            //    tran.Insert<enumss, int>("t1", enumss.df, 324);
+            //    tran.Commit();
+            //}
+
+            //using (var tran = engine.GetTransaction())
+            //{
+            //    var row = tran.Select<enumss, int>("t1", enumss.df);
+            //    Console.WriteLine(row.Value);
+            //}
+
+            var gd = Guid.NewGuid();
+
+            using (var tran = engine.GetTransaction())
+            {
+               
+                tran.Insert<Guid, int>("t1", gd, 324);
+                tran.Commit();
+            }
+
+            using (var tran = engine.GetTransaction())
+            {
+                var row = tran.Select<Guid, int>("t1", gd);
+                Console.WriteLine(row.Value);
+            }
+        }
+
         /// <summary>
         /// With backup
         /// </summary>
         public void StartTest()
         {
+           
+            lock (lockInitDb)
+            {
+                if (engine == null)
+                {
 
-            //lock (lockInitDb)
-            //{
-            //    if (engine == null)
-            //    {
+                    DBreezeConfiguration conf = new DBreezeConfiguration()
+                    {
+                        DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",
+                        // DBreezeDataFolderName = @"E:\temp\DBreezeTest\DBR1",                        
+                        // DBreezeDataFolderName = @"C:\tmp",
+                        Storage = DBreezeConfiguration.eStorage.DISK,
+                        // Storage = DBreezeConfiguration.eStorage.MEMORY,
+                        //Backup = new Backup()
+                        //{
+                        //    BackupFolderName = @"D:\temp\DBreezeTest\DBR1\Bup",
+                        //    IncrementalBackupFileIntervalMin = 30
+                        //}
+                    };
 
-            //        DBreezeConfiguration conf = new DBreezeConfiguration()
-            //        {
-            //            DBreezeDataFolderName = @"D:\temp\DBreezeTest\DBR1",                        
-            //           // DBreezeDataFolderName = @"E:\temp\DBreezeTest\DBR1",                        
-            //           // DBreezeDataFolderName = @"C:\tmp",
-            //            Storage = DBreezeConfiguration.eStorage.DISK,
-            //        // Storage = DBreezeConfiguration.eStorage.MEMORY,
-            //            //Backup = new Backup()
-            //            //{
-            //            //    BackupFolderName = @"D:\temp\DBreezeTest\DBR1\Bup",
-            //            //    IncrementalBackupFileIntervalMin = 30
-            //            //}
-            //        };
+                    //conf.AlternativeTablesLocations.Add("t11",@"D:\temp\DBreezeTest\DBR1\INT");
+                    //conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
+                    //conf.AlternativeTablesLocations.Add("t2", @"D:\temp\DBreezeTest\DBR1\INT");
+                    //conf.AlternativeTablesLocations.Add("t*", @"D:\temp\DBreezeTest\DBR1\INT");
 
-            //        //conf.AlternativeTablesLocations.Add("t11",@"D:\temp\DBreezeTest\DBR1\INT");
-            //        //conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
-            //        //conf.AlternativeTablesLocations.Add("t2", @"D:\temp\DBreezeTest\DBR1\INT");
-            //        //conf.AlternativeTablesLocations.Add("t*", @"D:\temp\DBreezeTest\DBR1\INT");
+                    engine = new DBreezeEngine(conf);
 
-            //       engine = new DBreezeEngine(conf);
+                }
+            }
 
-            //    }
-            //}
+
+          //  enumtest();
 
             //MATRIX_BUILD();
            // MATRIX_READOUT_V2();
@@ -1002,9 +1042,12 @@ namespace VisualTester
             //TR();
 
 
-            NetworkTest();
+            //NetworkTest();
             //NetworkTestDisk();
         }
+
+
+
 
         public class RemoteInstanceCommunicator : DBreeze.Storage.RemoteInstance.IRemoteInstanceCommunicator
         {
