@@ -13,7 +13,7 @@ DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value stor
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since Januar 2014
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
-- DBreeze is listed in nosql-database.org
+- DBreeze is listed in <a href = 'http://http://nosql-database.org'  target='_blank'>nosql-database.org</a>
 - Read "Changes in versions" document.
 
 
