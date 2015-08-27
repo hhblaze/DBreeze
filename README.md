@@ -19,6 +19,7 @@ DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value stor
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
+- <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guide.-Customers-and-orders'  target='_blank'>Quick start guide. Customers and orders</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/tree/master/DBreeze/bin/Release'  target='_blank'>Assemblies location</a> 
 - <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=882289' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
@@ -48,6 +49,6 @@ Key features:
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 DBreeze projects:
-- <a href='https://github.com/hhblaze/DBreezeBased' target="_blank">DBreezeBased - Document database and a Text Search Engine based on DBreeze database.</a>
+- <a href='https://github.com/hhblaze/DBreezeBased' target="_blank">DBreezeBased - Document database and a Text Search Engine based on DBreeze database (smth. like Apache Lucene).</a>
 
 hhblaze@gmail.com
