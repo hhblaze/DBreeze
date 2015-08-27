@@ -37,6 +37,16 @@
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
         </member>
+        <member name="P:DBreeze.DataTypes.Row`2.Exists">
+            <summary>
+            Exists
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.Row`2.Key">
+            <summary>
+            Key
+            </summary>
+        </member>
         <member name="M:DBreeze.DataTypes.Row`2.GetTable(System.UInt32)">
             <summary>
             We are inside of the row.
@@ -60,6 +70,12 @@
             <param name="startIndex"></param>
             <returns></returns>
         </member>
+        <member name="P:DBreeze.DataTypes.Row`2.LinkToValue">
+            <summary>
+            Returns physical link to key/value if it exists, otherwise null,
+            this link can be used by SelectDirect (always returns 8 bytes)
+            </summary>
+        </member>
         <member name="M:DBreeze.DataTypes.Row`2.GetDataBlock(System.UInt32)">
             <summary>
             Returns datablock which identifier is stored in this row from specified index.
@@ -71,27 +87,6 @@
             <param name="dataBlockId"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.DataTypes.Row`2.PrintOut(System.String)">
-            <summary>
-            Experimantal Console PrintOut
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.Exists">
-            <summary>
-            Exists
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.Key">
-            <summary>
-            Key
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.LinkToValue">
-            <summary>
-            Returns physical link to key/value if it exists, otherwise null,
-            this link can be used by SelectDirect (always returns 8 bytes)
-            </summary>
-        </member>
         <member name="P:DBreeze.DataTypes.Row`2.Value">
             <summary>
             Returns full value and converts it to the value data type.
@@ -99,6 +94,11 @@
             <para>If your value contains serialized object inside or it's a string type (like DbAscii etc.), use Value.Get property.</para>
             </summary>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.PrintOut(System.String)">
+            <summary>
+            Experimantal Console PrintOut
+            </summary>
         </member>
         <member name="T:DBreeze.DataTypes.DbCustomSerializer`1">
             <summary>
@@ -130,169 +130,6 @@
             Gets deserialized object
             </summary>
         </member>
-        <member name="F:DBreeze.DBreezeConfiguration.AlternativeTablesLocations">
-            <summary>
-            Pattern based way to specify storage and location for tables.
-            <para>Key of this dictionary must contain table pattern e.g. Article$/Items# or Car456 or Items*</para>
-            <para>Value, if is String.Empty, means that table will be located in memory.</para>
-            <para>Value, if not empty, means physical storage folder path, where table should reside.</para>
-            <para>If table doesn't intersect any pattern then default DB configuration will be overriden for the storage.</para>
-            <para>If table intersects more the one pattern then first found will be applied.</para>
-            <para>Help for patterns:</para>
-            <para>$ * #</para>
-            <para>"U" symbol in the following examples means intersection</para>
-            <para>* - 1 or more of any symbol kind (every symbol after * will be cutted): Items* U Items123/Pictures</para>
-            <para># - symbols (except slash) followed by slash and minimum another symbol: Items#/Picture U Items123/Picture</para>
-            <para>$ - 1 or more symbols except slash (every symbol after $ will be cutted): Items$ U Items123;  Items$ !U Items123/Pictures </para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.RICommunicator">
-            <summary>
-            In case if we want to use storage layer RemoteInstance (RISR), this must be supplied.
-            Answers for sending data to Remote Acceptor and returning answer back
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeConfiguration.Backup">
-            <summary>
-            Incremental backup plan. If is not instantiated, incremental backup will be switch off
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeConfiguration.DBreezeDataFolderName">
-            <summary>
-            Folder where will reside DBreeze database files
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeConfiguration.Storage">
-            <summary>
-            DISK, MEMORY or Remote Instance. DEFAULT IS DISK,
-            DBreezeDataFolderName must be supplied.
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.eStorage.RemoteInstance">
-            <summary>
-            In case if database files are located on a remote host
-            </summary>
-        </member>
-        <member name="T:DBreeze.DBreezeRemoteEngine">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="T:DBreeze.DBreezeEngine">
-            <summary>
-            Main DBreeze Database class.
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.MainFolder">
-            <summary>
-            DBreeze version number
-            </summary>        
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
-            <summary>
-            must be filled with a text note who brought to DBisOperable = false
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.RemoteEngine">
-            <summary>
-            Initialized from DBreezeRemoteEngine
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.Configuration">
-            <summary>
-            Dbreeze Configuration.
-            For now BackupPlan is included.
-            Later can be added special settings for each entity defined by string pattern.
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.#ctor">
-            <summary>
-            For DbreezeRemoteEngine wrapper
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.#ctor(DBreeze.DBreezeConfiguration)">
-            <summary>
-            Dbreeze instantiator
-            </summary>
-            <param name="dbreezeConfiguration"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.ConstructFromConfiguration(DBreeze.DBreezeConfiguration)">
-            <summary>
-            Constructing Dbreeze from dbreezeConfiguration
-            </summary>
-            <param name="dbreezeConfiguration"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.#ctor(System.String)">
-            <summary>
-            
-            </summary>
-            <param name="DBreezeDataFolderName"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.InitDb">
-            <summary>
-            InitDb
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.Dispose">
-            <summary>
-            Dispose
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.GetTransaction">
-            <summary>
-            Returns transaction object.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            Returns transaction object.
-            </summary>
-            <param name="tablesLockType">
-            <para>SHARED: threads can use listed tables in parallel. Must be used together with tran.SynchronizeTables command, if necessary.</para>
-            <para>EXCLUSIVE: if other threads use listed tables for reading or writing, current thread will be in a waiting queue.</para>
-            </param>
-            <param name="tables"></param>
-            <returns>Returns transaction object</returns>
-        </member>
-        <member name="P:DBreeze.DBreezeEngine.Scheme">
-            <summary>
-            Returns DBreeze schema object
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeRemoteEngine.#ctor(DBreeze.DBreezeConfiguration)">
-            <summary>
-            DBreezeRemoteEngine instantiator
-            </summary>
-            <param name="dbreezeConfiguration"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeRemoteEngine.Init">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeRemoteEngine.GetTransaction">
-            <summary>
-            Returns transaction object.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DBreezeRemoteEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            Returns transaction object.
-            </summary>
-            <param name="tablesLockType">
-            <para>SHARED: threads can use listed tables in parallel. Must be used together with tran.SynchronizeTables command, if necessary.</para>
-            <para>EXCLUSIVE: if other threads use listed tables for reading or writing, current thread will be in a waiting queue.</para>
-            </param>
-            <param name="tables"></param>
-            <returns>Returns transaction object</returns>
-        </member>
-        <member name="P:DBreeze.DBreezeRemoteEngine.Scheme">
-            <summary>
-            Returns DBreeze schema object
-            </summary>
-        </member>
         <member name="T:DBreeze.DataTypes.NestedTable">
             <summary>
             NestedTable
@@ -305,6 +142,13 @@
             <param name="nt"></param>
             <param name="insertTablesAllowed"></param>
             <param name="tableExists"></param>
+        </member>
+        <member name="P:DBreeze.DataTypes.NestedTable.ValuesLazyLoadingIsOn">
+            <summary>
+            When it's on iterators return Row with the key and a pointer to the value.
+            <par>Value will be read out when we call it Row.Value.</par>
+            <pa>When it's off we read value together with the key in one round</pa>
+            </summary>
         </member>
         <member name="M:DBreeze.DataTypes.NestedTable.GetTable``1(``0,System.UInt32)">
             <summary>
@@ -1047,13 +891,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="P:DBreeze.DataTypes.NestedTable.ValuesLazyLoadingIsOn">
-            <summary>
-            When it's on iterators return Row with the key and a pointer to the value.
-            <par>Value will be read out when we call it Row.Value.</par>
-            <pa>When it's off we read value together with the key in one round</pa>
-            </summary>
-        </member>
         <member name="T:DBreeze.DataTypes.NestedTableInternal">
             <summary>
             In developing, will represent a table inside of the other table
@@ -1082,38 +919,121 @@
             <param name="dt"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.IStorage.Table_Read(System.Boolean,System.Int64,System.Int32)">
+        <member name="T:DBreeze.DataTypes.DbXML`1">
+            <summary>
+            <para>Microsoft XML</para>
+            <para></para>
+            <para>Possible to make like this, without class instantiating:</para>
+            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
+            <para>aa.Add("test1")</para>
+            <para>aa.Add("test2")</para>
+            <para>-----inside of transaction---------</para>
+            <para>tran.Insert&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1", i, aa);</para>
+            <para>-----------------------------------</para>
+            <para>foreach (var row in tran.SelectForward&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1"))</para>
+            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbXML`1.SerializedObject">
+            <summary>
+            Returns serialized string representing the internal object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbXML`1.Get">
+            <summary>
+            Gets deserialized object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbUnicode.Get">
+            <summary>
+            Returns string from the object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbUTF8.Get">
+            <summary>
+            Returns string from the object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeConfiguration.Backup">
+            <summary>
+            Incremental backup plan. If is not instantiated, incremental backup will be switch off
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeConfiguration.DBreezeDataFolderName">
+            <summary>
+            Folder where will reside DBreeze database files
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.eStorage.RemoteInstance">
+            <summary>
+            In case if database files are located on a remote host
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeConfiguration.Storage">
+            <summary>
+            DISK, MEMORY or Remote Instance. DEFAULT IS DISK,
+            DBreezeDataFolderName must be supplied.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.AlternativeTablesLocations">
+            <summary>
+            Pattern based way to specify storage and location for tables.
+            <para>Key of this dictionary must contain table pattern e.g. Article$/Items# or Car456 or Items*</para>
+            <para>Value, if is String.Empty, means that table will be located in memory.</para>
+            <para>Value, if not empty, means physical storage folder path, where table should reside.</para>
+            <para>If table doesn't intersect any pattern then default DB configuration will be overriden for the storage.</para>
+            <para>If table intersects more the one pattern then first found will be applied.</para>
+            <para>Help for patterns:</para>
+            <para>$ * #</para>
+            <para>"U" symbol in the following examples means intersection</para>
+            <para>* - 1 or more of any symbol kind (every symbol after * will be cutted): Items* U Items123/Pictures</para>
+            <para># - symbols (except slash) followed by slash and minimum another symbol: Items#/Picture U Items123/Picture</para>
+            <para>$ - 1 or more symbols except slash (every symbol after $ will be cutted): Items$ U Items123;  Items$ !U Items123/Pictures </para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.RICommunicator">
+            <summary>
+            In case if we want to use storage layer RemoteInstance (RISR), this must be supplied.
+            Answers for sending data to Remote Acceptor and returning answer back
+            </summary>
+        </member>
+        <member name="T:DBreeze.DBreezeRemoteEngine">
             <summary>
             
             </summary>
-            <param name="useCache">true=reading threads, false = writing threads</param>
-            <param name="offset"></param>
-            <param name="quantity"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeRemoteEngine.#ctor(DBreeze.DBreezeConfiguration)">
+            <summary>
+            DBreezeRemoteEngine instantiator
+            </summary>
+            <param name="dbreezeConfiguration"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeRemoteEngine.Init">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeRemoteEngine.GetTransaction">
+            <summary>
+            Returns transaction object.
+            </summary>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.IStorage.Table_Read(System.Boolean,System.Byte[],System.Int32)">
+        <member name="M:DBreeze.DBreezeRemoteEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,System.String[])">
             <summary>
-            
+            Returns transaction object.
             </summary>
-            <param name="useCache">true=reading threads, false = writing threads</param>
-            <param name="offset"></param>
-            <param name="quantity"></param>
-            <returns></returns>
+            <param name="tablesLockType">
+            <para>SHARED: threads can use listed tables in parallel. Must be used together with tran.SynchronizeTables command, if necessary.</para>
+            <para>EXCLUSIVE: if other threads use listed tables for reading or writing, current thread will be in a waiting queue.</para>
+            </param>
+            <param name="tables"></param>
+            <returns>Returns transaction object</returns>
         </member>
-        <member name="M:DBreeze.Storage.IStorage.RestoreTableFromTheOtherTable(System.String)">
+        <member name="P:DBreeze.DBreezeRemoteEngine.Scheme">
             <summary>
-            
-            </summary>
-            <param name="newTableFullPath"></param>
-        </member>
-        <member name="P:DBreeze.Storage.IStorage.StorageFixTime">
-            <summary>
-            UTC DateTime when table was initialized
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.IStorage.Length">
-            <summary>
-            Length of the Storage
+            Returns DBreeze schema object
             </summary>
         </member>
         <member name="M:DBreeze.LianaTrie.NestedTableStorage.RestoreTableFromTheOtherTable(System.String)">
@@ -1181,6 +1101,740 @@
             Cascade remove all of all nested and sub-nested tables under the key
             </summary>
             <param name="key"></param>
+        </member>
+        <member name="F:DBreeze.LianaTrie.Iterations.Backward.ReturnKeyValuePair">
+            <summary>
+            If we use load Key already With Value, or just key and link to the value
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.ItBwdFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+            <summary>
+            ItBwdFromTo
+            </summary>
+            <param name="gn"></param>
+            <param name="generationMapLine"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            IterateBackwardFromTo
+            </summary>
+            <param name="initKey"></param>
+            <param name="stopKey"></param>
+            <param name="inclStartKey"></param>
+            <param name="inclStopKey"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.LianaTrie.Iterations.Forward.ReturnKeyValuePair">
+            <summary>
+            If we use load Key already With Value, or just key and link to the value
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.ItFrwFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+            <summary>
+            ItFrwFromTo
+            </summary>
+            <param name="gn"></param>
+            <param name="generationMapLine"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            IterateForwardFromTo
+            </summary>
+            <param name="initKey"></param>
+            <param name="stopKey"></param>
+            <param name="inclStartKey"></param>
+            <param name="inclStopKey"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32)">
+            <summary>
+            Used for finding out hash from Generation Map
+            </summary>
+            <param name="index"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.QuantityReservationSlots">
+            <summary>
+            Reservations are calculated by Schema. They Depend upon quantity of Existing Kids.
+            QuantityAvailableReservations is calculated in ReadSelf if Kid.Pointer equals to ZeroPointer - it means reservation.
+            Default is 0
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.ToChangeParentNode">
+            <summary>
+            When New Node is created it's true
+            After Reading Node it must become false,
+            After WriteSelf it will be or true or false.
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.KidsBeforeModification">
+            <summary>
+            Field which contains either null (if Generation node is empty and had no kids) or value in format of prepared for Save Kids,
+            in case if ReadOutExistingNode.
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.MaximumKidLineLength">
+            <summary>
+            Is calculated as LengthOfTheKidsBlockInFile(2 bytes) + (256 * (DefaultPointerLen + 1[byte definition]))
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.SetupKidWithValue(System.Byte,System.Boolean,System.Byte[]@,System.Byte[]@,System.Boolean,System.Boolean@,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="kid"></param>
+            <param name="lastElementOfTheKey"></param>
+            <param name="fullKey"></param>
+            <param name="value"></param>
+            <param name="useExistingPointerToValue"></param>
+            <param name="WasUpdated">true means that value existed and was updated</param>
+            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.RemoveKid(System.Byte,System.Boolean,System.Byte[]@,System.Boolean@,System.Boolean,System.Byte[]@)">
+            <summary>
+            Pointer to the removing key value can be null, if such key never existed
+            </summary>
+            <param name="kid"></param>
+            <param name="lastElementOfTheKey"></param>
+            <param name="key"></param>
+            <param name="ptrToValue"></param>
+            <param name="WasRemoved">indicates that value existed if true</param>
+            <param name="retrieveDeletedValue">indicates if we must also return deleted value</param>
+            <param name="WasRemoved">deleted value as byte[] will be here</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.TryOverWriteValuePartially(System.Byte[],System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@)">
+            <summary>
+            Returns pointer to the newly stored value
+            </summary>
+            <param name="ptr"></param>
+            <param name="value"></param>
+            <param name="fullKey"></param>
+            <param name="startIndex">from which point we should overwrite value</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.TryOverWriteValue(System.Byte[],System.Byte[]@,System.Byte[]@)">
+            <summary>
+            Returns pointer to the newly stored value
+            </summary>
+            <param name="ptr"></param>
+            <param name="value"></param>
+            <param name="fullKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.GetQuantityOfReservationSlots">
+            <summary>
+            Calculating Quantity of Reservations slots for 0 and 1 Evolutions.
+            </summary>
+            <param name="current"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.LianaTrie.LTrie">
+            <summary>
+            Liana Trie
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie.Cache">
+            <summary>
+            Cache for overwriting nodes and values
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie.TableIsModified">
+            <summary>
+            Identifies that after Saving0generationNode was made no changes (Add,Remove etc)
+            Used via TableIsModified
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie._DtTableFixed">
+            <summary>
+            Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
+            Access via DtTableFixed interface ITrie
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie.NestedTablesCoordinator">
+            <summary>
+            Coordinator of nested tables
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie.OverWriteIsAllowed">
+            <summary>
+            Concerns Nodes, Values, DataBlocks.
+            Flag can be setup only via nested table or transaction
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie.ValuesLazyLoadingIsOn">
+            <summary>
+            When it's on iterators, Select and SelectDirect return Row with the key and a pointer to the value.
+            <par>Value will be read out when we call it Row.Value.</par>
+            <pa>When it's off we read value together with the key in one round</pa>
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.#ctor(DBreeze.Storage.IStorage)">
+            <summary>
+            Liana Trie
+            </summary>
+            <param name="storage"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.CheckTableIsOperable">
+            <summary>
+            Will return exception, if not.
+            Must be called by all functions
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.RollBack">
+            <summary>
+            RollBack
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.GetTable(DBreeze.LianaTrie.LTrieRow,System.Byte[]@,System.UInt32,DBreeze.LianaTrie.LTrie,System.Boolean,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="row"></param>
+            <param name="tableIndex"></param>
+            <param name="masterTrie"></param>
+            <param name="insertTable">Regulates if InsertTable or SelectTable was called (ability to create table if it doesn't exist)</param>
+            <param name="useCache">Regulates READ table thread or WRITE table thread - visibilityscope</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.Add(System.Byte[],System.Byte[])">
+            <summary>
+            Adds key. Overload without refs
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.Add(System.Byte[]@,System.Byte[]@,System.Boolean@,System.Boolean)">
+            <summary>
+            Adds key
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
+            <returns>returns physical link to value</returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.AddPartially(System.Byte[],System.Byte[],System.UInt32,System.Int64@)">
+            <summary>
+            Overload without refs
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.AddPartially(System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@)">
+            <summary>
+            REMEMBER THAT 
+            all keys are first formed in memory and then copied to the disk, so it's not for storing movies inside of the value.
+            For storing movies (BLOBs) will be used other approach, see docu.
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.AddPartially(System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@,System.Boolean@)">
+            <summary>
+            REMEMBER THAT 
+            all keys are first formed in memory and then copied to the disk, so it's not for storing movies inside of the value.
+            For storing movies (BLOBs) will be used other approach, see docu.
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <param name="WasUpdated"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.Remove(System.Byte[]@,System.Boolean@,System.Boolean,System.Byte[]@)">
+            <summary>
+            Removes the key
+            </summary>
+            <param name="key"></param>
+            <param name="WasRemoved">indicates that value existed if true</param>
+            <param name="retrieveDeletedValue">indicates if we should bind deleted value to the result</param>
+            <param name="deletedValue">interesting only if WasRemoved = true and retrieveDeletedValue is true</param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.SaveGenerationMap">
+            <summary>
+            Technical function.
+            Used by Fetch SYNCHRO_READ FUNCs, which use write root node, to make last in-memory changes to flash on the disk, before commit.
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.GetTrieReadNode(System.Int64@)">
+            <summary>
+            Interface function which recreates every time new rootNode from itself by every new function call.
+            and also packs root node last fixation dateTime (ROLL or COMMIT).
+            It will be used for READ FUNC's via Transaction, they can decide if to create new instance of read root or use existing.
+            Returns NULL is !TableIsOperable.
+            </summary>
+            <param name="modifiedDt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.Count(System.Boolean)">
+            <summary>
+            if useCache = true; uses newly created root node, else uses writing root node
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.Count(DBreeze.Tries.ITrieRootNode)">
+            <summary>
+            Can be used inside of DBreeze - concerns all read functions
+            </summary>
+            <param name="SYNCHRO_READ"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[],System.Boolean)">
+            <summary>
+            if useCache = true; uses newly created root node, else uses writing root node
+            </summary>
+            <param name="key"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[]@,DBreeze.Tries.ITrieRootNode)">
+            <summary>
+            DBreeze compatible.
+            Extension, which helps to READ-THREADS smartly utilize created before read-roots
+            </summary>
+            <param name="key"></param>
+            <param name="readRootNode">if null then WRITE-ROOT NODE</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWith(System.Byte[])">
+            <summary>
+            Always creates new root to get committed data
+            </summary>
+            <param name="startKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="startKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[],System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="startKey"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[],DBreeze.Tries.ITrieRootNode)">
+            <summary>
+            
+            </summary>
+            <param name="startKey"></param>
+            <param name="readRootNode"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="startKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[],System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="startKey"></param>
+            <param name="useCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[],DBreeze.Tries.ITrieRootNode)">
+            <summary>
+            
+            </summary>
+            <param name="startKey"></param>
+            <param name="readRootNode"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.SingleCommit">
+            <summary>
+            Wrapper for ITransactable
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrie.SingleRollback">
+            <summary>
+            Wrapper for ITransactable
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrie._modificationThreadId">
+            <summary>
+            This variable becomes value more then -1 via TrasactionCoordinator, when it returns TableForWrite
+            It becomes -1 after Transaction End call.
+            No need of lock.
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKid.Val">
+            <summary>
+            0-255, in case if ValueKid = false, 256 if ValueKid = true;
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKid.Ptr">
+            <summary>
+            Pointer to the next node or to the value
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKid.Exists">
+            <summary>
+            Default value is false
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKid.LinkToNode">
+            <summary>
+            Works when ValueKid = false.
+            True is link to node
+            False if link to value.
+            Default is true.
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKid.ValueKid">
+            <summary>
+            Identifies that it's a value for this node, not the kid from 0-255.
+            If true, Ptr has link to the value.
+            Default is false
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKidsInNode.ValueIsEmpty">
+            <summary>
+            Indicates that Kids Line contains no Value-Kid
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieKidsInNode.AllowSave">
+            <summary>
+            Optimizer. We don't want to overwrite node, if really nothing has changed. In the beginning value is true.
+            ParseKids function make it false.
+            Later by Adding or removing elements we either make it true or leave as false.
+            search in the code  (!AllowSave).
+            The flag work result is visible in GetKidsForSave function.
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieKidsInNode.ParseKids(System.Byte[]@)">
+            <summary>
+            Returns quantity of reservation slots
+            </summary>
+            <param name="bKids"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieKidsInNode.GetKidValue">
+            <summary>
+            Gets Value kid (before 0-255)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieKidsInNode.GetKidsForSave(System.Int32)">
+            <summary>
+            Returns null, if not necessary to save generation node (cause it didn't change).  AllowSave = false;
+            </summary>
+            <param name="reservation"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieRootNode.RecordsCount">
+            <summary>
+            Indicates quantity of Records in the table
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.DeserializeRootNode">
+            <summary>
+            bytes[] to objects
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.SerializeRootNode">
+            <summary>
+            Root to byte[]
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.AddKey(System.Byte[]@,System.Byte[]@,System.Boolean@,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="WasUpdated">true means that value existed and was updated</param>
+            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.AddKeyPartially(System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@,System.Boolean@)">
+            <summary>
+            Returns link to the full value together with the key
+            </summary>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.RemoveAll(System.Boolean)">
+            <summary>
+            Check TransactionCommit in case of RemoveAll with file Recreation.
+            Note if some other threads are reading parallel data, exception will be thrown in their transaction.
+            It's correct.
+            </summary>
+            <param name="withFileRecreation"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.ChangeKey(System.Byte[]@,System.Byte[]@)">
+            <summary>
+            Takes value fresh no committed value row.GetFullValue(false);
+            </summary>
+            <param name="oldKey"></param>
+            <param name="newKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.ChangeKey(System.Byte[]@,System.Byte[]@,System.Byte[]@)">
+            <summary>
+            Takes value fresh no committed value row.GetFullValue(false);
+            </summary>
+            <param name="oldKey"></param>
+            <param name="newKey"></param>
+            <param name="refToInsertedValue">returns ptr in the file to the new key</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.RemoveKey(System.Byte[]@,System.Boolean@,System.Boolean,System.Byte[]@)">
+            <summary>
+            Will return pointer to the value of the removing kid (if it existed). Otherwise NULL.
+            </summary>
+            <param name="key"></param>
+            <param name="WasRemoved">indicates that value existed if true</param>
+            <param name="retrieveDeletedValue">indicates if we should bind deleted value to the result</param>
+            <param name="deletedValue">interesting only if WasRemoved = true and retrieveDeletedValue is true</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.GetKey(System.Byte[],System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="key"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieSetupKidResult.ValueLink">
+            <summary>
+            Link to the full value line (together with the key)
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieRow.ValueStartPointer">
+            <summary>
+            Represents pointer to the value in physical file, remember for READ must come via sync-cache
+            -1 if not defined
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieRow.ValueFullLength">
+            <summary>
+            If ValueStartPointer == -1, has no meaning
+            </summary>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieRow.Key">
+            <summary>
+            Default is null
+            </summary>
+        </member>
+        <member name="P:DBreeze.LianaTrie.LTrieRow.LinkToValue">
+            <summary>
+            Experimental, instead of Value, we supply link to the value
+            </summary>
+        </member>
+        <member name="P:DBreeze.LianaTrie.LTrieRow.Exists">
+            <summary>
+            Default is false
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRow.GetPartialValue(System.UInt32,System.UInt32,System.Boolean)">
+            <summary>
+            Returns either value partially or null
+            </summary>
+            <param name="startIndex"></param>
+            <param name="length"></param>
+            <param name="useCache">if true, then only committed data will be shown</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRow.GetFullValue(System.Boolean)">
+            <summary>
+            Returns either value as byte array or null if value doesn't exist
+            </summary>
+            <param name="useCache">if true, then only committed data will be shown</param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.LianaTrie.LTrieWriteCache.rootTransaction">
+            <summary>
+            Represents old Root as byte[] array for the moment while we make Transactional Commit. Otherwise remains null
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RootNodeWrite(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="rootData"></param>
+            <param name="oldRootData"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RootNodeRead">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.Commit(System.Byte[]@,System.Byte[]@)">
+            <summary>
+            
+            </summary>
+            <param name="rootData"></param>
+            <param name="oldRootData"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RollBack">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.TransactionalCommit(System.Byte[]@,System.Byte[]@)">
+            <summary>
+            
+            </summary>
+            <param name="rootData"></param>
+            <param name="oldRootData"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.TransactionalCommitFinished">
+            <summary>
+            We need here to clear old root and call Storage Commit is finished
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.TransactionalRollBack">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RecreateDB">
+            <summary>
+            Used by Root Node RemoveAll with key re-creation
+            </summary>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GetNodeKids(System.Byte[])">
+            <summary>
+            Returns NULL if not found
+            </summary>
+            <param name="generationMapLine"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.AddMapKids(System.Byte[],System.Byte[])">
+            <summary>
+            If line exists - makes nothing, otherwise writes in
+            </summary>
+            <param name="generationMapLine"></param>
+            <param name="kidsBeforeModification"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingEnd(System.Byte[],System.Byte[])">
+            <summary>
+            Writing Generation Node to the end of File.
+            We use current generation node pointer to black list it.
+            if we reuse this new pointer inside of one transaction for overwriting, we don't need to back it up for rollback any more.
+            </summary>
+            <param name="pointer"></param>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[])">
+            <summary>
+            OverWriting Generation Node, we supply params where, oldData and newData.
+            Old Data - not used thou
+            </summary>
+            <param name="pointer"></param>
+            <param name="oldData"></param>
+            <param name="newData"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="useCache"></param>
+            <param name="pointer"></param>
+            <param name="cachedGenerationMapLine"></param>
+            <param name="MaximumNodeLineLength"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadDynamicDataBlock(System.Byte[]@,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="initPtr"></param>
+            <param name="useCache"></param>
+            <returns>return NULL if not found or stored value is NULL, otherwise returns byte[]</returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.WriteDynamicDataBlock(System.Byte[]@,System.Byte[]@)">
+            <summary>
+            
+            </summary>
+            <param name="initPtr"></param>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ValueWritingEnd(System.Byte[]@,System.Byte[])">
+            <summary>
+             
+            </summary>
+            <param name="data"></param>
+            <param name="oldPtr"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ValueWritingOver(System.Byte[],System.Byte[]@,System.Byte[]@,System.Byte[]@)">
+            <summary>
+            
+            </summary>
+            <param name="pointer"></param>
+            <param name="oldData"></param>
+            <param name="newData"></param>
+            <param name="key"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadKeyValue(System.Boolean,System.Byte[],System.Int64@,System.UInt32@,System.Byte[]@,System.Byte[]@)">
+            <summary>
+            Interanl Function for reading Key and Value in one set. Initial block read is setUp to 4096 bytes
+            </summary>
+            <param name="useCache"></param>
+            <param name="pointer">ptr to KVP</param>
+            <param name="valueStartPtr">will be more then 0 only in case if valueLength more then 0. It makes no diff for the null and byte[0] values in this context. Avoid byte[0]</param>
+            <param name="valueLength">will be 0 if val is null and if val is byte[0]</param>
+            <param name="key"></param>
+            <param name="val"></param>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadKey(System.Boolean,System.Byte[])">
+            <summary>
+            Internal function for reading key only from DB storage
+            Is called from ReadKey
+            </summary>
+            <param name="useCache"></param>
+            <param name="pointer">ptr to KVP</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadValue(System.Byte[],System.Boolean,System.Int64@,System.UInt32@)">
+            <summary>
+            
+            </summary>
+            <param name="pointer">ptr to KVP</param>
+            <param name="useCache"></param>
+            <param name="valueStartPtr"></param>
+            <param name="valueLength"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadValuePartially(System.Byte[],System.UInt32,System.UInt32,System.Boolean,System.Int64@,System.UInt32@)">
+            <summary>
+            
+            </summary>
+            <param name="pointer"></param>
+            <param name="startIndex"></param>
+            <param name="length"></param>
+            <param name="useCache"></param>
+            <param name="valueStartPtr">returns pointer where value starts from. -1 if can't be determined</param>
+            <param name="valueLength">returns full value length; 0 - default</param>
+            <returns></returns>
         </member>
         <member name="T:DBreeze.SchemeInternal.CachedTableNames">
             <summary>
@@ -1267,42 +1921,6 @@
             <param name="assumption">your assumption, if intersects or not</param>
             <param name="p1">pattern 1</param>
             <param name="p2">pattern 2</param>
-        </member>
-        <member name="T:DBreeze.DataTypes.DbXML`1">
-            <summary>
-            <para>Microsoft XML</para>
-            <para></para>
-            <para>Possible to make like this, without class instantiating:</para>
-            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
-            <para>aa.Add("test1")</para>
-            <para>aa.Add("test2")</para>
-            <para>-----inside of transaction---------</para>
-            <para>tran.Insert&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1", i, aa);</para>
-            <para>-----------------------------------</para>
-            <para>foreach (var row in tran.SelectForward&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1"))</para>
-            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
-            </summary>
-            <typeparam name="T"></typeparam>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbXML`1.SerializedObject">
-            <summary>
-            Returns serialized string representing the internal object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbXML`1.Get">
-            <summary>
-            Gets deserialized object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbUnicode.Get">
-            <summary>
-            Returns string from the object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbUTF8.Get">
-            <summary>
-            Returns string from the object
-            </summary>
         </member>
         <member name="F:DBreeze.Scheme.AutoCloseOpenTables">
             <summary>
@@ -1706,6 +2324,21 @@
             Random buffer
             </summary>
         </member>
+        <member name="T:DBreeze.Storage.RISR.r">
+            <summary>
+            Record in rollback is characterized with 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.r.o">
+            <summary>
+            offset in rollback file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.r.l">
+            <summary>
+            Lenght in rollback file
+            </summary>
+        </member>
         <member name="F:DBreeze.Storage.RISR._rollbackCache">
             <summary>
             Rollback cache
@@ -1732,6 +2365,31 @@
             DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
             If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
             LTrieRow will have different version and will return exception.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.Length">
+            <summary>
+            Physical length of the storage file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.StorageFixTime">
+            <summary>
+            Returns time of file initiation, ead remarks on 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.TrieSettings">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.DbreezeConfiguration">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.RISR.Table_FileName">
+            <summary>
+            
             </summary>
         </member>
         <member name="M:DBreeze.Storage.RISR.Table_Dispose">
@@ -1840,78 +2498,11 @@
             Standard and transactional rollback
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.RISR.Length">
-            <summary>
-            Physical length of the storage file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.RISR.StorageFixTime">
-            <summary>
-            Returns time of file initiation, ead remarks on 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.RISR.TrieSettings">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.RISR.DbreezeConfiguration">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.RISR.Table_FileName">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.RISR.r">
-            <summary>
-            Record in rollback is characterized with 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.RISR.r.o">
-            <summary>
-            offset in rollback file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.RISR.r.l">
-            <summary>
-            Lenght in rollback file
-            </summary>
-        </member>
-        <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            
-            </summary>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns>false if thread grants access, false if thread is in a queue</returns>
-        </member>
-        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TransactionTablesLocker.Dispose">
-            <summary>
-            MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
-            </summary>
-        </member>
         <member name="M:DBreeze.Storage.Backup.#ctor(System.String)">
             <summary>
             
             </summary>
             <param name="backupFolderName">Folder where will be restored incremental backup</param>
-        </member>
-        <member name="M:DBreeze.Storage.Backup.WriteBackupElement(System.UInt64,System.Byte,System.Int64,System.Byte[])">
-            <summary>
-            Represents incremental backup of protocol 1
-            </summary>
-            <param name="fileNumber"></param>
-            <param name="type">0 - table file, 1 - rollback file, 2 - rollbackhelper, 3 - recreate table file, 5 - removing complete table </param>
-            <param name="pos"></param>
-            <param name="data"></param>
         </member>
         <member name="P:DBreeze.Storage.Backup.IncrementalBackupFileIntervalMin">
             <summary>
@@ -1931,34 +2522,18 @@
             <param name="fileName"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Storage.Backup.WriteBackupElement(System.UInt64,System.Byte,System.Int64,System.Byte[])">
+            <summary>
+            Represents incremental backup of protocol 1
+            </summary>
+            <param name="fileNumber"></param>
+            <param name="type">0 - table file, 1 - rollback file, 2 - rollbackhelper, 3 - recreate table file, 5 - removing complete table </param>
+            <param name="pos"></param>
+            <param name="data"></param>
+        </member>
         <member name="T:DBreeze.Storage.BackupRestorer">
             <summary>
             Access to Database restoration from incremental backups.
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.BackupRestorer.ds">
-            <summary>
-            Holder of filenames and file handlers
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.BackupRestorer.StartRestoration">
-            <summary>
-            Starts backup restore routine
-            </summary>
-        </member>
-        <member name="E:DBreeze.Storage.BackupRestorer.OnRestore">
-            <summary>
-            Subscribe on it to receive notification about restore process
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.BackupRestorer.DataBaseFolder">
-            <summary>
-            Place where resides or should reside database
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.BackupRestorer.BackupFolder">
-            <summary>
-            Place where reside incremnetal dbreeze backup files
             </summary>
         </member>
         <member name="T:DBreeze.Storage.BackupRestorer.BackupRestorationProcess">
@@ -1976,6 +2551,31 @@
             true when restore is completed
             </summary>
         </member>
+        <member name="E:DBreeze.Storage.BackupRestorer.OnRestore">
+            <summary>
+            Subscribe on it to receive notification about restore process
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.BackupRestorer.DataBaseFolder">
+            <summary>
+            Place where resides or should reside database
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.BackupRestorer.BackupFolder">
+            <summary>
+            Place where reside incremnetal dbreeze backup files
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.BackupRestorer.ds">
+            <summary>
+            Holder of filenames and file handlers
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.BackupRestorer.StartRestoration">
+            <summary>
+            Starts backup restore routine
+            </summary>
+        </member>
         <member name="T:DBreeze.Storage.MSR">
             <summary>
             DBreeze random and sequential disk IO buffers implementation.
@@ -1991,6 +2591,21 @@
         <member name="F:DBreeze.Storage.MSR._randBuf">
             <summary>
             Random buffer
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.MSR.r">
+            <summary>
+            Record in rollback is characterized with 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.r.o">
+            <summary>
+            offset in rollback file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.r.l">
+            <summary>
+            Lenght in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.MSR._rollbackCache">
@@ -2019,6 +2634,16 @@
             DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
             If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
             LTrieRow will have different version and will return exception.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.Length">
+            <summary>
+            Physical length of the storage file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.StorageFixTime">
+            <summary>
+            Returns time of file initiation, ead remarks on 
             </summary>
         </member>
         <member name="M:DBreeze.Storage.MSR.Table_Dispose">
@@ -2105,31 +2730,6 @@
             Standard and transactional rollback
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.MSR.Length">
-            <summary>
-            Physical length of the storage file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.StorageFixTime">
-            <summary>
-            Returns time of file initiation, ead remarks on 
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.MSR.r">
-            <summary>
-            Record in rollback is characterized with 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.r.o">
-            <summary>
-            offset in rollback file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.r.l">
-            <summary>
-            Lenght in rollback file
-            </summary>
-        </member>
         <member name="T:DBreeze.Storage.FSR">
             <summary>
             DBreeze random and sequential disk IO buffers implementation.
@@ -2145,6 +2745,21 @@
         <member name="F:DBreeze.Storage.FSR._randBuf">
             <summary>
             Random buffer
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.FSR.r">
+            <summary>
+            Record in rollback is characterized with 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.r.o">
+            <summary>
+            offset in rollback file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.r.l">
+            <summary>
+            Lenght in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.FSR._rollbackCache">
@@ -2173,6 +2788,31 @@
             DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
             If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
             LTrieRow will have different version and will return exception.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.Length">
+            <summary>
+            Physical length of the storage file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.StorageFixTime">
+            <summary>
+            Returns time of file initiation, ead remarks on 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.TrieSettings">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.DbreezeConfiguration">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.Table_FileName">
+            <summary>
+            
             </summary>
         </member>
         <member name="M:DBreeze.Storage.FSR.Table_Dispose">
@@ -2281,44 +2921,43 @@
             Standard and transactional rollback
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.FSR.Length">
-            <summary>
-            Physical length of the storage file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.StorageFixTime">
-            <summary>
-            Returns time of file initiation, ead remarks on 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.TrieSettings">
+        <member name="M:DBreeze.Storage.IStorage.Table_Read(System.Boolean,System.Int64,System.Int32)">
             <summary>
             
             </summary>
+            <param name="useCache">true=reading threads, false = writing threads</param>
+            <param name="offset"></param>
+            <param name="quantity"></param>
+            <returns></returns>
         </member>
-        <member name="P:DBreeze.Storage.FSR.DbreezeConfiguration">
+        <member name="M:DBreeze.Storage.IStorage.Table_Read(System.Boolean,System.Byte[],System.Int32)">
             <summary>
             
             </summary>
+            <param name="useCache">true=reading threads, false = writing threads</param>
+            <param name="offset"></param>
+            <param name="quantity"></param>
+            <returns></returns>
         </member>
-        <member name="P:DBreeze.Storage.FSR.Table_FileName">
+        <member name="M:DBreeze.Storage.IStorage.RestoreTableFromTheOtherTable(System.String)">
             <summary>
             
             </summary>
+            <param name="newTableFullPath"></param>
         </member>
-        <member name="T:DBreeze.Storage.FSR.r">
+        <member name="P:DBreeze.Storage.IStorage.StorageFixTime">
             <summary>
-            Record in rollback is characterized with 
+            UTC DateTime when table was initialized
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.FSR.r.o">
+        <member name="P:DBreeze.Storage.IStorage.Length">
             <summary>
-            offset in rollback file
+            Length of the Storage
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.FSR.r.l">
+        <member name="T:DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy">
             <summary>
-            Lenght in rollback file
+            
             </summary>
         </member>
         <member name="M:DBreeze.Storage.MemoryStorage.#ctor(System.Int32,System.Int32,DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy)">
@@ -2329,6 +2968,11 @@
             <param name="increaseOnBytes">Rules is strategy is FIXED_LENGTH_INCREASE, quantity of bytes to increse memory</param>
             <param name="strategy">Memory expand strategy</param>
         </member>
+        <member name="P:DBreeze.Storage.MemoryStorage.RawBuffer">
+            <summary>
+            Gives an ability to access field itself. Must use external logical lock.
+            </summary>
+        </member>
         <member name="M:DBreeze.Storage.MemoryStorage.Clear(System.Boolean)">
             <summary>
             Sets EOF pointer to 0.
@@ -2338,11 +2982,21 @@
             </summary>
             <param name="withInternalArrayResize"></param>
         </member>
+        <member name="P:DBreeze.Storage.MemoryStorage.EOF">
+            <summary>
+            End of file
+            </summary>
+        </member>
         <member name="M:DBreeze.Storage.MemoryStorage.GetFullData">
             <summary>
             Can return null
             </summary>
             <returns></returns>
+        </member>
+        <member name="P:DBreeze.Storage.MemoryStorage.MemorySize">
+            <summary>
+            Total reserved field length. EOF shows the end of useful information.
+            </summary>
         </member>
         <member name="M:DBreeze.Storage.MemoryStorage.Read(System.Int32,System.Int32)">
             <summary>
@@ -2393,784 +3047,6 @@
             </summary>
             <param name="datas"></param>
         </member>
-        <member name="P:DBreeze.Storage.MemoryStorage.RawBuffer">
-            <summary>
-            Gives an ability to access field itself. Must use external logical lock.
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MemoryStorage.EOF">
-            <summary>
-            End of file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MemoryStorage.MemorySize">
-            <summary>
-            Total reserved field length. EOF shows the end of useful information.
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="T:DBreeze.Tries.ITrieRootNode">
-            <summary>
-            Identifies any type of RootNode in different tries
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.Iterations.Backward.ReturnKeyValuePair">
-            <summary>
-            If we use load Key already With Value, or just key and link to the value
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.ItBwdFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
-            <summary>
-            ItBwdFromTo
-            </summary>
-            <param name="gn"></param>
-            <param name="generationMapLine"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            IterateBackwardFromTo
-            </summary>
-            <param name="initKey"></param>
-            <param name="stopKey"></param>
-            <param name="inclStartKey"></param>
-            <param name="inclStopKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.LianaTrie.Iterations.Forward.ReturnKeyValuePair">
-            <summary>
-            If we use load Key already With Value, or just key and link to the value
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.ItFrwFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
-            <summary>
-            ItFrwFromTo
-            </summary>
-            <param name="gn"></param>
-            <param name="generationMapLine"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            IterateForwardFromTo
-            </summary>
-            <param name="initKey"></param>
-            <param name="stopKey"></param>
-            <param name="inclStartKey"></param>
-            <param name="inclStopKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32)">
-            <summary>
-            Used for finding out hash from Generation Map
-            </summary>
-            <param name="index"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.QuantityReservationSlots">
-            <summary>
-            Reservations are calculated by Schema. They Depend upon quantity of Existing Kids.
-            QuantityAvailableReservations is calculated in ReadSelf if Kid.Pointer equals to ZeroPointer - it means reservation.
-            Default is 0
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.ToChangeParentNode">
-            <summary>
-            When New Node is created it's true
-            After Reading Node it must become false,
-            After WriteSelf it will be or true or false.
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.KidsBeforeModification">
-            <summary>
-            Field which contains either null (if Generation node is empty and had no kids) or value in format of prepared for Save Kids,
-            in case if ReadOutExistingNode.
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.MaximumKidLineLength">
-            <summary>
-            Is calculated as LengthOfTheKidsBlockInFile(2 bytes) + (256 * (DefaultPointerLen + 1[byte definition]))
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.SetupKidWithValue(System.Byte,System.Boolean,System.Byte[]@,System.Byte[]@,System.Boolean,System.Boolean@,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="kid"></param>
-            <param name="lastElementOfTheKey"></param>
-            <param name="fullKey"></param>
-            <param name="value"></param>
-            <param name="useExistingPointerToValue"></param>
-            <param name="WasUpdated">true means that value existed and was updated</param>
-            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.RemoveKid(System.Byte,System.Boolean,System.Byte[]@,System.Boolean@,System.Boolean,System.Byte[]@)">
-            <summary>
-            Pointer to the removing key value can be null, if such key never existed
-            </summary>
-            <param name="kid"></param>
-            <param name="lastElementOfTheKey"></param>
-            <param name="key"></param>
-            <param name="ptrToValue"></param>
-            <param name="WasRemoved">indicates that value existed if true</param>
-            <param name="retrieveDeletedValue">indicates if we must also return deleted value</param>
-            <param name="WasRemoved">deleted value as byte[] will be here</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.TryOverWriteValuePartially(System.Byte[],System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@)">
-            <summary>
-            Returns pointer to the newly stored value
-            </summary>
-            <param name="ptr"></param>
-            <param name="value"></param>
-            <param name="fullKey"></param>
-            <param name="startIndex">from which point we should overwrite value</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.TryOverWriteValue(System.Byte[],System.Byte[]@,System.Byte[]@)">
-            <summary>
-            Returns pointer to the newly stored value
-            </summary>
-            <param name="ptr"></param>
-            <param name="value"></param>
-            <param name="fullKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationNode.GetQuantityOfReservationSlots">
-            <summary>
-            Calculating Quantity of Reservations slots for 0 and 1 Evolutions.
-            </summary>
-            <param name="current"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.LianaTrie.LTrie">
-            <summary>
-            Liana Trie
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.ITransactable.ITRCommitFinished">
-            <summary>
-            Is called by Transaction Journal, to make root available for all and delete rollback file
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.ITransactable.TransactionIsFinished(System.Int32)">
-            <summary>
-            Transaction Coordinator notifies table that transaction is finished
-            and table can clear ModificationThreadId and run RollBackProcedure (if transaction was finised without Commit)
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.ITransactable.ModificationThreadId(System.Int32)">
-            <summary>
-            TransactionsCoordinator via this function will explain to the table that transactionThreadId thread will make modificatons.
-            later when calling fetch functions, table will be able to return different RootNodes depending upon the thread
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie.Cache">
-            <summary>
-            Cache for overwriting nodes and values
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie.TableIsModified">
-            <summary>
-            Identifies that after Saving0generationNode was made no changes (Add,Remove etc)
-            Used via TableIsModified
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie._DtTableFixed">
-            <summary>
-            Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
-            Access via DtTableFixed interface ITrie
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie.NestedTablesCoordinator">
-            <summary>
-            Coordinator of nested tables
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie.OverWriteIsAllowed">
-            <summary>
-            Concerns Nodes, Values, DataBlocks.
-            Flag can be setup only via nested table or transaction
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie.ValuesLazyLoadingIsOn">
-            <summary>
-            When it's on iterators, Select and SelectDirect return Row with the key and a pointer to the value.
-            <par>Value will be read out when we call it Row.Value.</par>
-            <pa>When it's off we read value together with the key in one round</pa>
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.#ctor(DBreeze.Storage.IStorage)">
-            <summary>
-            Liana Trie
-            </summary>
-            <param name="storage"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.CheckTableIsOperable">
-            <summary>
-            Will return exception, if not.
-            Must be called by all functions
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.RollBack">
-            <summary>
-            RollBack
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.GetTable(DBreeze.LianaTrie.LTrieRow,System.Byte[]@,System.UInt32,DBreeze.LianaTrie.LTrie,System.Boolean,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="row"></param>
-            <param name="tableIndex"></param>
-            <param name="masterTrie"></param>
-            <param name="insertTable">Regulates if InsertTable or SelectTable was called (ability to create table if it doesn't exist)</param>
-            <param name="useCache">Regulates READ table thread or WRITE table thread - visibilityscope</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.Add(System.Byte[],System.Byte[])">
-            <summary>
-            Adds key. Overload without refs
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.Add(System.Byte[]@,System.Byte[]@,System.Boolean@,System.Boolean)">
-            <summary>
-            Adds key
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
-            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
-            <returns>returns physical link to value</returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.AddPartially(System.Byte[],System.Byte[],System.UInt32,System.Int64@)">
-            <summary>
-            Overload without refs
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.AddPartially(System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@)">
-            <summary>
-            REMEMBER THAT 
-            all keys are first formed in memory and then copied to the disk, so it's not for storing movies inside of the value.
-            For storing movies (BLOBs) will be used other approach, see docu.
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.AddPartially(System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@,System.Boolean@)">
-            <summary>
-            REMEMBER THAT 
-            all keys are first formed in memory and then copied to the disk, so it's not for storing movies inside of the value.
-            For storing movies (BLOBs) will be used other approach, see docu.
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <param name="WasUpdated"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.Remove(System.Byte[]@,System.Boolean@,System.Boolean,System.Byte[]@)">
-            <summary>
-            Removes the key
-            </summary>
-            <param name="key"></param>
-            <param name="WasRemoved">indicates that value existed if true</param>
-            <param name="retrieveDeletedValue">indicates if we should bind deleted value to the result</param>
-            <param name="deletedValue">interesting only if WasRemoved = true and retrieveDeletedValue is true</param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.SaveGenerationMap">
-            <summary>
-            Technical function.
-            Used by Fetch SYNCHRO_READ FUNCs, which use write root node, to make last in-memory changes to flash on the disk, before commit.
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.GetTrieReadNode(System.Int64@)">
-            <summary>
-            Interface function which recreates every time new rootNode from itself by every new function call.
-            and also packs root node last fixation dateTime (ROLL or COMMIT).
-            It will be used for READ FUNC's via Transaction, they can decide if to create new instance of read root or use existing.
-            Returns NULL is !TableIsOperable.
-            </summary>
-            <param name="modifiedDt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.Count(System.Boolean)">
-            <summary>
-            if useCache = true; uses newly created root node, else uses writing root node
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.Count(DBreeze.Tries.ITrieRootNode)">
-            <summary>
-            Can be used inside of DBreeze - concerns all read functions
-            </summary>
-            <param name="SYNCHRO_READ"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[],System.Boolean)">
-            <summary>
-            if useCache = true; uses newly created root node, else uses writing root node
-            </summary>
-            <param name="key"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[]@,DBreeze.Tries.ITrieRootNode)">
-            <summary>
-            DBreeze compatible.
-            Extension, which helps to READ-THREADS smartly utilize created before read-roots
-            </summary>
-            <param name="key"></param>
-            <param name="readRootNode">if null then WRITE-ROOT NODE</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWith(System.Byte[])">
-            <summary>
-            Always creates new root to get committed data
-            </summary>
-            <param name="startKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[],System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[],DBreeze.Tries.ITrieRootNode)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="readRootNode"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[],System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[],DBreeze.Tries.ITrieRootNode)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="readRootNode"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.SingleCommit">
-            <summary>
-            Wrapper for ITransactable
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.SingleRollback">
-            <summary>
-            Wrapper for ITransactable
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrie._modificationThreadId">
-            <summary>
-            This variable becomes value more then -1 via TrasactionCoordinator, when it returns TableForWrite
-            It becomes -1 after Transaction End call.
-            No need of lock.
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKid.Val">
-            <summary>
-            0-255, in case if ValueKid = false, 256 if ValueKid = true;
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKid.Ptr">
-            <summary>
-            Pointer to the next node or to the value
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKid.Exists">
-            <summary>
-            Default value is false
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKid.LinkToNode">
-            <summary>
-            Works when ValueKid = false.
-            True is link to node
-            False if link to value.
-            Default is true.
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKid.ValueKid">
-            <summary>
-            Identifies that it's a value for this node, not the kid from 0-255.
-            If true, Ptr has link to the value.
-            Default is false
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKidsInNode.ValueIsEmpty">
-            <summary>
-            Indicates that Kids Line contains no Value-Kid
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieKidsInNode.AllowSave">
-            <summary>
-            Optimizer. We don't want to overwrite node, if really nothing has changed. In the beginning value is true.
-            ParseKids function make it false.
-            Later by Adding or removing elements we either make it true or leave as false.
-            search in the code  (!AllowSave).
-            The flag work result is visible in GetKidsForSave function.
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieKidsInNode.ParseKids(System.Byte[]@)">
-            <summary>
-            Returns quantity of reservation slots
-            </summary>
-            <param name="bKids"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieKidsInNode.GetKidValue">
-            <summary>
-            Gets Value kid (before 0-255)
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieKidsInNode.GetKidsForSave(System.Int32)">
-            <summary>
-            Returns null, if not necessary to save generation node (cause it didn't change).  AllowSave = false;
-            </summary>
-            <param name="reservation"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieRootNode.RecordsCount">
-            <summary>
-            Indicates quantity of Records in the table
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.DeserializeRootNode">
-            <summary>
-            bytes[] to objects
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.SerializeRootNode">
-            <summary>
-            Root to byte[]
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.AddKey(System.Byte[]@,System.Byte[]@,System.Boolean@,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="WasUpdated">true means that value existed and was updated</param>
-            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then we value exists, if false - we have inserted new one</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.AddKeyPartially(System.Byte[]@,System.Byte[]@,System.UInt32,System.Int64@,System.Boolean@)">
-            <summary>
-            Returns link to the full value together with the key
-            </summary>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.RemoveAll(System.Boolean)">
-            <summary>
-            Check TransactionCommit in case of RemoveAll with file Recreation.
-            Note if some other threads are reading parallel data, exception will be thrown in their transaction.
-            It's correct.
-            </summary>
-            <param name="withFileRecreation"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.ChangeKey(System.Byte[]@,System.Byte[]@)">
-            <summary>
-            Takes value fresh no committed value row.GetFullValue(false);
-            </summary>
-            <param name="oldKey"></param>
-            <param name="newKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.ChangeKey(System.Byte[]@,System.Byte[]@,System.Byte[]@)">
-            <summary>
-            Takes value fresh no committed value row.GetFullValue(false);
-            </summary>
-            <param name="oldKey"></param>
-            <param name="newKey"></param>
-            <param name="refToInsertedValue">returns ptr in the file to the new key</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.RemoveKey(System.Byte[]@,System.Boolean@,System.Boolean,System.Byte[]@)">
-            <summary>
-            Will return pointer to the value of the removing kid (if it existed). Otherwise NULL.
-            </summary>
-            <param name="key"></param>
-            <param name="WasRemoved">indicates that value existed if true</param>
-            <param name="retrieveDeletedValue">indicates if we should bind deleted value to the result</param>
-            <param name="deletedValue">interesting only if WasRemoved = true and retrieveDeletedValue is true</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.GetKey(System.Byte[],System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="key"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieSetupKidResult.ValueLink">
-            <summary>
-            Link to the full value line (together with the key)
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieRow.ValueStartPointer">
-            <summary>
-            Represents pointer to the value in physical file, remember for READ must come via sync-cache
-            -1 if not defined
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieRow.ValueFullLength">
-            <summary>
-            If ValueStartPointer == -1, has no meaning
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieRow.Key">
-            <summary>
-            Default is null
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRow.GetPartialValue(System.UInt32,System.UInt32,System.Boolean)">
-            <summary>
-            Returns either value partially or null
-            </summary>
-            <param name="startIndex"></param>
-            <param name="length"></param>
-            <param name="useCache">if true, then only committed data will be shown</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRow.GetFullValue(System.Boolean)">
-            <summary>
-            Returns either value as byte array or null if value doesn't exist
-            </summary>
-            <param name="useCache">if true, then only committed data will be shown</param>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.LianaTrie.LTrieRow.LinkToValue">
-            <summary>
-            Experimental, instead of Value, we supply link to the value
-            </summary>
-        </member>
-        <member name="P:DBreeze.LianaTrie.LTrieRow.Exists">
-            <summary>
-            Default is false
-            </summary>
-        </member>
-        <member name="F:DBreeze.LianaTrie.LTrieWriteCache.rootTransaction">
-            <summary>
-            Represents old Root as byte[] array for the moment while we make Transactional Commit. Otherwise remains null
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RootNodeWrite(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="rootData"></param>
-            <param name="oldRootData"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RootNodeRead">
-            <summary>
-            
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.Commit(System.Byte[]@,System.Byte[]@)">
-            <summary>
-            
-            </summary>
-            <param name="rootData"></param>
-            <param name="oldRootData"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RollBack">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.TransactionalCommit(System.Byte[]@,System.Byte[]@)">
-            <summary>
-            
-            </summary>
-            <param name="rootData"></param>
-            <param name="oldRootData"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.TransactionalCommitFinished">
-            <summary>
-            We need here to clear old root and call Storage Commit is finished
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.TransactionalRollBack">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.RecreateDB">
-            <summary>
-            Used by Root Node RemoveAll with key re-creation
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GetNodeKids(System.Byte[])">
-            <summary>
-            Returns NULL if not found
-            </summary>
-            <param name="generationMapLine"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.AddMapKids(System.Byte[],System.Byte[])">
-            <summary>
-            If line exists - makes nothing, otherwise writes in
-            </summary>
-            <param name="generationMapLine"></param>
-            <param name="kidsBeforeModification"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingEnd(System.Byte[],System.Byte[])">
-            <summary>
-            Writing Generation Node to the end of File.
-            We use current generation node pointer to black list it.
-            if we reuse this new pointer inside of one transaction for overwriting, we don't need to back it up for rollback any more.
-            </summary>
-            <param name="pointer"></param>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[])">
-            <summary>
-            OverWriting Generation Node, we supply params where, oldData and newData.
-            Old Data - not used thou
-            </summary>
-            <param name="pointer"></param>
-            <param name="oldData"></param>
-            <param name="newData"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="useCache"></param>
-            <param name="pointer"></param>
-            <param name="cachedGenerationMapLine"></param>
-            <param name="MaximumNodeLineLength"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadDynamicDataBlock(System.Byte[]@,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="initPtr"></param>
-            <param name="useCache"></param>
-            <returns>return NULL if not found or stored value is NULL, otherwise returns byte[]</returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.WriteDynamicDataBlock(System.Byte[]@,System.Byte[]@)">
-            <summary>
-            
-            </summary>
-            <param name="initPtr"></param>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ValueWritingEnd(System.Byte[]@,System.Byte[])">
-            <summary>
-             
-            </summary>
-            <param name="data"></param>
-            <param name="oldPtr"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ValueWritingOver(System.Byte[],System.Byte[]@,System.Byte[]@,System.Byte[]@)">
-            <summary>
-            
-            </summary>
-            <param name="pointer"></param>
-            <param name="oldData"></param>
-            <param name="newData"></param>
-            <param name="key"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadKeyValue(System.Boolean,System.Byte[],System.Int64@,System.UInt32@,System.Byte[]@,System.Byte[]@)">
-            <summary>
-            Interanl Function for reading Key and Value in one set. Initial block read is setUp to 4096 bytes
-            </summary>
-            <param name="useCache"></param>
-            <param name="pointer">ptr to KVP</param>
-            <param name="valueStartPtr">will be more then 0 only in case if valueLength more then 0. It makes no diff for the null and byte[0] values in this context. Avoid byte[0]</param>
-            <param name="valueLength">will be 0 if val is null and if val is byte[0]</param>
-            <param name="key"></param>
-            <param name="val"></param>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadKey(System.Boolean,System.Byte[])">
-            <summary>
-            Internal function for reading key only from DB storage
-            Is called from ReadKey
-            </summary>
-            <param name="useCache"></param>
-            <param name="pointer">ptr to KVP</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadValue(System.Byte[],System.Boolean,System.Int64@,System.UInt32@)">
-            <summary>
-            
-            </summary>
-            <param name="pointer">ptr to KVP</param>
-            <param name="useCache"></param>
-            <param name="valueStartPtr"></param>
-            <param name="valueLength"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadValuePartially(System.Byte[],System.UInt32,System.UInt32,System.Boolean,System.Int64@,System.UInt32@)">
-            <summary>
-            
-            </summary>
-            <param name="pointer"></param>
-            <param name="startIndex"></param>
-            <param name="length"></param>
-            <param name="useCache"></param>
-            <param name="valueStartPtr">returns pointer where value starts from. -1 if can't be determined</param>
-            <param name="valueLength">returns full value length; 0 - default</param>
-            <returns></returns>
-        </member>
         <member name="F:DBreeze.Storage.TrieSettings.POINTER_LENGHT">
             <summary>
             User parameter for the table.
@@ -3200,6 +3076,130 @@
             Next 3 concern alternative table storage pathes.
             </summary>
         </member>
+        <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns>false if thread grants access, false if thread is in a queue</returns>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.Dispose">
+            <summary>
+            MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
+            </summary>
+        </member>
+        <member name="T:DBreeze.Tries.ITrieRootNode">
+            <summary>
+            Identifies any type of RootNode in different tries
+            </summary>
+        </member>
+        <member name="T:DBreeze.DBreezeEngine">
+            <summary>
+            Main DBreeze Database class.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.MainFolder">
+            <summary>
+            DBreeze version number
+            </summary>        
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
+            <summary>
+            must be filled with a text note who brought to DBisOperable = false
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.RemoteEngine">
+            <summary>
+            Initialized from DBreezeRemoteEngine
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.Configuration">
+            <summary>
+            Dbreeze Configuration.
+            For now BackupPlan is included.
+            Later can be added special settings for each entity defined by string pattern.
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.#ctor">
+            <summary>
+            For DbreezeRemoteEngine wrapper
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.#ctor(DBreeze.DBreezeConfiguration)">
+            <summary>
+            Dbreeze instantiator
+            </summary>
+            <param name="dbreezeConfiguration"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.ConstructFromConfiguration(DBreeze.DBreezeConfiguration)">
+            <summary>
+            Constructing Dbreeze from dbreezeConfiguration
+            </summary>
+            <param name="dbreezeConfiguration"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="DBreezeDataFolderName"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.InitDb">
+            <summary>
+            InitDb
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.Dispose">
+            <summary>
+            Dispose
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.GetTransaction">
+            <summary>
+            Returns transaction object.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            Returns transaction object.
+            </summary>
+            <param name="tablesLockType">
+            <para>SHARED: threads can use listed tables in parallel. Must be used together with tran.SynchronizeTables command, if necessary.</para>
+            <para>EXCLUSIVE: if other threads use listed tables for reading or writing, current thread will be in a waiting queue.</para>
+            </param>
+            <param name="tables"></param>
+            <returns>Returns transaction object</returns>
+        </member>
+        <member name="P:DBreeze.DBreezeEngine.Scheme">
+            <summary>
+            Returns DBreeze schema object
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.ITransactable.ITRCommitFinished">
+            <summary>
+            Is called by Transaction Journal, to make root available for all and delete rollback file
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.ITransactable.TransactionIsFinished(System.Int32)">
+            <summary>
+            Transaction Coordinator notifies table that transaction is finished
+            and table can clear ModificationThreadId and run RollBackProcedure (if transaction was finised without Commit)
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.ITransactable.ModificationThreadId(System.Int32)">
+            <summary>
+            TransactionsCoordinator via this function will explain to the table that transactionThreadId thread will make modificatons.
+            later when calling fetch functions, table will be able to return different RootNodes depending upon the thread
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
         <member name="F:DBreeze.Transactions.Transaction.ManagedThreadId">
             <summary>
             Managed threadId of the transaction
@@ -3215,7 +3215,14 @@
             
             </summary>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SynchronizeTables(System.Collections.Generic.List{System.String})">
+        <member name="P:DBreeze.Transactions.Transaction.ValuesLazyLoadingIsOn">
+            <summary>
+            When it's on iterators return Row with the key and a pointer to the value.
+            <par>Value will be read out when we call it Row.Value.</par>
+            <pa>When it's off we read value together with the key in one round</pa>
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.SynchronizeTables(System.Collections.Generic.IList{System.String})">
             <summary>
             Use before any table modification command inside of the transaction.
             <para>In case if transaction is going to modify only 1 table, reservation is not necessary, there is no danger of the deadlock.</para>
@@ -3262,6 +3269,12 @@
         <member name="F:DBreeze.Transactions.Transaction.transactionReadTables">
             <summary>
             Small buffer for the tables, we are going to read from.
+            </summary>
+        </member>
+        <member name="T:DBreeze.Transactions.Transaction.Rtbe">
+            <summary>
+            Technical class, who holds reference to the table and its last modification dts
+            ReadTableElement
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.GetReadTableFromBuffer(System.String,DBreeze.Tries.ITrieRootNode@)">
@@ -4096,22 +4109,15 @@
             <param name="tableName"></param>
             <param name="newTableFullPath"></param>
         </member>
-        <member name="P:DBreeze.Transactions.Transaction.ValuesLazyLoadingIsOn">
-            <summary>
-            When it's on iterators return Row with the key and a pointer to the value.
-            <par>Value will be read out when we call it Row.Value.</par>
-            <pa>When it's off we read value together with the key in one round</pa>
-            </summary>
-        </member>
-        <member name="T:DBreeze.Transactions.Transaction.Rtbe">
-            <summary>
-            Technical class, who holds reference to the table and its last modification dts
-            ReadTableElement
-            </summary>
-        </member>
         <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
             <summary>
             Dictionary of all active transactions. Key is ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
+            <summary>
+            Fast access to the Schema object.
+            Used by Transaction class
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
@@ -4175,12 +4181,6 @@
             Normal Engine Stop, usually in case of Main Thread or DLL disposing
             </summary>
         </member>
-        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
-            <summary>
-            Fast access to the Schema object.
-            Used by Transaction class
-            </summary>
-        </member>
         <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
             <summary>
             We try to clear tranasction file, when its length is more then 10MB and if it's possible
@@ -4221,6 +4221,21 @@
             Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
             </summary>
         </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
+            <summary>
+            Easy access to transactin coordinator for the Transaction which is visible for the user
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.Transaction">
+            <summary>
+            Transaction visible for the user
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionThreadId">
+            <summary>
+            
+            </summary>
+        </member>
         <member name="F:DBreeze.Transactions.TransactionUnit._sync_transactionWriteTables">
             <summary>
             Lock for all tables definitions inside current transaction
@@ -4259,6 +4274,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionWriteTablesCount">
+            <summary>
+            returns count of reserved tables, used by transaction just to find out if reservation (or first table modification) was done or not.
+            reservation can be done only once.
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Transactions.TransactionUnit.If_TableIsReservedForWrite(System.String)">
             <summary>
             Used inside of Transaction, we can choose fot READ or READ_SYNCHRO for READ FUNCs
@@ -4282,28 +4304,6 @@
             
             </summary>
         </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
-            <summary>
-            Easy access to transactin coordinator for the Transaction which is visible for the user
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.Transaction">
-            <summary>
-            Transaction visible for the user
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionThreadId">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionWriteTablesCount">
-            <summary>
-            returns count of reserved tables, used by transaction just to find out if reservation (or first table modification) was done or not.
-            reservation can be done only once.
-            </summary>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
             <summary>
             Executes async, then calls Callback function
@@ -4312,6 +4312,13 @@
             <param name="f"></param>
             <param name="arg"></param>
             <param name="callback"></param>
+        </member>
+        <member name="T:DBreeze.Utils.BloomFilter.Filter`1.HashFunction">
+            <summary>
+            A function that can be used to hash input.
+            </summary>
+            <param name="input">The values to be hashed.</param>
+            <returns>The resulting hash code.</returns>
         </member>
         <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32)">
             <summary>
@@ -4366,6 +4373,11 @@
             <param name="item"></param>
             <returns></returns>
         </member>
+        <member name="P:DBreeze.Utils.BloomFilter.Filter`1.Truthiness">
+            <summary>
+            The ratio of false to true bits in the filter. E.g., 1 true bit in a 10 bit filter means a truthiness of 0.1.
+            </summary>
+        </member>
         <member name="M:DBreeze.Utils.BloomFilter.Filter`1.computeHash(System.Int32,System.Int32,System.Int32)">
             <summary>
             Performs Dillinger and Manolios double hashing. 
@@ -4386,18 +4398,6 @@
             </summary>
             <param name="input">The string to hash.</param>
             <returns>The hashed result.</returns>
-        </member>
-        <member name="P:DBreeze.Utils.BloomFilter.Filter`1.Truthiness">
-            <summary>
-            The ratio of false to true bits in the filter. E.g., 1 true bit in a 10 bit filter means a truthiness of 0.1.
-            </summary>
-        </member>
-        <member name="T:DBreeze.Utils.BloomFilter.Filter`1.HashFunction">
-            <summary>
-            A function that can be used to hash input.
-            </summary>
-            <param name="input">The values to be hashed.</param>
-            <returns>The resulting hash code.</returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.EnlargeByteArray_BigEndian(System.Byte[],System.Int32)">
             <summary>

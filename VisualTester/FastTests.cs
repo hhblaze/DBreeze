@@ -994,30 +994,30 @@ namespace VisualTester
             }
 
 
-          //  enumtest();
+            //  enumtest();
 
             //MATRIX_BUILD();
-           // MATRIX_READOUT_V2();
+            // MATRIX_READOUT_V2();
 
-           // TestSecondaryIndexPreparation();
+            // TestSecondaryIndexPreparation();
             //TestNewStorageLayer();
 
-          // TestMemoryStorage();
+            // TestMemoryStorage();
             //TestClosestToPrefix();
 
-           // testC6();
+            // testC6();
             //testC7();
             //testC8();
             //testC9();
             //testC10();
 
             //testF_004();
-           // testF_003();
+            // testF_003();
             //testF_009();
 
-           // testF_010();
+            // testF_010();
 
-           // testF_001();
+            // testF_001();
             //testC14();
             //testC15();
             //testC16();
@@ -1044,9 +1044,37 @@ namespace VisualTester
 
             //NetworkTest();
             //NetworkTestDisk();
+            Test_valueIsUsed();
         }
 
+        void Test_valueIsUsed()
+        {
+            //using (var tran = engine.GetTransaction())
+            //{
+            //    tran.Insert<int, int>("a", 1, 1);
+            //    tran.Commit();
+            //}
 
+            using (var tran = engine.GetTransaction())
+            {
+               // tran.ValuesLazyLoadingIsOn = false;
+                var row = tran.Select<int, int>("a", 1);
+                var v = row.Value;
+
+                //tran.Insert<int, int>("a", 1, 2);
+
+                v = row.Value;
+
+                //foreach (var xrow in tran.SelectForward<int, int>("a"))
+                //{
+                //    var v1 = xrow.Value;
+                //    v1 = xrow.Value;
+                //}
+
+
+                //tran.Commit();
+            }
+        }
 
 
         public class RemoteInstanceCommunicator : DBreeze.Storage.RemoteInstance.IRemoteInstanceCommunicator

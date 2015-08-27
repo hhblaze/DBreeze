@@ -119,7 +119,7 @@ namespace DBreeze.Transactions
         /// <para>$ - 1 or more symbols except slash (every symbol after $ will be cutted): Items$ U Items123;  Items$ !U Items123/Pictures </para>
         /// </summary>
         /// <param name="tablesNamesPatterns">can be either tableName or pattern like Articles#/Items*</param>
-        public void SynchronizeTables(List<string> tablesNamesPatterns)
+        public void SynchronizeTables(IList<string> tablesNamesPatterns)
         {
 
             this.CheckIfTransactionHasTablesRegisteredForWrite(tablesNamesPatterns);
@@ -151,7 +151,7 @@ namespace DBreeze.Transactions
             this.SynchronizeTables(tablesNamesPatterns.Select(r => r).ToList());
         }
 
-        private void CheckIfTransactionHasTablesRegisteredForWrite(List<string> tablesNames)
+        private void CheckIfTransactionHasTablesRegisteredForWrite(IList<string> tablesNames)
         {
             if (syncroTablesIsDone)
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLES_RESERVATION_CANBEDONE_ONCE, new Exception());
