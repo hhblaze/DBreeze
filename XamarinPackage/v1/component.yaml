@@ -1,0 +1,22 @@
+%YAML 1.2
+---
+summary: .NET NoSQL KV ACID embedded database
+getting-started: GettingStarted.md
+details: Details.md
+license: License.md
+icons: 
+  - dbreeze_128x128.png
+  - dbreeze_512x512.png
+publisher: tiesky.com
+name: DBreeze
+id: dbreeze
+samples: 
+  iOS Sample: samples/ios/TestIOS/TestIOS.sln
+  Android Sample: samples/android/AndroidTest/AndroidTest.sln
+publisher-url: http://dbreeze.tiesky.com
+no_build: true
+libraries: 
+  ios: lib/ios/DBreeze.dll
+  android: lib/android/DBreeze.dll
+version: "1.072.2015.0827"
+...
