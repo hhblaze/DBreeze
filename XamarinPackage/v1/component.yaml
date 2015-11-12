@@ -1,22 +1,22 @@
 %YAML 1.2
 ---
-summary: .NET NoSQL KV ACID embedded database
+summary: Professional .NET NoSQL Key Value transactional ACID embedded multi-threaded object database
 getting-started: GettingStarted.md
 details: Details.md
 license: License.md
 icons: 
   - dbreeze_128x128.png
   - dbreeze_512x512.png
-publisher: tiesky.com
+publisher: dbreeze.tiesky.com
 name: DBreeze
-id: dbreeze
+id: DBreeze
 samples: 
-  iOS Sample: samples/ios/TestIOS/TestIOS.sln
-  Android Sample: samples/android/AndroidTest/AndroidTest.sln
+  iOS Sample: samples/ios/DBreeze.iOS/DBreeze.iOS.sln
+  Android Sample: samples/android/DBreeze.Android/DBreeze.Android.sln
 publisher-url: http://dbreeze.tiesky.com
 no_build: true
 libraries: 
   ios: lib/ios/DBreeze.dll
   android: lib/android/DBreeze.dll
-version: "1.072.2015.0827"
+version: "72.0"
 ...
