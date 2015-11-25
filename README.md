@@ -6,7 +6,7 @@ DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?Pro
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
 
 DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value store ), transactional, ACID-compliant, multi-threaded, object database management system for
-.NET 3.5> XAMARIN MONO . Written in C# 
+.NET 3.5> / XAMARIN MONO / .NET Core . Written in C# 
 
 - It's a free software for those, who think that it should be free.
 - Since June 2012 is used in our own production environment.
