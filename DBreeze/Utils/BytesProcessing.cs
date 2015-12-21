@@ -3060,7 +3060,43 @@ namespace DBreeze.Utils
         static readonly char[] _hexDigits = "0123456789ABCDEF".ToCharArray();
 
         /// <summary>
-        /// To pure HEX string without delimiters
+        /// Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static byte[] ToByteArrayFromHex(this string str)
+        {
+            if (String.IsNullOrEmpty(str))
+                return null;
+
+            byte[] tr = new byte[str.Length / 2];
+            int j = 0;
+            int d = 0;
+            for (int i = 0; i < str.Length; i += 2)
+            {
+                d = str[i] - 48;
+                d = d > 9 ? d - 7 : d;
+                tr[j] = (byte)(d * 16);
+                d = str[i + 1] - 48;
+                d = d > 9 ? d - 7 : d;
+                tr[j] += (byte)d;
+                j++;
+            }
+            return tr;
+        }
+
+        /// <summary>
+        /// Generates Hex 1F0000000020 from byte[]. Backward function is ToByteArrayFromHex/ToByteArrayFromHex
+        /// </summary>
+        /// <param name="dBytes"></param>
+        /// <returns></returns>
+        public static string ToHexFromByteArray(this byte[] dBytes)
+        {
+            return dBytes.ToBytesString();
+        }
+
+        /// <summary>
+        /// To pure HEX string without delimiters, or use ToHexFromByteArray
         /// </summary>
         /// <param name="dBytes"></param>
         /// <returns></returns>

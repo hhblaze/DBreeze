@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 
 using DBreeze.Utils;
 using DBreeze.Exceptions;
@@ -308,6 +309,7 @@ namespace DBreeze.DataTypes
                 {
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, td.ToString(), null);
                 }
+                //else if (td.GetTypeInfo().IsEnum)
                 else if (td.IsEnum)
                 {
                     var enumtype = Enum.GetUnderlyingType(td);

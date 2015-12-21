@@ -4,19 +4,19 @@ summary: Professional .NET NoSQL Key Value transactional ACID embedded multi-thr
 getting-started: GettingStarted.md
 details: Details.md
 license: License.md
-icons: 
+icons:
   - dbreeze_128x128.png
   - dbreeze_512x512.png
 publisher: dbreeze.tiesky.com
 name: DBreeze
 id: DBreeze
-samples: 
-  iOS Sample: samples/ios/DBreeze.iOS/DBreeze.iOS.sln
+samples:
+  iOS Sample: samples/ios-unified/DBreeze.iOS/DBreeze.iOS.sln
   Android Sample: samples/android/DBreeze.Android/DBreeze.Android.sln
 publisher-url: http://dbreeze.tiesky.com
 no_build: true
-libraries: 
-  ios: lib/ios/DBreeze.dll
+libraries:
+  ios-unified: lib/ios-unified/DBreeze.dll
   android: lib/android/DBreeze.dll
 version: "72.0"
 ...

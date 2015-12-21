@@ -5185,9 +5185,23 @@
             Used by ToBytesString
             </summary>
         </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToByteArrayFromHex(System.String)">
+            <summary>
+            Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
+            </summary>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToHexFromByteArray(System.Byte[])">
+            <summary>
+            Generates Hex 1F0000000020 from byte[]. Backward function is ToByteArrayFromHex/ToByteArrayFromHex
+            </summary>
+            <param name="dBytes"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.BytesProcessing.ToBytesString(System.Byte[])">
             <summary>
-            To pure HEX string without delimiters
+            To pure HEX string without delimiters, or use ToHexFromByteArray
             </summary>
             <param name="dBytes"></param>
             <returns></returns>
