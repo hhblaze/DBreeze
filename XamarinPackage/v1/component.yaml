@@ -18,5 +18,5 @@ no_build: true
 libraries:
   ios-unified: lib/ios-unified/DBreeze.dll
   android: lib/android/DBreeze.dll
-version: "72.0"
+version: "73.0"
 ...

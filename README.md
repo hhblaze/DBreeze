@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze build-1.072%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze build-1.073%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)

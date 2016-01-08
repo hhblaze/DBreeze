@@ -1351,7 +1351,7 @@ namespace DBreeze.Transactions
             else
             {
                 //Bringing refToInsertedValue to the pointer size of the table
-                refToInsertedValue = refToInsertedValue.RemoveLeadingElement(0).EnlargeByteArray_BigEndian(table.Storage.TrieSettings.POINTER_LENGHT);
+                refToInsertedValue = refToInsertedValue.RemoveLeadingElement(0).EnlargeByteArray_BigEndian(table.Storage.TrieSettings.POINTER_LENGTH);
             }
 
 

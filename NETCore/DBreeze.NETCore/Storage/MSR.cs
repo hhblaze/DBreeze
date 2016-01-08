@@ -43,14 +43,14 @@ namespace DBreeze.Storage
             /// </summary>
             public long o { get; set; }
             /// <summary>
-            /// Lenght in rollback file
+            /// Length in rollback file
             /// </summary>
             public int l { get; set; }
         }
 
         /// <summary>
         /// Rollback cache
-        /// Key is offset in data file, value is corresponding offset and lenght in rollback file
+        /// Key is offset in data file, value is corresponding offset and length in rollback file
         /// </summary>
         Dictionary<long, r> _rollbackCache = new Dictionary<long, r>();
 
@@ -97,7 +97,7 @@ namespace DBreeze.Storage
             this._fileName = fileName;
             this._configuration = configuration;
             this._trieSettings = trieSettings;
-            DefaultPointerLen = this._trieSettings.POINTER_LENGHT;
+            DefaultPointerLen = this._trieSettings.POINTER_LENGTH;
 
             InitFiles();
         }

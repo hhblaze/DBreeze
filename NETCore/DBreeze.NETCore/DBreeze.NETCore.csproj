@@ -28,6 +28,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\DBreeze.NETCore.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -40,6 +41,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\DBreeze\LianaTrie\LTrieGenerationMap.cs">
+      <Link>LianaTrie\LTrieGenerationMap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DBreeze\LianaTrie\LTrieGenerationNode.cs">
+      <Link>LianaTrie\LTrieGenerationNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DBreeze\LianaTrie\LTrieRootNode.cs">
+      <Link>LianaTrie\LTrieRootNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DBreeze\LianaTrie\LTrieWriteCache.cs">
+      <Link>LianaTrie\LTrieWriteCache.cs</Link>
+    </Compile>
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
@@ -58,14 +71,10 @@
     <Compile Include="LianaTrie\Iterations\Backward.cs" />
     <Compile Include="LianaTrie\Iterations\Forward.cs" />
     <Compile Include="LianaTrie\LianaTrie.cs" />
-    <Compile Include="LianaTrie\LTrieGenerationMap.cs" />
-    <Compile Include="LianaTrie\LTrieGenerationNode.cs" />
     <Compile Include="LianaTrie\LTrieKid.cs" />
     <Compile Include="LianaTrie\LTrieKidsInNode.cs" />
-    <Compile Include="LianaTrie\LTrieRootNode.cs" />
     <Compile Include="LianaTrie\LTrieRow.cs" />
     <Compile Include="LianaTrie\LTrieSetupKidResult.cs" />
-    <Compile Include="LianaTrie\LTrieWriteCache.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTable.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableInternal.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTablesCoordinator.cs" />

@@ -80,7 +80,7 @@
             <summary>
             Returns datablock which identifier is stored in this row from specified index.
             <para></para>
-            Insert dynamic lenght datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
+            Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
             <para></para>
             can return null.
             </summary>
@@ -1152,11 +1152,12 @@
             <param name="useCache"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32)">
+        <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32,System.Boolean)">
             <summary>
             Used for finding out hash from Generation Map
             </summary>
             <param name="index"></param>
+            <param name="forceGenerateMapUpToIndex"></param>
             <returns></returns>
         </member>
         <member name="F:DBreeze.LianaTrie.LTrieGenerationNode.QuantityReservationSlots">
@@ -1725,13 +1726,6 @@
             <param name="generationMapLine"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.AddMapKids(System.Byte[],System.Byte[])">
-            <summary>
-            If line exists - makes nothing, otherwise writes in
-            </summary>
-            <param name="generationMapLine"></param>
-            <param name="kidsBeforeModification"></param>
-        </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingEnd(System.Byte[],System.Byte[])">
             <summary>
             Writing Generation Node to the end of File.
@@ -1742,14 +1736,14 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[])">
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[],System.Byte[])">
             <summary>
             OverWriting Generation Node, we supply params where, oldData and newData.
-            Old Data - not used thou
             </summary>
             <param name="pointer"></param>
-            <param name="oldData"></param>
             <param name="newData"></param>
+            <param name="generationMapLine"></param>
+            <param name="kidsBeforeModification"></param>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
             <summary>
@@ -2336,13 +2330,13 @@
         </member>
         <member name="P:DBreeze.Storage.RISR.r.l">
             <summary>
-            Lenght in rollback file
+            Length in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.RISR._rollbackCache">
             <summary>
             Rollback cache
-            Key is offset in data file, value is corresponding offset and lenght in rollback file
+            Key is offset in data file, value is corresponding offset and length in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.RISR.maxRandomBufferSize">
@@ -2605,13 +2599,13 @@
         </member>
         <member name="P:DBreeze.Storage.MSR.r.l">
             <summary>
-            Lenght in rollback file
+            Length in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.MSR._rollbackCache">
             <summary>
             Rollback cache
-            Key is offset in data file, value is corresponding offset and lenght in rollback file
+            Key is offset in data file, value is corresponding offset and length in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.MSR.maxRandomBufferSize">
@@ -2759,13 +2753,13 @@
         </member>
         <member name="P:DBreeze.Storage.FSR.r.l">
             <summary>
-            Lenght in rollback file
+            Length in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.FSR._rollbackCache">
             <summary>
             Rollback cache
-            Key is offset in data file, value is corresponding offset and lenght in rollback file
+            Key is offset in data file, value is corresponding offset and length in rollback file
             </summary>
         </member>
         <member name="F:DBreeze.Storage.FSR.maxRandomBufferSize">
@@ -3000,7 +2994,7 @@
         </member>
         <member name="M:DBreeze.Storage.MemoryStorage.Read(System.Int32,System.Int32)">
             <summary>
-            If lenght = 0 returns new byte[0]
+            If length = 0 returns new byte[0]
             </summary>
             <param name="offset"></param>
             <param name="length"></param>
@@ -3047,7 +3041,7 @@
             </summary>
             <param name="datas"></param>
         </member>
-        <member name="F:DBreeze.Storage.TrieSettings.POINTER_LENGHT">
+        <member name="F:DBreeze.Storage.TrieSettings.POINTER_LENGTH">
             <summary>
             User parameter for the table.
             <para>Quantity of bytes which represent pointer inside of raw file (5 bytes = 1 Terrabyte, so the trie with 5 bytes pointer len can't be longer then 1 terrabyte).</para>
@@ -4830,7 +4824,7 @@
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian_NULL(System.Byte[])">
             <summary>
-            Converts sortable byte[16] to decimal? if byte array lenght is not 16 returns null
+            Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
             </summary>
             <param name="input"></param>
             <returns></returns>
@@ -5145,7 +5139,7 @@
             Converts your text into byte[], which can be used as column of fixedSize+2. 
             <para>(2 bytes are always added to your fixedSize value, determination of actual text size and NULL flag)</para>
             <para>String can be null</para>
-            Will return byte[] with the lenght fixedSize+2 which can be stored as column.
+            Will return byte[] with the length fixedSize+2 which can be stored as column.
             <para>If text.Length after convertion (using ASCII or UTF8) overexceeds fixedSize, text will be truncated</para>
             </summary>
             <param name="value">any string, can be NULL</param>
@@ -5185,9 +5179,23 @@
             Used by ToBytesString
             </summary>
         </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToByteArrayFromHex(System.String)">
+            <summary>
+            Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
+            </summary>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToHexFromByteArray(System.Byte[])">
+            <summary>
+            Generates Hex 1F0000000020 from byte[]. Backward function is ToByteArrayFromHex/ToByteArrayFromHex
+            </summary>
+            <param name="dBytes"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.BytesProcessing.ToBytesString(System.Byte[])">
             <summary>
-            To pure HEX string without delimiters
+            To pure HEX string without delimiters, or use ToHexFromByteArray
             </summary>
             <param name="dBytes"></param>
             <returns></returns>

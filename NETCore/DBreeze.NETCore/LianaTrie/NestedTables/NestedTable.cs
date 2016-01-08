@@ -664,7 +664,7 @@ namespace DBreeze.DataTypes
             else
             {
                 //Bringing refToInsertedValue to the pointer size of the table
-                refToInsertedValue = refToInsertedValue.RemoveLeadingElement(0).EnlargeByteArray_BigEndian(_tbl._masterTrie.Storage.TrieSettings.POINTER_LENGHT);
+                refToInsertedValue = refToInsertedValue.RemoveLeadingElement(0).EnlargeByteArray_BigEndian(_tbl._masterTrie.Storage.TrieSettings.POINTER_LENGTH);
             }
 
             bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);

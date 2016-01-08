@@ -38,7 +38,7 @@ namespace DBreeze.Storage.RemoteInstance
         void DeleteRemoteTable();
 
         /// <summary>
-        /// Operations like OpenRemoteFile, Read etc always return back the lenght of data and rollback file, which must be set to this variable by interface implementer
+        /// Operations like OpenRemoteFile, Read etc always return back the length of data and rollback file, which must be set to this variable by interface implementer
         /// </summary>
         long DataFileLength { get; }
         long RollbackFileLength { get; }

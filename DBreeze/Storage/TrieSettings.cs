@@ -20,7 +20,7 @@ namespace DBreeze.Storage
         /// <para>Quantity of bytes which represent pointer inside of raw file (5 bytes = 1 Terrabyte, so the trie with 5 bytes pointer len can't be longer then 1 terrabyte).</para>
         /// <para>If you plan to have your table more then 1TB, set this value to bigger value, before table creation</para>
         /// </summary>
-        public ushort POINTER_LENGHT = 5;
+        public ushort POINTER_LENGTH = 5;
 
         /// <summary>
         /// For internal needs

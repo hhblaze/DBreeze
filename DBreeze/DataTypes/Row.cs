@@ -218,7 +218,7 @@ namespace DBreeze.DataTypes
         /// <summary>
         /// Returns datablock which identifier is stored in this row from specified index.
         /// <para></para>
-        /// Insert dynamic lenght datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
+        /// Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
         /// <para></para>
         /// can return null.
         /// </summary>

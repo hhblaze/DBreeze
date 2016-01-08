@@ -31,7 +31,7 @@ namespace DBreeze.LianaTrie
         public LTrieRootNode(LTrie tree)
         {
             Tree = tree;
-            DefaultPointerLen = Tree.Storage.TrieSettings.POINTER_LENGHT;
+            DefaultPointerLen = Tree.Storage.TrieSettings.POINTER_LENGTH;
             DefaultRootSize = Tree.Storage.TrieSettings.ROOT_SIZE;
 
             //me = new byte[Tree.Storage.TreeSettings.ROOT_SIZE];
@@ -269,14 +269,16 @@ namespace DBreeze.LianaTrie
 
 
                 //Adding MapKids and WritinSelf synchro is checked 
-
+                byte[] generationMapLine = null;
                 if (gmMaxIndex > 0)
-                {                    
-                    this.Tree.Cache.AddMapKids(_generationMap.GenerateMapNodesValuesUpToIndex(gmMaxIndex--), gn.Value.KidsBeforeModification);                 
+                {
+                    generationMapLine = _generationMap.GenerateMapNodesValuesUpToIndex(gmMaxIndex, true);                    
+                    gmMaxIndex--;
+                    //this.Tree.Cache.AddMapKids(_generationMap.GenerateMapNodesValuesUpToIndex(gmMaxIndex--), gn.Value.KidsBeforeModification);                 
                 }
 
                 //Writing on disk                
-                gn.Value.WriteSelf();
+                gn.Value.WriteSelf(generationMapLine);
                 
                 
                 if (gn.Key == 0)

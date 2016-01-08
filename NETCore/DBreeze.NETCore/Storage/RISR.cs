@@ -44,14 +44,14 @@ namespace DBreeze.Storage
             /// </summary>
             public long o { get; set; }
             /// <summary>
-            /// Lenght in rollback file
+            /// Length in rollback file
             /// </summary>
             public int l { get; set; }
         }
 
         /// <summary>
         /// Rollback cache
-        /// Key is offset in data file, value is corresponding offset and lenght in rollback file
+        /// Key is offset in data file, value is corresponding offset and length in rollback file
         /// </summary>
         Dictionary<long, r> _rollbackCache = new Dictionary<long, r>();
 
@@ -108,7 +108,7 @@ namespace DBreeze.Storage
             this._fileName = fileName;
             this._configuration = configuration;
             this._trieSettings = trieSettings;
-            DefaultPointerLen = this._trieSettings.POINTER_LENGHT;
+            DefaultPointerLen = this._trieSettings.POINTER_LENGTH;
                         
             _backupIsActive = this._configuration.Backup.IsActive;
 
@@ -417,7 +417,7 @@ namespace DBreeze.Storage
         {//Returns left bytes
             byte[] left = null;
 
-            //Protocol: type of Rollback record - 1 byte; Offset - size is trie.Storage.TreeSettings.POINTER_LENGHT (Default pointer length); data length - 4 bytes; data
+            //Protocol: type of Rollback record - 1 byte; Offset - size is trie.Storage.TreeSettings.POINTER_LENGTH (Default pointer length); data length - 4 bytes; data
 
             //We must read out full protocol value into memory and then start to overwrite original file.
             //If full value cant be read we can think that this part of protocol is corrupted and definitely not written to the original file,

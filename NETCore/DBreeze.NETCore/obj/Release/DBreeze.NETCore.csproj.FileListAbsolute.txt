@@ -1,4 +1,0 @@
-C:\Users\blaze\Documents\Visual Studio 2010\Projects\DBreeze\NETCore\DBreeze.NETCore\bin\Release\DBreeze.NETCore.dll
-C:\Users\blaze\Documents\Visual Studio 2010\Projects\DBreeze\NETCore\DBreeze.NETCore\bin\Release\DBreeze.NETCore.pdb
-C:\Users\blaze\Documents\Visual Studio 2010\Projects\DBreeze\NETCore\DBreeze.NETCore\obj\Release\DBreeze.NETCore.dll
-C:\Users\blaze\Documents\Visual Studio 2010\Projects\DBreeze\NETCore\DBreeze.NETCore\obj\Release\DBreeze.NETCore.pdb

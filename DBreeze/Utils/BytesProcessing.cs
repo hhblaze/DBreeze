@@ -1255,7 +1255,7 @@ namespace DBreeze.Utils
         #region "Decimal ?"
 
         /// <summary>
-        /// Converts sortable byte[16] to decimal? if byte array lenght is not 16 returns null
+        /// Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
@@ -2944,7 +2944,7 @@ namespace DBreeze.Utils
         /// Converts your text into byte[], which can be used as column of fixedSize+2. 
         /// <para>(2 bytes are always added to your fixedSize value, determination of actual text size and NULL flag)</para>
         /// <para>String can be null</para>
-        /// Will return byte[] with the lenght fixedSize+2 which can be stored as column.
+        /// Will return byte[] with the length fixedSize+2 which can be stored as column.
         /// <para>If text.Length after convertion (using ASCII or UTF8) overexceeds fixedSize, text will be truncated</para>
         /// </summary>
         /// <param name="value">any string, can be NULL</param>

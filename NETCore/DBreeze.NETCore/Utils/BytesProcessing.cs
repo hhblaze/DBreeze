@@ -1255,7 +1255,7 @@ namespace DBreeze.Utils
         #region "Decimal ?"
 
         /// <summary>
-        /// Converts sortable byte[16] to decimal? if byte array lenght is not 16 returns null
+        /// Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
@@ -2944,7 +2944,7 @@ namespace DBreeze.Utils
         /// Converts your text into byte[], which can be used as column of fixedSize+2. 
         /// <para>(2 bytes are always added to your fixedSize value, determination of actual text size and NULL flag)</para>
         /// <para>String can be null</para>
-        /// Will return byte[] with the lenght fixedSize+2 which can be stored as column.
+        /// Will return byte[] with the length fixedSize+2 which can be stored as column.
         /// <para>If text.Length after convertion (using ASCII or UTF8) overexceeds fixedSize, text will be truncated</para>
         /// </summary>
         /// <param name="value">any string, can be NULL</param>
@@ -3058,6 +3058,42 @@ namespace DBreeze.Utils
         /// Used by ToBytesString
         /// </summary>
         static readonly char[] _hexDigits = "0123456789ABCDEF".ToCharArray();
+
+        /// <summary>
+        /// Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static byte[] ToByteArrayFromHex(this string str)
+        {
+            if (String.IsNullOrEmpty(str))
+                return null;
+
+            byte[] tr = new byte[str.Length / 2];
+            int j = 0;
+            int d = 0;
+            for (int i = 0; i < str.Length; i += 2)
+            {
+                d = str[i] - 48;
+                d = d > 9 ? d - 7 : d;
+                tr[j] = (byte)(d * 16);
+                d = str[i + 1] - 48;
+                d = d > 9 ? d - 7 : d;
+                tr[j] += (byte)d;
+                j++;
+            }
+            return tr;
+        }
+
+        /// <summary>
+        /// Generates Hex 1F0000000020 from byte[]. Backward function is ToByteArrayFromHex/ToByteArrayFromHex
+        /// </summary>
+        /// <param name="dBytes"></param>
+        /// <returns></returns>
+        public static string ToHexFromByteArray(this byte[] dBytes)
+        {
+            return dBytes.ToBytesString();
+        }
 
         /// <summary>
         /// To pure HEX string without delimiters

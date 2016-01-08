@@ -137,7 +137,7 @@ namespace DBreeze.Storage
         }
 
         /// <summary>
-        /// If lenght = 0 returns new byte[0]
+        /// If length = 0 returns new byte[0]
         /// </summary>
         /// <param name="offset"></param>
         /// <param name="length"></param>
