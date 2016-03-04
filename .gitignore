@@ -4,3 +4,12 @@
 /DBreeze.suo
 /DBreeze.v11.suo
 /.svn
+obj
+/DBreeze.UWP/bin/ARM
+/DBreeze.UWP/bin/Debug
+/DBreeze.UWP/bin/x64
+/DBreeze.UWP/bin/x86
+ARM
+Debug
+x64
+x86

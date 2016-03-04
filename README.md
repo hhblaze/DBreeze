@@ -6,13 +6,14 @@ DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?Pro
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
 
 DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value store ), transactional, ACID-compliant, multi-threaded, object database management system for
-.NET 3.5> / XAMARIN MONO / .NET Core / Windows Universal Platform . Written in C# 
+.NET 3.5> / XAMARIN MONO / .NET Core / Universal Windows Platform . Written in C# 
 
 - It's a free software for those, who think that it should be free.
 - Since June 2012 is used in our own production environment.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since Januar 2014. 
 - DBreeze for <a href = 'http://dbreeze.codeplex.com/downloads/get/1522080'  target='_blank'>.NET Core</a>  since November 2015.
+- DBreeze for UWP (Universal Windows Platform) since March 2016, grab via NuGet.
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in <a href = 'http://nosql-database.org'  target='_blank'>nosql-database.org</a>
 - Read "Changes in versions" document.
