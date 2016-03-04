@@ -62,7 +62,7 @@ namespace DBreeze.LianaTrie
             _root = rootNode;
 
             DefaultEmptyPointer = this._root.EmptyPointer;
-            DefaultPointerLen = this._root.Tree.Storage.TrieSettings.POINTER_LENGHT;
+            DefaultPointerLen = this._root.Tree.Storage.TrieSettings.POINTER_LENGTH;
             Pointer = new byte[DefaultPointerLen];
 
             KidsInNode = new LTrieKidsInNode(DefaultPointerLen);
@@ -1416,7 +1416,7 @@ namespace DBreeze.LianaTrie
 
 
 
-        public void WriteSelf()
+        public void WriteSelf(byte[] generationMapLine)
         {
             if (!ToWrite)
             {
@@ -1542,8 +1542,8 @@ namespace DBreeze.LianaTrie
 
                 //byte[] oldData = ((ushort)KidsBeforeModification.Length).To_2_bytes_array_BigEndian().Concat(KidsBeforeModification);
                 byte[] newData = sLen.To_2_bytes_array_BigEndian().Concat(bKids);
-                this._root.Tree.Cache.GenerationNodeWritingOver(Pointer, newData);
-
+                //this._root.Tree.Cache.GenerationNodeWritingOver(Pointer, newData);
+                this._root.Tree.Cache.GenerationNodeWritingOver(Pointer, newData, generationMapLine, this.KidsBeforeModification);
             }
 
             ToWrite = false;

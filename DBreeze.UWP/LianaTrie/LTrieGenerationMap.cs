@@ -119,19 +119,20 @@ namespace DBreeze.LianaTrie
         /// Used for finding out hash from Generation Map
         /// </summary>
         /// <param name="index"></param>
+        /// <param name="forceGenerateMapUpToIndex"></param>
         /// <returns></returns>
-        public byte[] GenerateMapNodesValuesUpToIndex(int index)
+        public byte[] GenerateMapNodesValuesUpToIndex(int index, bool forceGenerateMapUpToIndex = false)
         {
-            if (!ReGenerateMapUpToIndex)
+            if (!forceGenerateMapUpToIndex && !ReGenerateMapUpToIndex)
                 return MapValuesUpToIndex;
 
             MapValuesUpToIndex = new byte[index + 1];
 
-           
+
             for (int i = 0; i <= index; i++)
             {
-           
-                MapValuesUpToIndex[i] = _d[i].Value;               
+
+                MapValuesUpToIndex[i] = _d[i].Value;
             }
 
             ReGenerateMapUpToIndex = false;

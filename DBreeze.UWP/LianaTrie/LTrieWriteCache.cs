@@ -53,7 +53,7 @@ namespace DBreeze.LianaTrie
         {
             Trie = trie;           
 
-            DefaultPointerLen = Trie.Storage.TrieSettings.POINTER_LENGHT;
+            DefaultPointerLen = Trie.Storage.TrieSettings.POINTER_LENGTH;
 
             ////Represents pointer to the root of DefaultPointerLen size 
             //rootPointerAsByte = ((ulong)Trie.Storage.TrieSettings.ROOT_START).To_8_bytes_array_BigEndian().Substring(8 - DefaultPointerLen, DefaultPointerLen);
@@ -540,42 +540,42 @@ namespace DBreeze.LianaTrie
 
         }
 
-        /// <summary>
-        /// If line exists - makes nothing, otherwise writes in
-        /// </summary>
-        /// <param name="generationMapLine"></param>
-        /// <param name="kidsBeforeModification"></param>
-        public void AddMapKids(byte[] generationMapLine, byte[] kidsBeforeModification)
-        {
-            string hash = generationMapLine.ToBase64String();
+        ///// <summary>
+        ///// If line exists - makes nothing, otherwise writes in
+        ///// </summary>
+        ///// <param name="generationMapLine"></param>
+        ///// <param name="kidsBeforeModification"></param>
+        //public void AddMapKids(byte[] generationMapLine, byte[] kidsBeforeModification)
+        //{
+        //    string hash = generationMapLine.ToBase64String();
 
-            //Console.WriteLine("Adding Kids in hash: {0}", hash);
+        //    //Console.WriteLine("Adding Kids in hash: {0}", hash);
 
-            _sync_nodes.EnterWriteLock();
-            try
-            {
-                byte[] ret = null;
-                _nodes.TryGetValue(hash, out ret);
+        //    _sync_nodes.EnterWriteLock();
+        //    try
+        //    {
+        //        byte[] ret = null;
+        //        _nodes.TryGetValue(hash, out ret);
 
 
-                if (ret == null)
-                {
-                    if (kidsBeforeModification == null)
-                        kidsBeforeModification = new byte[0];
+        //        if (ret == null)
+        //        {
+        //            if (kidsBeforeModification == null)
+        //                kidsBeforeModification = new byte[0];
 
-                    _nodes.Add(hash, kidsBeforeModification);
-                }
-            }
-            catch (System.Exception ex)
-            {
-                throw ex;
-            }
-            finally
-            {
-                _sync_nodes.ExitWriteLock();
-            }
+        //            _nodes.Add(hash, kidsBeforeModification);
+        //        }
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //    finally
+        //    {
+        //        _sync_nodes.ExitWriteLock();
+        //    }
 
-        }
+        //}
 
         /// <summary>
         /// Writing Generation Node to the end of File.
@@ -590,19 +590,65 @@ namespace DBreeze.LianaTrie
             return Trie.Storage.Table_WriteToTheEnd(data);            
         }
 
+        ///// <summary>
+        ///// OverWriting Generation Node, we supply params where, oldData and newData.
+        ///// Old Data - not used thou
+        ///// </summary>
+        ///// <param name="pointer"></param>
+        ///// <param name="oldData"></param>
+        ///// <param name="newData"></param>
+        //public void GenerationNodeWritingOver(byte[] pointer, byte[] newData)
+        //{            
+        //    _sync_nodes.EnterWriteLock();
+        //    try
+        //    {   
+        //        Trie.Storage.Table_WriteByOffset(pointer, newData);                
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //    finally
+        //    {
+        //        _sync_nodes.ExitWriteLock();
+        //    }
+
+           
+        //}
+
         /// <summary>
         /// OverWriting Generation Node, we supply params where, oldData and newData.
-        /// Old Data - not used thou
         /// </summary>
         /// <param name="pointer"></param>
-        /// <param name="oldData"></param>
         /// <param name="newData"></param>
-        public void GenerationNodeWritingOver(byte[] pointer, byte[] newData)
-        {            
+        /// <param name="generationMapLine"></param>
+        /// <param name="kidsBeforeModification"></param>
+        public void GenerationNodeWritingOver(byte[] pointer, byte[] newData, byte[] generationMapLine, byte[] kidsBeforeModification)
+        {
             _sync_nodes.EnterWriteLock();
             try
-            {   
-                Trie.Storage.Table_WriteByOffset(pointer, newData);                
+            {
+                long ptrU = (long)pointer.DynamicLength_To_UInt64_BigEndian();
+
+
+                if (Trie.Storage.Length > ptrU && generationMapLine != null)
+                {
+                    //Update only. Filling parallel read nodes. 
+                    string hash = generationMapLine.ToBase64String();
+
+                    byte[] ret = null;
+                    _nodes.TryGetValue(hash, out ret);                    
+
+                    if (ret == null)
+                    {
+                        if (kidsBeforeModification == null)
+                            kidsBeforeModification = new byte[0];
+
+                        _nodes[hash] = kidsBeforeModification;
+                    }
+                }
+                
+                Trie.Storage.Table_WriteByOffset(pointer, newData);
             }
             catch (System.Exception ex)
             {
@@ -613,7 +659,7 @@ namespace DBreeze.LianaTrie
                 _sync_nodes.ExitWriteLock();
             }
 
-           
+
         }
 
         /// <summary>
@@ -774,7 +820,7 @@ namespace DBreeze.LianaTrie
             try
             {
                
-                if (data != null && data.LongLength > Int32.MaxValue)
+                if (data != null && data.LongCount() > Int32.MaxValue)
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DYNAMIC_DATA_BLOCK_VALUE_IS_BIG);
 
 
