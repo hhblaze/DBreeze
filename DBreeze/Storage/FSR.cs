@@ -446,7 +446,7 @@ namespace DBreeze.Storage
         #endregion
 
         #region "NET FLUSH"
-#if NET40
+#if NETFX_CORE || NET40
         public static void NET_Flush(FileStream mfs)
         {
             mfs.Flush(true);
