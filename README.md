@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze build-1.073%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze build-1.074%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
@@ -12,8 +12,7 @@ DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value stor
 - Since June 2012 is used in our own production environment.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since Januar 2014. 
-- DBreeze for <a href = 'http://dbreeze.codeplex.com/downloads/get/1522080'  target='_blank'>.NET Core</a>  since November 2015.
-- DBreeze for UWP (Universal Windows Platform) since March 2016, grab via NuGet.
+- DBreeze for .NETCore, UWP (Universal Windows Platform), .NET 4.5.1 grab via NuGet.
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in <a href = 'http://nosql-database.org'  target='_blank'>nosql-database.org</a>
 - Read "Changes in versions" document.
@@ -23,7 +22,7 @@ Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
 - <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guide.-Customers-and-orders'  target='_blank'>Quick start guide. Customers and orders</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/tree/master/DBreeze/bin/Release'  target='_blank'>Assemblies location</a> 
-- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=882289' target="_blank">Documentation (PDF, actual)</a>
+- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=1559123' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>

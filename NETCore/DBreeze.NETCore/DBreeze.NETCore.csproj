@@ -53,6 +53,7 @@
     <Compile Include="..\..\DBreeze\LianaTrie\LTrieWriteCache.cs">
       <Link>LianaTrie\LTrieWriteCache.cs</Link>
     </Compile>
+    <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />
     <Compile Include="DataTypes\DbCustomSerializer.cs" />

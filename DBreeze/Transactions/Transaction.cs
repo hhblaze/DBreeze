@@ -28,6 +28,12 @@ namespace DBreeze.Transactions
         bool disposed = false;
 
         /// <summary>
+        /// DateTime.UtcNow.Ticks - time of transaction creation
+        /// Combination of ManagedThreadId and CreatedUdt, gives us unique transaction identifier
+        /// </summary>
+        public long CreatedUdt = DateTime.UtcNow.Ticks;
+
+        /// <summary>
         /// 0 - standard transaction, 1 - locked transaction (Shared Exclusive)
         /// </summary>
         int _transactionType = 0;

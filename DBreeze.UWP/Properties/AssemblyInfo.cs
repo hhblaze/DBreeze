@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DBreeze for Universal Windows Platform")]
-[assembly: AssemblyDescription("# NoSql object embedded database system")]
+[assembly: AssemblyTitle("DBreeze database NETCore, UWP, .NET451")]
+[assembly: AssemblyDescription("C# NoSql object embedded database system")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("dbreeze.tiesky.com")]
 [assembly: AssemblyProduct("DBreeze database")]
@@ -24,6 +24,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.073.2016.0108")]
-[assembly: AssemblyFileVersion("1.073.2016.0108")]
+[assembly: AssemblyVersion("1.074.2016.0329")]
+[assembly: AssemblyFileVersion("1.074.2016.0329")]
 [assembly: ComVisible(false)]

@@ -4,6 +4,177 @@
         <name>DBreeze</name>
     </assembly>
     <members>
+        <member name="T:DBreeze.DataStructures.DataAsTree">
+            <summary>
+            Ierarchical DataStructure. Any node can have subnodes and own binary content
+            </summary>
+        </member>
+        <member name="F:DBreeze.DataStructures.DataAsTree.NodeName">
+            <summary>
+            Node name
+            </summary>
+        </member>
+        <member name="F:DBreeze.DataStructures.DataAsTree.NodeContent">
+            <summary>
+            This can be filled via constructor or extra when we insert a node
+            </summary>
+        </member>
+        <member name="F:DBreeze.DataStructures.DataAsTree.ContentRef">
+            <summary>
+            Internal. Holds reference to DataBlock representing Content. node.GetContent must be used to read out content.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DataStructures.DataAsTree.DBreezeTableName">
+            <summary>
+            Real table name in DBreeze, that will hold the structure
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.#ctor(System.String,DBreeze.Transactions.Transaction,System.Boolean)">
+            <summary>
+            Initializing Root Node
+            </summary>
+            <param name="DBreezeTableName">Real table name in DBreeze, that will hold the structure, must be synchronized with other tables in transaction</param>
+            <param name="tran"></param>
+            <param name="maximalInsertSpeed">will use DBreeze Technical_SetTable_OverwriteIsNotAllowed among transaction for DBreezeTableName</param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.#ctor(System.String,System.Byte[])">
+            <summary>
+            Init nodes for insert under another node
+            </summary>
+            <param name="name"></param>
+            <param name="content">optionaly can supply NodeContent</param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.#ctor">
+            <summary>
+            Internal
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.CopyInternals(DBreeze.DataStructures.DataAsTree)">
+            <summary>
+            Internal
+            </summary>
+            <param name="node"></param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.SetupReadTables">
+            <summary>
+            Internal
+            </summary>
+            <param name="tran"></param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.SetupWriteTables">
+            <summary>
+            Internal
+            </summary>
+            <param name="tran"></param>
+            <param name="maximalSpeed"></param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.CheckTransaction">
+            <summary>
+            Internal
+            </summary>
+            <param name="tran"></param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.GetNodeByParentIdAndNodeId(System.Int64,System.Int64)">
+            <summary>
+            Returns node by ParentIdAndNodeId
+            </summary>
+            <param name="parentNodeId"></param>
+            <param name="nodeId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.GetNodesByName(System.String)">
+            <summary>
+            Returns nodes with suppled StartsWith name or complete name
+            </summary>
+            <param name="nameStartsWithPart"></param>
+            <param name="tran"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.GetFirstLevelChildrenNodesByParentId(System.Int64)">
+            <summary>
+            Returns first level nodes by their parent. To go depper, for every returned node can be used ReadOutAllChildrenNodesFromCurrentRecursively
+            </summary>
+            <param name="parentId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.SetupValueRowFromNode(DBreeze.DataStructures.DataAsTree,System.Byte)">
+            <summary>
+            Internal
+            </summary>
+            <param name="node"></param>
+            <param name="protocolVersion"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.SetupNodeFromRow(DBreeze.DataTypes.Row{System.Byte[],System.Byte[]})">
+            <summary>
+            Internal
+            </summary>
+            <param name="row"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.GetChildren">
+            <summary>
+            Reading all children nodes
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.RemoveNode(System.Int64,System.Int64)">
+            <summary>
+            Removes node
+            </summary>
+            <param name="parentNodeId"></param>
+            <param name="nodeId"></param>
+            <param name="tran"></param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.RemoveNode(DBreeze.DataStructures.DataAsTree)">
+            <summary>
+             Removes node
+            </summary>
+            <param name="node"></param>
+            <param name="tran"></param>
+            <param name="maximalSpeed"></param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.AddNodes(System.Collections.Generic.IEnumerable{DBreeze.DataStructures.DataAsTree})">
+            <summary>
+            <para>Adding children to the node</para>
+            Table, storing data structure, must be in tran.SynchronizeTables list.
+            Then transaction must be Committed in the end by the programmer.
+            </summary>
+            <param name="nodes">Nodes to add to current node</param>
+            <param name="tran">Existing transaction. Table, storing data structure, must be in tran.SynchronizeTables list</param>
+            <param name="maximalSpeed">set it to true to gain maximal saving speed</param>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.RemoveOldNodeFromNameIndex(System.String,System.Byte[])">
+            <summary>
+            Internal
+            </summary>
+            <param name="nameIndexRow"></param>
+            <param name="keyToRemove"></param>
+            <returns>new nameIndexRow</returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.AddNode(DBreeze.DataStructures.DataAsTree)">
+            <summary>
+            <para>Adding children to the node</para>
+            Table, storing data structure, must be in tran.SynchronizeTables list.
+            Then transaction must be Committed in the end by the programmer.
+            </summary>
+            <param name="nodes">Nodes to add to current node</param>
+            <param name="tran">Existing transaction. Table, storing data structure, must be in tran.SynchronizeTables list</param>
+            <param name="maximalSpeed">set it to true to gain maximal saving speed</param>
+            <returns>return node with setup parent id</returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.GetContent">
+            <summary>
+            GetContent of a node, 
+            </summary>
+            <returns>null if content is absent</returns>
+        </member>
+        <member name="M:DBreeze.DataStructures.DataAsTree.ReadOutAllChildrenNodesFromCurrentRecursively">
+            <summary>
+            Recursively reads out all children nodes starting from this recursiverly
+            </summary>
+            <returns></returns>
+        </member>
         <member name="T:DBreeze.DataTypes.Row`2">
             <summary>
             Row
@@ -3171,6 +3342,12 @@
         <member name="F:DBreeze.Transactions.Transaction.ManagedThreadId">
             <summary>
             Managed threadId of the transaction
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.CreatedUdt">
+            <summary>
+            DateTime.UtcNow.Ticks - time of transaction creation
+            Combination of ManagedThreadId and CreatedUdt, gives us unique transaction identifier
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.Transaction._transactionType">
