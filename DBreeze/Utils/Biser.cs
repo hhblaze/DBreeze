@@ -1,0 +1,445 @@
+﻿/* 
+  Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
+  It's a free software for those, who thinks that it should be free.
+
+  This class uses parts of code from https://github.com/topas/VarintBitConverter. That is published under BSD license [27.06.2016].
+*/
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DBreeze.Utils
+{
+    /// <summary>
+    /// Custom binary serializer of well known types
+    /// </summary>
+    public static class Biser
+    {
+       
+        /// <summary>
+        /// Proto encoding of Dictionary [uint, byte[]].
+        /// Use when key is less then 4 bytes (less then 268mln).
+        /// Value byte[0] will be presented as null after decoding
+        /// </summary>
+        /// <param name="d"></param>
+        /// <param name="compression">compression method extra applied to the outgoing byte array</param>
+        /// <returns></returns>
+        public static byte[] Encode_DICT_PROTO_UINT_BYTEARRAY(this IDictionary<uint, byte[]> d, Compression.eCompressionType compression = Compression.eCompressionType.NoCompression)
+        {
+            if (d == null || d.Count == 0)
+                return null;
+                                    
+            List<byte[]> ar = new List<byte[]>();
+            ulong size = 0;
+            byte[] tar = null;
+
+            foreach (var el in d)
+            {
+                //Setting key
+                tar = GetVarintBytes(el.Key);
+                size += (ulong)tar.Length;
+                ar.Add(tar);
+                //Setting length of value
+                tar = el.Value == null ? new byte[] { 0 } : GetVarintBytes((uint)el.Value.Length); //Supporting 0 length, will be null then
+                size += (ulong)tar.Length;
+                ar.Add(tar);
+                //Setting value
+                size += (ulong)(el.Value == null ? 0 : el.Value.Length);
+                if (el.Value != null && el.Value.Length > 0)
+                    ar.Add(el.Value);
+            }
+
+            byte[] encB = new byte[size];
+            int pt = 0;
+            foreach (var el in ar)
+            {
+                Buffer.BlockCopy(el, 0, encB, pt, el.Length);
+                pt += el.Length;
+            }
+
+            switch (compression)
+            {
+                case Compression.eCompressionType.Gzip:
+                    encB = encB.GZip_Compress();                    
+                    break;
+            }
+
+            return encB;
+        }
+
+        /// <summary>
+        /// Used when parameter is encoded with Encode_DICT_PROTO_UINT_BYTEARRAY.
+        /// Returns Dictionary [uint, byte[]]
+        /// </summary>
+        /// <param name="encB"></param>
+        /// <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
+        /// <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
+        public static void Decode_DICT_PROTO_UINT_BYTEARRAY(this byte[] encB, IDictionary<uint, byte[]> retD, Compression.eCompressionType compression = Compression.eCompressionType.NoCompression)
+        {            
+            if (encB == null || encB.Length < 1)
+                return;
+
+            switch (compression)
+            {
+                case Compression.eCompressionType.Gzip:                    
+                    encB = encB.GZip_Decompress();                    
+                    break;
+            }
+
+            byte mode = 0;
+            byte[] sizer = new byte[4];
+            int size = 0;
+
+            uint key = 0;
+            uint valLen = 0;
+            byte[] val = null;
+            int valCnt = 0;
+
+            Action ClearSizer = () =>
+            {
+                sizer[0] = 0;
+                sizer[1] = 0;
+                sizer[2] = 0;
+                sizer[3] = 0;
+
+                size = 0;
+            };
+
+            //0 - reading key
+            //1 - reading size of value
+            //2 - reading value
+            foreach (byte el in encB)
+            {
+                switch (mode)
+                {
+                    case 0:
+                        //Key, Size of BT //
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            mode = 1;
+                            sizer[size] = el;
+                            size++;
+                            key = ToUInt32(sizer);
+                            ClearSizer();
+                        }
+
+                        break;
+                    case 1:
+                        //Value Size
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            mode = 2;
+                            sizer[size] = el;
+                            size++;
+                            valLen = ToUInt32(sizer);
+                            ClearSizer();
+
+                            if (valLen == 0)
+                            {
+                                retD.Add(key, null);
+                                mode = 0;
+                                break;
+                            }
+
+                            val = new byte[valLen];
+                            valCnt = 0;
+                        }
+                        break;
+                    case 2:
+                        val[valCnt] = el;
+                        valCnt++;
+                        if (valCnt == valLen)
+                        {
+                            retD.Add(key, val);
+                            mode = 0;
+                            break;
+                        }
+                        break;
+                }
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// Uses protobuf concepts
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static byte[] GetVarintBytes(uint value)
+        {
+            return GetVarintBytes((ulong)value);
+        }
+
+        //https://github.com/topas/VarintBitConverter/blob/master/src/VarintBitConverter/VarintBitConverter.cs
+
+        /// <summary>
+        /// Uses protobuf concepts
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static byte[] GetVarintBytes(ulong value)
+        {
+            var buffer = new byte[10];
+            var pos = 0;
+            do
+            {
+                var byteVal = value & 0x7f;
+                value >>= 7;
+
+                if (value != 0)
+                {
+                    byteVal |= 0x80;
+                }
+
+                buffer[pos++] = (byte)byteVal;
+
+            } while (value != 0);
+
+            var result = new byte[pos];
+            Buffer.BlockCopy(buffer, 0, result, 0, pos);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Uses protobuf concepts
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static uint ToUInt32(byte[] bytes)
+        {
+            return (uint)ToTarget(bytes, 32);
+        }
+
+        /// <summary>
+        /// ToTarget
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="sizeBites"></param>
+        /// <returns></returns>
+        private static ulong ToTarget(byte[] bytes, int sizeBites)
+        {
+            int shift = 0;
+            ulong result = 0;
+
+            foreach (ulong byteValue in bytes)
+            {
+                ulong tmp = byteValue & 0x7f;
+                result |= tmp << shift;
+
+                if (shift > sizeBites)
+                {
+                    throw new ArgumentOutOfRangeException("bytes", "Byte array is too large.");
+                }
+
+                if ((byteValue & 0x80) != 0x80)
+                {
+                    return result;
+                }
+
+                shift += 7;
+            }
+
+            throw new ArgumentException("Cannot decode varint from byte array.", "bytes");
+        }
+
+    }//EO Class
+}//EO N
+
+
+/*
+ * /// <summary>
+        /// Returns the specified byte value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">Byte value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(byte value)
+        {
+            return GetVarintBytes((ulong)value);
+        }
+
+        /// <summary>
+        /// Returns the specified 16-bit signed value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">16-bit signed value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(short value)
+        {
+            var zigzag = EncodeZigZag(value, 16);
+            return GetVarintBytes((ulong)zigzag);
+        }
+
+        /// <summary>
+        /// Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">16-bit unsigned value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(ushort value)
+        {
+            return GetVarintBytes((ulong)value);
+        }
+
+        /// <summary>
+        /// Returns the specified 32-bit signed value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">32-bit signed value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(int value)
+        {
+            var zigzag = EncodeZigZag(value, 32);
+            return GetVarintBytes((ulong)zigzag);
+        }
+
+        /// <summary>
+        /// Returns the specified 32-bit unsigned value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">32-bit unsigned value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(uint value)
+        {
+            return GetVarintBytes((ulong)value);
+        }
+
+        /// <summary>
+        /// Returns the specified 64-bit signed value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">64-bit signed value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(long value)
+        {
+            var zigzag = EncodeZigZag(value, 64);
+            return GetVarintBytes((ulong)zigzag);
+        }
+
+        /// <summary>
+        /// Returns the specified 64-bit unsigned value as varint encoded array of bytes.   
+        /// </summary>
+        /// <param name="value">64-bit unsigned value</param>
+        /// <returns>Varint array of bytes.</returns>
+        public static byte[] GetVarintBytes(ulong value)
+        {
+            var buffer = new byte[10];
+            var pos = 0;
+            do
+            {
+                var byteVal = value & 0x7f;
+                value >>= 7;
+
+                if (value != 0)
+                {
+                    byteVal |= 0x80;
+                }
+
+                buffer[pos++] = (byte)byteVal;
+
+            } while (value != 0);
+
+            var result = new byte[pos];
+            Buffer.BlockCopy(buffer, 0, result, 0, pos);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns byte value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>Byte value</returns>
+        public static byte ToByte(byte[] bytes)
+        {
+            return (byte)ToTarget(bytes, 8);
+        }
+
+        /// <summary>
+        /// Returns 16-bit signed value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>16-bit signed value</returns>
+        public static short ToInt16(byte[] bytes)
+        {
+            var zigzag = ToTarget(bytes, 16);
+            return (short)DecodeZigZag(zigzag);
+        }
+
+        /// <summary>
+        /// Returns 16-bit usigned value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>16-bit usigned value</returns>
+        public static ushort ToUInt16(byte[] bytes)
+        {
+            return (ushort)ToTarget(bytes, 16);
+        }
+
+        /// <summary>
+        /// Returns 32-bit signed value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>32-bit signed value</returns>
+        public static int ToInt32(byte[] bytes)
+        {
+            var zigzag = ToTarget(bytes, 32);
+            return (int)DecodeZigZag(zigzag);
+        }
+
+        /// <summary>
+        /// Returns 32-bit unsigned value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>32-bit unsigned value</returns>
+        public static uint ToUInt32(byte[] bytes)
+        {
+            return (uint)ToTarget(bytes, 32);
+        }
+
+        /// <summary>
+        /// Returns 64-bit signed value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>64-bit signed value</returns>
+        public static long ToInt64(byte[] bytes)
+        {
+            var zigzag = ToTarget(bytes, 64);
+            return DecodeZigZag(zigzag);
+        }
+
+        /// <summary>
+        /// Returns 64-bit unsigned value from varint encoded array of bytes.
+        /// </summary>
+        /// <param name="bytes">Varint encoded array of bytes.</param>
+        /// <returns>64-bit unsigned value</returns>
+        public static ulong ToUInt64(byte[] bytes)
+        {
+            return ToTarget(bytes, 64);
+        }
+
+        private static long EncodeZigZag(long value, int bitLength)
+        {
+            return (value << 1) ^ (value >> (bitLength - 1));
+        }
+
+        private static long DecodeZigZag(ulong value)
+        {
+            if ((value & 0x1) == 0x1)
+            {
+                return (-1 * ((long)(value >> 1) + 1));
+            }
+
+            return (long)(value >> 1);
+}
+ */

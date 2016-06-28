@@ -6123,20 +6123,20 @@ namespace VisualTester
 
         int valToIncr = 0;
         int sharedCnt = 0;
-        DbReaderWriterSpinLock sp = new DbReaderWriterSpinLock();   //1K -> 18-28 ms; 10 K -> 220 - 260 ms; 100K -> 2300 - 2340 ms
+        //DbReaderWriterSpinLock sp = new DbReaderWriterSpinLock();   //1K -> 18-28 ms; 10 K -> 220 - 260 ms; 100K -> 2300 - 2340 ms
          //DbReaderWriterLock sp = new DbReaderWriterLock();           //1K -> 18-22ms; 10K -> 220-270 ms: 100K -> 2360-2430 ms
         private void TEST_SPIN_IncrementValue(int totalQ)
         {
             
-            sp.EnterWriteLock();
-            try
-            {
-                valToIncr++;
-            }
-            finally
-            {
-                sp.ExitWriteLock();
-            }
+            //sp.EnterWriteLock();
+            //try
+            //{
+            //    valToIncr++;
+            //}
+            //finally
+            //{
+            //    sp.ExitWriteLock();
+            //}
             var cntr = DBreeze.Diagnostic.SpeedStatistic.GetCounter("i");
             Interlocked.Add(ref sharedCnt, 1);
 

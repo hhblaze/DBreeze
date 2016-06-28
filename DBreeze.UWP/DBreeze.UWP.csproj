@@ -158,6 +158,9 @@
     <Compile Include="Storage\RISR.cs" />
     <Compile Include="Storage\StorageLayer.cs" />
     <Compile Include="Storage\TrieSettings.cs" />
+    <Compile Include="TextSearch\TextSearchHandler.cs" />
+    <Compile Include="TextSearch\TextSearchOptions.cs" />
+    <Compile Include="TextSearch\WAH2.cs" />
     <Compile Include="Transactions\ITransactable.cs" />
     <Compile Include="Transactions\Transaction.cs" />
     <Compile Include="Transactions\TransactionsCoordinator.cs" />
@@ -167,8 +170,10 @@
     <Compile Include="Tries\ITrie.cs" />
     <Compile Include="Tries\ITrieRootNode.cs" />
     <Compile Include="Utils\AsyncOperations.cs" />
+    <Compile Include="Utils\Biser.cs" />
     <Compile Include="Utils\BloomFilter.cs" />
     <Compile Include="Utils\BytesProcessing.cs" />
+    <Compile Include="Utils\Compression.cs" />
     <Compile Include="Utils\CustomSerializator.cs" />
     <Compile Include="Utils\DbReaderWriterLock.cs" />
     <Compile Include="Utils\DbReaderWriterSpinLock.cs" />

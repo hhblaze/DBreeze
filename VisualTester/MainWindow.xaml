@@ -14,6 +14,7 @@
             <Button Name="btTest1" Margin="5,5,5,0" Height="30" Width="80" Content="Insert" Click="btTest1_Click"></Button>
             <Button Name="btTest2" Margin="5,5,5,0" Height="30" Width="80" Content="Read" Click="btTest2_Click"></Button>
             <Button Name="btTest3" Margin="5,5,5,0" Height="30" Width="80" Content="test1" Click="btTest3_Click"></Button>
+            <Button x:Name="btTestSearchText" Margin="5,5,5,0" Height="30" Width="80" Content="TestSearchText" Click="btTestSearchText_Click"/>
         </StackPanel>
 
         <StackPanel Grid.Row="1" VerticalAlignment="Top" Orientation="Horizontal">

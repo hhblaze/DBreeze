@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using DBreeze.Utils;
 
 using System.IO;
+using DBreeze;
 
 namespace VisualTester
 {
@@ -620,6 +621,117 @@ namespace VisualTester
             DbreezeBackupRestorerWindow win = new DbreezeBackupRestorerWindow();
             win.ShowDialog();
         }
-       
+
+
+        class MyTask
+        {
+            public long Id { get; set; }
+            public string ExternalId { get; set; } = "";
+            public string Description { get; set; } = "";
+            public string Notes { get; set; } = "";
+        }
+
+
+
+        DBreezeEngine textsearchengine = null;
+        private void btTestSearchText_Click(object sender, RoutedEventArgs e)
+        {
+        
+            if (textsearchengine == null)
+            {
+                textsearchengine = new DBreezeEngine(@"S:\temp\DBR1\");
+            }
+
+            int companyId = 1;
+            MyTask tsk = null;
+            StringBuilder sb = new StringBuilder();
+
+
+
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                var resp = tran.SearchTextInDocuments("TaskFullTextSearch" + companyId, new DBreeze.TextSearch.TextSearchRequest()
+                {
+                    // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
+                    SearchWords = "Particularly"
+                });
+
+            }
+
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                tsk = new MyTask()
+                {
+                    Id = 2,
+                    ExternalId = "x2",
+                    Description = "Very second task ",
+                    Notes = "small"
+                };
+                sb.Append(tsk.Description + " " + tsk.Notes);
+                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+
+                tran.Commit();
+            }
+
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                var resp = tran.SearchTextInDocuments("TaskFullTextSearch" + companyId, new DBreeze.TextSearch.TextSearchRequest()
+                {
+                    // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
+                    SearchWords = "Particularly"
+                });
+
+            }
+            return;
+
+
+
+
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                tran.SynchronizeTables("Tasks" + companyId, "TaskFullTextSearch" + companyId);
+
+                //Storing task
+                tsk = new MyTask()
+                {
+                    Id = 1,
+                    ExternalId = "x1",
+                    Description = "Very well task for the ",
+                    Notes = "No practical task notes sell dell stop"
+                };
+                tran.Insert<long, byte[]>("Tasks" + companyId, tsk.Id, null);
+                sb.Append(tsk.Description + " " + tsk.Notes);
+                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(),new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+
+                sb.Clear();
+
+                tsk = new MyTask()
+                {
+                    Id = 2,
+                    ExternalId = "x2",
+                    Description = "Very second task ",
+                    Notes = "Particularly small"
+                };
+                tran.Insert<long, byte[]>("Tasks" + companyId, tsk.Id, null);
+                sb.Append(tsk.Description + " " + tsk.Notes);
+                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+
+                sb.Clear();
+
+                tsk = new MyTask()
+                {
+                    Id = 1,
+                    ExternalId = "x1",
+                    Description = "Very well task for the ",
+                    Notes = "No practical task notes sell stop"
+                };
+                //tran.Insert<long, byte[]>("Tasks" + companyId, tsk.Id, null);
+                sb.Append(tsk.Description + " " + tsk.Notes);
+                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+
+                tran.Commit(); 
+            }
+
+        }
     }
 }

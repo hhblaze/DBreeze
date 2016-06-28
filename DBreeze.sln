@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze", "DBreeze\DBreeze.csproj", "{5C425A2A-5717-4D1B-9949-9C90785B6C57}"
 EndProject
@@ -63,6 +63,7 @@ Global
 		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.DBreeze35|x64.ActiveCfg = DBreeze35|x86
 		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.DBreeze35|x86.ActiveCfg = DBreeze35|x86
 		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.Debug|Any CPU.Build.0 = Debug|x86
 		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.Debug|ARM.ActiveCfg = Debug|x86
 		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
 		{AAC92F03-3038-49B4-AE61-57C948EA18CB}.Debug|Mixed Platforms.Build.0 = Debug|x86

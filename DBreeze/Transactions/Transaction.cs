@@ -14,6 +14,8 @@ using DBreeze.DataTypes;
 using DBreeze.Tries;
 using DBreeze.SchemeInternal;
 using DBreeze.Utils;
+using DBreeze.TextSearch;
+using System.Threading.Tasks;
 
 namespace DBreeze.Transactions
 {
@@ -37,6 +39,11 @@ namespace DBreeze.Transactions
         /// 0 - standard transaction, 1 - locked transaction (Shared Exclusive)
         /// </summary>
         int _transactionType = 0;
+
+        /// <summary>
+        /// TextSearchHandler instance
+        /// </summary>
+        TextSearchHandler tsh = null;
 
         public Transaction(int transactionType, TransactionUnit transactionUnit, eTransactionTablesLockTypes lockType, params string[] tables)
         {
@@ -471,7 +478,9 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Commit()
         {
+            IndexDocuments();
             this._transactionUnit.TransactionsCoordinator.Commit(this.ManagedThreadId);
+           
         }
 
         /// <summary>
@@ -1253,6 +1262,101 @@ namespace DBreeze.Transactions
             }
         }
 
+        #endregion
+
+        #region "Insert for text search"
+
+        /// <summary>
+        /// Insert document text to be searched
+        /// </summary>
+        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. Group name of the documents to be searched. Also is a DBreeze table name</param>
+        /// <param name="documentId">Internal document id, will be returned after executing</param>        
+        /// <param name="searchables">text used for search</param>
+        /// <param name="opt">TextSearchOptions</param>
+        public void InsertDocumentText(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt =null)
+        {
+            if (opt == null)
+                opt = new TextSearchStorageOptions();
+            
+            if (tsh == null)
+                tsh = new TextSearchHandler(this);
+            
+            tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Insert);
+        }
+
+        /// <summary>
+        /// Appends words to existing searchable words set of the document. If document doesn't exist, it will act like insert.
+        /// </summary>
+        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. Group name of the documents to be searched. Also is a DBreeze table name</param>
+        /// <param name="documentId">Internal document id, will be returned after executing</param>        
+        /// <param name="searchables">text used for search</param>
+        /// <param name="opt">TextSearchOptions</param>
+        public void InsertDocumentText_AppendWordsToExistingSet(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        {
+            if (opt == null)
+                opt = new TextSearchStorageOptions();
+
+            if (tsh == null)
+                tsh = new TextSearchHandler(this);
+
+            tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Append);
+        }
+
+        /// <summary>
+        /// Removes words from existing searchable words set of the document. If document doesn't exist, it will do nothing.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="documentId"></param>
+        /// <param name="searchables"></param>
+        /// <param name="opt"></param>
+        public void InsertDocumentText_RemoveWordsFromExistingSet(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        {
+            if (opt == null)
+                opt = new TextSearchStorageOptions();
+
+            if (tsh == null)
+                tsh = new TextSearchHandler(this);
+
+            tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Remove);
+        }
+
+        /// <summary>
+        /// Removes document from searchables
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="documentId"></param>                
+        public void RemoveDocumentText(string tableName, byte[] documentId)
+        {         
+            if (tsh == null)
+                tsh = new TextSearchHandler(this);
+
+            tsh.InsertDocumentText(this, tableName, documentId, String.Empty, new TextSearchStorageOptions(), TextSearchHandler.eInsertMode.Insert);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        public TextSearchResponse SearchTextInDocuments(string tableName, TextSearchRequest req)
+        {
+            if (tsh == null)
+                tsh = new TextSearchHandler(this);
+
+            return tsh.SearchTextInDocuments(tableName, req);            
+        }
+
+        /// <summary>
+        /// Currently called before commit only
+        /// </summary>
+        void IndexDocuments()
+        {
+            if (tsh != null && tsh.InsertWasPerformed)
+            {
+                tsh.DoIndexing();                
+            }
+        }
         #endregion
 
         #region "Select one key"

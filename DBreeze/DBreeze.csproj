@@ -24,9 +24,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <DocumentationFile>
-    </DocumentationFile>
+    <DocumentationFile>bin\Debug\DBreeze.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -95,6 +95,9 @@
     <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
     <Compile Include="Storage\RISR.cs" />
+    <Compile Include="TextSearch\TextSearchHandler.cs" />
+    <Compile Include="TextSearch\TextSearchOptions.cs" />
+    <Compile Include="TextSearch\WAH2.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Storage\Backup\Backup.cs" />
     <Compile Include="Storage\Backup\BackupRestorer.cs" />
@@ -127,9 +130,10 @@
     <Compile Include="Utils\AsyncOperations.cs" />
     <Compile Include="Utils\BloomFilter.cs" />
     <Compile Include="Utils\BytesProcessing.cs" />
+    <Compile Include="Utils\Biser.cs" />
+    <Compile Include="Utils\Compression.cs" />
     <Compile Include="Utils\CustomSerializator.cs" />
     <Compile Include="Utils\DbReaderWriterLock.cs" />
-    <Compile Include="Utils\DbReaderWriterSpinLock.cs" />
     <Compile Include="Utils\DbThreadsGator.cs" />
     <Compile Include="Utils\MJsonSerializator.cs">
       <SubType>Code</SubType>
