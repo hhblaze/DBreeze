@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 
   This class uses parts of code from https://github.com/topas/VarintBitConverter. That is published under BSD license [27.06.2016].
 */
@@ -19,7 +19,59 @@ namespace DBreeze.Utils
     /// </summary>
     public static class Biser
     {
-       
+        /// <summary>
+        /// Proto encoding of Dictionary [string, HashSet[uint]].
+        /// </summary>
+        /// <param name="d"></param>
+        /// <param name="compression"></param>
+        /// <returns></returns>
+        public static byte[] Encode_DICT_PROTO_STRING_UINTHASHSET(this IDictionary<string, HashSet<uint>> d, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
+        {
+            if (d == null || d.Count == 0)
+                return null;
+
+            List<byte[]> ar = new List<byte[]>();
+            ulong size = 0;
+            byte[] tar = null;
+            byte[] tar1 = null;
+
+            foreach (var el in d)
+            {
+                //Setting key
+                tar = el.Key.To_UTF8Bytes();
+                tar1 = GetVarintBytes((uint)tar.Length);
+                ar.Add(tar1);//length of key
+                ar.Add(tar);//key self
+                size += (ulong)tar1.Length;
+                size += (ulong)tar.Length;
+
+                //Setting value
+                foreach (var evl in el.Value)
+                {
+                    tar = GetVarintBytes(evl);
+                    ar.Add(tar);
+                    size += (ulong)tar.Length;
+                }                
+            }
+
+            byte[] encB = new byte[size];
+            int pt = 0;
+            foreach (var el in ar)
+            {
+                Buffer.BlockCopy(el, 0, encB, pt, el.Length);
+                pt += el.Length;
+            }
+
+            switch (compression)
+            {
+                case Compression.eCompressionMethod.Gzip:
+                    encB = encB.GZip_Compress();
+                    break;
+            }
+
+            return encB;
+        }
+
         /// <summary>
         /// Proto encoding of Dictionary [uint, byte[]].
         /// Use when key is less then 4 bytes (less then 268mln).
@@ -28,7 +80,7 @@ namespace DBreeze.Utils
         /// <param name="d"></param>
         /// <param name="compression">compression method extra applied to the outgoing byte array</param>
         /// <returns></returns>
-        public static byte[] Encode_DICT_PROTO_UINT_BYTEARRAY(this IDictionary<uint, byte[]> d, Compression.eCompressionType compression = Compression.eCompressionType.NoCompression)
+        public static byte[] Encode_DICT_PROTO_UINT_BYTEARRAY(this IDictionary<uint, byte[]> d, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
         {
             if (d == null || d.Count == 0)
                 return null;
@@ -63,7 +115,7 @@ namespace DBreeze.Utils
 
             switch (compression)
             {
-                case Compression.eCompressionType.Gzip:
+                case Compression.eCompressionMethod.Gzip:
                     encB = encB.GZip_Compress();                    
                     break;
             }
@@ -78,14 +130,14 @@ namespace DBreeze.Utils
         /// <param name="encB"></param>
         /// <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
         /// <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
-        public static void Decode_DICT_PROTO_UINT_BYTEARRAY(this byte[] encB, IDictionary<uint, byte[]> retD, Compression.eCompressionType compression = Compression.eCompressionType.NoCompression)
+        public static void Decode_DICT_PROTO_UINT_BYTEARRAY(this byte[] encB, IDictionary<uint, byte[]> retD, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
         {            
             if (encB == null || encB.Length < 1)
                 return;
 
             switch (compression)
             {
-                case Compression.eCompressionType.Gzip:                    
+                case Compression.eCompressionMethod.Gzip:                    
                     encB = encB.GZip_Decompress();                    
                     break;
             }

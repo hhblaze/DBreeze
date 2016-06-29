@@ -1169,6 +1169,34 @@
             Answers for sending data to Remote Acceptor and returning answer back
             </summary>
         </member>
+        <member name="T:DBreeze.DBreezeConfiguration.TextSearchConfiguration">
+            <summary>
+            Configuration concerning TextSearch subsystem
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.QuantityOfWordsInBlock">
+            <summary>
+            Search Index setting. Less value - bigger index on the disc, and faster search.
+            More RAM is used
+            <para>Mobile recommendations year 2015: 100</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MinimalBlockReservInBytes">
+            <summary>
+            Search Index setting. Reservation block growth size
+            <para>Mobile recommendations year 2015: 1000</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MaxQuantityOfWordsToBeSearched">
+            <summary>
+            Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfig">
+            <summary>
+            Configuration concerning TextSearch subsystem
+            </summary>
+        </member>
         <member name="T:DBreeze.DBreezeRemoteEngine">
             <summary>
             
@@ -3241,6 +3269,301 @@
             Next 3 concern alternative table storage pathes.
             </summary>
         </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler">
+            <summary>
+            New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">
+            <summary>
+            Internal search-table structure.       
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.e2i">
+            <summary>
+            External document index to internal - 1. Key byte[], Value int
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.i2e">
+            <summary>
+            Internal document index to external - 2. Key int, Value byte[]
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.srch">
+            <summary>
+            Searchables to insert - 3. internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
+            Insert always compares newly intended with current and if no changes exits. 
+            Indexer replaces new with current.
+            itbls.Value.ChangedDocIds contains IDs of changed docs per search table
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.blocks">
+            <summary>
+            Key 10: [uint,byte[]] where K is BlockID[uint] (1000 words per block), Value is GzippedAndProtobufed Dictionary of [uint, byte[]] where K is ID of the word in Key2 and value its WAH reserved (init reservation 100KB per block)            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.currentBlock">
+            <summary>
+            Key 11: [int] - current blockNumber
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.numberInBlock">
+            <summary>
+            Key 12: [int] used number in the block
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.words">
+            <summary>
+            Key 20 : [string,byte[]] NestedTable(Index to search by words)
+            <para>Where Key: string - word</para>
+            <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.itbls">
+            <summary>
+            Registering all search-tables mutated during transaction
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+            <param name="documentId"></param>
+            <param name="searchables"></param>
+            <param name="opt"></param>
+            <param name="iMode"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.SearchTextInDocuments(System.String,DBreeze.TextSearch.TextSearchRequest)">
+            <summary>
+            SearchTextInDocuments
+            </summary>
+            <param name="tableName"></param>
+            <param name="req"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing">
+            <summary>
+            itbls and transaction must be supplied, to make it working from outside
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[])">
+            <summary>
+            This function accepts old value of searchables for one document and new value,
+            decides what must be Removed (par1) and what should be Added (par2)
+            </summary>
+            <param name="oldtext"></param>
+            <param name="newtext"></param>
+            <returns>List 2remove, List 2add</returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String)">
+            <summary>
+            Converter from searchbales to byte[]
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[])">
+            <summary>
+            Converter from byte[] searchables.
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordDefinition">
+            <summary>
+            
+            </summary>        
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+            <summary>
+            Returns null in case of notfound anything or what ever
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.PrepareSearchKeyWords(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="searchKeywords"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchStorageOptions">
+            <summary>
+            Options which are used while tran.InsertDocumentText
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.FullTextOnly">
+            <summary>
+            Will store complete word. Search StartWith will be only available. Default is true
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.SearchWordMinimalLength">
+            <summary>
+            Minimal lenghth of the word to be searched. Default is 3. 
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchRequest">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchRequest.eSearchLogicType">
+            <summary>
+            eSearchLogicType for multiple words 
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.AND">
+            <summary>
+            Occurance of all search words in a document is expected.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR">
+            <summary>
+            Occurance of any of the search words in a documented is expected.
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchRequest.SearchWords">
+            <summary>
+            Words separated by space or whatever to search
+            </summary>        
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchRequest.Quantity">
+            <summary>
+            Maximal quantity of documents to be returned. Lower value - lower RAM and speed economy.
+            </summary>        
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchRequest.SearchLogicType">
+            <summary>
+            AND/OR. Default OR
+            </summary>        
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchRequest.NoisyQuantity">
+            <summary>
+            Default value is 1000. It means if such word's Starts With found more than "NoisyQuantity" times, 
+            it will be excluded from the search.
+            For example, after uploading 122 russian books and having 700000 unique words, we try to search combination of "ал".
+            We have found it 3240 times:
+            ал
+            ала
+            алабан
+            алаберная
+            алаберный
+            алаболки
+            алаболь
+            ...
+            etc.
+            !This is not the quantity of documents where such pattern exists, but StartsWith result of all unique words
+            </summary>        
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchResponse">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchResponse.FoundDocumentIDs">
+            <summary>
+            Document external IDs, supplied while insert
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchResponse.SearchCriteriaIsNoisy">
+            <summary>
+            SearchCriteriaIsNoisy. When one of words in search request contains more then 1000 intersections it will become true.
+            It can mean that better is to change search word criteria.
+            Lobster 
+            Lopata
+            ...
+            Loshad
+            Lom 
+            .. e.g. words starting from "Lo" is more then 10000
+            ......and we search by "Lo".
+            This "Lo" will be automatically excluded from search
+            </summary>        
+        </member>
+        <member name="T:DBreeze.TextSearch.WAH2">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.#ctor(System.Byte[])">
+            <summary>
+            Must be supplied CompressedByteArray taken from GetCompressedByteArray function
+            </summary>
+            <param name="array"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.GetUncompressedByteArray">
+            <summary>
+            Working byte[]
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.GetCompressedByteArray">
+            <summary>
+            With extra protocol definition, ready for save into DB
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.Add(System.Int32,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.Resize(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="len"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.Contains(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.MergeAllUncompressedIntoOne(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using OR logic: 1|1 = 1|0 = 1; 0|0 = 0
+            </summary>
+            <param name="indexesToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.TextSearch.WAH2.ExistsInDB">
+            <summary>
+            Technical if already in DB
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Returns last added documents first
+            </summary>
+            <param name="indexesToCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WAH2.TextSearch_OR_logic(System.Collections.Generic.List{System.Byte[]},System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="indexesToCheck"></param>
+            <param name="maximalReturnQuantity"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
             <summary>
             
@@ -3379,6 +3702,11 @@
         <member name="F:DBreeze.Transactions.Transaction._transactionType">
             <summary>
             0 - standard transaction, 1 - locked transaction (Shared Exclusive)
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.tsh">
+            <summary>
+            TextSearchHandler instance
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Dispose">
@@ -3822,6 +4150,54 @@
             <typeparam name="TValue"></typeparam>
             <param name="tableName"></param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextInsertToDocument(System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+            <summary>
+            Inserts/updates searchable text for the documentID
+            </summary>
+            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
+            <param name="searchables">text used for search the document</param>
+            <param name="opt">TextSearchOptions</param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextAppendWordsToDocument(System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+            <summary>
+            Appends words to existing searchable text for the documentID
+            </summary>
+            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
+            <param name="searchables">text used for search the document</param>
+            <param name="opt">TextSearchOptions</param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextRemoveWordsFromDocument(System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+            <summary>
+            Removes words from searchable text for the documentID. If document doesn't exist, it will do nothing.
+            opt.FullTextOnly = true will be set automatically
+            </summary>
+            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch</param>
+            <param name="searchables">text used for search the document</param>
+            <param name="opt"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[])">
+            <summary>
+            Removes searchable text for the documentID
+            </summary>
+            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch</param>                
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String,DBreeze.TextSearch.TextSearchRequest)">
+            <summary>
+            Search text and returns documents (External document IDs), containing words or word parts
+            </summary>
+            <param name="tableName">DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+            <param name="req">TextSearchRequest</param>
+            <returns>TextSearchResponse</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextIndex">
+            <summary>
+            Is called before COMMIT only
+            </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Select``2(System.String,``0)">
             <summary>
@@ -5519,6 +5895,91 @@
             <param name="arrayToCompare"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.Utils.Biser">
+            <summary>
+            Custom binary serializer of well known types
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [string, HashSet[uint]].
+            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+            </summary>
+            <param name="d"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Decodes byte[] into  Dictionary [string, HashSet[uint]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_UINT_BYTEARRAY(System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [uint, byte[]].
+            Use when key is less then 4 bytes (less then 268mln).
+            Value byte[0] will be presented as null after decoding
+            </summary>
+            <param name="d"></param>
+            <param name="compression">compression method extra applied to the outgoing byte array</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(System.Byte[],System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Used when parameter is encoded with Encode_DICT_PROTO_UINT_BYTEARRAY.
+            Returns Dictionary [uint, byte[]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
+            <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToTarget(System.Byte[],System.Int32)">
+            <summary>
+            ToTarget
+            </summary>
+            <param name="bytes"></param>
+            <param name="sizeBites"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Compression.GZip_Compress(System.Byte[])">
+            <summary>
+            In Memory Compression with Gzip
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Compression.GZip_Decompress(System.Byte[])">
+            <summary>
+            In Memory GZip Decompressor 
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
         <member name="F:DBreeze.Utils.CustomSerializator.Serializator">
             <summary>
             Must be setup to be used together with DbCustomSerializer
@@ -5558,11 +6019,6 @@
             <summary>
             Wrapper For System.Threading.ReaderWriterLockSlim
             In case if better algorithm will be found
-            </summary>
-        </member>
-        <member name="T:DBreeze.Utils.DbReaderWriterSpinLock">
-            <summary>
-            Temporar wrapper
             </summary>
         </member>
         <member name="M:DBreeze.Utils.DbThreadsGator.#ctor">

@@ -16,6 +16,7 @@ using DBreeze.Utils;
 
 using System.IO;
 using DBreeze;
+using DBreeze.Diagnostic;
 
 namespace VisualTester
 {
@@ -625,8 +626,7 @@ namespace VisualTester
 
         class MyTask
         {
-            public long Id { get; set; }
-            public string ExternalId { get; set; } = "";
+            public long Id { get; set; }            
             public string Description { get; set; } = "";
             public string Notes { get; set; } = "";
         }
@@ -636,21 +636,27 @@ namespace VisualTester
         DBreezeEngine textsearchengine = null;
         private void btTestSearchText_Click(object sender, RoutedEventArgs e)
         {
-        
+
+            //Dictionary<string, HashSet<uint>> d = new Dictionary<string, HashSet<uint>>();
+            //d.Add("t1", null);
+            //d.Add("t2", new HashSet<uint> { 4, 5, 6 });
+
+            //var btx = Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(d, Compression.eCompressionType.NoCompression);
+            //Dictionary<string, HashSet<uint>> d1 = new Dictionary<string, HashSet<uint>>();
+
+            //Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(btx, d1, Compression.eCompressionType.NoCompression);
+
+            //return;
             if (textsearchengine == null)
-            {
-                textsearchengine = new DBreezeEngine(@"S:\temp\DBR1\");
-            }
-
-            int companyId = 1;
+            {              
+                textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");
+            }            
             MyTask tsk = null;
-            StringBuilder sb = new StringBuilder();
-
 
 
             using (var tran = textsearchengine.GetTransaction())
             {
-                var resp = tran.SearchTextInDocuments("TaskFullTextSearch" + companyId, new DBreeze.TextSearch.TextSearchRequest()
+                var resp = tran.TextSearch("TaskFullTextSearch", new DBreeze.TextSearch.TextSearchRequest()
                 {
                     // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
                     SearchWords = "Particularly"
@@ -658,79 +664,100 @@ namespace VisualTester
 
             }
 
+            //using (var tran = textsearchengine.GetTransaction())
+            //{
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 2,
+            //        ExternalId = "x2",
+            //        Description = "Very second task ",
+            //        Notes = "small"
+            //    };
+            //    sb.Append(tsk.Description + " " + tsk.Notes);
+            //    tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+
+            //    tran.Commit();
+            //}
+
+            //using (var tran = textsearchengine.GetTransaction())
+            //{
+            //    var resp = tran.TextSearch("TaskFullTextSearch", new DBreeze.TextSearch.TextSearchRequest()
+            //    {
+            //        // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
+            //        SearchWords = "review1"
+            //    });
+
+            //}
+            //return;
+
+            SpeedStatistic.ToConsole = false;
+            SpeedStatistic.StartCounter("a");
+
+            //using (var tran = textsearchengine.GetTransaction())
+            //{
+
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 3,
+            //        Description = "test review",
+            //        Notes = "metro"
+            //    };
+            //    tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+
+            //    tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
+            //    //tran.TextAppendWordsToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), "cheater", new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
+            //    //tran.TextRemoveWordsFromDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), "cheater", new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = true, });
+           
+
+            //    tran.Commit();
+            //}
+            //return;
+
             using (var tran = textsearchengine.GetTransaction())
             {
-                tsk = new MyTask()
-                {
-                    Id = 2,
-                    ExternalId = "x2",
-                    Description = "Very second task ",
-                    Notes = "small"
-                };
-                sb.Append(tsk.Description + " " + tsk.Notes);
-                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
 
-                tran.Commit();
-            }
-
-            using (var tran = textsearchengine.GetTransaction())
-            {
-                var resp = tran.SearchTextInDocuments("TaskFullTextSearch" + companyId, new DBreeze.TextSearch.TextSearchRequest()
-                {
-                    // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
-                    SearchWords = "Particularly"
-                });
-
-            }
-            return;
-
-
-
-
-            using (var tran = textsearchengine.GetTransaction())
-            {
-                tran.SynchronizeTables("Tasks" + companyId, "TaskFullTextSearch" + companyId);
+                //we want to store text index in table “TaskFullTextSearch” and task itself in table "Tasks"
+                tran.SynchronizeTables("Tasks", "TaskFullTextSearch");
 
                 //Storing task
                 tsk = new MyTask()
                 {
-                    Id = 1,
-                    ExternalId = "x1",
-                    Description = "Very well task for the ",
-                    Notes = "No practical task notes sell dell stop"
+                    Id = 1,                    
+                    Description = "Starting with the .NET Framework version 2.0, well if you derive a class from Random and override the Sample method, the distribution provided by the derived class implementation of the Sample method is not used in calls to the base class implementation of the NextBytes method. Instead, the uniform",
+                    Notes = "distribution returned by the base Random class is used. This behavior improves the overall performance of the Random class. To modify this behavior to call the Sample method in the derived class, you must also override the NextBytes method"
                 };
-                tran.Insert<long, byte[]>("Tasks" + companyId, tsk.Id, null);
-                sb.Append(tsk.Description + " " + tsk.Notes);
-                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(),new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
 
-                sb.Clear();
+                //Creating text, for the document search. any word or word part (minimum 3 chars, check TextSearchStorageOptions) from Description and Notes will return us this document in the future
+                tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
 
+                
                 tsk = new MyTask()
                 {
-                    Id = 2,
-                    ExternalId = "x2",
-                    Description = "Very second task ",
-                    Notes = "Particularly small"
+                    Id = 2,                    
+                    Description = "VI guess in Universal Apps for Xamarin you need to include the assembly when loading embedded resources. I had to change",
+                    Notes = "I work on.NET for UWP.This is super interesting and I'd well love to take a deeper look at it after the holiday. If "
                 };
-                tran.Insert<long, byte[]>("Tasks" + companyId, tsk.Id, null);
-                sb.Append(tsk.Description + " " + tsk.Notes);
-                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
-
-                sb.Clear();
-
+                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);                
+                tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
+                                
+                                
                 tsk = new MyTask()
                 {
-                    Id = 1,
-                    ExternalId = "x1",
-                    Description = "Very well task for the ",
-                    Notes = "No practical task notes sell stop"
+                    Id = 3,                    
+                    Description = "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met",
+                    Notes = "This clause was objected to on the grounds that as people well changed the license to reflect their name or organization it led to escalating advertising requirements when programs were combined together in a software distribution: every occurrence of the license with a different name required a separate acknowledgment. In arguing against it, Richard Stallman has stated that he counted 75 such acknowledgments "
                 };
-                //tran.Insert<long, byte[]>("Tasks" + companyId, tsk.Id, null);
-                sb.Append(tsk.Description + " " + tsk.Notes);
-                tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+                tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
 
+                //Committing all together. 
+                //Though its possible to build an automatic indexer for the huge text and call it in parallel thread and here to store only changed documentIDs which must be indexed.
+                //All depends upon necessary insert speed.
                 tran.Commit(); 
             }
+
+            SpeedStatistic.PrintOut("a",true);
 
         }
     }

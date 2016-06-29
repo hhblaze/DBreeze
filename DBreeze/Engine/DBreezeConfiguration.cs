@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 using System;
 using System.Collections.Generic;
@@ -88,6 +88,42 @@ namespace DBreeze
         /// Answers for sending data to Remote Acceptor and returning answer back
         /// </summary>
         public IRemoteInstanceCommunicator RICommunicator = null;
-      
+
+        /// <summary>
+        /// Configuration concerning TextSearch subsystem
+        /// </summary>
+        public class TextSearchConfiguration
+        {
+            /// <summary>
+            /// Search Index setting. Less value - bigger index on the disc, and faster search.
+            /// More RAM is used
+            /// <para>Mobile recommendations year 2015: 100</para>
+            /// </summary>
+            public int QuantityOfWordsInBlock = 1000;
+            /// <summary>
+            /// Search Index setting. Reservation block growth size
+            /// <para>Mobile recommendations year 2015: 1000</para>
+            /// </summary>
+            public int MinimalBlockReservInBytes = 100000;
+
+            ///// <summary>
+            ///// Automatic indexer settings
+            ///// Engine processes newly added documents by chunks limited by quantity of chars.
+            ///// More chars - more RAM for one block processing. Default value is 10MLN chars.
+            ///// Probably for mobile telephones this value must be decreased to 100K.
+            ///// <para>Mobile recommendations year 2015: 1000000</para>
+            ///// </summary>
+            //public int MaxCharsToBeProcessedPerRound = 10000000;
+
+            /// <summary>
+            /// Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
+            /// </summary>
+            public int MaxQuantityOfWordsToBeSearched = 10;
+        }
+
+        /// <summary>
+        /// Configuration concerning TextSearch subsystem
+        /// </summary>
+        public TextSearchConfiguration TextSearchConfig = new DBreezeConfiguration.TextSearchConfiguration();
     }
 }

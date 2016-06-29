@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 
 using System;
@@ -23,24 +23,36 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public static string SerializeXml(this object objectForSerialization)
         {
-            try
+            System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
+
+            string r = String.Empty;
+
+            using (System.IO.StringWriter wr = new System.IO.StringWriter())
             {
-                System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
-
-                string r = String.Empty;
-
-                using (System.IO.StringWriter wr = new System.IO.StringWriter())
-                {
-                    xs.Serialize(wr, objectForSerialization);
-                    r = wr.GetStringBuilder().ToString();                    
-                }
-
-                return r;
+                xs.Serialize(wr, objectForSerialization);
+                r = wr.GetStringBuilder().ToString();
             }
-            catch (Exception ex)
-            {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_SERIALIZATION_ERROR,ex);                  
-            }
+
+            return r;
+
+            //try
+            //{
+            //    System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
+
+            //    string r = String.Empty;
+
+            //    using (System.IO.StringWriter wr = new System.IO.StringWriter())
+            //    {
+            //        xs.Serialize(wr, objectForSerialization);
+            //        r = wr.GetStringBuilder().ToString();                    
+            //    }
+
+            //    return r;
+            //}
+            //catch (Exception ex)
+            //{
+            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_SERIALIZATION_ERROR,ex);                  
+            //}
 
         }
 
@@ -52,22 +64,32 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public static T DeserializeXml<T>(this string str)
         {
-            try
-            {
-                System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
+            System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
 
-                object r = null;
-                using (System.IO.StringReader sr = new System.IO.StringReader(str))
-                {
-                    r = xs.Deserialize(new System.IO.StringReader(str));                    
-                }
-
-                return (T)r;
-            }
-            catch (Exception ex)
+            object r = null;
+            using (System.IO.StringReader sr = new System.IO.StringReader(str))
             {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_DESERIALIZATION_ERROR, ex);                
+                r = xs.Deserialize(new System.IO.StringReader(str));
             }
+
+            return (T)r;
+
+            //try
+            //{
+            //    System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
+
+            //    object r = null;
+            //    using (System.IO.StringReader sr = new System.IO.StringReader(str))
+            //    {
+            //        r = xs.Deserialize(new System.IO.StringReader(str));                    
+            //    }
+
+            //    return (T)r;
+            //}
+            //catch (Exception ex)
+            //{
+            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_DESERIALIZATION_ERROR, ex);                
+            //}
 
         }
     }

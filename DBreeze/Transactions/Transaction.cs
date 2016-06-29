@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 
 using System;
@@ -25,7 +25,7 @@ namespace DBreeze.Transactions
         /// Managed threadId of the transaction
         /// </summary>
         public int ManagedThreadId = 0;
-        private TransactionUnit _transactionUnit = null;
+        internal TransactionUnit _transactionUnit = null;
 
         bool disposed = false;
 
@@ -478,7 +478,7 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Commit()
         {
-            IndexDocuments();
+            TextIndex();
             this._transactionUnit.TransactionsCoordinator.Commit(this.ManagedThreadId);
            
         }
@@ -1267,14 +1267,15 @@ namespace DBreeze.Transactions
         #region "Insert for text search"
 
         /// <summary>
-        /// Insert document text to be searched
+        /// Inserts/updates searchable text for the documentID
         /// </summary>
-        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. Group name of the documents to be searched. Also is a DBreeze table name</param>
-        /// <param name="documentId">Internal document id, will be returned after executing</param>        
-        /// <param name="searchables">text used for search</param>
+        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
+        /// <param name="searchables">text used for search the document</param>
         /// <param name="opt">TextSearchOptions</param>
-        public void InsertDocumentText(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt =null)
+        public void TextInsertToDocument(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt =null)
         {
+            //InsertDocumentText
             if (opt == null)
                 opt = new TextSearchStorageOptions();
             
@@ -1285,14 +1286,15 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// Appends words to existing searchable words set of the document. If document doesn't exist, it will act like insert.
+        /// Appends words to existing searchable text for the documentID
         /// </summary>
-        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. Group name of the documents to be searched. Also is a DBreeze table name</param>
-        /// <param name="documentId">Internal document id, will be returned after executing</param>        
-        /// <param name="searchables">text used for search</param>
+        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
+        /// <param name="searchables">text used for search the document</param>
         /// <param name="opt">TextSearchOptions</param>
-        public void InsertDocumentText_AppendWordsToExistingSet(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        public void TextAppendWordsToDocument(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
         {
+            //InsertDocumentText_AppendWordsToExistingSet
             if (opt == null)
                 opt = new TextSearchStorageOptions();
 
@@ -1303,29 +1305,33 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// Removes words from existing searchable words set of the document. If document doesn't exist, it will do nothing.
+        /// Removes words from searchable text for the documentID. If document doesn't exist, it will do nothing.
+        /// opt.FullTextOnly = true will be set automatically
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="documentId"></param>
-        /// <param name="searchables"></param>
+        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>
+        /// <param name="searchables">text used for search the document</param>
         /// <param name="opt"></param>
-        public void InsertDocumentText_RemoveWordsFromExistingSet(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        public void TextRemoveWordsFromDocument(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
         {
+            //InsertDocumentText_RemoveWordsFromExistingSet
             if (opt == null)
                 opt = new TextSearchStorageOptions();
 
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
+            opt.FullTextOnly = true;
+
             tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Remove);
         }
 
         /// <summary>
-        /// Removes document from searchables
+        /// Removes searchable text for the documentID
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="documentId"></param>                
-        public void RemoveDocumentText(string tableName, byte[] documentId)
+        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>                
+        public void TextRemoveAll(string tableName, byte[] documentId)
         {         
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
@@ -1334,12 +1340,12 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// 
+        /// Search text and returns documents (External document IDs), containing words or word parts
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="req"></param>
-        /// <returns></returns>
-        public TextSearchResponse SearchTextInDocuments(string tableName, TextSearchRequest req)
+        /// <param name="tableName">DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+        /// <param name="req">TextSearchRequest</param>
+        /// <returns>TextSearchResponse</returns>
+        public TextSearchResponse TextSearch(string tableName, TextSearchRequest req)
         {
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
@@ -1348,9 +1354,9 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// Currently called before commit only
+        /// Is called before COMMIT only
         /// </summary>
-        void IndexDocuments()
+        void TextIndex()
         {
             if (tsh != null && tsh.InsertWasPerformed)
             {

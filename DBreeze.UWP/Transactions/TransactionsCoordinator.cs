@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 
 using System;
@@ -24,7 +24,7 @@ namespace DBreeze.Transactions
         /// </summary>
         Dictionary<int, TransactionUnit> _transactions = new Dictionary<int, TransactionUnit>();
 
-        DBreezeEngine _engine = null;
+        internal DBreezeEngine _engine = null;
 
         public TransactionsCoordinator(DBreezeEngine engine)
         {

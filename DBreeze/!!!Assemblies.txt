@@ -1,7 +1,7 @@
 ﻿Compiling for different .NET Frameworks and MONO
 
 - to make DBreeze running on XAMARIN for Android or even lightweight (without JSON) .NET 4.5> and MONO add global #define: NET40, change project Framework on .NET45
-  exclude MJonSerializator.cs, DbMJSON.cs and reference to System.Web.Extension
+  exclude Utils->MJonSerializator.cs, DataTypes->DbMJSON.cs and reference to System.Web.Extension
   
 - to make DBreeze running on .NET 4.0 and MONO add global #define: NET40 (ProjectProperties->Build->Conditional compilation properties), change project Framework on .NET40
 - to make DBreeze running on .NET 4.5 and MONO add global #define: NET40 (ProjectProperties->Build->Conditional compilation properties), change project Framework on .NET45

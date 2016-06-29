@@ -176,7 +176,6 @@
     <Compile Include="Utils\Compression.cs" />
     <Compile Include="Utils\CustomSerializator.cs" />
     <Compile Include="Utils\DbReaderWriterLock.cs" />
-    <Compile Include="Utils\DbReaderWriterSpinLock.cs" />
     <Compile Include="Utils\DbThreadsGator.cs" />
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\StringProcessing.cs" />

@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ namespace DBreeze.Utils
 {
     public static class Compression
     {
-        public enum eCompressionType
+        public enum eCompressionMethod
         {
             NoCompression = 0,
             Gzip = 1

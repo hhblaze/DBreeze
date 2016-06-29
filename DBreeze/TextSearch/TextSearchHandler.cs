@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2014 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 
 using System;
@@ -15,59 +15,28 @@ using DBreeze.Utils;
 using DBreeze.DataTypes;
 using System.Diagnostics;
 
-//TODO
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   MUST BE ONE RESERVED TABLE IN DBREEZE SCOPE where we register tables ready to be indexed and start fro mindexing in case if engine was stopped
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   DBreeze.Transactions.Transaction.TextSearchOptions, configurable while insert
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Telephone has special config limitation (block size)
-
-    /*
-     A bit of concept, 
-     If no special modificator is supplied, then TextInternals indexing occurs within the same transaction, right before commit
-     
-     */
 
 namespace DBreeze.TextSearch
 {
     /// <summary>
-    /// New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch addon.
+    /// New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
     /// </summary>
     internal class TextSearchHandler
     {
         public bool InsertWasPerformed = false;
         Transaction tran = null;
-
-        //!!!!!!!!!!!!!!!!!!!  MOVE AWAY TO GLOBAL CONFIG
-        /// <summary>
-        /// Search Index setting. Less value - bigger index on the disc, and faster search
-        /// </summary>
-        public int QuantityOfWordsInBlock = 1000;
-        /// <summary>
-        /// Search Index setting. Reservation block growth size
-        /// </summary>
-        public int MinimalBlockReservInBytes = 100000;
-        /// <summary>
-        /// Engine processes newly added documents by chunks limited by quantity of chars.
-        /// More chars - more RAM for one block processing. Default value is 10MLN chars.
-        /// Probably for mobile telephones this value must be decreased to 100K.
-        /// </summary>
-        public int MaxCharsToBeProcessedPerRound = 10000000;
-        /// <summary>
-        /// Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
-        /// </summary>
-        public int MaxQuantityOfWordsToBeSearched = 10;
-
-
+        
         public TextSearchHandler(Transaction tran)
         {
             this.tran = tran;
         }
-
+       
         /// <summary>
-        /// Internal tableName of InsertDocumentText table structure.
-        /// 
+        /// Internal search-table structure.       
         /// </summary>
         class ITS
         {
+            public HashSet<int> ChangedDocIds = new HashSet<int>();
             /// <summary>
             /// External document index to internal - 1. Key byte[], Value int
             /// </summary>
@@ -77,16 +46,15 @@ namespace DBreeze.TextSearch
             /// </summary>
             public NestedTable i2e = null;
             /// <summary>
-            /// Searchables to insert - 3. Key will be time(as ticks) + internal docId(int), Value is searchables
+            /// Searchables to insert - 3. internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
+            /// Insert always compares newly intended with current and if no changes exits. 
+            /// Indexer replaces new with current.
+            /// itbls.Value.ChangedDocIds contains IDs of changed docs per search table
             /// </summary>
-            public NestedTable s2i = null;
+            public NestedTable srch = null;
 
             //Key 4: LastIndexedTime tran.Select<byte, byte[]>(tbl, 4); Under index 4 we hold LastIndexedTime for that table   
 
-            /// <summary>
-            /// Searchables to insert - 5. Key will be  internal docId + time, Value link to s2i
-            /// </summary>
-            public NestedTable sd2i = null;
             /// <summary>
             /// Key 10: [uint,byte[]] where K is BlockID[uint] (1000 words per block), Value is GzippedAndProtobufed Dictionary of [uint, byte[]] where K is ID of the word in Key2 and value its WAH reserved (init reservation 100KB per block)            
             /// </summary>
@@ -106,11 +74,11 @@ namespace DBreeze.TextSearch
             /// <para>Where Key: string - word</para>
             /// <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
             /// </summary>
-            public NestedTable words = null;                                                                      
+            public NestedTable words = null;
         }
 
         /// <summary>
-        /// Registering all tables where we have inserted during transaction
+        /// Registering all search-tables mutated during transaction
         /// </summary>
         Dictionary<string, ITS> itbls = new Dictionary<string, ITS>();
 
@@ -132,11 +100,16 @@ namespace DBreeze.TextSearch
         /// <param name="iMode"></param>
         public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt, eInsertMode iMode)
         {
-            if (String.IsNullOrEmpty(searchables) || documentId == null)
+            //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.
+            if (String.IsNullOrEmpty(tableName) || documentId == null)
                 return;
 
-           
-            
+            if ((iMode == eInsertMode.Append || iMode == eInsertMode.Remove) && String.IsNullOrEmpty(searchables))
+                return;
+
+            SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(searchables, opt); //flattend searchables
+            StringBuilder sbPs = new StringBuilder();
+
             //Registering all tables for text-search in current transaction
             ITS its = null;
             if (!itbls.TryGetValue(tableName, out its))
@@ -145,9 +118,13 @@ namespace DBreeze.TextSearch
                 {
                     e2i = tran.InsertTable<byte>(tableName, 1, 0),
                     i2e = tran.InsertTable<byte>(tableName, 2, 0),
-                    s2i = tran.InsertTable<byte>(tableName, 3, 0),
-                    sd2i = tran.InsertTable<byte>(tableName, 5, 0),
+                    srch = tran.InsertTable<byte>(tableName, 3, 0),                    
                 };
+
+                its.e2i.ValuesLazyLoadingIsOn = false;
+                its.i2e.ValuesLazyLoadingIsOn = false;
+                its.srch.ValuesLazyLoadingIsOn = false;
+
                 itbls.Add(tableName, its);
             }
 
@@ -155,13 +132,57 @@ namespace DBreeze.TextSearch
             int iId = 0;
             
             //Searching document by externalID
-            var r1 = its.e2i.Select<byte[], int>(documentId);
-            if (r1.Exists)
-            {                
+            var r1 = its.e2i.Select<byte[], int>(documentId);            
+
+            if (r1.Exists)          //DOCUMENT EXISTS
+            {
                 iId = r1.Value;
+
+                //Getting old searchables for this document                
+                byte[] oldSrch = its.srch.Select<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
+                HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset                
+                
+                switch (iMode)
+                {
+                    case eInsertMode.Insert:
+                        //Comparing 
+                        if (oldSearchables.Intersect(pST.Keys).Count() == pST.Count) 
+                            return; //Going out, nothing to insert
+
+                        foreach (var ps1i in pST)
+                        {
+                            sbPs.Append(ps1i.Key);
+                            sbPs.Append(" ");
+                        }
+                        break;
+                    case eInsertMode.Append:
+                    case eInsertMode.Remove:
+
+                        if((iMode == eInsertMode.Append) && oldSearchables.Intersect(pST.Keys).Count() == pST.Count)
+                            return; //Going out, nothing to insert
+
+                        foreach (var ew in pST.Keys)
+                        {
+                            if (iMode == eInsertMode.Append)
+                                oldSearchables.Add(ew);
+                            else
+                                oldSearchables.Remove(ew);
+                        }
+
+                        foreach (var el in oldSearchables)
+                        {
+                            sbPs.Append(el);
+                            sbPs.Append(" ");
+                        }
+                        
+                        break;
+                }
             }
             else
-            {
+            {           //DOCUMENT NEW
+                if (pST.Count < 1)
+                    return; //Going out, nothing to insert
+
                 //Document is new
                 if (iMode == eInsertMode.Append)
                     iMode = eInsertMode.Insert;
@@ -172,88 +193,35 @@ namespace DBreeze.TextSearch
 
                 its.e2i.Insert<byte[], int>(documentId, iId);
                 its.i2e.Insert<int, byte[]>(iId, documentId);
+
+                foreach (var ps1i in pST)
+                {
+                    sbPs.Append(ps1i.Key);
+                    sbPs.Append(" ");
+                }
             }
-
-            StringBuilder sbPs = new StringBuilder();
-
-            //Repacking searchables for this document due to changes
-            switch (iMode)
-            {                
-                case eInsertMode.Append:                    
-                case eInsertMode.Remove:                
-                    //Trying to get current searchables
-                    byte[] keyOldA = null;
-                    byte[] keyOldZ = null;
-                    keyOldA = iId.To_4_bytes_array_BigEndian().Concat(DateTime.MaxValue.Ticks.To_8_bytes_array_BigEndian());
-                    keyOldZ = iId.To_4_bytes_array_BigEndian().Concat(DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian());
-                    byte[] oldSrch = null;
-                    //Getting old searchables for this document
-                    foreach (var sOld in its.sd2i.SelectBackwardFromTo<byte[], byte[]>(keyOldA, false, keyOldZ, true))
-                    {
-                        oldSrch = its.s2i.Select<byte[], byte[]>(sOld.Value, true).Value;
-                        break;
-                    }
-                    HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(oldSrch);
-                    var pST = this.GetWordsDefinitionFromText(searchables, opt);
-                    foreach (var ew in pST.Keys)
-                    {
-                        if (iMode == eInsertMode.Append)
-                            oldSearchables.Add(ew);
-                        else
-                            oldSearchables.Remove(ew);
-                    }
-
-                    foreach (var el in oldSearchables)
-                    {
-                        sbPs.Append(el);
-                        sbPs.Append(" ");
-                    }
-
-                    searchables = sbPs.ToString();
-                    break;
-            }
-
-            //Processing searchables
-            var pS1 = this.GetWordsDefinitionFromText(searchables, opt); //processed searchables
-            sbPs.Clear();
-            foreach (var ps1i in pS1)
-            {
-                sbPs.Append(ps1i.Key);
-                sbPs.Append(" ");
-            }
-
+            
             this.InsertWasPerformed = true;
 
-            //Inserting searchables to be indexed
-            byte[] key = tran.CreatedUdt.To_8_bytes_array_BigEndian().Concat(iId.To_4_bytes_array_BigEndian());                        
-            its.s2i.Insert<byte[], byte[]>(key, GetByteArrayFromSearchbles(sbPs.ToString())); 
-            
-            byte[] keyRev = iId.To_4_bytes_array_BigEndian().Concat(tran.CreatedUdt.To_8_bytes_array_BigEndian());
-            its.sd2i.Insert<byte[], byte[]>(keyRev, key);
+            //Inserting into affected table
+            its.ChangedDocIds.Add(iId);
+
+            //Inserting searchables to be indexed            
+            its.srch.Insert<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1}), GetByteArrayFromSearchbles(sbPs.ToString()));                   
         }
 
 
         class WordInDocs
-        {
-            /// <summary>
-            /// Docs which contain this word
-            /// </summary>
-            public HashSet<int> docsAdded = new HashSet<int>();
-            /// <summary>
-            /// Docs which must be removed from word WAH
-            /// </summary>
-            public HashSet<int> docsRemoved = new HashSet<int>();
+        {            
             public uint BlockId = 0;
-            public uint NumberInBlock = 0;
-            //public bool ExistsInDb = false;
+            public uint NumberInBlock = 0;         
             public int foundOrigin = 0;
-            public WAH2 wah = null;
-            public int blockLength = 0;
+            public WAH2 wah = null;            
         }
 
 
         /// <summary>
-        /// 
+        /// SearchTextInDocuments
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="req"></param>
@@ -262,7 +230,6 @@ namespace DBreeze.TextSearch
         {
             TextSearchResponse resp = new TextSearchResponse();
 
-            
             //[string,byte[]] BlockId[int] + NumberInBlock[int] 
             NestedTable tbWords = tran.SelectTable<byte>(tableName, 20, 0);
             tbWords.ValuesLazyLoadingIsOn = false;
@@ -274,7 +241,7 @@ namespace DBreeze.TextSearch
             int j = -1;
             List<byte[]> foundArrays = new List<byte[]>();
             List<byte[]> oneWordFoundArrays = new List<byte[]>();
-          
+
             bool anyWordFound = false;
             int totalFoundWords = 0;
 
@@ -287,8 +254,8 @@ namespace DBreeze.TextSearch
             //Currently we ignore these words and do nothing with them
             List<string> highOccuranceWordParts = new List<string>();
 
-
-            foreach (var word in Words.Take(this.MaxQuantityOfWordsToBeSearched)) //Maximum 10 words for search
+            
+            foreach (var word in Words.Take(tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MaxQuantityOfWordsToBeSearched)) //Maximum 10 words for search
             {
                 anyWordFound = false;
                 totalFoundWords = 0;
@@ -383,8 +350,8 @@ namespace DBreeze.TextSearch
                     //DBreeze.Diagnostic.SpeedStatistic.StopCounter("SelectBlocks");                            
                     btBlock = btBlock.Substring(4, btBlock.Substring(0, 4).To_Int32_BigEndian());
                     //DBreeze.Diagnostic.SpeedStatistic.StartCounter("DecomDeserBlocks");
-                    btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block,Compression.eCompressionType.Gzip);
-                   // block = btBlock.DeserializeProtobuf<Dictionary<int, byte[]>>();
+                    btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
+                    // block = btBlock.DeserializeProtobuf<Dictionary<int, byte[]>>();
                     //DBreeze.Diagnostic.SpeedStatistic.StopCounter("DecomDeserBlocks");
                 }
 
@@ -526,21 +493,18 @@ namespace DBreeze.TextSearch
 
 
         /// <summary>
-        /// !!!!!!!!!!!!!!!!!  Must be static. One indexing thread.
-        /// Is started in parallel thread after InsertDocumentText Commit and absolutely in a new "indexing" transaction
+        /// itbls and transaction must be supplied, to make it working from outside
         /// </summary>
         public void DoIndexing()
         {
-               
+
             byte[] btUdtStart = DateTime.UtcNow.Ticks.To_8_bytes_array_BigEndian();
 
             ITS its = null;
 
             byte[] kA = null;
-            byte[] kZ = null;
-            byte[] keyOldA = null;
-            byte[] keyOldZ = null;
-            byte[] oldSrch = null;
+            byte[] kZ = null;           
+            byte[] newSrch = null;
             Row<string, byte[]> rWord = null;
             //Dictionary<string, WordInDocs> wds = new Dictionary<string, WordInDocs>();
             WordInDocs wd = null;
@@ -554,23 +518,25 @@ namespace DBreeze.TextSearch
             byte[] tmp = null;
             byte[] val = null;
             WAH2 wah = null;
-            int docId = 0;
             
+
 
             foreach (var tbl in itbls)
             {
-                its = new ITS()
-                { 
-                    s2i = tran.SelectTable<byte>(tbl.Key, 3, 0),
-                    sd2i = tran.SelectTable<byte>(tbl.Key, 5, 0),                    
-                    blocks = tran.InsertTable<byte>(tbl.Key, 10, 0),
-                    words = tran.InsertTable<byte>(tbl.Key, 20, 0), 
-                    currentBlock = tran.Select<int, uint>(tbl.Key, 11).Value,
-                    numberInBlock = tran.Select<int, uint>(tbl.Key, 12).Value,
-                };
+                its = tbl.Value;
+                if (its.srch == null)   //Can be instantiated in insert procedure, depending how we use indexer
+                {
+                    its.srch = tran.InsertTable<byte>(tbl.Key, 3, 0);
+                    its.srch.ValuesLazyLoadingIsOn = false;
+                }
+                //Are instantiated only hear
+                its.blocks = tran.InsertTable<byte>(tbl.Key, 10, 0);
+                its.words = tran.InsertTable<byte>(tbl.Key, 20, 0);
+                its.currentBlock = tran.Select<int, uint>(tbl.Key, 11).Value;
+                its.numberInBlock = tran.Select<int, uint>(tbl.Key, 12).Value;                
 
                 its.blocks.ValuesLazyLoadingIsOn = false;
-                its.words.ValuesLazyLoadingIsOn = false;           
+                its.words.ValuesLazyLoadingIsOn = false;
 
                 if (its.currentBlock == 0)
                 {
@@ -591,26 +557,20 @@ namespace DBreeze.TextSearch
                 Dictionary<string, Tuple<HashSet<int>, HashSet<int>, WordInDocs>> ds = new Dictionary<string, Tuple<HashSet<int>, HashSet<int>, WordInDocs>>();
                 Tuple<HashSet<int>, HashSet<int>, WordInDocs> tpl = null;
 
-                foreach (var srch in its.s2i.SelectForwardFromTo<byte[], byte[]>(kA, false, kZ, true))
+                foreach (var docId in its.ChangedDocIds)
                 {
-                    docId = srch.Key.Substring(8, 4).To_Int32_BigEndian();
-                    oldSrch = null;
-
-                    //Getting current searchable states for this document
-                    keyOldA = srch.Key.Substring(8, 4).Concat(srch.Key.Substring(0, 8));
-                    keyOldZ = srch.Key.Substring(8, 4).Concat(DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian());
-
-                    //Getting old searchables for this document
-                    foreach (var sOld in its.sd2i.SelectBackwardFromTo<byte[], byte[]>(keyOldA, false, keyOldZ, true))
-                    {
-                        oldSrch = its.s2i.Select<byte[],byte[]>(sOld.Value,true).Value;
-                        break;
-                    }
-
                     //diff will return list of words to be removed and list of words to be added
-                    var diff = WordsDiff(oldSrch, srch.Value);
+                    newSrch = its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 })).Value;
 
-                    Action<string> createNew = (word) =>
+                    var diff = WordsDiff(
+                        its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 })).Value, //Current searchables 
+                        newSrch //new
+                        );
+
+                    //Copying new searchables to current searchables
+                    its.srch.Insert<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), newSrch);
+
+                    Action <string> createNew = (word) =>
                     {
                         rWord = its.words.Select<string, byte[]>(word, true);
                         wd = new WordInDocs();
@@ -622,8 +582,8 @@ namespace DBreeze.TextSearch
                         else
                         {
                             its.numberInBlock++;
-
-                            if (its.numberInBlock > QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
+                            
+                            if (its.numberInBlock > tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
                             {
                                 its.currentBlock++;
                                 its.numberInBlock = 1;
@@ -641,7 +601,7 @@ namespace DBreeze.TextSearch
                     //To be removed
                     foreach (var word in diff.Item1)
                     {
-                        if (!ds.TryGetValue(word,out tpl))
+                        if (!ds.TryGetValue(word, out tpl))
                             createNew(word);
 
                         tpl.Item1.Add(docId);
@@ -675,11 +635,11 @@ namespace DBreeze.TextSearch
                             if (block.Count() > 0)
                             {
 
-                                btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionType.Gzip);
-
-                                if ((btBlock.Length + 4) < MinimalBlockReservInBytes)    //Minimal reserv
+                                btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
+                                
+                                if ((btBlock.Length + 4) < tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserv
                                 {
-                                    tmp = new byte[MinimalBlockReservInBytes];
+                                    tmp = new byte[tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
                                     tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
                                     tmp.CopyInside(4, btBlock);
                                 }
@@ -716,7 +676,7 @@ namespace DBreeze.TextSearch
                             {
                                 btBlock = val.Substring(4, blockSize);
                                 block.Clear();
-                                btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionType.Gzip);
+                                btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
                             }
                             else
                                 block.Clear();
@@ -734,12 +694,12 @@ namespace DBreeze.TextSearch
                         wah = new WAH2(null);
 
                     //Adding documents
-                    foreach(var dId in wd1.Value.Item2)
+                    foreach (var dId in wd1.Value.Item2)
                         wah.Add(dId, true);
 
                     //Removing documents
                     foreach (var dId in wd1.Value.Item1)
-                        wah.Add(dId, false);                   
+                        wah.Add(dId, false);
 
                     block[wd1.Value.Item3.NumberInBlock] = wah.GetCompressedByteArray();
 
@@ -751,11 +711,11 @@ namespace DBreeze.TextSearch
                 if (block.Count() > 0)
                 {
                     //!!!!!!!!!!! Remake it for smoothing storage 
-                    btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionType.Gzip);
+                    btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
 
-                    if ((btBlock.Length + 4) < MinimalBlockReservInBytes)    //Minimal reserve
+                    if ((btBlock.Length + 4) < tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserve
                     {
-                        tmp = new byte[MinimalBlockReservInBytes];
+                        tmp = new byte[tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
                         tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
                         tmp.CopyInside(4, btBlock);
                     }
@@ -803,13 +763,13 @@ namespace DBreeze.TextSearch
             HashSet<string> toAdd = new HashSet<string>();
 
             //Debug.WriteLine(word);
-                        
+
             HashSet<string> nt = GetSearchablesFromByteArray_AsHashSet(newtext);
             HashSet<string> ot = GetSearchablesFromByteArray_AsHashSet(oldtext);
-            
+
             foreach (var word in nt)
             {
-                if (!ot.Contains(word))                    
+                if (!ot.Contains(word))
                     toAdd.Add(word);
             }
 
@@ -830,7 +790,7 @@ namespace DBreeze.TextSearch
         /// <param name="searchables"></param>
         /// <returns></returns>
         byte[] GetByteArrayFromSearchbles(string searchables)
-        {        
+        {
             return searchables.To_UTF8Bytes().GZip_Compress();
         }
 

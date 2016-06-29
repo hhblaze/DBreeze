@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2014 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who thinks that it should be free.
+  It's a free software for those, who think that it should be free.
 */
 using System;
 using System.Collections.Generic;
@@ -17,12 +17,12 @@ namespace DBreeze.TextSearch
     {
         public TextSearchStorageOptions()
         {
-            FullTextOnly = false;
+            FullTextOnly = true;
             SearchWordMinimalLength = 3;
         }
 
         /// <summary>
-        /// Will store complete word. Search StartWith will be only available. Default is false
+        /// Will store complete word. Search StartWith will be only available. Default is true
         /// </summary>
         public bool FullTextOnly { get; set; }
 
@@ -43,11 +43,11 @@ namespace DBreeze.TextSearch
         public enum eSearchLogicType
         {
             /// <summary>
-            /// Strong. Only complete occurance is accepted
+            /// Occurance of all search words in a document is expected.
             /// </summary>
             AND,
             /// <summary>
-            /// Week logic, 1 and more occurances are accepted, sorted by relevancy of occurances
+            /// Occurance of any of the search words in a documented is expected.
             /// </summary>
             OR
         }
@@ -66,7 +66,7 @@ namespace DBreeze.TextSearch
         public string SearchWords { get; set; }
 
         /// <summary>
-        /// Results quantity. Lower value - lower RAM and speed economy.
+        /// Maximal quantity of documents to be returned. Lower value - lower RAM and speed economy.
         /// </summary>        
         public int Quantity { get; set; }
 
