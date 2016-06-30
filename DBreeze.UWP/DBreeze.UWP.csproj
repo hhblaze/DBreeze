@@ -107,6 +107,7 @@
   <ItemGroup>
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
     <None Include="project.json" />
+    <None Include="signature.snk" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataStructures\DataAsTree.cs" />
@@ -158,6 +159,7 @@
     <Compile Include="Storage\RISR.cs" />
     <Compile Include="Storage\StorageLayer.cs" />
     <Compile Include="Storage\TrieSettings.cs" />
+    <Compile Include="TextSearch\TextDeferredIndexer.cs" />
     <Compile Include="TextSearch\TextSearchHandler.cs" />
     <Compile Include="TextSearch\TextSearchOptions.cs" />
     <Compile Include="TextSearch\WAH2.cs" />
@@ -232,6 +234,12 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

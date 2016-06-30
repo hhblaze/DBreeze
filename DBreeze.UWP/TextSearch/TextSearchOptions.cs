@@ -17,12 +17,13 @@ namespace DBreeze.TextSearch
     {
         public TextSearchStorageOptions()
         {
-            FullTextOnly = false;
+            FullTextOnly = true;
             SearchWordMinimalLength = 3;
+            DeferredIndexing = false;
         }
 
         /// <summary>
-        /// Will store complete word. Search StartWith will be only available. Default is false
+        /// Will store complete word. Search StartWith will be only available. Default is true
         /// </summary>
         public bool FullTextOnly { get; set; }
 
@@ -30,6 +31,13 @@ namespace DBreeze.TextSearch
         /// Minimal lenghth of the word to be searched. Default is 3. 
         /// </summary>
         public ushort SearchWordMinimalLength { get; set; }
+
+        /// <summary>
+        /// Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+        /// Is good for the fast main entity Commit and relatively large searchables-set .
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.
+        /// </summary>
+        public bool DeferredIndexing { get; set; }
     }
 
     /// <summary>
@@ -43,11 +51,11 @@ namespace DBreeze.TextSearch
         public enum eSearchLogicType
         {
             /// <summary>
-            /// Strong. Only complete occurance is accepted
+            /// Occurance of all search words in a document is expected.
             /// </summary>
             AND,
             /// <summary>
-            /// Week logic, 1 and more occurances are accepted, sorted by relevancy of occurances
+            /// Occurance of any of the search words in a documented is expected.
             /// </summary>
             OR
         }
@@ -55,8 +63,8 @@ namespace DBreeze.TextSearch
         public TextSearchRequest()
         {
             SearchLogicType = eSearchLogicType.OR;
-            SearchWords = String.Empty;            
-            Quantity = 100;            
+            SearchWords = String.Empty;
+            Quantity = 100;
             NoisyQuantity = 1000;
         }
 
@@ -66,7 +74,7 @@ namespace DBreeze.TextSearch
         public string SearchWords { get; set; }
 
         /// <summary>
-        /// Results quantity. Lower value - lower RAM and speed economy.
+        /// Maximal quantity of documents to be returned. Lower value - lower RAM and speed economy.
         /// </summary>        
         public int Quantity { get; set; }
 

@@ -3269,6 +3269,32 @@
             Next 3 concern alternative table storage pathes.
             </summary>
         </member>
+        <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
+            <summary>
+            TextDeferredIndexer
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Dispose">
+            <summary>
+            Disposing
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Add tables and their InternalDocumentIDs for paraller indexing
+            </summary>
+            <param name="defferedDocIds"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.StartDefferedIndexing">
+            <summary>
+            Runs Indexer. Only one instance is allowed
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Indexer">
+            <summary>
+            Indexer self
+            </summary>
+        </member>
         <member name="T:DBreeze.TextSearch.TextSearchHandler">
             <summary>
             New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
@@ -3329,7 +3355,7 @@
             
             </summary>
             <param name="tran"></param>
-            <param name="tableName"></param>
+            <param name="tableName">Search document space/physical dbreeze table, that's why must be synchronized</param>
             <param name="documentId"></param>
             <param name="searchables"></param>
             <param name="opt"></param>
@@ -3343,7 +3369,17 @@
             <param name="req"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.BeforeCommit">
+            <summary>
+            Started only in case if InsertWasPerformed in deffered or not deffered way
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.AfterCommit">
+            <summary>
+             Started only in case if InsertWasPerformed in deffered or not deffered way
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing(DBreeze.Transactions.Transaction,System.Collections.Generic.Dictionary{System.String,DBreeze.TextSearch.TextSearchHandler.ITS})">
             <summary>
             itbls and transaction must be supplied, to make it working from outside
             </summary>
@@ -3410,6 +3446,13 @@
         <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.SearchWordMinimalLength">
             <summary>
             Minimal lenghth of the word to be searched. Default is 3. 
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.DeferredIndexing">
+            <summary>
+            Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+            Is good for the fast main entity Commit and relatively large searchables-set .
+            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.TextSearchRequest">
@@ -4194,9 +4237,14 @@
             <param name="req">TextSearchRequest</param>
             <returns>TextSearchResponse</returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextIndex">
+        <member name="M:DBreeze.Transactions.Transaction.TextSearchHandlerCommit">
             <summary>
             Is called before COMMIT only
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextSearchHandlerAfterCommit">
+            <summary>
+            Is called after COMMIT
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Select``2(System.String,``0)">
@@ -5899,6 +5947,24 @@
             <summary>
             Custom binary serializer of well known types
             </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [string, List[byte[]]].
+            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+            </summary>
+            <param name="d"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Decodes byte[] into  Dictionary [string, List[byte[]]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD"></param>
+            <param name="compression"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
             <summary>

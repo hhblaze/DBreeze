@@ -25,6 +25,7 @@ namespace DBreeze.TextSearch
     {
         public bool InsertWasPerformed = false;
         Transaction tran = null;
+        Dictionary<string, HashSet<uint>> defferedDocIds = new Dictionary<string, HashSet<uint>>();
 
         public TextSearchHandler(Transaction tran)
         {
@@ -34,9 +35,10 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Internal search-table structure.       
         /// </summary>
-        class ITS
+        internal class ITS
         {
             public HashSet<int> ChangedDocIds = new HashSet<int>();
+
             /// <summary>
             /// External document index to internal - 1. Key byte[], Value int
             /// </summary>
@@ -93,7 +95,7 @@ namespace DBreeze.TextSearch
         /// 
         /// </summary>
         /// <param name="tran"></param>
-        /// <param name="tableName"></param>
+        /// <param name="tableName">Search document space/physical dbreeze table, that's why must be synchronized</param>
         /// <param name="documentId"></param>
         /// <param name="searchables"></param>
         /// <param name="opt"></param>
@@ -204,11 +206,20 @@ namespace DBreeze.TextSearch
             this.InsertWasPerformed = true;
 
             //Inserting into affected table
-            its.ChangedDocIds.Add(iId);
+            if (!opt.DeferredIndexing)
+                its.ChangedDocIds.Add(iId);
+            else
+            {
+                if (!defferedDocIds.ContainsKey(tableName))
+                    defferedDocIds[tableName] = new HashSet<uint>();
+
+                defferedDocIds[tableName].Add((uint)iId);
+            }
 
             //Inserting searchables to be indexed            
             its.srch.Insert<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), GetByteArrayFromSearchbles(sbPs.ToString()));
         }
+
 
 
         class WordInDocs
@@ -491,11 +502,32 @@ namespace DBreeze.TextSearch
             return resp;
         }
 
+        /// <summary>
+        /// Started only in case if InsertWasPerformed in deffered or not deffered way
+        /// </summary>
+        public void BeforeCommit()
+        {
+            this.DoIndexing(this.tran, this.itbls);  //Do start indexing inside of commit            
+        }
+
+        /// <summary>
+        ///  Started only in case if InsertWasPerformed in deffered or not deffered way
+        /// </summary>
+        public void AfterCommit()
+        {
+            //Trying start deffered indexer in parallel thread.
+            if (defferedDocIds.Count > 0)
+            {
+                tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.Add(defferedDocIds);
+                defferedDocIds.Clear();
+                tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.StartDefferedIndexing();
+            }
+        }
 
         /// <summary>
         /// itbls and transaction must be supplied, to make it working from outside
         /// </summary>
-        public void DoIndexing()
+        internal void DoIndexing(Transaction itran, Dictionary<string, ITS> xitbls)
         {
 
             byte[] btUdtStart = DateTime.UtcNow.Ticks.To_8_bytes_array_BigEndian();
@@ -521,19 +553,19 @@ namespace DBreeze.TextSearch
 
 
 
-            foreach (var tbl in itbls)
+            foreach (var tbl in xitbls)
             {
                 its = tbl.Value;
                 if (its.srch == null)   //Can be instantiated in insert procedure, depending how we use indexer
                 {
-                    its.srch = tran.InsertTable<byte>(tbl.Key, 3, 0);
+                    its.srch = itran.InsertTable<byte>(tbl.Key, 3, 0);
                     its.srch.ValuesLazyLoadingIsOn = false;
                 }
                 //Are instantiated only hear
-                its.blocks = tran.InsertTable<byte>(tbl.Key, 10, 0);
-                its.words = tran.InsertTable<byte>(tbl.Key, 20, 0);
-                its.currentBlock = tran.Select<int, uint>(tbl.Key, 11).Value;
-                its.numberInBlock = tran.Select<int, uint>(tbl.Key, 12).Value;
+                its.blocks = itran.InsertTable<byte>(tbl.Key, 10, 0);
+                its.words = itran.InsertTable<byte>(tbl.Key, 20, 0);
+                its.currentBlock = itran.Select<int, uint>(tbl.Key, 11).Value;
+                its.numberInBlock = itran.Select<int, uint>(tbl.Key, 12).Value;
 
                 its.blocks.ValuesLazyLoadingIsOn = false;
                 its.words.ValuesLazyLoadingIsOn = false;
@@ -545,7 +577,7 @@ namespace DBreeze.TextSearch
                 }
 
                 //Getting latest indexing time for that table
-                var litRow = tran.Select<byte, byte[]>(tbl.Key, 4);
+                var litRow = itran.Select<byte, byte[]>(tbl.Key, 4);
                 byte[] lastIndexed = DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian();
                 if (litRow.Exists)
                     lastIndexed = litRow.Value;
@@ -583,7 +615,7 @@ namespace DBreeze.TextSearch
                         {
                             its.numberInBlock++;
 
-                            if (its.numberInBlock > tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
+                            if (its.numberInBlock > itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
                             {
                                 its.currentBlock++;
                                 its.numberInBlock = 1;
@@ -637,9 +669,9 @@ namespace DBreeze.TextSearch
 
                                 btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
 
-                                if ((btBlock.Length + 4) < tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserv
+                                if ((btBlock.Length + 4) < itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserv
                                 {
-                                    tmp = new byte[tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
+                                    tmp = new byte[itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
                                     tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
                                     tmp.CopyInside(4, btBlock);
                                 }
@@ -713,9 +745,9 @@ namespace DBreeze.TextSearch
                     //!!!!!!!!!!! Remake it for smoothing storage 
                     btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
 
-                    if ((btBlock.Length + 4) < tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserve
+                    if ((btBlock.Length + 4) < itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserve
                     {
-                        tmp = new byte[tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
+                        tmp = new byte[itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
                         tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
                         tmp.CopyInside(4, btBlock);
                     }
@@ -741,11 +773,11 @@ namespace DBreeze.TextSearch
                 block.Clear();
                 #endregion
 
-                tran.Insert<int, uint>(tbl.Key, 11, its.currentBlock);
-                tran.Insert<int, uint>(tbl.Key, 12, its.numberInBlock);
+                itran.Insert<int, uint>(tbl.Key, 11, its.currentBlock);
+                itran.Insert<int, uint>(tbl.Key, 12, its.numberInBlock);
 
                 //Setting last indexing time
-                tran.Insert<byte, byte[]>(tbl.Key, 4, btUdtStart);
+                itran.Insert<byte, byte[]>(tbl.Key, 4, btUdtStart);
 
             }//eo foreach tablesToIndex            
         }

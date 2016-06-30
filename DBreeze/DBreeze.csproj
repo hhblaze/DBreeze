@@ -95,6 +95,7 @@
     <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
     <Compile Include="Storage\RISR.cs" />
+    <Compile Include="TextSearch\TextDeferredIndexer.cs" />
     <Compile Include="TextSearch\TextSearchHandler.cs" />
     <Compile Include="TextSearch\TextSearchOptions.cs" />
     <Compile Include="TextSearch\WAH2.cs" />

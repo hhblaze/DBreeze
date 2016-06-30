@@ -12,6 +12,7 @@ using System.IO;
 
 using DBreeze.Transactions;
 using DBreeze.Exceptions;
+using DBreeze.TextSearch;
 
 //under DBreeze main namespace we hold Schema and Engine.
 
@@ -35,6 +36,7 @@ namespace DBreeze
         //later can be swapped on Configuration.DBreezeDataFolderName;
         internal string MainFolder = String.Empty;
         internal Scheme DBreezeSchema = null;
+        internal TextDeferredIndexer DeferredIndexer = null;
         internal TransactionsCoordinator _transactionsCoordinator = null;
         internal bool DBisOperable = true;
         /// <summary>
@@ -172,6 +174,9 @@ namespace DBreeze
 
                 //Initializes transaction locker, who can help block tables of writing and reading threads
                 _transactionTablesLocker = new TransactionTablesLocker();
+
+                //Initializing 
+                DeferredIndexer = new TextDeferredIndexer(this);
             }
             catch (Exception ex)
             {
@@ -209,6 +214,9 @@ namespace DBreeze
             
             //MUST BE IN THE END OF ALL.Disposing transaction locker
             _transactionTablesLocker.Dispose();
+
+            //Disposing DeferredIndexer
+            DeferredIndexer.Dispose();
         }
 
 

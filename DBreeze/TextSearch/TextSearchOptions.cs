@@ -19,6 +19,7 @@ namespace DBreeze.TextSearch
         {
             FullTextOnly = true;
             SearchWordMinimalLength = 3;
+            DeferredIndexing = false;
         }
 
         /// <summary>
@@ -30,6 +31,13 @@ namespace DBreeze.TextSearch
         /// Minimal lenghth of the word to be searched. Default is 3. 
         /// </summary>
         public ushort SearchWordMinimalLength { get; set; }
+
+        /// <summary>
+        /// Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+        /// Is good for the fast main entity Commit and relatively large searchables-set .
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.
+        /// </summary>
+        public bool DeferredIndexing { get; set; }
     }
 
     /// <summary>

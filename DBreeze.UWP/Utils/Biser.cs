@@ -20,18 +20,19 @@ namespace DBreeze.Utils
     public static class Biser
     {
         /// <summary>
-        /// Proto encoding of Dictionary [string, HashSet[uint]].
+        /// Proto encoding of Dictionary [string, List[byte[]]].
+        /// Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
         /// </summary>
         /// <param name="d"></param>
         /// <param name="compression"></param>
         /// <returns></returns>
-        public static byte[] Encode_DICT_PROTO_STRING_UINTHASHSET(this IDictionary<string, HashSet<uint>> d, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
+        public static byte[] Encode_DICT_PROTO_STRING_BYTEARRAYHASHSET(this IDictionary<string, List<byte[]>> d, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
         {
             if (d == null || d.Count == 0)
                 return null;
 
             List<byte[]> ar = new List<byte[]>();
-            ulong size = 0;
+            int size = 0;
             byte[] tar = null;
             byte[] tar1 = null;
 
@@ -42,16 +43,31 @@ namespace DBreeze.Utils
                 tar1 = GetVarintBytes((uint)tar.Length);
                 ar.Add(tar1);//length of key
                 ar.Add(tar);//key self
-                size += (ulong)tar1.Length;
-                size += (ulong)tar.Length;
+                size += tar1.Length;
+                size += tar.Length;
 
-                //Setting value
-                foreach (var evl in el.Value)
+                //Setting count of hashset
+                tar = GetVarintBytes((uint)(el.Value == null ? 0 : el.Value.Count));
+                ar.Add(tar);
+                size += tar.Length;
+                //Hashset
+                if (el.Value != null)
                 {
-                    tar = GetVarintBytes(evl);
-                    ar.Add(tar);
-                    size += (ulong)tar.Length;
-                }                
+                    foreach (var evl in el.Value)
+                    {
+                        //size of byte array
+                        tar = GetVarintBytes((uint)(evl == null ? 0 : evl.Length));
+                        ar.Add(tar);
+                        size += tar.Length;
+                        //byte array self
+                        if (evl != null && evl.Length > 0)
+                        {
+                            ar.Add(evl);
+                            size += evl.Length;
+                        }
+                    }
+                }
+
             }
 
             byte[] encB = new byte[size];
@@ -73,6 +89,323 @@ namespace DBreeze.Utils
         }
 
         /// <summary>
+        /// Decodes byte[] into  Dictionary [string, List[byte[]]]
+        /// </summary>
+        /// <param name="encB"></param>
+        /// <param name="retD"></param>
+        /// <param name="compression"></param>
+        /// <returns></returns>
+        public static void Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(this byte[] encB, IDictionary<string, List<byte[]>> retD, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
+        {
+            if (encB == null || encB.Length < 1)
+                return;
+
+            switch (compression)
+            {
+                case Compression.eCompressionMethod.Gzip:
+                    encB = encB.GZip_Decompress();
+                    break;
+            }
+
+            byte mode = 0;
+            byte[] sizer = new byte[4];
+            int size = 0;
+
+            uint keyLength = 0;
+            string key = "";
+            uint valCnt = 0;
+            uint lenBa = 0;
+
+            Action ClearSizer = () =>
+            {
+                sizer[0] = 0;
+                sizer[1] = 0;
+                sizer[2] = 0;
+                sizer[3] = 0;
+
+                size = 0;
+            };
+
+            //0 - reading key
+            //1 - HashSet Count
+            //2 - reading Hashset elements one by one            
+
+            byte el = 0;
+            int i = 0;
+            int hc = 0; //Hashset grabbed count
+            List<byte[]> mhs = null;
+
+            while (i < encB.Length)
+            {
+                el = encB[i];
+
+                switch (mode)
+                {
+                    case 0:
+
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            hc = 0;
+                            mode = 1;
+                            sizer[size] = el;
+                            size++;
+                            keyLength = ToUInt32(sizer);
+                            key = System.Text.Encoding.UTF8.GetString(encB.Substring(i + 1, (int)keyLength));
+                            i += (int)keyLength + 1;
+                            ClearSizer();
+                            continue;
+                        }
+
+                        break;
+                    case 1:
+                        //HashSet Count
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            mode = 2;
+                            sizer[size] = el;
+                            size++;
+                            valCnt = ToUInt32(sizer);
+                            ClearSizer();
+
+                            if (valCnt == 0)
+                            {
+                                retD.Add(key, new List<byte[]>());
+                                mode = 0;
+                            }
+                        }
+                        break;
+                    case 2:
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            sizer[size] = el;
+                            size++;
+                            if (hc == 0)
+                                mhs = new List<byte[]>();
+                            lenBa = ToUInt32(sizer);
+                            mhs.Add(encB.Substring(i + 1, (int)lenBa));
+                            i += (int)lenBa + 1;
+                            hc++;
+                            ClearSizer();
+
+                            if (valCnt == hc)
+                            {
+                                mode = 0;
+                                retD.Add(key, mhs);
+                            }
+                            continue;
+
+                        }
+                        break;
+                }
+                i++;
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// Proto encoding of Dictionary [string, HashSet[uint]].
+        /// Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+        /// </summary>
+        /// <param name="d"></param>
+        /// <param name="compression"></param>
+        /// <returns></returns>
+        public static byte[] Encode_DICT_PROTO_STRING_UINTHASHSET(this IDictionary<string, HashSet<uint>> d, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
+        {
+            if (d == null || d.Count == 0)
+                return null;
+
+            List<byte[]> ar = new List<byte[]>();
+            int size = 0;
+            byte[] tar = null;
+            byte[] tar1 = null;
+
+            foreach (var el in d)
+            {
+                //Setting key
+                tar = el.Key.To_UTF8Bytes();
+                tar1 = GetVarintBytes((uint)tar.Length);
+                ar.Add(tar1);//length of key
+                ar.Add(tar);//key self
+                size += tar1.Length;
+                size += tar.Length;
+
+                //Setting count of hashset
+                tar = GetVarintBytes((uint)(el.Value == null ? 0 : el.Value.Count));
+                ar.Add(tar);
+                size += tar.Length;
+                //Hashset
+                if (el.Value != null)
+                {
+                    foreach (var evl in el.Value)
+                    {
+                        tar = GetVarintBytes(evl);
+                        ar.Add(tar);
+                        size += tar.Length;
+                    }
+                }
+
+            }
+
+            byte[] encB = new byte[size];
+            int pt = 0;
+            foreach (var el in ar)
+            {
+                Buffer.BlockCopy(el, 0, encB, pt, el.Length);
+                pt += el.Length;
+            }
+
+            switch (compression)
+            {
+                case Compression.eCompressionMethod.Gzip:
+                    encB = encB.GZip_Compress();
+                    break;
+            }
+
+            return encB;
+        }
+
+        /// <summary>
+        /// Decodes byte[] into  Dictionary [string, HashSet[uint]]
+        /// </summary>
+        /// <param name="encB"></param>
+        /// <param name="retD"></param>
+        /// <param name="compression"></param>
+        /// <returns></returns>
+        public static void Decode_DICT_PROTO_STRING_UINTHASHSET(this byte[] encB, IDictionary<string, HashSet<uint>> retD, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
+        {
+            if (encB == null || encB.Length < 1)
+                return;
+
+            switch (compression)
+            {
+                case Compression.eCompressionMethod.Gzip:
+                    encB = encB.GZip_Decompress();
+                    break;
+            }
+
+            byte mode = 0;
+            byte[] sizer = new byte[4];
+            int size = 0;
+
+            uint keyLength = 0;
+            string key = "";
+            uint valCnt = 0;
+
+            Action ClearSizer = () =>
+            {
+                sizer[0] = 0;
+                sizer[1] = 0;
+                sizer[2] = 0;
+                sizer[3] = 0;
+
+                size = 0;
+            };
+
+            //0 - reading key
+            //1 - HashSet Count
+            //2 - reading Hashset elements one by one            
+
+            byte el = 0;
+            int i = 0;
+            int hc = 0; //Hashset grabbed count
+            HashSet<uint> mhs = null;
+
+            while (i < encB.Length)
+            {
+                el = encB[i];
+
+                switch (mode)
+                {
+                    case 0:
+
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            hc = 0;
+                            mode = 1;
+                            sizer[size] = el;
+                            size++;
+                            keyLength = ToUInt32(sizer);
+                            key = System.Text.Encoding.UTF8.GetString(encB.Substring(i + 1, (int)keyLength));
+                            i += (int)keyLength + 1;
+                            ClearSizer();
+                            continue;
+                        }
+
+                        break;
+                    case 1:
+                        //HashSet Count
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            mode = 2;
+                            sizer[size] = el;
+                            size++;
+                            valCnt = ToUInt32(sizer);
+                            ClearSizer();
+
+                            if (valCnt == 0)
+                            {
+                                retD.Add(key, new HashSet<uint>());
+                                mode = 0;
+                            }
+                        }
+                        break;
+                    case 2:
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            sizer[size] = el;
+                            size++;
+                            if (hc == 0)
+                                mhs = new HashSet<uint>();
+                            mhs.Add(ToUInt32(sizer));
+                            hc++;
+                            ClearSizer();
+
+                            if (valCnt == hc)
+                            {
+                                mode = 0;
+                                retD.Add(key, mhs);
+                            }
+                        }
+                        break;
+                }
+                i++;
+            }
+
+            return;
+        }
+
+        /// <summary>
         /// Proto encoding of Dictionary [uint, byte[]].
         /// Use when key is less then 4 bytes (less then 268mln).
         /// Value byte[0] will be presented as null after decoding
@@ -84,7 +417,7 @@ namespace DBreeze.Utils
         {
             if (d == null || d.Count == 0)
                 return null;
-                                    
+
             List<byte[]> ar = new List<byte[]>();
             ulong size = 0;
             byte[] tar = null;
@@ -116,7 +449,7 @@ namespace DBreeze.Utils
             switch (compression)
             {
                 case Compression.eCompressionMethod.Gzip:
-                    encB = encB.GZip_Compress();                    
+                    encB = encB.GZip_Compress();
                     break;
             }
 
@@ -131,14 +464,14 @@ namespace DBreeze.Utils
         /// <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
         /// <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
         public static void Decode_DICT_PROTO_UINT_BYTEARRAY(this byte[] encB, IDictionary<uint, byte[]> retD, Compression.eCompressionMethod compression = Compression.eCompressionMethod.NoCompression)
-        {            
+        {
             if (encB == null || encB.Length < 1)
                 return;
 
             switch (compression)
             {
-                case Compression.eCompressionMethod.Gzip:                    
-                    encB = encB.GZip_Decompress();                    
+                case Compression.eCompressionMethod.Gzip:
+                    encB = encB.GZip_Decompress();
                     break;
             }
 
@@ -226,6 +559,7 @@ namespace DBreeze.Utils
 
             return;
         }
+
 
         /// <summary>
         /// Uses protobuf concepts

@@ -43,7 +43,7 @@ namespace DBreeze.Transactions
         /// <summary>
         /// TextSearchHandler instance
         /// </summary>
-        TextSearchHandler tsh = null;
+        internal TextSearchHandler tsh = null;     
 
         public Transaction(int transactionType, TransactionUnit transactionUnit, eTransactionTablesLockTypes lockType, params string[] tables)
         {
@@ -478,9 +478,10 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Commit()
         {
-            TextIndex();
+            TextSearchHandlerCommit();
             this._transactionUnit.TransactionsCoordinator.Commit(this.ManagedThreadId);
-           
+            TextSearchHandlerAfterCommit();
+
         }
 
         /// <summary>
@@ -1356,12 +1357,19 @@ namespace DBreeze.Transactions
         /// <summary>
         /// Is called before COMMIT only
         /// </summary>
-        void TextIndex()
+        void TextSearchHandlerCommit()
         {
             if (tsh != null && tsh.InsertWasPerformed)
-            {
-                tsh.DoIndexing();                
-            }
+                tsh.BeforeCommit();
+        }
+
+        /// <summary>
+        /// Is called after COMMIT
+        /// </summary>
+        void TextSearchHandlerAfterCommit()
+        {
+            if(tsh != null && tsh.InsertWasPerformed)
+                tsh.AfterCommit();
         }
         #endregion
 

@@ -108,7 +108,6 @@ namespace DBreeze
 
             Storage = new StorageLayer(Path.Combine(Engine.MainFolder, SchemaFileName), LTrieSettings, Engine.Configuration);
 
-
             LTrie = new LTrie(Storage);
 
             LTrie.TableName = "DBreeze.Scheme";

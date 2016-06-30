@@ -134,6 +134,8 @@ namespace DBreeze.Storage
                         return UInt64.MaxValue - 1;
                     case "_DBreezeTranJrnl":
                         return UInt64.MaxValue - 2;
+                    case "_DBreezeTextIndexer":
+                        return UInt64.MaxValue - 3;
                     default:
                         return Convert.ToUInt64(fileName);
                 }

@@ -631,7 +631,109 @@ namespace VisualTester
             public string Notes { get; set; } = "";
         }
 
+        //int inDeferredIndexer = 0;
 
+        //void DeferredIndexer()
+        //{
+        //    if (System.Threading.Interlocked.CompareExchange(ref inDeferredIndexer, 1, 0) != 0)
+        //        return;
+
+        //    //Only one indexer instance can run
+        //    System.Threading.Tasks.Task.Run(() =>
+        //    {
+                
+        //        int maximalIterations = 10; //Iterations then a breath
+        //        int currentItter = 0;
+        //        Dictionary<DateTime,byte[]> toBeIndexed = new Dictionary<DateTime, byte[]>();
+        //        HashSet<string> tbls = new HashSet<string>();
+        //        Dictionary<string, List<byte[]>> dPendingBack = new Dictionary<string, List<byte[]>>();
+
+        //        while (true)
+        //        {
+        //            currentItter = 0;
+        //            toBeIndexed.Clear();
+        //            tbls.Clear();
+
+        //            //Short synchronized transaction
+        //            using (var tran = textsearchengine.GetTransaction())
+        //            {
+
+        //                //we want to store text index in table “TaskFullTextSearch” and task itself in table "Tasks"
+        //                tran.SynchronizeTables("DeferredIndexer"); //MUST BE HERE, not to lose elements !!!!check it
+
+        //                foreach (var el in tran.SelectForward<DateTime, byte[]>("DeferredIndexer").Take(maximalIterations))
+        //                {
+        //                    currentItter++;
+        //                    toBeIndexed.Add(el.Key, el.Value);
+        //                    DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(el.Value, dPendingBack, Compression.eCompressionMethod.NoCompression);
+        //                }
+
+        //                if (currentItter == 0)
+        //                {
+        //                    //releasing DeferredIndexer
+        //                    inDeferredIndexer = 0;
+        //                    return;
+        //                }
+        //            }
+
+        //            using (var tran = textsearchengine.GetTransaction())
+        //            {
+                        
+        //                tran.SynchronizeTables("TaskFullTextSearch");       //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        //                Dictionary<string, List<byte[]>> dPendingBack = new Dictionary<string, List<byte[]>>();
+        //                foreach (var el in toBeIndexed)
+        //                {
+        //                    dPendingBack.Clear();
+        //                    //deserialization of tables and documents to be indexed, using internal DBreeze deserializer (can be used outer deserializers)
+                            
+
+        //                    foreach (var t in dPendingBack)
+        //                    {
+        //                        switch (t.Key)
+        //                        {
+        //                            case "Tasks":
+        //                                MyTask tsk = null;
+        //                                foreach (var tId in t.Value)
+        //                                {
+        //                                    //Get task from table and using its Description and notes
+        //                                    tran.TextInsertToDocument("TaskFullTextSearch", tId, "tsk.Descriptio zero" + " " + "tsk.Notes well ", new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+        //                                }
+        //                                break;
+        //                        }
+        //                    }
+        //                }
+
+        //                tran.Commit();
+        //            }
+
+
+        //            using (var tran = textsearchengine.GetTransaction())
+        //            {
+        //                tran.SynchronizeTables("PendingTextSearchIndexing");
+
+        //                foreach (var el in toBeIndexed)
+        //                    tran.RemoveKey<byte[]>("PendingTextSearchIndexing", el);
+
+        //                tran.Commit();
+
+        //                if (currentItter < maximalIterations)
+        //                {
+        //                    //End of PendingIndexer
+        //                    inDeferredIndexer = 0;
+        //                }
+        //            }
+
+        //            if (inDeferredIndexer == 0)
+        //                return;
+        //            else
+        //            {
+        //                System.Threading.Thread.Sleep(1000);    //Giving a breath, before next itteration
+        //            }
+        //        }//wo while    
+        //    });
+
+        //}
 
         DBreezeEngine textsearchengine = null;
         private void btTestSearchText_Click(object sender, RoutedEventArgs e)
@@ -656,41 +758,81 @@ namespace VisualTester
 
             using (var tran = textsearchengine.GetTransaction())
             {
-                var resp = tran.TextSearch("TaskFullTextSearch", new DBreeze.TextSearch.TextSearchRequest()
+                var resp = tran.TextSearch("TaskText", new DBreeze.TextSearch.TextSearchRequest()
                 {
                     // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
-                    SearchWords = "Particularly"
+                    SearchWords = "Xamarin"
                 });
 
             }
 
-            //using (var tran = textsearchengine.GetTransaction())
-            //{
-            //    tsk = new MyTask()
-            //    {
-            //        Id = 2,
-            //        ExternalId = "x2",
-            //        Description = "Very second task ",
-            //        Notes = "small"
-            //    };
-            //    sb.Append(tsk.Description + " " + tsk.Notes);
-            //    tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+            return;
 
-            //    tran.Commit();
-            //}
+            //Testing External indexer concept.
+            //Table where we will store Docs to be indexed
+            using (var tran = textsearchengine.GetTransaction())
+            {
 
-            //using (var tran = textsearchengine.GetTransaction())
-            //{
-            //    var resp = tran.TextSearch("TaskFullTextSearch", new DBreeze.TextSearch.TextSearchRequest()
-            //    {
-            //        // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
-            //        SearchWords = "review1"
-            //    });
+                //we want to use table PendingTextSearchIndexing to communicate with AutomaticIndexer (so we will write into it also)
+                tran.SynchronizeTables("Tasks", "TaskText");
+        
+                
+                //Storing task
+                tsk = new MyTask()
+                {
+                    Id = 1,
+                    Description = "Starting with the .NET Framework version 2.0, well if you derive a class from Random and override the Sample method, the distribution provided by the derived class implementation of the Sample method is not used in calls to the base class implementation of the NextBytes method. Instead, the uniform",
+                    Notes = "distribution returned by the base Random class is used. This behavior improves the overall performance of the Random class. To modify this behavior to call the Sample method in the derived class, you must also override the NextBytes method"
+                };
+                //Inserting task value must be, of course tsk
+                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
 
-            //}
-            //return;
+                tran.TextInsertToDocument("TaskText", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, 
+                    new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, DeferredIndexing = true });
 
-            SpeedStatistic.ToConsole = false;
+                tsk = new MyTask()
+                {
+                    Id = 2,
+                    Description = "VI guess in Universal Apps for Xamarin you need to include the assembly when loading embedded resources. I had to change",
+                    Notes = "I work on.NET for UWP.This is super interesting and I'd well love to take a deeper look at it after the holiday. If "
+                };
+                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+
+                tran.TextInsertToDocument("TaskText", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes,
+                  new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, DeferredIndexing = true });
+
+                tran.Commit();
+            }
+
+            return;
+
+                //using (var tran = textsearchengine.GetTransaction())
+                //{
+                //    tsk = new MyTask()
+                //    {
+                //        Id = 2,
+                //        ExternalId = "x2",
+                //        Description = "Very second task ",
+                //        Notes = "small"
+                //    };
+                //    sb.Append(tsk.Description + " " + tsk.Notes);
+                //    tran.InsertDocumentText("TaskFullTextSearch" + companyId, tsk.Id.To_8_bytes_array_BigEndian(), sb.ToString(), new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false });
+
+                //    tran.Commit();
+                //}
+
+                //using (var tran = textsearchengine.GetTransaction())
+                //{
+                //    var resp = tran.TextSearch("TaskFullTextSearch", new DBreeze.TextSearch.TextSearchRequest()
+                //    {
+                //        // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
+                //        SearchWords = "review1"
+                //    });
+
+                //}
+                //return;
+
+                SpeedStatistic.ToConsole = false;
             SpeedStatistic.StartCounter("a");
 
             //using (var tran = textsearchengine.GetTransaction())
