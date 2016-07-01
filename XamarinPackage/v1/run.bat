@@ -1,1 +1,0 @@
-"C:\Users\blaze\Documents\Visual Studio 2010\Projects\DBreeze\XamarinPackage\v1\xamarin-component.exe" package "C:\Users\blaze\Documents\Visual Studio 2010\Projects\DBreeze\XamarinPackage\v1"

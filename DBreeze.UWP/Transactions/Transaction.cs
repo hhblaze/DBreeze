@@ -1319,9 +1319,7 @@ namespace DBreeze.Transactions
 
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
-
-            opt.FullTextOnly = true;
-
+            
             tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Remove);
         }
 
