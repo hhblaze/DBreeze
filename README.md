@@ -22,7 +22,7 @@ Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
 - <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guide.-Customers-and-orders'  target='_blank'>Quick start guide. Customers and orders</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/tree/master/DBreeze/bin/Release'  target='_blank'>Assemblies location</a> 
-- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=1559123' target="_blank">Documentation (PDF, actual)</a>
+- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=1587743' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
@@ -50,8 +50,5 @@ Key features:
 - Incremental backup/restore option.
 - Integrated text-search subsystem (full-text/partial).
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
-
-DBreeze projects:
-- <a href='https://github.com/hhblaze/DBreezeBased' target="_blank">DBreezeBased - Document database and a Text Search Engine based on DBreeze database (smth. like Apache Lucene).</a>
 
 hhblaze@gmail.com
