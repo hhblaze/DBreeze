@@ -15,7 +15,7 @@ using DBreeze.Tries;
 using DBreeze.SchemeInternal;
 using DBreeze.Utils;
 using DBreeze.TextSearch;
-using System.Threading.Tasks;
+//using System.Threading.Tasks;
 
 namespace DBreeze.Transactions
 {

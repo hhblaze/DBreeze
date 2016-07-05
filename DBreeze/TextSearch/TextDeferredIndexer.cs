@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+//using System.Threading.Tasks;
 
 using DBreeze.Utils;
 
@@ -98,14 +98,16 @@ namespace DBreeze.TextSearch
         {
             if (System.Threading.Interlocked.CompareExchange(ref inDeferredIndexer, 1, 0) != 0)
                 return;
+         
+#if NET35       //The same must be use for .NET 4.0
 
+            new System.Threading.Thread(new System.Threading.ThreadStart(() =>
+            {
+                Indexer();
+            })).Start();
+#else
             System.Threading.Tasks.Task.Run(() => { Indexer(); });
-
-            //new System.Threading.Thread(new System.Threading.ThreadStart(() => 
-            //{
-            //    Indexer();
-
-            //})).Start();
+#endif
         }
 
 

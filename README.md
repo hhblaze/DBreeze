@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze build-1.074%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze build-1.075%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
@@ -48,6 +48,7 @@ Key features:
 - Rich set of conversion functions from/to between byte[] and other data types.
 - Nested / Fractal tables which can reside inside of master tables values.
 - Incremental backup/restore option.
+- Integrated text-search subsystem (full-text/partial).
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 DBreeze projects:
