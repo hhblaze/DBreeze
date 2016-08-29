@@ -939,10 +939,8 @@ namespace DBreeze.TextSearch
 
                 foreach (var c in text)
                 {
-                    if (c == '-' || c == '@')   //Complex names or email address inside
-                        continue;
-
-                    if (Char.IsLetterOrDigit(c) || Char.IsSymbol(c))
+                    //No words reviews (must be checked in outer systems)
+                    if (c != ' ')
                     {
                         sb.Append(c);
                         wordLen++;
@@ -960,6 +958,30 @@ namespace DBreeze.TextSearch
                         processWord();
                         wordLen = 0;
                     }
+
+                    //---REVIEW ON START
+                    //if (c == '-' || c == '@')   //Complex names or email address inside
+                    //    continue;
+
+                    //if (Char.IsLetterOrDigit(c) || Char.IsSymbol(c))
+                    //{
+                    //    sb.Append(c);
+                    //    wordLen++;
+
+                    //    if (wordLen >= maximalWordLengthBeforeSplit)
+                    //    {
+                    //        //Processing ready word
+                    //        processWord();
+                    //        wordLen = 0;
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    //Processing ready word
+                    //    processWord();
+                    //    wordLen = 0;
+                    //}
+                    //---REVIEW ON STOP
                 }
 
                 //Processing last word
@@ -1009,20 +1031,33 @@ namespace DBreeze.TextSearch
                     //sb.Clear();
                 };
 
+
+                //NO REVIEW
                 foreach (var c in searchKeywords)
                 {
-                    if (c == '-' || c == '@')   //Complex names or email address inside
-                        continue;
-
-                    if (Char.IsLetterOrDigit(c) || Char.IsSymbol(c))
-                    {
-                        sb.Append(c);
-                    }
-                    else
-                    {
+                    if (c == ' ')
                         processWord();
-                    }
+                    else 
+                        sb.Append(c);
                 }
+
+
+                //WITH REVIEW START
+                //foreach (var c in searchKeywords)
+                //{
+                //    if (c == '-' || c == '@')   //Complex names or email address inside
+                //        continue;
+
+                //    if (Char.IsLetterOrDigit(c) || Char.IsSymbol(c))
+                //    {
+                //        sb.Append(c);
+                //    }
+                //    else
+                //    {
+                //        processWord();
+                //    }
+                //}
+                //WITH REVIEW STOP
 
                 //Handling last word
                 processWord();

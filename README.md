@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Documentation/Dbreeze.Logo1.JPG) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze build-1.076%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze build-1.077%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)

@@ -1,22 +1,17 @@
-﻿/* 
-  Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who think that it should be free.
-*/
-
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DBreeze database dbreeze.tiesky.com")]
-[assembly: AssemblyDescription("C# NoSql object embedded database system")]
+[assembly: AssemblyTitle("Deployer")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("dbreeze.tiesky.com")]
-[assembly: AssemblyProduct("DBreeze database")]
-[assembly: AssemblyCopyright("Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012")]
-[assembly: AssemblyTrademark("dbreeze.tiesky.com")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("Deployer")]
+[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
@@ -25,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("ad061289-c800-465a-9493-f41d8a9b9833")]
+[assembly: Guid("e3bc08ef-ef0f-4e61-b3ab-e4974bc6702f")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -37,7 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-//[assembly: AssemblyVersion("1.061.2013.1120")]
-//[assembly: AssemblyFileVersion("1.061.2013.1120")]
-[assembly: AssemblyVersion("1.077.2016.0829")]
-[assembly: AssemblyFileVersion("1.077.2016.0829")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
