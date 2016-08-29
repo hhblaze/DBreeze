@@ -1,4 +1,4 @@
-DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717) Database
+DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Documentation/Dbreeze.Logo1.JPG) Database
 =====================
 ![Image of Build](https://img.shields.io/badge/DBreeze build-1.076%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
