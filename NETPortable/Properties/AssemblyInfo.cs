@@ -6,13 +6,13 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DBreeze")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("DBreeze database dbreeze.tiesky.com")]
+[assembly: AssemblyDescription("C# NoSql object embedded database system")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("tiesky.com")]
-[assembly: AssemblyProduct("DBreeze")]
-[assembly: AssemblyCopyright("Copyright ©  2014")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCompany("dbreeze.tiesky.com")]
+[assembly: AssemblyProduct("DBreeze database")]
+[assembly: AssemblyCopyright("Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012")]
+[assembly: AssemblyTrademark("dbreeze.tiesky.com")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
 
@@ -26,5 +26,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.75.2016.0628")]
-[assembly: AssemblyFileVersion("1.75.2016.0628")]
+[assembly: AssemblyVersion("1.76.2016.0829")]
+[assembly: AssemblyFileVersion("1.76.2016.0829")]

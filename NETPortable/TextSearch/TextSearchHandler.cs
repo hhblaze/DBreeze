@@ -355,6 +355,7 @@ namespace DBreeze.TextSearch
                 if (currentBlockId != wrd.Value.BlockId)
                 {
                     currentBlockId = wrd.Value.BlockId;
+                    block = new Dictionary<uint, byte[]>();
 
                     //DBreeze.Diagnostic.SpeedStatistic.StartCounter("SelectBlocks");
                     btBlock = tbBlocks.Select<uint, byte[]>(wrd.Value.BlockId).Value;

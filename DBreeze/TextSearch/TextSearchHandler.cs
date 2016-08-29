@@ -355,6 +355,7 @@ namespace DBreeze.TextSearch
                 if (currentBlockId != wrd.Value.BlockId)
                 {
                     currentBlockId = wrd.Value.BlockId;
+                    block = new Dictionary<uint, byte[]>();
 
                     //DBreeze.Diagnostic.SpeedStatistic.StartCounter("SelectBlocks");
                     btBlock = tbBlocks.Select<uint, byte[]>(wrd.Value.BlockId).Value;
@@ -668,7 +669,7 @@ namespace DBreeze.TextSearch
                             {
 
                                 btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
-                                
+
                                 if ((btBlock.Length + 4) < itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserv
                                 {
                                     tmp = new byte[itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
