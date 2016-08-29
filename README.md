@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=375768&Build=20717) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze build-1.075%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze build-1.076%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
@@ -22,7 +22,7 @@ Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
 - <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guide.-Customers-and-orders'  target='_blank'>Quick start guide. Customers and orders</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/tree/master/DBreeze/bin/Release'  target='_blank'>Assemblies location</a> 
-- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=1587743' target="_blank">Documentation (PDF, actual)</a>
+- <a href='http://download-codeplex.sec.s-msft.com/Download?ProjectName=dbreeze&DownloadId=1603786' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
