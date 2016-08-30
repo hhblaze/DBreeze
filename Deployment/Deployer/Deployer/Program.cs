@@ -37,7 +37,7 @@ namespace Deployer
 
             bool noerror = false;
             string tpr = "";
-
+            
             
             string prj = File.ReadAllText(MyPath + @"..\..\DBreeze\DBreeze.csproj");
 
@@ -170,19 +170,23 @@ namespace Deployer
 
 
 
-            
 
-
-
-
-
-
-
-
-
-
-            Console.WriteLine("Packing DLLs");
+            Console.WriteLine("Packing DLLs and ULTIMATE ZIP");
             //Packing DLLs into zips
+            var ultf = di.GetFiles("*ULTIMATE*").First();
+
+            if (ultf == null)
+            {
+                Console.WriteLine("Not found ultimate archive like DBreeze_1_077_2016_0829_ULTIMATE.zip. ERROR. Going out");
+                return;
+            }
+
+            ZipArchive ultimate_archive = ZipFile.Open(ultf.FullName, ZipArchiveMode.Update);
+            //Clearing old entries
+            foreach (var ultentrin in ultimate_archive.Entries.ToList())
+            {
+                ultentrin.Delete();
+            }
 
             foreach (var d in di.GetDirectories())
             {
@@ -205,11 +209,28 @@ namespace Deployer
                         archive.CreateEntryFromFile(f.Directory + @"\DBreeze.XML", "DBreeze.XML");                                                
                     }
                     File.Move(f.FullName, f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24));
-                    
+
+                    //Adding to Ultimate archive new archives
+                    ultimate_archive.CreateEntryFromFile(f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24)
+                        , "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24)
+                        , CompressionLevel.Optimal);
+
                     break;
                 }
             }
 
+            //Copying documentation
+            ultimate_archive.CreateEntryFromFile(di.FullName + @"..\..\Documentation\_DBreeze.Documentation.actual.pdf"
+                        , "_DBreeze.Documentation.actual.pdf"
+                        , CompressionLevel.Optimal);
+
+            ultimate_archive.Dispose();
+
+           
+
+
+            //Renaming ultimate Archive
+            File.Move(ultf.FullName, di.FullName + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_ULTIMATE.zip");
 
             Console.WriteLine("Packing Nuget");
 
