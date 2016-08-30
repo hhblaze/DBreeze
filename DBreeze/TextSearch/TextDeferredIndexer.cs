@@ -104,12 +104,13 @@ namespace DBreeze.TextSearch
             //    Indexer();
             //})).Start();
 
-#if NET35       //The same must be use for .NET 4.0
+
+#if NET35 || NETr40   //The same must be use for .NET 4.0
 
             new System.Threading.Thread(new System.Threading.ThreadStart(() =>
             {
                 Indexer();
-            })).Start();
+            })).Start(); 
 #else
             System.Threading.Tasks.Task.Run(() => { Indexer(); });
 #endif

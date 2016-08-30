@@ -6048,7 +6048,7 @@
             <param name="bt"></param>
             <returns></returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
+        <!-- Проигнорирован некорректный комментарий XML для члена "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
         <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
             <summary>
             <para>USE _ByteArrayEquals</para>

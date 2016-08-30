@@ -1,0 +1,13 @@
+﻿<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+<TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+<DefineConstants>TRACE;NET40</DefineConstants>
+<DefineConstants>TRACE;NET35</DefineConstants>
+<DefineConstants>TRACE;NET40;NETr40</DefineConstants>
+<Reference Include="System.Web.Extensions" />
+<Compile Include="DataTypes\DbMJSON.cs" />
+<Compile Include="Utils\MJsonSerializator.cs" />
+
+

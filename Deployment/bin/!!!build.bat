@@ -1,0 +1,1 @@
+"%~dp0..\Deployer\Deployer\bin\Debug\Deployer.exe" /t:rebuild

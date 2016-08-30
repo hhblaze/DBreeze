@@ -3114,6 +3114,11 @@
             Standard and transactional rollback
             </summary>
         </member>
+        <member name="T:DBreeze.Storage.IStorage">
+            <summary>
+            Storage interface
+            </summary>
+        </member>
         <member name="M:DBreeze.Storage.IStorage.Table_Read(System.Boolean,System.Int64,System.Int32)">
             <summary>
             
@@ -3146,6 +3151,11 @@
         <member name="P:DBreeze.Storage.IStorage.Length">
             <summary>
             Length of the Storage
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.MemoryStorage">
+            <summary>
+            Memory storage
             </summary>
         </member>
         <member name="T:DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy">
@@ -3239,6 +3249,11 @@
             
             </summary>
             <param name="datas"></param>
+        </member>
+        <member name="T:DBreeze.Storage.StorageLayer">
+            <summary>
+            Storage layer
+            </summary>
         </member>
         <member name="F:DBreeze.Storage.TrieSettings.POINTER_LENGTH">
             <summary>
@@ -5875,7 +5890,7 @@
             <param name="bt"></param>
             <returns></returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
+        <!-- Проигнорирован некорректный комментарий XML для члена "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
         <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
             <summary>
             <para>USE _ByteArrayEquals</para>

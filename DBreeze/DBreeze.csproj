@@ -44,17 +44,6 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DBreeze35|AnyCPU'">
-    <OutputPath>bin\DBreeze35\</OutputPath>
-    <DefineConstants>TRACE;NET35</DefineConstants>
-    <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -66,9 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataStructures\DataAsTree.cs" />
-    <Compile Include="DataTypes\DbMJSON.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="DataTypes\DbMJSON.cs" />
     <Compile Include="DataTypes\Row.cs" />
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
@@ -136,9 +123,7 @@
     <Compile Include="Utils\CustomSerializator.cs" />
     <Compile Include="Utils\DbReaderWriterLock.cs" />
     <Compile Include="Utils\DbThreadsGator.cs" />
-    <Compile Include="Utils\MJsonSerializator.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Utils\MJsonSerializator.cs" />
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\Net35support.cs" />
     <Compile Include="Utils\StringProcessing.cs" />
