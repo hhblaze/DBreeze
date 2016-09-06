@@ -4225,4 +4225,39 @@ namespace DBreeze.Utils
 
         #endregion
     }
+
+    /// <summary>
+    /// Sorting of byte[]
+    ///  foreach (var r1 in input.OrderBy(x => x, new ByteListComparer())) Debug.WriteLine(r1.ToBytesString());
+    /// </summary>
+    public class ByteListComparer : IComparer<IList<byte>>
+    {
+        /*
+         *  List<byte[]> input = new List<byte[]>(){
+                new byte[] { 1, 2, 4 }, 
+                new byte[] { 1, 2, 3 },
+                new byte[] { 1, 2, 3, 5 }
+                };
+
+             foreach (var r1 in input.OrderBy(x => x, new ByteListComparer()))
+                Debug.WriteLine(r1.ToBytesString());
+
+            Ret:
+            010203
+            01020305
+            010204
+         */
+        public int Compare(IList<byte> x, IList<byte> y)
+        {
+            int result;
+            int min = Math.Min(x.Count, y.Count);
+            for (int index = 0; index < min; index++)
+            {
+                result = x[index].CompareTo(y[index]);
+                if (result != 0)
+                    return result;
+            }
+            return x.Count.CompareTo(y.Count);
+        }
+    }
 }
