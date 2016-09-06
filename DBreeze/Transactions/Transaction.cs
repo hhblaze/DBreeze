@@ -364,6 +364,19 @@ namespace DBreeze.Transactions
 
         }
 
+        /// <summary>
+        /// <para>Will be used when getting new table for ReadVisibilityScope=true in this transaction.</para>
+        /// If true, will create new read-table, if false, will try to reuse cached (once created) existing read-table (or create new cached READ-TABLE).
+        /// <para>Switch ReadVisibilityScopeModifier_GenerateNewTableForRead can be changed many times during transaction.</para>
+        /// May be switched to true, before call Select...,AsReadVisibilityScope = true, then can be switched back.
+        /// </summary>
+        public bool ReadVisibilityScopeModifier_GenerateNewTableForRead=false;
+        /// <summary>
+        /// <para>Works in case if ReadVisibilityScopeModifier_GenerateNewTableForRead = true.</para>
+        /// <para>When true, will show also updated, but not committed changes, to the moment of request.</para>
+        /// <para>Default is false</para>
+        /// </summary>
+        public bool ReadVisibilityScopeModifier_DirtyRead = false;
 
         /// <summary>
         /// Retuns LTrie (or later by necessity ITrie) and as out variable ReadRootNode which must be used for READ FUNC data acquiring.
@@ -391,6 +404,30 @@ namespace DBreeze.Transactions
             Rtbe rtbe = null;
             long dtTableFixed = 0;
             root = null;
+                       
+            
+
+            //READ VISIBILITY SCOPE MODIFIER
+            //When we don't want to reuse cached READ_TABLE, but create the new one 
+            //Switch ReadVisibilityScopeModifier_GenerateNewTableForRead can be changed many times during transaction.
+            //May be switched on before call Select...,AsReadVisibilityScope = true, then can be switched back
+            if (ReadVisibilityScopeModifier_GenerateNewTableForRead && AsForRead)
+            {
+                table = this._transactionUnit.TransactionsCoordinator.GetTable_READ(tableName, this.ManagedThreadId);
+
+                if (table == null)
+                    return null;    //returns null (may be table doesn't exist it's ok for READ FUNCs)
+
+                //Adding to Open Table Counter
+                AddOpenTable(tableName);
+
+                //if ReadVisibilityScopeModifier_DirtyRead true, will return also not committed changes
+                if (!ReadVisibilityScopeModifier_DirtyRead)
+                    root = table.GetTrieReadNode(out dtTableFixed);
+
+                return table;
+            }
+            //////////////////////////////////////////////////////////////////////////// END READ VISIBILITY SCOPE MODIFIER
 
             transactionReadTables.TryGetValue(tableName, out rtbe);
 

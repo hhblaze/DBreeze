@@ -1,1 +1,34 @@
 ﻿!!!!!!!!!!!!!  TODO 
+
+Utils
+ public class ByteListComparer : IComparer<IList<byte>>
+        {
+            public int Compare(IList<byte> x, IList<byte> y)
+            {
+                int result;
+                for (int index = 0; index < Math.Min(x.Count, y.Count); index++)
+                {
+                    result = x[index].CompareTo(y[index]);
+                    if (result != 0)
+                        return result;
+                }
+                return x.Count.CompareTo(y.Count);
+            }
+        }
+
+
+
+DataStructure
+DGNode
+DGraph
+
+Transaction.ReadVisibilityScopeModifier_GenerateNewTableForRead + ReadVisibilityScopeModifier_DirtyRead + GetReadTableFromBuffer
+
+
+
+
+-------
+- Inside of Graph object -> circullar buffer of last retrieved/created nodes
+- Remove Nodes ()
+- Remove links
+- SelectForward From-TO of kids and parents

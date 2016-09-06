@@ -13,10 +13,12 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 using DBreeze.Utils;
+using DBreeze.DataStructures;
 
 using System.IO;
 using DBreeze;
 using DBreeze.Diagnostic;
+using System.Diagnostics;
 
 namespace VisualTester
 {
@@ -74,14 +76,344 @@ namespace VisualTester
             }
         }
 
+        
+
+        //public class ByteListComparer : IComparer<IList<byte>>
+        //{           
+        //    public int Compare(IList<byte> x, IList<byte> y)
+        //    {
+        //        int result;
+        //        int min = Math.Min(x.Count, y.Count);
+        //        for (int index = 0; index < min; index++)
+        //        {
+        //            result = x[index].CompareTo(y[index]);
+        //            if (result != 0)
+        //                return result;
+        //        }
+        //        return x.Count.CompareTo(y.Count);
+        //    }
+        //}
 
 
+
+        DBreezeEngine xfre = null;
         private void btTest3_Click(object sender, RoutedEventArgs e)
         {
+            DBreeze.Diagnostic.SpeedStatistic.ToConsole = false;
+            if (xfre == null)
+                xfre = new DBreezeEngine(@"D:\temp\DBR1");
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    t.Insert<byte[], byte[]>("t1", "abc".To_UTF8Bytes(), null);
+            //    t.Insert<byte[], byte[]>("t1", "abcd".To_UTF8Bytes(), null);
+            //    t.Insert<byte[], byte[]>("t1", "abce".To_UTF8Bytes(), null);
+            //    t.Insert<byte[], byte[]>("t1", "abcd1".To_UTF8Bytes(), null);
+            //    t.Insert<byte[], byte[]>("t1", "abcd2".To_UTF8Bytes(), null);
+
+            //    //t.Insert<byte[], byte[]>("t1", "abahjk".To_UTF8Bytes(), null);
+            //    //t.Insert<byte[], byte[]>("t1", "abejk".To_UTF8Bytes(), null);
+            //    //t.Insert<byte[], byte[]>("t1", "abr".To_UTF8Bytes(), null);
+            //    //t.Insert<byte[], byte[]>("t1", "abdfsdf".To_UTF8Bytes(), null);
+            //    //t.Insert<byte[], byte[]>("t1", "abjkgfsdf".To_UTF8Bytes(), null);
+
+            //    //t.Insert<byte[], byte[]>("t1", "aaejk".To_UTF8Bytes(), null);
+            //    //t.Insert<byte[], byte[]>("t1", "amefjk".To_UTF8Bytes(), null);
+
+            //    t.Commit();
+            //}
+
+            //return;
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    t.Insert<byte[], byte[]>("t1", "bde".To_UTF8Bytes(), null);
+
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1"))
+            //    {  
+            //        if (!r.Key.Substring(0, 3)._ByteArrayEquals("abc".To_UTF8Bytes()))
+            //            break;
+            //        Debug.WriteLine(r.Key.ToUTF8String());
+            //    }
+
+            //    t.ReadVisibilityScopeModifier_GenerateNewTableForRead = true;
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1", true))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1", true))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+
+            //    t.ReadVisibilityScopeModifier_DirtyRead = true;
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1", true))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+
+            //    t.ReadVisibilityScopeModifier_GenerateNewTableForRead = false;
+
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1", false))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1", true))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1", true))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+            //}
+
+            //return;
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    //foreach (var r in t.SelectForward<byte[], byte[]>("t1"))
+            //    //    Debug.WriteLine(r.Key.ToBytesString());
+
+            //    foreach (var r in t.SelectForwardStartFrom<byte[], byte[]>("t1", "ab".To_UTF8Bytes(), false))
+            //        Debug.WriteLine(r.Key.ToUTF8String());
+
+            //    /*
+            //     abahjk
+            //    abc
+            //    abdfsdf
+            //    abejk
+            //    abjkgfsdf
+            //    abr
+            //    //must be filtered
+            //amefjk    
+            // */
+            //}
+
+
+            //return;
+
+            //List<byte[]> input = new List<byte[]>(){
+            //    new byte[] { 1, 2, 4 }, 
+            //    new byte[] { 1, 2, 3 },
+            //    new byte[] { 1, 2, 3, 5 }
+            //    };
+
+            //foreach (var r1 in input.OrderByDescending(x => x, new ByteListComparer()))
+            //    Debug.WriteLine(r1.ToBytesString());
+
+            //DGNode n1 = null;
+            //DGNode n2 = null;
+            //DGNode n3 = null;
+            //List<DGNode> ln = new List<DGNode>();
+            //DGraph graph = null;
+
+            //var hash = DBreeze.Utils.Hash.MurMurHash.MurmurHash3("Hello my dear valentine".To_UTF8Bytes());
+            //byte[] bha = hash.To_4_bytes_array_BigEndian();
+
+            //return;
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    graph = new DGraph(t, "g1");
+
+            //    //foreach (var n in graph.GetNode("Tomato"))
+            //    //foreach (var n in graph.GetNode("Vegetables"))
+            //    //{
+            //    //    Debug.WriteLine(n.ExternalId.ToUTF8String() + "_" + n.InternalId);
+
+            //    //    //foreach (var nx in n.GetKid("Vasiliy Ivanov"))
+            //    //    foreach (var nx in n.GetKid("Cucumber"))
+            //    //    {
+            //    //        Debug.WriteLine(nx.ExternalId.ToUTF8String() + "_" + nx.InternalId);
+            //    //    }
+            //    //}
+
+            //    foreach (var n in graph.GetNode("Vasiliy Ivanov"))
+            //    {
+            //        Debug.WriteLine(n.ExternalId.ToUTF8String() + "_" + n.InternalId);
+
+            //        //foreach (var nx in n.GetKid("Vasiliy Ivanov"))
+            //        foreach (var nx in n.GetKid("Cucumber"))
+            //        {
+            //            Debug.WriteLine(nx.ExternalId.ToUTF8String() + "_" + nx.InternalId);
+            //        }
+            //    }
+            //}
+
+            //return;
+
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    graph = new DGraph(t, "g1");
+
+            //    var n = graph.GetNode<string>("Digits").GetKid<int>(17).FirstOrDefault();
+                
+            //}
+
+            //Debug.WriteLine("...........DONE..............");
+            //return;
+
+            //DBreeze.Diagnostic.SpeedStatistic.StartCounter("a");
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    t.SynchronizeTables("g1");
+            //    graph = new DGraph(t, "g1");
+
+            //    //t.Technical_SetTable_OverwriteIsNotAllowed("g1");
+
+            //    List<DGNode> ml = new List<DGNode>();
+            //    //for (int ioii = 1; ioii < 10000; ioii++)    //a: 1; Time: 2876 ms; 7859532 ticks 
+            //    //    ml.Add(graph.NewNode<int>(ioii));
+
+            //    for (int ioii = 20000; ioii < 30000; ioii++)    //a: 1; Time: 2876 ms; 7859532 ticks 
+            //        ml.Add(graph.NewNode<int>(ioii));
+
+            //    graph.GetNode<string>("Digits")
+            //      .AddKids(ml).Update();
+
+            //    //graph.GetNode<string>("Digits")
+            //    //    .AddKids(new List<DGNode> {
+            //    //    graph.NewNode<int>(1),
+            //    //    graph.NewNode<int>(2),
+            //    //    graph.NewNode<int>(3),
+            //    //    graph.NewNode<int>(4),
+            //    //    graph.NewNode<int>(5),
+            //    //    graph.NewNode<int>(6),
+            //    //}).Update();
+
+            //    t.Commit();
+            //}
+            //DBreeze.Diagnostic.SpeedStatistic.PrintOut("a",true);
+            //Debug.WriteLine("...........DONE..............");
+            //return;
+
+
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    graph = new DGraph(t, "g1");
+                
+            //    var n = graph.GetNode<string>("Tomato").GetParent<string>("Vasiliy Ivanov").FirstOrDefault();
+            //    n = graph.GetNode<string>("Vasiliy Ivanov").GetKid<string>("Tomato").FirstOrDefault();
+            //    n = graph.GetNode<string>("Tomato").GetParent<string>("Masha Petrova").FirstOrDefault();
+            //    n = graph.GetNode<string>("Tomato").GetParent<string>("Petric Pyatochkin").FirstOrDefault();
+            //}
+
+            //Debug.WriteLine("...........DONE..............");
+            //return;
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    t.SynchronizeTables("g1");
+            //    graph = new DGraph(t, "g1");
+                
+            //    graph.GetNode<string>("Vegetables")
+            //        .AddKids(new List<DGNode> {
+            //        graph.NewNode<string>("Tomato"),
+            //        graph.NewNode<string>("Cabbage"),
+            //        graph.NewNode<string>("Cucumber")
+            //    }).Update();
+                
+            //    graph.GetNode<string>("People")              
+            //    .AddKids(new List<DGNode> {                    
+            //        graph.NewNode<string>("Vasiliy Ivanov")
+            //        .AddKids(new List<DGNode>
+            //        {
+            //            graph.GetNode<string>("Tomato"),
+            //            graph.GetNode<string>("Cucumber"),                        
+            //        }),
+            //        graph.NewNode<string>("Masha Petrova").AddKids(new List<DGNode>
+            //        {
+            //            graph.GetNode<string>("Tomato"),                                          
+            //        }),
+            //        graph.NewNode<string>("Petric Pyatochkin").AddKids(new List<DGNode>
+            //        {
+            //            graph.GetNode<string>("Cabbage"),
+            //            graph.GetNode<string>("Cucumber")
+            //        })
+            //    }).Update();                
+
+            //    t.Commit();
+            //}
+            //Debug.WriteLine("...........DONE..............");
+            //return;
+
+
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    graph = new DGraph(t, "g1");
+
+            //   // var mng = graph.GetOrCreateNode<string>("Vegetables");
+
+
+            //    //var nnn = graph.GetNode("Tomato").FirstOrDefault();
+            //    //var x= nnn.GetParent("Vegetables").FirstOrDefault();
+            //}
+            //Debug.WriteLine("...........DONE..............");
+            //return;
+
+
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    t.SynchronizeTables("g1");
+
+            //    //For extra speed (if necessary only)
+            //    //t.Technical_SetTable_OverwriteIsNotAllowed("g1");
+
+            //    //One DGraph instance per DBreeze table
+            //    graph = new DGraph(t, "g1");
+
+
+            //    //graph.GetOrCreateNode("Vegetables")
+
+            //    //n1 = new DGNode("Vegetables");
+            //    //n1.LinksKids = new List<DGNode>{
+            //    //    new DGNode("Tomato"),
+            //    //    new DGNode("Cabbage"),
+            //    //    new DGNode("Cucumber")
+            //    //};
+            //    //n1 = graph.AddNode(n1); //Global node
+
+
+
+            //    //n2 = new DGNode("People");
+
+            //    //var nnn = graph.GetNode("Vegetables").FirstOrDefault();
+
+            //    //n2.LinksKids = new List<DGNode>{
+            //    //    new DGNode("Vasiliy Ivanov")
+            //    //    {  LinksKids = new List<DGNode>
+            //    //        {
+            //    //            nnn.GetKid("Tomato").FirstOrDefault(),
+            //    //            nnn.GetKid("Cucumber").FirstOrDefault()
+            //    //        }
+            //    //    }
+            //    //    ,
+            //    //    new DGNode("Masha Petrova"),
+            //    //    new DGNode("Petric Pyatochkin"),
+            //    //};
+
+            //    //n2 = graph.AddNode(n2); //Global node              
+
+            //    //t.Commit();
+            //}
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    t.Insert<byte[], byte[]>("t1", new byte[] { 1, 2, 4 }, null);
+            //    t.Insert<byte[], byte[]>("t1", new byte[] { 1, 2, 3 }, null);
+            //    t.Insert<byte[], byte[]>("t1", new byte[] { 1, 2, 3, 5 }, null);
+            //    t.Commit();
+            //}
+
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    foreach (var r in t.SelectForward<byte[], byte[]>("t1"))
+            //        Debug.WriteLine(r.Key.ToBytesString());
+            //}
+
+            Debug.WriteLine("...........DONE..............");
+            return;
+            return;
             //GC.Collect();
             //return;
 
-            _ft.TEST_REMOVE();
+            //_ft.TEST_REMOVE();
             
 
             //_ft.TEST_SPIN_PRINT();
