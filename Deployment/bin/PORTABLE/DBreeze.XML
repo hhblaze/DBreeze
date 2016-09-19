@@ -3949,6 +3949,21 @@
             <param name="root"></param>
             <returns></returns>
         </member>
+        <member name="F:DBreeze.Transactions.Transaction.ReadVisibilityScopeModifier_GenerateNewTableForRead">
+            <summary>
+            <para>Will be used when getting new table for ReadVisibilityScope=true in this transaction.</para>
+            If true, will create new read-table, if false, will try to reuse cached (once created) existing read-table (or create new cached READ-TABLE).
+            <para>Switch ReadVisibilityScopeModifier_GenerateNewTableForRead can be changed many times during transaction.</para>
+            May be switched to true, before call Select...,AsReadVisibilityScope = true, then can be switched back.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.ReadVisibilityScopeModifier_DirtyRead">
+            <summary>
+            <para>Works in case if ReadVisibilityScopeModifier_GenerateNewTableForRead = true.</para>
+            <para>When true, will show also updated, but not committed changes, to the moment of request.</para>
+            <para>Default is false</para>
+            </summary>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.GetReadTableFromBuffer(System.String,DBreeze.Tries.ITrieRootNode@,System.Boolean)">
             <summary>
             Retuns LTrie (or later by necessity ITrie) and as out variable ReadRootNode which must be used for READ FUNC data acquiring.
@@ -6172,6 +6187,12 @@
             <param name="array"></param>
             <param name="arrayToCompare"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.ByteListComparer">
+            <summary>
+            Sorting of byte[]
+             foreach (var r1 in input.OrderBy(x => x, new ByteListComparer())) Debug.WriteLine(r1.ToBytesString());
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.Compression.GZip_Compress(System.Byte[])">
             <summary>
