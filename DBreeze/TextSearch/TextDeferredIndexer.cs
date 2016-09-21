@@ -102,17 +102,22 @@ namespace DBreeze.TextSearch
             //new System.Threading.Thread(new System.Threading.ThreadStart(() =>
             //{
             //    Indexer();
-            //})).Start();
-
+            //})).Start();         
 
 #if NET35 || NETr40   //The same must be use for .NET 4.0
 
             new System.Threading.Thread(new System.Threading.ThreadStart(() =>
             {
+                this.DBreezeEngine.BackgroundNotify("TextDefferedIndexingHasStarted", null);
                 Indexer();
+                this.DBreezeEngine.BackgroundNotify("TextDefferedIndexingHasFinished", null);
             })).Start(); 
 #else
-            System.Threading.Tasks.Task.Run(() => { Indexer(); });
+            System.Threading.Tasks.Task.Run(() => {
+                this.DBreezeEngine.BackgroundNotify("TextDefferedIndexingHasStarted", null);
+                Indexer();
+                this.DBreezeEngine.BackgroundNotify("TextDefferedIndexingHasFinished", null);
+            });
 #endif
         }
 

@@ -99,7 +99,11 @@ namespace DBreeze.TextSearch
             if (System.Threading.Interlocked.CompareExchange(ref inDeferredIndexer, 1, 0) != 0)
                 return;
 
-            System.Threading.Tasks.Task.Run(() => { Indexer(); });
+            System.Threading.Tasks.Task.Run(() => {
+                this.DBreezeEngine.BackgroundNotify("TextDefferedIndexingHasStarted", null);
+                Indexer();
+                this.DBreezeEngine.BackgroundNotify("TextDefferedIndexingHasFinished", null);
+            });
 
             //new System.Threading.Thread(new System.Threading.ThreadStart(() => 
             //{

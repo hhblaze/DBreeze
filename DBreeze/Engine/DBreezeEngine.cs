@@ -50,8 +50,11 @@ namespace DBreeze
         /// Initialized from DBreezeRemoteEngine
         /// </summary>
         internal bool RemoteEngine = false;
-
-
+        /// <summary>
+        /// DBreeze may execute some tasks in the background (like deffered text indexing). 
+        /// External delegate can receive notifications about that.
+        /// </summary>
+        public Action<string, object> BackgroundTasksExternalNotifier = null;
         /// <summary>
         /// Dbreeze Configuration.
         /// For now BackupPlan is included.
@@ -93,6 +96,7 @@ namespace DBreeze
             ////Console.WriteLine("                      to dispose DBreeze engine:  if(_engine != null) _engine.Dispose(); ");
             ////Console.WriteLine("                      to get graceful finilization of all working threads! ");
         }
+
 
         /// <summary>
         /// Constructing Dbreeze from dbreezeConfiguration
@@ -262,6 +266,40 @@ namespace DBreeze
             get
             {
                 return this.DBreezeSchema;
+            }
+        }
+
+        /// <summary>
+        /// Notifier about background events.
+        /// </summary>
+        /// <param name="noti"></param>
+        /// <param name="obj"></param>
+        internal void BackgroundNotify(string noti, object obj)
+        {            
+            if (BackgroundTasksExternalNotifier != null)
+            {
+                Action a = () =>
+                {
+                    try
+                    {
+                        BackgroundTasksExternalNotifier(noti, obj);
+                    }
+                    catch
+                    {
+                    }
+                };
+
+                #if NET35 || NETr40   //The same must be use for .NET 4.0
+
+                                            new System.Threading.Thread(new System.Threading.ThreadStart(() =>
+                                            {
+                                                a();
+                                            })).Start(); 
+                #else
+                                System.Threading.Tasks.Task.Run(() => {
+                                    a();
+                                });
+                #endif
             }
         }
 

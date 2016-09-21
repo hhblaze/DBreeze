@@ -148,8 +148,8 @@ namespace DBreeze.TextSearch
                 {
                     case eInsertMode.Insert:
                         //Comparing 
-                        //if (oldSearchables.Intersect(pST.Keys).Count() == pST.Count)
-                        //    return; //Going out, nothing to insert
+                        if (oldSearchables.Intersect(pST.Keys).Count() == oldSearchables.Count)
+                            return; //Going out, nothing to insert
 
                         foreach (var ps1i in pST)
                         {
@@ -160,8 +160,8 @@ namespace DBreeze.TextSearch
                     case eInsertMode.Append:
                     case eInsertMode.Remove:
 
-                        //if ((iMode == eInsertMode.Append) && oldSearchables.Intersect(pST.Keys).Count() == pST.Count)
-                        //    return; //Going out, nothing to insert
+                        if ((iMode == eInsertMode.Append) && oldSearchables.Intersect(pST.Keys).Count() == oldSearchables.Count)
+                            return; //Going out, nothing to insert
 
                         foreach (var ew in pST.Keys)
                         {

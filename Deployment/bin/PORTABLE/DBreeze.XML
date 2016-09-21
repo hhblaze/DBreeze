@@ -1245,6 +1245,12 @@
             Initialized from DBreezeRemoteEngine
             </summary>
         </member>
+        <member name="F:DBreeze.DBreezeEngine.BackgroundTasksExternalNotifier">
+            <summary>
+            DBreeze may execute some tasks in the background (like deffered text indexing). 
+            External delegate can receive notifications about that.
+            </summary>
+        </member>
         <member name="F:DBreeze.DBreezeEngine.Configuration">
             <summary>
             Dbreeze Configuration.
@@ -1306,6 +1312,13 @@
             <summary>
             Returns DBreeze schema object
             </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.BackgroundNotify(System.String,System.Object)">
+            <summary>
+            Notifier about background events.
+            </summary>
+            <param name="noti"></param>
+            <param name="obj"></param>
         </member>
         <member name="T:DBreeze.DBreezeRemoteEngine">
             <summary>
