@@ -249,7 +249,9 @@ namespace Deployer
                 fileVersion = FileVersionInfo.GetVersionInfo(MyPath + @"NET45\DBreeze.dll").FileVersion;
                 string[] fileVersion1 = fileVersion.Split(new char[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
 
-                ent_txt = ent_txt.Replace(pck.Title, pck.Title.Substring(0, pck.Title.Length - 15) + fileVersion1[0] + "." + fileVersion1[1] + "." + fileVersion1[2] + fileVersion1[3]);
+                string verAsString = fileVersion1[0] + "." + fileVersion1[1] + "." + fileVersion1[2] + fileVersion1[3];
+
+                ent_txt = ent_txt.Replace(pck.Title, pck.Title.Substring(0, pck.Title.Length - verAsString.Length) + verAsString);
 
                 if (fileVersion1[1][0] == '0')
                     fileVersion1[1] = fileVersion1[1].Substring(1);
