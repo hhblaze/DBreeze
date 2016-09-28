@@ -450,6 +450,8 @@ namespace DBreeze.Storage
         public static void NET_Flush(FileStream mfs)
         {
             mfs.Flush(true);
+
+            //VolumeInfo.GetVolumes()[0].FlushAll();  
         }
 #else
 
