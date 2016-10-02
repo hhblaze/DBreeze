@@ -9,7 +9,7 @@ DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value stor
 .NET 3.5> / Xamarin MONO Android iOS / .NET Core / Universal Windows Platform / .NET Portable ...for servers and internet-of-things... Made with C# 
 
 - It's a free software for those who think that it should be free.
-- It's been used in our own production environment since June 2012.
+- It has been used in our own production environment since June 2012.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since Januar 2014. 
 - DBreeze for .NETCore, UWP (Universal Windows Platform), .NET 4.5.1 grab via NuGet.
