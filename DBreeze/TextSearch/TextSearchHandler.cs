@@ -252,7 +252,7 @@ namespace DBreeze.TextSearch
             /// 
             /// </summary>
             public byte[] wahArray { get; set; } = null;
-
+          
             /// <summary>
             /// !!!!!!!!!!!!!!!!!!!!!! TO BE REMOVED
             /// Id of the OrBlock

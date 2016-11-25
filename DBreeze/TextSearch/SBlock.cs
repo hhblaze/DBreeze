@@ -48,11 +48,6 @@ namespace DBreeze.TextSearch
         /// </summary>
         internal Dictionary<string,bool> ParsedWords = new Dictionary<string, bool>();
 
-        /*
-         * Block can be reused many times in many sub-operations. Adding such block will clear its sequence history
-         * But not the generation history, that describes the block origins and lets to reproduce its state
-         */
-
         /// <summary>
         /// 
         /// </summary>
@@ -79,13 +74,8 @@ namespace DBreeze.TextSearch
         internal bool foundArraysAreComputed = false;
 
         #region "Between block operations"
-        
-        /// <summary>
-        /// Returns last added block
-        /// </summary>
-        /// <param name="block"></param>
-        /// <returns></returns>
-        public SBlock AND(SBlock block)
+
+        SBlock CreateBlock(SBlock block, eOperation operation)
         {
             SBlock b = new SBlock()
             {
@@ -93,12 +83,22 @@ namespace DBreeze.TextSearch
                 BlockId = this._tsm.cntBlockId++,
                 LeftBlockId = this.BlockId,
                 RightBlockId = block.BlockId,
-                TransBlockOperation = eOperation.AND
+                TransBlockOperation = operation
             };
 
             this._tsm.Blocks[b.BlockId] = b;
 
             return b;
+        }
+
+        /// <summary>
+        /// Returns last added block
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns></returns>
+        public SBlock AND(SBlock block)
+        {
+            return this.CreateBlock(block, eOperation.AND);           
         }
 
         /// <summary>
@@ -108,18 +108,7 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public SBlock OR(SBlock block)
         {
-            SBlock b = new SBlock()
-            {
-                _tsm = this._tsm,
-                BlockId = this._tsm.cntBlockId++,
-                LeftBlockId = this.BlockId,
-                RightBlockId = block.BlockId,
-                TransBlockOperation = eOperation.OR
-            };
-
-            this._tsm.Blocks[b.BlockId] = b;
-
-            return b;
+            return this.CreateBlock(block, eOperation.OR);
         }
 
         /// <summary>
@@ -129,18 +118,7 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public SBlock XOR(SBlock block)
         {
-            SBlock b = new SBlock()
-            {
-                _tsm = this._tsm,
-                BlockId = this._tsm.cntBlockId++,
-                LeftBlockId = this.BlockId,
-                RightBlockId = block.BlockId,
-                TransBlockOperation = eOperation.XOR
-            };
-
-            this._tsm.Blocks[b.BlockId] = b;
-
-            return b;
+            return this.CreateBlock(block, eOperation.XOR);
         }
 
         /// <summary>
@@ -150,18 +128,7 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public SBlock EXCLUDE(SBlock block)
         {
-            SBlock b = new SBlock()
-            {
-                _tsm = this._tsm,
-                BlockId = this._tsm.cntBlockId++,
-                LeftBlockId = this.BlockId,
-                RightBlockId = block.BlockId,
-                TransBlockOperation = eOperation.EXCLUDE
-            };
-
-            this._tsm.Blocks[b.BlockId] = b;
-
-            return b;
+            return this.CreateBlock(block, eOperation.EXCLUDE);
         }
         #endregion
 
@@ -178,16 +145,17 @@ namespace DBreeze.TextSearch
             //Usual block is added via TextSearchManager
             
             var myArray = this.GetArrays();
-
-            DBreeze.DataTypes.Row<int, byte[]> docRow = null;           
-            foreach (var el in WAH2.TextSearch_AND_logic(myArray))
+            if (myArray.Count != 0)
             {
-                //Getting document external ID
-                docRow = this._tsm.tbExternalIDs.Select<int, byte[]>((int)el);
-                if (docRow.Exists)
-                    yield return docRow.Value;
+                DBreeze.DataTypes.Row<int, byte[]> docRow = null;
+                foreach (var el in WAH2.TextSearch_AND_logic(myArray))
+                {
+                    //Getting document external ID
+                    docRow = this._tsm.tbExternalIDs.Select<int, byte[]>((int)el);
+                    if (docRow.Exists)
+                        yield return docRow.Value;
+                }
             }
-            
         }
 
         /// <summary>
@@ -286,6 +254,8 @@ namespace DBreeze.TextSearch
             if (foundArraysAreComputed)
                 return;
 
+            List<byte[]> echoes = null;
+
             foreach (var wrd in this.ParsedWords)
             {
                 if (!this._tsm.PureWords.ContainsKey(wrd.Key))  //Wrong input
@@ -300,6 +270,7 @@ namespace DBreeze.TextSearch
                             if (!this._tsm.RealWords.ContainsKey(wrd.Key))      //!!No match
                             {
                                 //Found arrays must be cleared out
+                                this.foundArrays.Clear();
                                 break; //Parsed Words
                             }
                             else//Adding word to block array
@@ -307,12 +278,18 @@ namespace DBreeze.TextSearch
                         }
                         else
                         { //Value must have contains
+                            echoes = new List<byte[]>();
                             foreach (var conw in this._tsm.PureWords[wrd.Key].StartsWith)   //Adding all pure word StartsWith echoes
                                 if (this._tsm.RealWords.ContainsKey(conw))
-                                    this.foundArrays.Add(this._tsm.RealWords[conw].wahArray);
+                                    echoes.Add(this._tsm.RealWords[conw].wahArray);
+                            //this.foundArrays.Add(this._tsm.RealWords[conw].wahArray);
 
                             if (this._tsm.RealWords.ContainsKey(wrd.Key))  //And word itself
-                                this.foundArrays.Add(this._tsm.RealWords[wrd.Key].wahArray);
+                                echoes.Add(this._tsm.RealWords[wrd.Key].wahArray);
+                            //this.foundArrays.Add(this._tsm.RealWords[wrd.Key].wahArray);
+
+                            if (echoes.Count > 0)
+                                this.foundArrays.Add(WAH2.MergeByOrLogic(echoes));
                         }
                         break;
                     case eOperation.OR:
@@ -323,12 +300,18 @@ namespace DBreeze.TextSearch
                         }
                         else
                         {
+                            echoes = new List<byte[]>();
                             foreach (var conw in this._tsm.PureWords[wrd.Key].StartsWith)   //Adding all pure word StartsWith echoes
                                 if (this._tsm.RealWords.ContainsKey(conw))
-                                    this.foundArrays.Add(this._tsm.RealWords[conw].wahArray);
+                                    echoes.Add(this._tsm.RealWords[conw].wahArray);
+                            //this.foundArrays.Add(this._tsm.RealWords[conw].wahArray);
 
                             if (this._tsm.RealWords.ContainsKey(wrd.Key))  //And word itself
-                                this.foundArrays.Add(this._tsm.RealWords[wrd.Key].wahArray);
+                                echoes.Add(this._tsm.RealWords[wrd.Key].wahArray);
+                            //this.foundArrays.Add(this._tsm.RealWords[wrd.Key].wahArray);
+
+                            if (echoes.Count > 0)
+                                this.foundArrays.Add(WAH2.MergeByOrLogic(echoes));
                         }
                         break;
                 }

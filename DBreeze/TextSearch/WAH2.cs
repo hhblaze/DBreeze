@@ -344,27 +344,33 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public static IEnumerable<uint> TextSearch_AND_logic(List<byte[]> indexesToCheck)
         {
-            int MinLenght = indexesToCheck.Min(r => r.Length);
-            byte res = 0;
-            uint docId = Convert.ToUInt32(MinLenght * 8) - 1;
-            byte mask = 0;
-
-            for (int i = MinLenght - 1; i >= 0; i--)
-            {
-                res = 255;
-                foreach (var wah in indexesToCheck)
+            if (indexesToCheck != null && indexesToCheck.Count > 0)
+            {                
+                int MinLenght = indexesToCheck.Min(r => r == null ? 0 : r.Length);
+                if (MinLenght != 0)
                 {
-                    res &= wah[i];
-                }
+                    byte res = 0;
+                    uint docId = Convert.ToUInt32(MinLenght * 8) - 1;
+                    byte mask = 0;
 
-                for (int j = 7; j >= 0; j--)
-                {
-                    mask = (byte)(1 << j);
+                    for (int i = MinLenght - 1; i >= 0; i--)
+                    {
+                        res = 255;
+                        foreach (var wah in indexesToCheck)
+                        {
+                            res &= wah[i];
+                        }
 
-                    if ((res & mask) != 0)
-                        yield return (uint)docId;
+                        for (int j = 7; j >= 0; j--)
+                        {
+                            mask = (byte)(1 << j);
 
-                    docId--;
+                            if ((res & mask) != 0)
+                                yield return (uint)docId;
+
+                            docId--;
+                        }
+                    }
                 }
             }
         }

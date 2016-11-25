@@ -85,13 +85,19 @@ namespace DBreeze.TextSearch
                 tbExternalIDs = this._tran.SelectTable<byte>(this._tableName, 2, 0);
                 tbExternalIDs.ValuesLazyLoadingIsOn = false;
             }
+
+            ////DEBUG
+            //foreach (var dbgWrd in this.tbWords.SelectForward<string,byte[]>())
+            //{
+            //    Console.WriteLine(dbgWrd.Key);
+            //}
           
 
             TextSearchHandler.WordInDocs wid = null;
             int containsFound = 0;
             List<string> startsWithEchoes = new List<string>();
 
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!! Later move all RealWords to Pure
+            //possibly to move all RealWords to Pure
             //Resolving pure words
             foreach (var wrd in this.PureWords.Where(r => !r.Value.Processed).OrderBy(r => r.Key))
             {
