@@ -83,8 +83,10 @@
     <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
     <Compile Include="Storage\RISR.cs" />
     <Compile Include="TextSearch\TextDeferredIndexer.cs" />
+    <Compile Include="TextSearch\SBlock.cs" />
     <Compile Include="TextSearch\TextSearchHandler.cs" />
     <Compile Include="TextSearch\TextSearchOptions.cs" />
+    <Compile Include="TextSearch\TextSearchManager.cs" />
     <Compile Include="TextSearch\WAH2.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Storage\Backup\Backup.cs" />

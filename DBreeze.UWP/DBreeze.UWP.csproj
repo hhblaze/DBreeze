@@ -110,6 +110,21 @@
     <None Include="signature.snk" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
+      <Link>TextSearch\SBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
+      <Link>TextSearch\TextSearchHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextSearchManager.cs">
+      <Link>TextSearch\TextSearchManager.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextSearchOptions.cs">
+      <Link>TextSearch\TextSearchOptions.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\WAH2.cs">
+      <Link>TextSearch\WAH2.cs</Link>
+    </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />
@@ -160,9 +175,6 @@
     <Compile Include="Storage\StorageLayer.cs" />
     <Compile Include="Storage\TrieSettings.cs" />
     <Compile Include="TextSearch\TextDeferredIndexer.cs" />
-    <Compile Include="TextSearch\TextSearchHandler.cs" />
-    <Compile Include="TextSearch\TextSearchOptions.cs" />
-    <Compile Include="TextSearch\WAH2.cs" />
     <Compile Include="Transactions\ITransactable.cs" />
     <Compile Include="Transactions\Transaction.cs" />
     <Compile Include="Transactions\TransactionsCoordinator.cs" />

@@ -15,11 +15,15 @@ namespace DBreeze.TextSearch
     /// </summary>
     public class TextSearchStorageOptions
     {
+        /// <summary>
+        /// TextSearchStorageOptions
+        /// </summary>
         public TextSearchStorageOptions()
         {
             FullTextOnly = true;
             SearchWordMinimalLength = 3;
             DeferredIndexing = false;
+            FullTextSearchables = new List<string>();
         }
 
         /// <summary>
@@ -38,6 +42,12 @@ namespace DBreeze.TextSearch
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.
         /// </summary>
         public bool DeferredIndexing { get; set; }
+
+        /// <summary>
+        /// Extra searchables which can be found only by complete match (Full-Text).
+        /// They save also storage space.
+        /// </summary>
+        public List<string> FullTextSearchables { get; set; }
     }
 
     /// <summary>
@@ -60,21 +70,26 @@ namespace DBreeze.TextSearch
             OR
         }
 
+        /// <summary>
+        /// TextSearchRequest
+        /// </summary>
         public TextSearchRequest()
         {
             SearchLogicType = eSearchLogicType.OR;
             SearchWords = String.Empty;            
             Quantity = 100;            
             NoisyQuantity = 1000;
+            OrBlocks = new List<List<string>>();          
         }
 
         /// <summary>
-        /// Words separated by space or whatever to search
+        /// Words separated by space to search, using contains logic (minimal Length is 2 chars)
         /// </summary>        
         public string SearchWords { get; set; }
 
         /// <summary>
-        /// Maximal quantity of documents to be returned. Lower value - lower RAM and speed economy.
+        /// Maximal quantity of documents to be returned.
+        /// If equals 0, then IEnumerable TextSearchResponse.GetDocumentIDs() has no limitations of fetching
         /// </summary>        
         public int Quantity { get; set; }
 
@@ -100,6 +115,19 @@ namespace DBreeze.TextSearch
         /// !This is not the quantity of documents where such pattern exists, but StartsWith result of all unique words
         /// </summary>        
         public uint NoisyQuantity { get; set; }
+
+        /// <summary>
+        /// Can be used without SearchWords. If exists together with SearchWords then each SearchWord will be copied 
+        /// into separate OR-block.                
+        /// <para>e.g. we want to find documents containing words "(boy girl) (with) (black red) (umbrella)"</para>
+        /// OR-block is inside of brackets, between OR-blocks works AND logic.
+        /// <para>In this case documents containing such words will fit: "boy with red umbrella" "boy with black umbrella" "girl with red umbrella" "girl with black umbrella"</para>
+        /// <para>If the word starts from the space it will be searched only by "full-word-match", otherwise "contains-logic" is on.</para>
+        /// OrBlocks=new List&lt;List&lt;string&gt;&gt;() { new List&lt;string&gt; {"boy","girl" }, new List&lt;string&gt; { " with"}, new List&lt;string&gt; { " red"," black" }, new List&lt;string&gt; { "umbrella" } }
+        /// <para>Note, the space in front of some words - activation of full match, "without" - doesn't fit, "boys","girls" - fit, etc..</para>
+        /// </summary>
+        public List<List<string>> OrBlocks { get; set; }
+
     }
 
     /// <summary>
@@ -107,17 +135,52 @@ namespace DBreeze.TextSearch
     /// </summary>
     public class TextSearchResponse
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public TextSearchResponse()
         {
-            FoundDocumentIDs = new List<byte[]>();
+            //FoundDocumentIDs = new List<byte[]>();
             SearchCriteriaIsNoisy = false;
+        }
+
+        internal DataTypes.NestedTable i2e = null;
+        internal IEnumerable<uint> q = null;
+        internal int ResponseQuantity = 0;    
+
+        /// <summary>
+        /// IEnumerable to return found document IDs
+        /// </summary>
+        public IEnumerable<byte[]> GetDocumentIDs()
+        {
+            if (q != null)
+            {
+                DBreeze.DataTypes.Row<int, byte[]> docRow = null;
+                if (ResponseQuantity > 0)
+                    q = q.Take(ResponseQuantity);
+                foreach (var el in q)
+                {
+                    ////Getting document external ID
+                    docRow = i2e.Select<int, byte[]>((int)el);
+
+                    if (docRow.Exists)
+                        yield return docRow.Value;
+                }
+            }
         }
 
         /// <summary>
         /// Document external IDs, supplied while insert
         /// </summary>
-        public List<byte[]> FoundDocumentIDs { get; set; }
-
+        public List<byte[]> FoundDocumentIDs {
+            get
+            {
+                if (ResponseQuantity < 1)
+                    ResponseQuantity = 100;
+                return this.GetDocumentIDs().Take(ResponseQuantity).ToList();                
+            }
+        }
+        
         /// <summary>
         /// SearchCriteriaIsNoisy. When one of words in search request contains more then 1000 intersections it will become true.
         /// It can mean that better is to change search word criteria.

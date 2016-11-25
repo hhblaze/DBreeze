@@ -193,6 +193,114 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
+        /// Using AND logic: 1 and 1 = 1; 1 and 0 = 0; 0 and 0 = 0
+        /// </summary>
+        /// <param name="arraysToMerge"></param>
+        /// <returns></returns>
+        public static byte[] MergeByAndLogic(List<byte[]> arraysToMerge)
+        {
+            if (arraysToMerge == null || arraysToMerge.Count() == 0)
+                return null;                        
+            int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
+            if(MaxLenght == 0)
+                return null;
+            byte[] res = new byte[MaxLenght];
+            bool firstArray = true;
+            foreach (var bt in arraysToMerge)
+            {
+                if (bt == null || bt.Length == 0)
+                    continue;
+                if (firstArray)
+                {
+                    for (int i = 0; i < bt.Length; i++)
+                        res[i] = bt[i];
+                }
+                else
+                {
+                    for (int i = 0; i < bt.Length; i++)
+                        res[i] &= bt[i];
+                }
+
+                firstArray = false;
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Using OR logic: 1or1 = 1or0 = 1; 0or0 = 0
+        /// </summary>
+        /// <param name="arraysToMerge"></param>
+        /// <returns></returns>
+        public static byte[] MergeByOrLogic(List<byte[]> arraysToMerge)
+        {
+            if (arraysToMerge == null || arraysToMerge.Count() == 0)
+                return null;
+            int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
+            if (MaxLenght == 0)
+                return null;
+            byte[] res = new byte[MaxLenght];
+            foreach (var bt in arraysToMerge)
+            {
+                if (bt == null || bt.Length == 0)
+                    continue;
+                for (int i = 0; i < bt.Length; i++)
+                    res[i] |= bt[i];
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Using XOR logic: 1xor1 = 0; 0xor0 = 0; 1xor0 = 1
+        /// </summary>
+        /// <param name="arraysToMerge"></param>
+        /// <returns></returns>
+        public static byte[] MergeByXorLogic(List<byte[]> arraysToMerge)
+        {
+            if (arraysToMerge == null || arraysToMerge.Count() == 0)
+                return null;
+            int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
+            if (MaxLenght == 0)
+                return null;
+            byte[] res = new byte[MaxLenght];
+            foreach (var bt in arraysToMerge)
+            {
+                if (bt == null || bt.Length == 0)
+                    continue;
+                for (int i = 0; i < bt.Length; i++)
+                    res[i] ^= bt[i];
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Using EXCLUDE logic: 1notin1 = 0; 1notin0 = 1; 0notin0 = 0; 0notin1 = 0;
+        /// </summary>
+        /// <param name="array1"></param>
+        /// <param name="array2"></param>
+        /// <returns></returns>
+        public static byte[] MergeByExcludeLogic(byte[] array1, byte[] array2)
+        {
+            if (array1 == null || array1.Count() == 0)
+                return null;
+            if (array2 == null || array1.Count() == 0)
+                return array1;
+            int MaxLenght = array1.Length > array2.Length ? array1.Length : array2.Length;
+            if (MaxLenght == 0)
+                return null;
+            byte[] res = new byte[MaxLenght];
+
+            for (int i = 0; i < MaxLenght; i++)
+            {
+                res[i] = (byte)(array1[i] & ~array2[i]);
+            }
+
+            return res;
+        }
+
+        /// <summary>
         /// Technical if already in DB
         /// </summary>
         public bool ExistsInDB = false;

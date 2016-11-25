@@ -1390,6 +1390,24 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// Returns TextSearchManager (word aligned bitmap index manager), allowing to make 
+        /// text search comparational operations.
+        /// </summary>
+        /// <param name="tableName">for TextInsertToDocument table</param>
+        /// <returns></returns>
+        public TextSearchManager TextSearchManager(string tableName)
+        {
+            if (tsh == null)
+                tsh = new TextSearchHandler(this);
+
+            TextSearchManager w = new TextSearchManager();
+            w._tran = this;
+            w._tableName = tableName;
+
+            return w;
+        }
+
+        /// <summary>
         /// Is called before COMMIT only
         /// </summary>
         void TextSearchHandlerCommit()
