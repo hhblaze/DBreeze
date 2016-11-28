@@ -1301,41 +1301,41 @@ namespace DBreeze.Transactions
         #region "Insert for text search"
 
         /// <summary>
-        /// Inserts/updates searchable text for the documentID
+        /// Inserts/Updates searchable words inside of the document
         /// </summary>
-        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
-        /// <param name="searchables">text used for search the document</param>
-        /// <param name="opt">TextSearchOptions</param>
-        public void TextInsertToDocument(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        /// <param name="tableName">Real DBreeze table name, used to store group of document's text to be searched. Must be added to tran.SynchronizeTables by programmer.</param>
+        /// <param name="documentId">External document id, it will be returned after executing TextGetSearchTable.GetDocumentIDs</param>        
+        /// <param name="containsWords">Space separated words, which will be stored using "contains" logic.</param>
+        /// <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+        /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+        /// It's good for the fast Commits while inserting relatively large searchables-set .
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
+        public void TextInsertToDocument(string tableName, byte[] documentId, string containsWords, string fullMatchWords, bool deferredIndexing = false, int containsMinimalLength = 3)
         {
-            //InsertDocumentText
-            if (opt == null)
-                opt = new TextSearchStorageOptions();
-
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
-            tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Insert);
+            tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, TextSearchHandler.eInsertMode.Insert);
         }
 
         /// <summary>
         /// Appends words to existing searchable text for the documentID
         /// </summary>
-        /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
-        /// <param name="searchables">text used for search the document</param>
-        /// <param name="opt">TextSearchOptions</param>
-        public void TextAppendWordsToDocument(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        /// <param name="tableName">Real DBreeze table name, used to store group of document's text to be searched. Must be added to tran.SynchronizeTables by programmer.</param>
+        /// <param name="documentId">External document id, it will be returned after executing TextGetSearchTable.GetDocumentIDs</param>        
+        /// <param name="containsWords">Space separated words, which will be stored using "contains" logic.</param>
+        /// <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+        /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+        /// It's good for the fast Commits while inserting relatively large searchables-set .
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
+        public void TextAppendWordsToDocument(string tableName, byte[] documentId, string containsWords, string fullMatchWords, bool deferredIndexing = false, int containsMinimalLength = 3)
         {
-            //InsertDocumentText_AppendWordsToExistingSet
-            if (opt == null)
-                opt = new TextSearchStorageOptions();
-
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
-            tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Append);
+            tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, TextSearchHandler.eInsertMode.Append);
         }
 
         /// <summary>
@@ -1344,59 +1344,76 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
         /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>
-        /// <param name="searchables">text used for search the document</param>
-        /// <param name="opt"></param>
-        public void TextRemoveWordsFromDocument(string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt = null)
+        /// <param name="containsWords">Space separated words, which will be stored using "contains" logic.</param>
+        /// <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+        /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+        /// It's good for the fast Commits while inserting relatively large searchables-set .
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
+        public void TextRemoveWordsFromDocument(string tableName, byte[] documentId, string containsWords, string fullMatchWords, bool deferredIndexing = false, int containsMinimalLength = 3)
         {
-            //InsertDocumentText_RemoveWordsFromExistingSet
-            if (opt == null)
-                opt = new TextSearchStorageOptions();
-
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
-            
-            tsh.InsertDocumentText(this, tableName, documentId, searchables, opt, TextSearchHandler.eInsertMode.Remove);
+
+            tsh.InsertDocumentText(this, tableName, documentId, "", fullMatchWords, deferredIndexing, containsMinimalLength, TextSearchHandler.eInsertMode.Remove);
         }
 
         /// <summary>
         /// Removes searchable text for the documentID
         /// </summary>
         /// <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param>                
-        public void TextRemoveAll(string tableName, byte[] documentId)
+        /// <param name="documentId">External document id, it will be returned after executing TextSearch</param> 
+        /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+        /// It's good for the fast Commits while inserting relatively large searchables-set .
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+        public void TextRemoveAll(string tableName, byte[] documentId, bool deferredIndexing = false)
         {
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
-            tsh.InsertDocumentText(this, tableName, documentId, String.Empty, new TextSearchStorageOptions(), TextSearchHandler.eInsertMode.Insert);
+            tsh.InsertDocumentText(this, tableName, documentId, String.Empty, String.Empty, deferredIndexing, 3, TextSearchHandler.eInsertMode.Insert);
         }
 
         /// <summary>
-        /// Search text and returns documents (External document IDs), containing words or word parts
+        /// Returns exisitng searchables for given documents external IDs
         /// </summary>
-        /// <param name="tableName">DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-        /// <param name="req">TextSearchRequest</param>
-        /// <returns>TextSearchResponse</returns>
-        public TextSearchResponse TextSearch(string tableName, TextSearchRequest req)
+        /// <param name="tableName"></param>
+        /// <param name="documentIds"></param>
+        /// <returns></returns>
+        public Dictionary<byte[], HashSet<string>> TextGetDocumentSearchables(string tableName, HashSet<byte[]> documentIds)
         {
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
-            return tsh.SearchTextInDocuments(tableName, req);
+            return tsh.GetDocumentsSearchables(this, tableName, documentIds);
         }
 
+        ///// <summary>
+        ///// Search text and returns documents (External document IDs), containing words or word parts
+        ///// </summary>
+        ///// <param name="tableName">DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
+        ///// <param name="req">TextSearchRequest</param>
+        ///// <returns>TextSearchResponse</returns>
+        //public TextSearchResponse TextSearch(string tableName, TextSearchRequest req)
+        //{
+        //    if (tsh == null)
+        //        tsh = new TextSearchHandler(this);
+
+        //    return tsh.SearchTextInDocuments(tableName, req);
+        //}
+
         /// <summary>
-        /// Returns TextSearchManager (word aligned bitmap index manager), allowing to make 
+        /// Returns TextSearchTable (word aligned bitmap index manager for the search table), allowing making
         /// text search comparational operations.
         /// </summary>
         /// <param name="tableName">for TextInsertToDocument table</param>
         /// <returns></returns>
-        public TextSearchManager TextSearchManager(string tableName)
+        public TextSearchTable TextGetSearchTable(string tableName)
         {
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
-            TextSearchManager w = new TextSearchManager();
+            TextSearchTable w = new TextSearchTable();
             w._tran = this;
             w._tableName = tableName;
 

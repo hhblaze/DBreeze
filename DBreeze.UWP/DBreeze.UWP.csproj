@@ -116,14 +116,14 @@
     <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
       <Link>TextSearch\TextSearchHandler.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\TextSearch\TextSearchManager.cs">
-      <Link>TextSearch\TextSearchManager.cs</Link>
-    </Compile>
     <Compile Include="..\DBreeze\TextSearch\TextSearchOptions.cs">
       <Link>TextSearch\TextSearchOptions.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\TextSearch\WAH2.cs">
-      <Link>TextSearch\WAH2.cs</Link>
+    <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs">
+      <Link>TextSearch\TextSearchTable.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\WABI.cs">
+      <Link>TextSearch\WABI.cs</Link>
     </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />

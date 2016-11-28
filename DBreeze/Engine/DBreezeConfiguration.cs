@@ -115,10 +115,6 @@ namespace DBreeze
             ///// </summary>
             //public int MaxCharsToBeProcessedPerRound = 10000000;
 
-            /// <summary>
-            /// Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
-            /// </summary>
-            public int MaxQuantityOfWordsToBeSearched = 10;
         }
 
         /// <summary>

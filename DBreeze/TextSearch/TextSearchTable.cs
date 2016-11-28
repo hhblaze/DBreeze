@@ -16,7 +16,7 @@ namespace DBreeze.TextSearch
     /// <summary>
     /// Manager for word aligned bitmap indexes
     /// </summary>
-    public class TextSearchManager
+    public class TextSearchTable
     {
         /// <summary>
         /// 
@@ -50,7 +50,7 @@ namespace DBreeze.TextSearch
             /// <summary>
             /// In case if word must be searched using contains logic in db can be StartsWith echoes
             /// </summary>
-            public List<string> StartsWith = new List<string>();
+            public HashSet<string> StartsWith = new HashSet<string>();
         }
                 
         internal Dictionary<int, SBlock> Blocks = new Dictionary<int, SBlock>();
@@ -58,6 +58,9 @@ namespace DBreeze.TextSearch
 
         bool toComputeWordsOrigin = true; 
 
+        /// <summary>
+        /// 
+        /// </summary>
         internal void ComputeWordsOrigin()
         {
             if (!toComputeWordsOrigin)
@@ -95,7 +98,7 @@ namespace DBreeze.TextSearch
 
             TextSearchHandler.WordInDocs wid = null;
             int containsFound = 0;
-            List<string> startsWithEchoes = new List<string>();
+            HashSet<string> startsWithEchoes = null;
 
             //possibly to move all RealWords to Pure
             //Resolving pure words
@@ -104,6 +107,8 @@ namespace DBreeze.TextSearch
 
                 if (wrd.Value.FullMatch)
                 {
+                    if (this.RealWords.ContainsKey(wrd.Key))
+                        continue;
                     var row2 = this.tbWords.Select<string, byte[]>(wrd.Key);
                     if (row2.Exists)
                     {
@@ -113,29 +118,31 @@ namespace DBreeze.TextSearch
                             NumberInBlock = row2.Value.Substring(4, 4).To_UInt32_BigEndian()
                         };
 
-                        this.RealWords.Add(wrd.Key, wid);
+                        this.RealWords[wrd.Key] = wid;
                     }
                 }
                 else
                 {
                     //Contains
                     containsFound = 0;
-                    startsWithEchoes = new List<string>();
+                    startsWithEchoes = new HashSet<string>();
                     foreach (var row1 in this.tbWords.SelectForwardStartsWith<string, byte[]>(wrd.Key).Take(this.NoisyQuantity))
                     {
+                        containsFound++;
+
+                        if (wrd.Key != row1.Key)
+                            startsWithEchoes.Add(row1.Key);
+
+                        if (this.RealWords.ContainsKey(row1.Key))
+                            continue;
+
                         wid = new TextSearchHandler.WordInDocs()
                         {
                             BlockId = row1.Value.Substring(0, 4).To_UInt32_BigEndian(),
                             NumberInBlock = row1.Value.Substring(4, 4).To_UInt32_BigEndian()
                         };
 
-                        if (wrd.Key != row1.Key)
-                            startsWithEchoes.Add(row1.Key);
-
-                        if (!this.RealWords.ContainsKey(row1.Key))  //upper we don't need such check
-                            this.RealWords.Add(row1.Key, wid);
-
-                        containsFound++;
+                        this.RealWords.Add(row1.Key, wid);
                     }
 
                     if (startsWithEchoes.Count > 0)
@@ -166,22 +173,51 @@ namespace DBreeze.TextSearch
                     btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
                 }
 
-                wrd.Value.wahArray = new WAH2(block[wrd.Value.NumberInBlock]).GetUncompressedByteArray();
-                //wrd.Value.wah = new WAH2(block[wrd.Value.NumberInBlock]);
+                wrd.Value.wahArray = new WABI(block[wrd.Value.NumberInBlock]).GetUncompressedByteArray();                
                 wrd.Value.Processed = true;
             }
 
             toComputeWordsOrigin = false;
+        }
+        
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="containsWords"></param>
+        /// <param name="fullMatchWords"></param>
+        /// <returns></returns>
+        public SBlock BlockAND(string containsWords, string fullMatchWords)
+        {
+            fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
+            containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
+
+            SBlock sb = new SBlock()
+            {
+                _tsm = this,
+                InternalBlockOperation = SBlock.eOperation.AND,
+                BlockId = this.cntBlockId++,
+                IsLogicalBlock = false
+            };
+
+            Blocks.Add(sb.BlockId, sb);
+            
+            this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref sb.ParsedWords);
+            this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), false, ref sb.ParsedWords);
+
+            toComputeWordsOrigin = true;
+            return sb;
         }
 
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="fullMatch"></param>
-        /// <param name="words"></param>
+        /// <param name="containsWords"></param>
+        /// <param name="fullMatchWords"></param>
         /// <returns></returns>
-        public SBlock SearchAndBlock(bool fullMatch, string words)
+        public SBlock BlockAND(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
             SBlock sb = new SBlock()
             {
@@ -193,10 +229,9 @@ namespace DBreeze.TextSearch
 
             Blocks.Add(sb.BlockId, sb);
 
-            if (String.IsNullOrEmpty(words))
-                return sb;
+            this.WordsPrepare(fullMatchWords, true, ref sb.ParsedWords);
+            this.WordsPrepare(containsWords, false, ref sb.ParsedWords);
 
-            this.WordsPrepare(words, fullMatch, ref sb.ParsedWords);
             toComputeWordsOrigin = true;
             return sb;
         }
@@ -205,11 +240,43 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="fullMatch"></param>
-        /// <param name="words"></param>
+        /// <param name="containsWords"></param>
+        /// <param name="fullMatchWords"></param>
         /// <returns></returns>
-        public SBlock SearchOrBlock(bool fullMatch, string words)
+        public SBlock BlockOR(string containsWords, string fullMatchWords)
         {
+            fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
+            containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
+
+            SBlock sb = new SBlock()
+            {
+                _tsm = this,
+                InternalBlockOperation = SBlock.eOperation.OR,
+                BlockId = this.cntBlockId++,
+                IsLogicalBlock = false
+            };
+            Blocks.Add(sb.BlockId, sb);
+            
+            this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref sb.ParsedWords);
+            this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), false, ref sb.ParsedWords);
+
+            toComputeWordsOrigin = true;
+            return sb;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="containsWords"></param>
+        /// <param name="fullMatchWords"></param>
+        /// <returns></returns>
+        public SBlock BlockOR(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
+        {
+            //if (fullMatchWords == null)
+            //    throw new Exception("DBreeze.Exceptions TextSearchtable.BlockOR + fullMatchWords is null");
+            //if (fullMatchWords == null)
+            //    throw new Exception("DBreeze.Exceptions TextSearchtable.BlockOR + containsWords is null");
             SBlock sb = new SBlock()
             {
                 _tsm = this,
@@ -219,13 +286,13 @@ namespace DBreeze.TextSearch
             };
             Blocks.Add(sb.BlockId, sb);
 
-            if (String.IsNullOrEmpty(words))
-                return sb;
+            this.WordsPrepare(fullMatchWords, true, ref sb.ParsedWords);
+            this.WordsPrepare(containsWords, false, ref sb.ParsedWords);
 
-            this.WordsPrepare(words, fullMatch, ref sb.ParsedWords);
             toComputeWordsOrigin = true;
             return sb;
         }
+
 
         /// <summary>
         /// 
@@ -233,21 +300,43 @@ namespace DBreeze.TextSearch
         /// <param name="searchKeywords"></param>
         /// <param name="fullMatch"></param>
         /// <param name="wordsList"></param>
-        void WordsPrepare(string searchKeywords, bool fullMatch, ref Dictionary<string,bool> wordsList)
+        void WordsPrepare(IEnumerable<string> searchKeywords, bool fullMatch, ref Dictionary<string,bool> wordsList)
         {
             string word = "";
-            foreach (var wrd in searchKeywords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2))
-            {                                
-                //word = (fullMatch ? wrd.Substring(1) : wrd).ToLower();
+            foreach (var wrd in searchKeywords)
+            {   
                 word = wrd.ToLower();
-                if (word.Trim().Length < 2 || word.Contains(" ") || this.PureWords.ContainsKey(word))
+                if (word.Trim().Length < 2 || word.Contains(" "))
                     continue;
 
-                this.PureWords.Add(word, new TextSearchManager.PureWordDef() { FullMatch = fullMatch, Processed = false });
-                //Adding also words to blocks
-                wordsList.Add(word, fullMatch);
-            }
+                //this.PureWords.Add(word, new TextSearchTable.PureWordDef() { FullMatch = fullMatch, Processed = false });
+                ////Adding also words to blocks
+                //wordsList.Add(word, fullMatch);
 
+                if (!this.PureWords.ContainsKey(word))
+                {
+                    this.PureWords.Add(word, new TextSearchTable.PureWordDef() { FullMatch = fullMatch, Processed = false });
+                }
+                else
+                {
+                    //In case if word already in the list and is fullMatch, but supplied in not fullmatch we change to contains
+                    if (!fullMatch && this.PureWords[word].FullMatch)
+                    {
+                        this.PureWords[word].FullMatch = fullMatch;
+                        this.PureWords[word].Processed = false;
+                    }
+                }
+
+                //Adding also words to blocks
+                if (!wordsList.ContainsKey(word))
+                    wordsList.Add(word, fullMatch);
+                else
+                {
+                    //In case if word already in the list and is fullMatch, but supplied in not fullmatch we change to contains
+                    if (!fullMatch && wordsList[word])
+                        wordsList[word] = fullMatch;
+                }
+            }
         }
         
 

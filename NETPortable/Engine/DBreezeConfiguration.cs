@@ -2,6 +2,7 @@
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's a free software for those, who think that it should be free.
 */
+//NOT LINKABLE
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace DBreeze
 
         public DBreezeConfiguration()
         {
-            DBreezeDataFolderName = String.Empty;            
+            DBreezeDataFolderName = String.Empty;
             Storage = eStorage.DISK;
             _backup = new Backup(this);
         }
@@ -115,11 +116,6 @@ namespace DBreeze
             ///// <para>Mobile recommendations year 2015: 1000000</para>
             ///// </summary>
             //public int MaxCharsToBeProcessedPerRound = 10000000;
-
-            /// <summary>
-            /// Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
-            /// </summary>
-            public int MaxQuantityOfWordsToBeSearched = 10;
         }
 
         /// <summary>

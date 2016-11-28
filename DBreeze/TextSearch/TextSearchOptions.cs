@@ -19,22 +19,15 @@ namespace DBreeze.TextSearch
         /// TextSearchStorageOptions
         /// </summary>
         public TextSearchStorageOptions()
-        {
-            FullTextOnly = true;
-            SearchWordMinimalLength = 3;
-            DeferredIndexing = false;
-            FullTextSearchables = new List<string>();
+        {           
+            SearchWordContainsLogicMinimalLength = 3;
+            DeferredIndexing = false;   
         }
-
+        
         /// <summary>
-        /// Will store complete word. Search StartWith will be only available. Default is true
+        /// Minimal lenght of the word to be searched using "contains" logic. Default is 3. 
         /// </summary>
-        public bool FullTextOnly { get; set; }
-
-        /// <summary>
-        /// Minimal lenghth of the word to be searched. Default is 3. 
-        /// </summary>
-        public ushort SearchWordMinimalLength { get; set; }
+        public ushort SearchWordContainsLogicMinimalLength { get; set; }
 
         /// <summary>
         /// Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
@@ -42,12 +35,7 @@ namespace DBreeze.TextSearch
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.
         /// </summary>
         public bool DeferredIndexing { get; set; }
-
-        /// <summary>
-        /// Extra searchables which can be found only by complete match (Full-Text).
-        /// They save also storage space.
-        /// </summary>
-        public List<string> FullTextSearchables { get; set; }
+        
     }
 
     /// <summary>
@@ -130,69 +118,69 @@ namespace DBreeze.TextSearch
 
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    public class TextSearchResponse
-    {
-        /// <summary>
-        /// 
-        /// </summary>
-        public TextSearchResponse()
-        {
-            //FoundDocumentIDs = new List<byte[]>();
-            SearchCriteriaIsNoisy = false;
-        }
+    ///// <summary>
+    ///// 
+    ///// </summary>
+    //public class TextSearchResponse
+    //{
+    //    /// <summary>
+    //    /// 
+    //    /// </summary>
+    //    public TextSearchResponse()
+    //    {
+    //        //FoundDocumentIDs = new List<byte[]>();
+    //        SearchCriteriaIsNoisy = false;
+    //    }
 
-        internal DataTypes.NestedTable i2e = null;
-        internal IEnumerable<uint> q = null;
-        internal int ResponseQuantity = 0;    
+    //    //internal DataTypes.NestedTable i2e = null;
+    //    //internal IEnumerable<uint> q = null;
+    //    //internal int ResponseQuantity = 0;    
 
-        /// <summary>
-        /// IEnumerable to return found document IDs
-        /// </summary>
-        public IEnumerable<byte[]> GetDocumentIDs()
-        {
-            if (q != null)
-            {
-                DBreeze.DataTypes.Row<int, byte[]> docRow = null;
-                if (ResponseQuantity > 0)
-                    q = q.Take(ResponseQuantity);
-                foreach (var el in q)
-                {
-                    ////Getting document external ID
-                    docRow = i2e.Select<int, byte[]>((int)el);
+    //    ///// <summary>
+    //    ///// IEnumerable to return found document IDs
+    //    ///// </summary>
+    //    //public IEnumerable<byte[]> GetDocumentIDs()
+    //    //{
+    //    //    if (q != null)
+    //    //    {
+    //    //        DBreeze.DataTypes.Row<int, byte[]> docRow = null;
+    //    //        if (ResponseQuantity > 0)
+    //    //            q = q.Take(ResponseQuantity);
+    //    //        foreach (var el in q)
+    //    //        {
+    //    //            ////Getting document external ID
+    //    //            docRow = i2e.Select<int, byte[]>((int)el);
 
-                    if (docRow.Exists)
-                        yield return docRow.Value;
-                }
-            }
-        }
+    //    //            if (docRow.Exists)
+    //    //                yield return docRow.Value;
+    //    //        }
+    //    //    }
+    //    //}
 
-        /// <summary>
-        /// Document external IDs, supplied while insert
-        /// </summary>
-        public List<byte[]> FoundDocumentIDs {
-            get
-            {
-                if (ResponseQuantity < 1)
-                    ResponseQuantity = 100;
-                return this.GetDocumentIDs().Take(ResponseQuantity).ToList();                
-            }
-        }
+    //    ///// <summary>
+    //    ///// Document external IDs, supplied while insert
+    //    ///// </summary>
+    //    //public List<byte[]> FoundDocumentIDs {
+    //    //    get
+    //    //    {
+    //    //        if (ResponseQuantity < 1)
+    //    //            ResponseQuantity = 100;
+    //    //        return this.GetDocumentIDs().Take(ResponseQuantity).ToList();                
+    //    //    }
+    //    //}
         
-        /// <summary>
-        /// SearchCriteriaIsNoisy. When one of words in search request contains more then 1000 intersections it will become true.
-        /// It can mean that better is to change search word criteria.
-        /// Lobster 
-        /// Lopata
-        /// ...
-        /// Loshad
-        /// Lom 
-        /// .. e.g. words starting from "Lo" is more then 10000
-        /// ......and we search by "Lo".
-        /// This "Lo" will be automatically excluded from search
-        /// </summary>        
-        public bool SearchCriteriaIsNoisy { get; set; }
-    }
+    //    /// <summary>
+    //    /// SearchCriteriaIsNoisy. When one of words in search request contains more then 1000 intersections it will become true.
+    //    /// It can mean that better is to change search word criteria.
+    //    /// Lobster 
+    //    /// Lopata
+    //    /// ...
+    //    /// Loshad
+    //    /// Lom 
+    //    /// .. e.g. words starting from "Lo" is more then 10000
+    //    /// ......and we search by "Lo".
+    //    /// This "Lo" will be automatically excluded from search
+    //    /// </summary>        
+    //    public bool SearchCriteriaIsNoisy { get; set; }
+    //}
 }

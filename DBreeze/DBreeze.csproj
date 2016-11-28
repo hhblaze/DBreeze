@@ -86,8 +86,8 @@
     <Compile Include="TextSearch\SBlock.cs" />
     <Compile Include="TextSearch\TextSearchHandler.cs" />
     <Compile Include="TextSearch\TextSearchOptions.cs" />
-    <Compile Include="TextSearch\TextSearchManager.cs" />
-    <Compile Include="TextSearch\WAH2.cs" />
+    <Compile Include="TextSearch\TextSearchTable.cs" />
+    <Compile Include="TextSearch\WABI.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Storage\Backup\Backup.cs" />
     <Compile Include="Storage\Backup\BackupRestorer.cs" />

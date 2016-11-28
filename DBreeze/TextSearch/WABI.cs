@@ -13,9 +13,9 @@ using DBreeze.Utils;
 namespace DBreeze.TextSearch
 {
     /// <summary>
-    /// 
+    /// Word aligned bitmap index
     /// </summary>
-    internal class WAH2
+    internal class WABI
     {
 
         byte[] bt = null;
@@ -24,7 +24,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// 
         /// </summary>
-        public WAH2()
+        public WABI()
         {
         }
 
@@ -32,7 +32,7 @@ namespace DBreeze.TextSearch
         /// Must be supplied CompressedByteArray taken from GetCompressedByteArray function
         /// </summary>
         /// <param name="array"></param>
-        public WAH2(byte[] array)
+        public WABI(byte[] array)
         {
             if (array == null || array.Length < 1)
                 return;
@@ -168,29 +168,29 @@ namespace DBreeze.TextSearch
             return (bt[byteNumber] & mask) != 0;
         }
 
-        /// <summary>
-        /// Using OR logic: 1|1 = 1|0 = 1; 0|0 = 0
-        /// </summary>
-        /// <param name="indexesToMerge"></param>
-        /// <returns></returns>
-        public static byte[] MergeAllUncompressedIntoOne(List<byte[]> indexesToMerge)
-        {
-            //if (indexesToMerge == null || indexesToMerge.Count() < 1)
-            //    return null;
-            int MaxLenght = indexesToMerge.Max(r => r.Length);
-            byte[] res = new byte[MaxLenght];
+        ///// <summary>
+        ///// Using OR logic: 1|1 = 1|0 = 1; 0|0 = 0
+        ///// </summary>
+        ///// <param name="indexesToMerge"></param>
+        ///// <returns></returns>
+        //public static byte[] MergeAllUncompressedIntoOne(List<byte[]> indexesToMerge)
+        //{
+        //    //if (indexesToMerge == null || indexesToMerge.Count() < 1)
+        //    //    return null;
+        //    int MaxLenght = indexesToMerge.Max(r => r.Length);
+        //    byte[] res = new byte[MaxLenght];
 
-            foreach (var bt in indexesToMerge)
-            {
-                for (int i = 0; i < bt.Length; i++)
-                {
-                    res[i] |= bt[i];
-                }
+        //    foreach (var bt in indexesToMerge)
+        //    {
+        //        for (int i = 0; i < bt.Length; i++)
+        //        {
+        //            res[i] |= bt[i];
+        //        }
 
-            }
+        //    }
 
-            return res;
-        }
+        //    return res;
+        //}
 
         /// <summary>
         /// Using AND logic: 1 and 1 = 1; 1 and 0 = 0; 0 and 0 = 0
@@ -201,29 +201,24 @@ namespace DBreeze.TextSearch
         {
             if (arraysToMerge == null || arraysToMerge.Count() == 0)
                 return null;                        
-            int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
-            if(MaxLenght == 0)
+            int MinLenght = arraysToMerge.Min(r => r == null ? 0 : r.Length);
+            if(MinLenght == 0)
                 return null;
-            byte[] res = new byte[MaxLenght];
-            bool firstArray = true;
-            foreach (var bt in arraysToMerge)
+            if (arraysToMerge.Count == 1)
+                return arraysToMerge[0];    //If there is only one array we return it back
+            byte[] res = new byte[MinLenght];
+
+            for (int i = 0; i < MinLenght; i++)
             {
-                if (bt == null || bt.Length == 0)
-                    continue;
-                if (firstArray)
+                for (int j = 0; j < arraysToMerge.Count; j++)
                 {
-                    for (int i = 0; i < bt.Length; i++)
-                        res[i] = bt[i];
-                }
-                else
-                {
-                    for (int i = 0; i < bt.Length; i++)
-                        res[i] &= bt[i];
-                }
-
-                firstArray = false;
+                    if (j == 0)
+                        res[i] = arraysToMerge[j][i];
+                    else
+                        res[i] &= arraysToMerge[j][i];
+                }               
             }
-
+            
             return res;
         }
 
@@ -239,13 +234,20 @@ namespace DBreeze.TextSearch
             int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
             if (MaxLenght == 0)
                 return null;
+            if (arraysToMerge.Count == 1)
+                return arraysToMerge[0];    //If there is only one array we return it back
             byte[] res = new byte[MaxLenght];
-            foreach (var bt in arraysToMerge)
+
+            for (int i = 0; i < MaxLenght; i++)
             {
-                if (bt == null || bt.Length == 0)
-                    continue;
-                for (int i = 0; i < bt.Length; i++)
-                    res[i] |= bt[i];
+                for (int j = 0; j < arraysToMerge.Count; j++)
+                {  
+                    if (j == 0)
+                        res[i] = arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                    else
+                        res[i] |= arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                }
+
             }
 
             return res;
@@ -263,13 +265,18 @@ namespace DBreeze.TextSearch
             int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
             if (MaxLenght == 0)
                 return null;
+            if (arraysToMerge.Count == 1)
+                return arraysToMerge[0];    //If there is only one array we return it back
             byte[] res = new byte[MaxLenght];
-            foreach (var bt in arraysToMerge)
+            for (int i = 0; i < MaxLenght; i++)
             {
-                if (bt == null || bt.Length == 0)
-                    continue;
-                for (int i = 0; i < bt.Length; i++)
-                    res[i] ^= bt[i];
+                for (int j = 0; j < arraysToMerge.Count; j++)
+                {
+                    if (j == 0)
+                        res[i] = arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                    else
+                        res[i] ^= arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                }                
             }
 
             return res;
@@ -285,7 +292,7 @@ namespace DBreeze.TextSearch
         {
             if (array1 == null || array1.Count() == 0)
                 return null;
-            if (array2 == null || array1.Count() == 0)
+            if (array2 == null || array2.Count() == 0)
                 return array1;
             int MaxLenght = array1.Length > array2.Length ? array1.Length : array2.Length;
             if (MaxLenght == 0)
@@ -294,7 +301,7 @@ namespace DBreeze.TextSearch
 
             for (int i = 0; i < MaxLenght; i++)
             {
-                res[i] = (byte)(array1[i] & ~array2[i]);
+                res[i] = (byte)((array1.Length < i ? (byte)0 : array1[i]) & ~(array2.Length < i ? (byte)0 : array2[i]));
             }
 
             return res;

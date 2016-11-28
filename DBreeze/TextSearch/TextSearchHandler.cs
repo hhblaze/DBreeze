@@ -91,26 +91,66 @@ namespace DBreeze.TextSearch
             Remove
         }
 
+        
         /// <summary>
         /// 
         /// </summary>
         /// <param name="tran"></param>
-        /// <param name="tableName">Search document space/physical dbreeze table, that's why must be synchronized</param>
+        /// <param name="tableName"></param>
+        /// <param name="documentIDs"></param>
+        /// <returns></returns>
+        public Dictionary<byte[], HashSet<string>> GetDocumentsSearchables(Transaction tran, string tableName,  HashSet<byte[]> documentIDs)
+        {
+            ITS its = null;
+            its = new ITS()
+            {
+                e2i = tran.SelectTable<byte>(tableName, 1, 0),
+                srch = tran.SelectTable<byte>(tableName, 3, 0),
+            };
+
+            its.e2i.ValuesLazyLoadingIsOn = false;
+            its.srch.ValuesLazyLoadingIsOn = false;
+
+            Dictionary<byte[], HashSet<string>> rdocuments = new Dictionary<byte[], HashSet<string>>();
+
+            foreach (var documentID in documentIDs)
+            {
+                var r1 = its.e2i.Select<byte[], int>(documentID);
+
+                if (r1.Exists)          //DOCUMENT EXISTS
+                {                   
+                    //Getting searchables for this document                
+                    byte[] oldSrch = its.srch.Select<byte[], byte[]>(r1.Value.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
+                    rdocuments[documentID] = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
+                }
+            }
+
+            return rdocuments;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="tableName"></param>
         /// <param name="documentId"></param>
-        /// <param name="searchables"></param>
-        /// <param name="opt"></param>
+        /// <param name="containsWords"></param>
+        /// <param name="fullMatchWords"></param>
+        /// <param name="deferredIndexing"></param>
+        /// <param name="containsMinimalLength"></param>
         /// <param name="iMode"></param>
-        public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string searchables, TextSearchStorageOptions opt, eInsertMode iMode)
+        public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords, bool deferredIndexing, int containsMinimalLength, eInsertMode iMode)
         {
 
             //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.
             if (String.IsNullOrEmpty(tableName) || documentId == null)
                 return;
 
-            if ((iMode == eInsertMode.Append || iMode == eInsertMode.Remove) && String.IsNullOrEmpty(searchables))
+            if ((iMode == eInsertMode.Append || iMode == eInsertMode.Remove) && (String.IsNullOrEmpty(containsWords) && String.IsNullOrEmpty(fullMatchWords)))
                 return;
 
-            SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(searchables, opt); //flattend searchables
+            SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(containsWords, fullMatchWords, containsMinimalLength); //flattend searchables
             StringBuilder sbPs = new StringBuilder();
 
             //Registering all tables for text-search in current transaction
@@ -213,7 +253,7 @@ namespace DBreeze.TextSearch
             this.InsertWasPerformed = true;
 
             //Inserting into affected table
-            if (!opt.DeferredIndexing)
+            if (!deferredIndexing)
                 its.ChangedDocIds.Add(iId);
             else
             {
@@ -240,451 +280,14 @@ namespace DBreeze.TextSearch
             /// </summary>
             public uint NumberInBlock { get; set; } = 0;
             /// <summary>
-            /// !!!!!!!!!!!!!!!!!!!!!! TO BE REMOVED
-            /// Wah2 block
-            /// </summary>
-            public WAH2 wah { get; set; } = null;
-            /// <summary>
             /// Processed
             /// </summary>
             public bool Processed { get; set; } = false;
             /// <summary>
-            /// 
+            /// Unzipped WABI
             /// </summary>
-            public byte[] wahArray { get; set; } = null;
-          
-            /// <summary>
-            /// !!!!!!!!!!!!!!!!!!!!!! TO BE REMOVED
-            /// Id of the OrBlock
-            /// </summary>
-            public int OrBlockId { get; set; } = 0;
-            ///// <summary>
-            ///// Real search word
-            ///// </summary>
-            //public string RealWord { get; set; }
-            ///// <summary>
-            ///// Word must be search by full match
-            ///// </summary>
-            //public bool FullMatch { get; set; }
-
-        }
-
-
-
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="req"></param>
-        /// <param name="resp"></param>
-        /// <returns>returns foun byte arrays to filter via AND filter</returns>
-        List<byte[]> SearchTextInDocumentsPrepare(string tableName, TextSearchRequest req, out TextSearchResponse resp)
-        {
-            resp = new TextSearchResponse();
-
-            //[string,byte[]] BlockId[int] + NumberInBlock[int] 
-            NestedTable tbWords = tran.SelectTable<byte>(tableName, 20, 0);
-            tbWords.ValuesLazyLoadingIsOn = false;
-
-            //Prepearing words supplied via req.SearchWords. Later they will be migrated into OrBlocks and checked again
-            //HashSet<string> Words = this.PrepareSearchKeyWords(req.SearchWords);
-            HashSet<string> Words = new HashSet<string>();
-            WordsPrepare(req.SearchWords, true, ref Words);
-            /*
-             * Repacking all into OrBlocks
-             * Match logic: "wrd1 & wrd2 & (wrd3 | wrd4 | wrd5) & (wrd6 |wrd7) & wrd8"
-             * C# Representation:
-             * new List<List<string>> lst=new List<List<string>>
-             * {
-             *      new List<string> { "wrd1" },
-             *      new List<string> { "wrd2" },
-             *      new List<string> { "wrd3","wrd4","wrd5" },
-             *      new List<string> { "wrd6","wrd7" },
-             *      new List<string> { " wrd8" },   //word with leading space will be searched by Full-Match-Text
-             * }
-            */
-            if ((req.OrBlocks ?? new List<List<string>>()).Count > 0 || req.SearchLogicType == TextSearchRequest.eSearchLogicType.AND)
-            {
-                //Repacking req.SearchWords to OrBlock as AND stattment addin then to exisiting OrBlocks
-                foreach (var inw in Words)
-                    req.OrBlocks.Add(new List<string> { inw });
-            }
-            else
-            {
-                //Repacking req.SearchWords to OrBlock as one OR statement
-                req.OrBlocks.Add(Words.ToList());
-            }
-
-
-
-            //From now we can traverse only OrBlock
-            string rwrd = "";
-            bool fulltext = false;
-            Dictionary<int, WordInDocs> trt = new Dictionary<int, WordInDocs>();  //Traversing table
-            int k = 0;  //serial Nr
-            int kB = 0; //OrBlock Nr
-
-            NestedTable tbBlocks = tran.SelectTable<byte>(tableName, 10, 0);
-            tbBlocks.ValuesLazyLoadingIsOn = false;
-
-            Dictionary<uint, byte[]> block = new Dictionary<uint, byte[]>();
-            byte[] btBlock = null;
-            uint currentBlockId = 0;
-            int containsFound = 0;
-
-            HashSet<string> foundRealWords = new HashSet<string>();
-            List<byte[]> foundArrays = new List<byte[]>();
-
-            //No limitation for now?
-            // tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MaxQuantityOfWordsToBeSearched
-
-            foreach (var obl in req.OrBlocks)
-            {
-                foreach (var word in obl)
-                {
-                    if (String.IsNullOrEmpty(word) || word.Trim().Length < 2)
-                        continue;
-                    fulltext = word[0] == ' ';
-                    rwrd = (fulltext ? word.Substring(1) : word).ToLower();//real word
-                    if (rwrd.Contains(" ") || foundRealWords.Contains(rwrd) || rwrd.Length < 2)
-                        continue;
-                    foundRealWords.Add(rwrd);
-
-                    if (fulltext)
-                    {
-                        var row2 = tbWords.Select<string, byte[]>(rwrd);
-                        if (row2.Exists)
-                        {
-                            trt[k] = new WordInDocs()
-                            {
-                                BlockId = row2.Value.Substring(0, 4).To_UInt32_BigEndian(),
-                                NumberInBlock = row2.Value.Substring(4, 4).To_UInt32_BigEndian(),
-                                OrBlockId = kB
-                            };
-                            k++;
-                        }
-                    }
-                    else
-                    {
-                        //Contains
-                        containsFound = 0;
-                        foreach (var row1 in tbWords.SelectForwardStartsWith<string, byte[]>(rwrd).Take((int)req.NoisyQuantity))
-                        {
-                            trt[k] = new WordInDocs()
-                            {
-                                BlockId = row1.Value.Substring(0, 4).To_UInt32_BigEndian(),
-                                NumberInBlock = row1.Value.Substring(4, 4).To_UInt32_BigEndian(),
-                                OrBlockId = kB
-                            };
-                            k++;
-                            containsFound++;
-                        }
-
-                        if (containsFound == req.NoisyQuantity)
-                            resp.SearchCriteriaIsNoisy = true;
-                    }
-                }
-
-                kB++;
-            }//eo OrBlock foreach
-
-            //Getting blocks for the returned words
-            foreach (var wrd in trt.OrderBy(r => r.Value.BlockId))
-            {
-                if (currentBlockId != wrd.Value.BlockId)
-                {
-                    currentBlockId = wrd.Value.BlockId;
-                    block = new Dictionary<uint, byte[]>();
-
-                    //DBreeze.Diagnostic.SpeedStatistic.StartCounter("SelectBlocks");
-                    btBlock = tbBlocks.Select<uint, byte[]>(wrd.Value.BlockId).Value;
-                    //DBreeze.Diagnostic.SpeedStatistic.StopCounter("SelectBlocks");                            
-                    btBlock = btBlock.Substring(4, btBlock.Substring(0, 4).To_Int32_BigEndian());
-                    //DBreeze.Diagnostic.SpeedStatistic.StartCounter("DecomDeserBlocks");
-                    btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
-                    // block = btBlock.DeserializeProtobuf<Dictionary<int, byte[]>>();
-                    //DBreeze.Diagnostic.SpeedStatistic.StopCounter("DecomDeserBlocks");
-                }
-
-                wrd.Value.wah = new WAH2(block[wrd.Value.NumberInBlock]);
-            }
-
-            //Merging same OrBlocks into one (grouping by OrBlockId using OR logic)
-            kB = -1;//OrBlock=-1;
-            List<byte[]> toMerge = new List<byte[]>();
-            foreach (var wrd in trt.OrderBy(r => r.Value.OrBlockId))
-            {
-                if (kB != wrd.Value.OrBlockId)
-                {
-                    kB = wrd.Value.OrBlockId;
-                    if (toMerge.Count() > 0)
-                    {
-                        foundArrays.Add(WAH2.MergeAllUncompressedIntoOne(toMerge));
-                        toMerge = new List<byte[]>();
-                    }
-                }
-
-                toMerge.Add(wrd.Value.wah.GetUncompressedByteArray());
-            }
-
-            //Merging last OrBlock
-            if (toMerge.Count() > 0)
-            {
-                foundArrays.Add(WAH2.MergeAllUncompressedIntoOne(toMerge));
-                toMerge = new List<byte[]>();
-            }
-
-            return foundArrays;
-        }
-        
-        /// <summary>
-        /// SearchTextInDocuments
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="req"></param>
-        /// <returns></returns>
-        public TextSearchResponse SearchTextInDocuments(string tableName, TextSearchRequest req)
-        {
-
-            TextSearchResponse resp = null;
-            var foundArrays = SearchTextInDocumentsPrepare(tableName, req, out resp);
-            if (foundArrays.Count < 1)
-                return resp;
-
-            //Key int, Value byte[]
-            NestedTable i2e = tran.SelectTable<byte>(tableName, 2, 0);
-            i2e.ValuesLazyLoadingIsOn = false;
-
-            resp.i2e = i2e;
-            resp.ResponseQuantity = req.Quantity;      
-            resp.q = WAH2.TextSearch_AND_logic(foundArrays);
-
-            //Moved to response
-            //int qOutput = 0;
-            //DBreeze.DataTypes.Row<int, byte[]> docRow = null;
-            //foreach (var el in q)
-            //{
-            //    ////Getting document exterrnal ID
-            //    docRow = i2e.Select<int, byte[]>((int)el);
-            //    if (docRow.Exists)
-            //        resp.FoundDocumentIDs.Add(docRow.Value);
-
-            //    qOutput++;
-
-            //    if (qOutput > req.Quantity)
-            //        break;
-
-            //}
-            
-            return resp;            
-        }
-
-
-        //public TextSearchResponse OLD_SearchTextInDocuments(string tableName, TextSearchRequest req)
-        //{
-        //    TextSearchResponse resp = new TextSearchResponse();
-
-        //    //[string,byte[]] BlockId[int] + NumberInBlock[int] 
-        //    NestedTable tbWords = tran.SelectTable<byte>(tableName, 20, 0);
-        //    tbWords.ValuesLazyLoadingIsOn = false;
-
-        //    var Words = this.PrepareSearchKeyWords(req.SearchWords);
-
-        //    int j = -1;
-        //    List<byte[]> foundArrays = new List<byte[]>();
-        //    List<byte[]> oneWordFoundArrays = new List<byte[]>();
-
-        //    bool anyWordFound = false;
-        //    int totalFoundWords = 0;
-
-        //    Dictionary<string, WordInDocs> words = new Dictionary<string, WordInDocs>();
-        //    int foundOrigin = 1;
-
-        //    Dictionary<string, WordInDocs> perWord = new Dictionary<string, WordInDocs>();
-        //    Dictionary<string, WordInDocs> firstHighOccuranceWord = new Dictionary<string, WordInDocs>();
-
-        //    //Currently we ignore these words and do nothing with them
-        //    List<string> highOccuranceWordParts = new List<string>();
-
-
-        //    foreach (var word in Words.Take(tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MaxQuantityOfWordsToBeSearched)) //Maximum 10 words for search
-        //    {
-        //        anyWordFound = false;
-        //        totalFoundWords = 0;
-        //        perWord = new Dictionary<string, WordInDocs>();
-
-        //        foreach (var row1 in tbWords.SelectForwardStartsWith<string, byte[]>(word))
-        //        {
-        //            anyWordFound = true;
-        //            totalFoundWords++;
-
-        //            if (totalFoundWords >= req.NoisyQuantity)  //Found lots of words with such mask inside
-        //            {
-        //                resp.SearchCriteriaIsNoisy = true;
-
-        //                //Too much found docs have this word-part inside, better to enhance search
-        //                if (firstHighOccuranceWord.Count() == 0)
-        //                {
-        //                    //Only first HighOccurance word part come to the list. It can be used later in case if all search words are of HighOccurance (then we will visualize only this one)
-        //                    firstHighOccuranceWord = perWord.ToDictionary(r => r.Key, r => r.Value);
-        //                }
-        //                //Clearing repack element
-        //                perWord.Clear();
-        //                //Adding word into List of High-Occurance word-part
-        //                highOccuranceWordParts.Add(word);
-        //                break;
-        //            }
-
-        //            perWord.Add(row1.Key, new WordInDocs()
-        //            {
-        //                BlockId = row1.Value.Substring(0, 4).To_UInt32_BigEndian(),
-        //                NumberInBlock = row1.Value.Substring(4, 4).To_UInt32_BigEndian(),
-        //                foundOrigin = foundOrigin
-        //            });
-
-        //            if (Words.Count() == 1 || totalFoundWords > req.Quantity)
-        //            {
-        //                //In case if only one search word, then we don't need to make any comparation
-        //                break;
-        //            }
-        //        }
-
-        //        //Repacking occurances
-        //        foreach (var pw in perWord)
-        //            words.Add(pw.Key, pw.Value);
-
-        //        foundOrigin++;
-
-        //        if (
-        //            req.SearchLogicType == TextSearchRequest.eSearchLogicType.AND
-        //            &&
-        //            !anyWordFound
-        //            )
-        //        {
-        //            //Non of words found corresponding to AND logic                    
-        //            return resp;
-        //        }
-        //    }
-
-
-        //    if (words.Count() == 0)
-        //    {
-        //        //In case of multiple search words and each of them of HighOccurance.
-        //        //We will form result only from the first HighOccurance list
-
-        //        //Repacking occurances
-        //        foreach (var pw in firstHighOccuranceWord.Take(req.Quantity))
-        //            words.Add(pw.Key, pw.Value);
-
-        //        //In this case highOccuranceWordParts must be cleared, because the returning result is very approximate
-        //        highOccuranceWordParts.Clear();
-        //    }
-
-
-        //    //Here we must start get data from blocks
-        //    //Nested table with blocks      
-        //    //[uint,byte[]] where K is BlockID[uint]
-        //    NestedTable tbBlocks = tran.SelectTable<byte>(tableName, 10, 0);
-        //    tbBlocks.ValuesLazyLoadingIsOn = false;
-
-        //    Dictionary<uint, byte[]> block = new Dictionary<uint, byte[]>();
-        //    byte[] btBlock = null;
-        //    uint currentBlockId = 0;
-
-        //    //DBreeze.Diagnostic.SpeedStatistic.StartCounter("LoadBlocks");
-
-        //    foreach (var wrd in words.OrderBy(r => r.Value.BlockId))
-        //    {
-        //        if (currentBlockId != wrd.Value.BlockId)
-        //        {
-        //            currentBlockId = wrd.Value.BlockId;
-        //            block = new Dictionary<uint, byte[]>();
-
-        //            //DBreeze.Diagnostic.SpeedStatistic.StartCounter("SelectBlocks");
-        //            btBlock = tbBlocks.Select<uint, byte[]>(wrd.Value.BlockId).Value;
-        //            //DBreeze.Diagnostic.SpeedStatistic.StopCounter("SelectBlocks");                            
-        //            btBlock = btBlock.Substring(4, btBlock.Substring(0, 4).To_Int32_BigEndian());
-        //            //DBreeze.Diagnostic.SpeedStatistic.StartCounter("DecomDeserBlocks");
-        //            btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
-        //            // block = btBlock.DeserializeProtobuf<Dictionary<int, byte[]>>();
-        //            //DBreeze.Diagnostic.SpeedStatistic.StopCounter("DecomDeserBlocks");
-        //        }
-
-        //        wrd.Value.wah = new WAH2(block[wrd.Value.NumberInBlock]);
-        //    }
-        //    //DBreeze.Diagnostic.SpeedStatistic.PrintOut("LoadBlocks", true);
-        //    //DBreeze.Diagnostic.SpeedStatistic.PrintOut("SelectBlocks", true);
-        //    //DBreeze.Diagnostic.SpeedStatistic.PrintOut("DecomDeserBlocks", true);
-
-        //    foundOrigin = 0;
-
-        //    foreach (var wrd in words.OrderBy(r => r.Value.foundOrigin))
-        //    {
-        //        //Console.WriteLine(wrd.Value.foundOrigin);
-
-        //        if (foundOrigin != wrd.Value.foundOrigin)
-        //        {
-        //            if (oneWordFoundArrays.Count() > 0)
-        //            {
-        //                j++;
-        //                foundArrays.Add(WAH2.MergeAllUncompressedIntoOne(oneWordFoundArrays));
-        //                oneWordFoundArrays = new List<byte[]>();
-        //            }
-
-        //            foundOrigin = wrd.Value.foundOrigin;
-        //        }
-        //        else
-        //        {
-
-        //        }
-
-        //        oneWordFoundArrays.Add(wrd.Value.wah.GetUncompressedByteArray());
-        //    }
-
-        //    //The last 
-        //    if (oneWordFoundArrays.Count() > 0)
-        //    {
-        //        j++;
-        //        foundArrays.Add(WAH2.MergeAllUncompressedIntoOne(oneWordFoundArrays));
-        //        oneWordFoundArrays = new List<byte[]>();
-        //    }
-
-
-        //    //////////  final results
-
-        //    if (j >= 0)
-        //    {
-        //        var q = WAH2.TextSearch_OR_logic(foundArrays, req.Quantity);
-
-        //        if (req.SearchLogicType == TextSearchRequest.eSearchLogicType.AND)
-        //            q = WAH2.TextSearch_AND_logic(foundArrays).Take(req.Quantity);
-
-        //        //Key int, Value byte[]
-        //        NestedTable i2e = tran.SelectTable<byte>(tableName, 2, 0);
-        //        i2e.ValuesLazyLoadingIsOn = false;
-
-        //        int qOutput = 0;
-        //        DBreeze.DataTypes.Row<int, byte[]> docRow = null;
-        //        foreach (var el in q)
-        //        {
-        //            ////Getting document exterrnal ID
-        //            docRow = i2e.Select<int, byte[]>((int)el);
-        //            if (docRow.Exists)
-        //                resp.FoundDocumentIDs.Add(docRow.Value);
-
-        //            qOutput++;
-
-        //            if (qOutput > req.Quantity)
-        //                break;
-
-        //        }
-
-        //    }
-
-        //    return resp;
-        //}
+            public byte[] wahArray { get; set; } = null;          
+        }        
 
         /// <summary>
         /// Started only in case if InsertWasPerformed in deffered or not deffered way
@@ -733,7 +336,7 @@ namespace DBreeze.TextSearch
             byte[] btWah = null;
             byte[] tmp = null;
             byte[] val = null;
-            WAH2 wah = null;
+            WABI wah = null;
             
 
 
@@ -938,10 +541,10 @@ namespace DBreeze.TextSearch
                     //Getting from Block 
                     if (block.TryGetValue((uint)wd1.Value.Item3.NumberInBlock, out btWah))
                     {
-                        wah = new WAH2(btWah);
+                        wah = new WABI(btWah);
                     }
                     else
-                        wah = new WAH2(null);
+                        wah = new WABI(null);
 
                     //Adding documents
                     foreach (var dId in wd1.Value.Item2)
@@ -1055,7 +658,7 @@ namespace DBreeze.TextSearch
                 return String.Empty;
             return searchables.GZip_Decompress().ToUTF8String();
         }
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -1086,45 +689,41 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Returns null in case of notfound anything or what ever
         /// </summary>
-        /// <param name="text"></param>
+        /// <param name="containsWords"></param>
+        /// <param name="fullMatchWords"></param>
+        /// <param name="containsMinimalLength"></param>
         /// <returns></returns>
-        SortedDictionary<string, WordDefinition> GetWordsDefinitionFromText(string text, TextSearchStorageOptions opt)
+        SortedDictionary<string, WordDefinition> GetWordsDefinitionFromText(string containsWords, string fullMatchWords, int containsMinimalLength)
         {
             SortedDictionary<string, WordDefinition> wordsCounter = new SortedDictionary<string, WordDefinition>();
 
             try
             {
-                if (String.IsNullOrEmpty(text) && opt.FullTextSearchables.Count<1)
+                if (String.IsNullOrEmpty(containsWords) && String.IsNullOrEmpty(fullMatchWords))
                     return wordsCounter;
+
+                if (containsMinimalLength < 3)
+                    containsMinimalLength = 3;
 
                 StringBuilder sb = new StringBuilder();
                 string word = "";
                 WordDefinition wordDefinition = null;
                 
                 //Non splittable words
-                foreach (var nswrd in opt.FullTextSearchables)
-                {
-                    if (nswrd.Contains(" ") || nswrd.Length < opt.SearchWordMinimalLength)
-                        continue;
+                foreach (var nswrd in fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= containsMinimalLength))
+                {                  
                     word = nswrd.ToLower();
                     wordDefinition = new WordDefinition() { CountInDocu = 1 };
                     wordsCounter[word] = wordDefinition;
                 }
 
-                if (String.IsNullOrEmpty(text))
+                if (String.IsNullOrEmpty(containsWords))
                     return wordsCounter;
-
-                //Support for previous versions without FullTextOnly
-                if (!opt.FullTextOnly && opt.SearchWordMinimalLength == 0)
-                {
-                    opt.FullTextOnly = true;
-                    opt.SearchWordMinimalLength = 2;
-                }
 
                 Action processWord = () =>
                 {
                     //We take all words, so we can later find even by email address jj@gmx.net ... we will need jj and gmx.net
-                    if (sb.Length > 0 && sb.Length >= opt.SearchWordMinimalLength)
+                    if (sb.Length > 0 && sb.Length >= containsMinimalLength)
                     {
                         word = sb.ToString().ToLower();
 
@@ -1132,13 +731,10 @@ namespace DBreeze.TextSearch
                         wrds.Add(word);
                         int i = 1;
 
-                        if (!opt.FullTextOnly)   //If equals to 0, we store only words for full text search
+                        while (word.Length - i >= containsMinimalLength)
                         {
-                            while (word.Length - i >= opt.SearchWordMinimalLength)
-                            {
-                                wrds.Add(word.Substring(i));
-                                i++;
-                            }
+                            wrds.Add(word.Substring(i));
+                            i++;
                         }
 
                         // System.Diagnostics.Debug.WriteLine("--------------");
@@ -1166,7 +762,7 @@ namespace DBreeze.TextSearch
                 int wordLen = 0;
                 int maximalWordLengthBeforeSplit = 50;
 
-                foreach (var c in text)
+                foreach (var c in containsWords)
                 {
                     //No words reviews (must be checked in outer systems)
                     if (c != ' ')
@@ -1186,31 +782,7 @@ namespace DBreeze.TextSearch
                         //Processing ready word
                         processWord();
                         wordLen = 0;
-                    }
-
-                    //---REVIEW ON START
-                    //if (c == '-' || c == '@')   //Complex names or email address inside
-                    //    continue;
-
-                    //if (Char.IsLetterOrDigit(c) || Char.IsSymbol(c))
-                    //{
-                    //    sb.Append(c);
-                    //    wordLen++;
-
-                    //    if (wordLen >= maximalWordLengthBeforeSplit)
-                    //    {
-                    //        //Processing ready word
-                    //        processWord();
-                    //        wordLen = 0;
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    //Processing ready word
-                    //    processWord();
-                    //    wordLen = 0;
-                    //}
-                    //---REVIEW ON STOP
+                    }                   
                 }
 
                 //Processing last word
@@ -1228,69 +800,69 @@ namespace DBreeze.TextSearch
         }
 
              
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="searchKeywords"></param>
-        /// <param name="useContainsLogic"></param>
-        /// <param name="wordsList"></param>
-        internal void WordsPrepare(string searchKeywords, bool useContainsLogic, ref HashSet<string> wordsList)
-        {
-            try
-            {
-                if (wordsList == null)
-                    wordsList = new HashSet<string>();
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="searchKeywords"></param>
+        ///// <param name="useContainsLogic"></param>
+        ///// <param name="wordsList"></param>
+        //internal void WordsPrepare(string searchKeywords, bool useContainsLogic, ref HashSet<string> wordsList)
+        //{
+        //    try
+        //    {
+        //        if (wordsList == null)
+        //            wordsList = new HashSet<string>();
 
-                if (!useContainsLogic)
-                {
-                    foreach (var wrd in searchKeywords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r=>r.Length >= 2))
-                        wordsList.Add(" " + wrd);
+        //        if (!useContainsLogic)
+        //        {
+        //            foreach (var wrd in searchKeywords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r=>r.Length >= 2))
+        //                wordsList.Add(" " + wrd);
 
-                    return;
-                }
+        //            return;
+        //        }
 
-                StringBuilder sb = new StringBuilder();               
-                string word = String.Empty;
+        //        StringBuilder sb = new StringBuilder();               
+        //        string word = String.Empty;
                 
-                //NO REVIEW
-                foreach (var c in searchKeywords)
-                {
-                    if (c == ' ')
-                    {
-                        if (sb.Length >= 2)
-                        {
-                            word = sb.ToString().ToLower();
-                            if (!wordsList.Contains(word))
-                                wordsList.Add(word);
-                        }
+        //        //NO REVIEW
+        //        foreach (var c in searchKeywords)
+        //        {
+        //            if (c == ' ')
+        //            {
+        //                if (sb.Length >= 2)
+        //                {
+        //                    word = sb.ToString().ToLower();
+        //                    if (!wordsList.Contains(word))
+        //                        wordsList.Add(word);
+        //                }
 
-                        if (sb.Length > 0)
-                            sb.Remove(0, sb.Length);
-                    }
-                    else
-                        sb.Append(c);
-                }
+        //                if (sb.Length > 0)
+        //                    sb.Remove(0, sb.Length);
+        //            }
+        //            else
+        //                sb.Append(c);
+        //        }
 
-                //Handling last word
-                {
-                    if (sb.Length >= 2)
-                    {
-                        word = sb.ToString().ToLower();
-                        if (!wordsList.Contains(word))
-                            wordsList.Add(word);
-                    }
+        //        //Handling last word
+        //        {
+        //            if (sb.Length >= 2)
+        //            {
+        //                word = sb.ToString().ToLower();
+        //                if (!wordsList.Contains(word))
+        //                    wordsList.Add(word);
+        //            }
 
-                    if (sb.Length > 0)
-                        sb.Remove(0, sb.Length);
-                }
+        //            if (sb.Length > 0)
+        //                sb.Remove(0, sb.Length);
+        //        }
 
-                return;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
+        //        return;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //}
 
         ///// <summary>
         ///// Contains logic

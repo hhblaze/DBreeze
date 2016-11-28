@@ -114,11 +114,6 @@ namespace DBreeze
             ///// <para>Mobile recommendations year 2015: 1000000</para>
             ///// </summary>
             //public int MaxCharsToBeProcessedPerRound = 10000000;
-
-            /// <summary>
-            /// Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
-            /// </summary>
-            public int MaxQuantityOfWordsToBeSearched = 10;
         }
 
         /// <summary>
