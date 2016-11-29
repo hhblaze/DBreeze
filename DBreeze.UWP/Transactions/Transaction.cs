@@ -1388,19 +1388,6 @@ namespace DBreeze.Transactions
             return tsh.GetDocumentsSearchables(this, tableName, documentIds);
         }
 
-        ///// <summary>
-        ///// Search text and returns documents (External document IDs), containing words or word parts
-        ///// </summary>
-        ///// <param name="tableName">DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-        ///// <param name="req">TextSearchRequest</param>
-        ///// <returns>TextSearchResponse</returns>
-        //public TextSearchResponse TextSearch(string tableName, TextSearchRequest req)
-        //{
-        //    if (tsh == null)
-        //        tsh = new TextSearchHandler(this);
-
-        //    return tsh.SearchTextInDocuments(tableName, req);
-        //}
 
         /// <summary>
         /// Returns TextSearchTable (word aligned bitmap index manager for the search table), allowing making
