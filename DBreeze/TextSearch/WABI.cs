@@ -243,9 +243,9 @@ namespace DBreeze.TextSearch
                 for (int j = 0; j < arraysToMerge.Count; j++)
                 {  
                     if (j == 0)
-                        res[i] = arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                        res[i] = arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
                     else
-                        res[i] |= arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                        res[i] |= arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
                 }
 
             }
@@ -273,9 +273,9 @@ namespace DBreeze.TextSearch
                 for (int j = 0; j < arraysToMerge.Count; j++)
                 {
                     if (j == 0)
-                        res[i] = arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                        res[i] = arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
                     else
-                        res[i] ^= arraysToMerge[j].Length < i ? (byte)0 : arraysToMerge[j][i];
+                        res[i] ^= arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
                 }                
             }
 
@@ -301,7 +301,7 @@ namespace DBreeze.TextSearch
 
             for (int i = 0; i < MaxLenght; i++)
             {
-                res[i] = (byte)((array1.Length < i ? (byte)0 : array1[i]) & ~(array2.Length < i ? (byte)0 : array2[i]));
+                res[i] = (byte)((array1.Length > i ? array1[i] : (byte)0) & ~(array2.Length > i ? array2[i] : (byte)0));
             }
 
             return res;
