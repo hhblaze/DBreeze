@@ -188,10 +188,18 @@ namespace DBreeze.TextSearch
         /// <param name="containsWords"></param>
         /// <param name="fullMatchWords"></param>
         /// <returns></returns>
-        public SBlock BlockAND(string containsWords, string fullMatchWords)
+        public SBlock BlockAND(string containsWords, string fullMatchWords="")
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
+
+            //SBlock sb = new BlockAND()
+            //{
+            //    _tsm = this,
+            //    InternalBlockOperation = SBlock.eOperation.AND,
+            //    BlockId = this.cntBlockId++,
+            //    IsLogicalBlock = false
+            //};
 
             SBlock sb = new SBlock()
             {
@@ -219,6 +227,14 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public SBlock BlockAND(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
+            //SBlock sb = new BlockAND()
+            //{
+            //    _tsm = this,
+            //    InternalBlockOperation = SBlock.eOperation.AND,
+            //    BlockId = this.cntBlockId++,
+            //    IsLogicalBlock = false
+            //};
+
             SBlock sb = new SBlock()
             {
                 _tsm = this,
@@ -243,10 +259,18 @@ namespace DBreeze.TextSearch
         /// <param name="containsWords"></param>
         /// <param name="fullMatchWords"></param>
         /// <returns></returns>
-        public SBlock BlockOR(string containsWords, string fullMatchWords)
+        public SBlock BlockOR(string containsWords, string fullMatchWords="")
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
+
+            //SBlock sb = new BlockOR()
+            //{
+            //    _tsm = this,
+            //    InternalBlockOperation = SBlock.eOperation.OR,
+            //    BlockId = this.cntBlockId++,
+            //    IsLogicalBlock = false
+            //};
 
             SBlock sb = new SBlock()
             {
@@ -255,6 +279,7 @@ namespace DBreeze.TextSearch
                 BlockId = this.cntBlockId++,
                 IsLogicalBlock = false
             };
+
             Blocks.Add(sb.BlockId, sb);
             
             this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref sb.ParsedWords);
@@ -273,10 +298,15 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public SBlock BlockOR(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
-            //if (fullMatchWords == null)
-            //    throw new Exception("DBreeze.Exceptions TextSearchtable.BlockOR + fullMatchWords is null");
-            //if (fullMatchWords == null)
-            //    throw new Exception("DBreeze.Exceptions TextSearchtable.BlockOR + containsWords is null");
+
+            //SBlock sb = new BlockOR()
+            //{
+            //    _tsm = this,
+            //    InternalBlockOperation = SBlock.eOperation.OR,
+            //    BlockId = this.cntBlockId++,
+            //    IsLogicalBlock = false
+            //};
+
             SBlock sb = new SBlock()
             {
                 _tsm = this,
@@ -284,6 +314,7 @@ namespace DBreeze.TextSearch
                 BlockId = this.cntBlockId++,
                 IsLogicalBlock = false
             };
+
             Blocks.Add(sb.BlockId, sb);
 
             this.WordsPrepare(fullMatchWords, true, ref sb.ParsedWords);
@@ -303,6 +334,10 @@ namespace DBreeze.TextSearch
         void WordsPrepare(IEnumerable<string> searchKeywords, bool fullMatch, ref Dictionary<string,bool> wordsList)
         {
             string word = "";
+
+            if (searchKeywords == null || searchKeywords.Count() == 0)
+                return;
+
             foreach (var wrd in searchKeywords)
             {   
                 word = wrd.ToLower();

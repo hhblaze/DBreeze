@@ -85,7 +85,6 @@
     <Compile Include="TextSearch\TextDeferredIndexer.cs" />
     <Compile Include="TextSearch\SBlock.cs" />
     <Compile Include="TextSearch\TextSearchHandler.cs" />
-    <Compile Include="TextSearch\TextSearchOptions.cs" />
     <Compile Include="TextSearch\TextSearchTable.cs" />
     <Compile Include="TextSearch\WABI.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />

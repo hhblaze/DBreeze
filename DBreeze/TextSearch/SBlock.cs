@@ -13,6 +13,37 @@ using DBreeze.DataTypes;
 
 namespace DBreeze.TextSearch
 {
+    //    public class BlockAND : SBlock
+    //    {
+    //        public BlockAND()
+    //        {
+    //            this.TransBlockOperation = eOperation.AND; 
+    //        }
+    //    }
+
+    //    public class BlockOR : SBlock
+    //    {
+    //        public BlockOR()
+    //        {
+    //            this.TransBlockOperation = eOperation.OR;
+    //        }
+    //    }
+
+    //    internal class BlockXOR : SBlock
+    //    {
+    //        public BlockXOR()
+    //        {
+    //            this.TransBlockOperation = eOperation.XOR;
+    //        }
+    //    }
+
+    //    internal class BlockEXCLUDE : SBlock
+    //    {
+    //        public BlockEXCLUDE()
+    //        {
+    //            this.TransBlockOperation = eOperation.EXCLUDE;
+    //        }
+    //    }
     /// <summary>
     /// Text search block
     /// </summary>
@@ -46,7 +77,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Word, fullMatch  
         /// </summary>
-        internal Dictionary<string,bool> ParsedWords = new Dictionary<string, bool>();
+        internal Dictionary<string, bool> ParsedWords = new Dictionary<string, bool>();
 
         /// <summary>
         /// 
@@ -60,7 +91,7 @@ namespace DBreeze.TextSearch
         /// False is a pure block added via TextSearchManager
         /// </summary>
         internal bool IsLogicalBlock = true;
-        
+
         /// <summary>
         /// Internal in-block operation between words.
         /// Generation-term
@@ -79,6 +110,29 @@ namespace DBreeze.TextSearch
         {
             if (_tsm == null)
                 throw new Exception("DBreeze.Exception: search block must be added via TextSearchMangager");
+
+            //SBlock b = null;
+            //switch (operation)
+            //{
+            //    case eOperation.AND:
+            //        b = new BlockAND();
+            //        break;
+            //    case eOperation.OR:
+            //        b = new BlockOR();
+            //        break;
+            //    case eOperation.XOR:
+            //        b = new BlockXOR();
+            //        break;
+            //    case eOperation.EXCLUDE:
+            //        b = new BlockEXCLUDE();
+            //        break; 
+            //}
+
+            //b._tsm = this._tsm;
+            //b.BlockId = this._tsm.cntBlockId++;
+            //b.LeftBlockId = BlockId;
+            //b.RightBlockId = block.BlockId;
+
 
             SBlock b = new SBlock()
             {
@@ -101,7 +155,7 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public SBlock AND(SBlock block)
         {
-            return this.CreateBlock(block, eOperation.AND);           
+            return this.CreateBlock(block, eOperation.AND);
         }
 
         /// <summary>
@@ -146,7 +200,7 @@ namespace DBreeze.TextSearch
 
             //New Logical block is always a result of operation between 2 blocks
             //Usual block is added via TextSearchManager
-            
+
             var myArray = this.GetArrays();
             if (myArray.Count != 0)
             {
@@ -192,7 +246,7 @@ namespace DBreeze.TextSearch
             {
                 //If we change operation "sign" from AND to smth.else, we need to bring our left-right 
                 //arrays to 1 element, to perform operations between them
-                 
+
                 if (la.Count > 1)
                 {
                     mrg = WABI.MergeByAndLogic(la);
@@ -216,16 +270,16 @@ namespace DBreeze.TextSearch
             switch (this.TransBlockOperation)
             {
                 case eOperation.AND:
-                    if(la == null || ra == null || la.Count == 0 || ra.Count == 0)
-                        return foundArrays;                  
+                    if (la == null || ra == null || la.Count == 0 || ra.Count == 0)
+                        return foundArrays;
                     la.AddRange(ra);
                     this.foundArrays = la;
-                    return this.foundArrays;   
-                                     
+                    return this.foundArrays;
+
                 case eOperation.OR:
                     la.AddRange(ra);
                     mrg = WABI.MergeByOrLogic(la);
-                    if(mrg != null)
+                    if (mrg != null)
                         this.foundArrays.Add(mrg);
                     return this.foundArrays;
 
@@ -237,7 +291,7 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.EXCLUDE:
-                    mrg = WABI.MergeByExcludeLogic(la.FirstOrDefault(),ra.FirstOrDefault());
+                    mrg = WABI.MergeByExcludeLogic(la.FirstOrDefault(), ra.FirstOrDefault());
                     if (mrg != null)
                         this.foundArrays.Add(mrg);
                     return this.foundArrays;
@@ -283,7 +337,7 @@ namespace DBreeze.TextSearch
                             echoes = new List<byte[]>();
                             foreach (var conw in this._tsm.PureWords[wrd.Key].StartsWith)   //Adding all pure word StartsWith echoes
                                 if (this._tsm.RealWords.ContainsKey(conw))
-                                    echoes.Add(this._tsm.RealWords[conw].wahArray);                            
+                                    echoes.Add(this._tsm.RealWords[conw].wahArray);
 
                             if (this._tsm.RealWords.ContainsKey(wrd.Key))  //And word itself
                                 echoes.Add(this._tsm.RealWords[wrd.Key].wahArray);
@@ -309,10 +363,10 @@ namespace DBreeze.TextSearch
                             echoes = new List<byte[]>();
                             foreach (var conw in this._tsm.PureWords[wrd.Key].StartsWith)   //Adding all pure word StartsWith echoes
                                 if (this._tsm.RealWords.ContainsKey(conw))
-                                    echoes.Add(this._tsm.RealWords[conw].wahArray);                            
+                                    echoes.Add(this._tsm.RealWords[conw].wahArray);
 
                             if (this._tsm.RealWords.ContainsKey(wrd.Key))  //And word itself
-                                echoes.Add(this._tsm.RealWords[wrd.Key].wahArray);                            
+                                echoes.Add(this._tsm.RealWords[wrd.Key].wahArray);
 
                             if (echoes.Count > 0)
                                 this.foundArrays.Add(WABI.MergeByOrLogic(echoes));
@@ -327,6 +381,6 @@ namespace DBreeze.TextSearch
                 this.foundArrays = new List<byte[]> { WABI.MergeByOrLogic(this.foundArrays) };
 
         }//eo GetArrays
-        
+
     }
 }

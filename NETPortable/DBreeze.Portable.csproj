@@ -42,9 +42,6 @@
     <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
       <Link>TextSearch\TextSearchHandler.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\TextSearch\TextSearchOptions.cs">
-      <Link>TextSearch\TextSearchOptions.cs</Link>
-    </Compile>
     <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs">
       <Link>TextSearch\TextSearchTable.cs</Link>
     </Compile>
