@@ -13,41 +13,83 @@ using DBreeze.DataTypes;
 
 namespace DBreeze.TextSearch
 {
-    //    public class BlockAND : SBlock
-    //    {
-    //        public BlockAND()
-    //        {
-    //            this.TransBlockOperation = eOperation.AND; 
-    //        }
-    //    }
+    /// <summary>
+    /// 
+    /// </summary>
+    public class BlockAND : SBlock
+    {
+        internal BlockAND()
+        {
+            //this.TransBlockOperation = eOperation.AND;
+        }
 
-    //    public class BlockOR : SBlock
-    //    {
-    //        public BlockOR()
-    //        {
-    //            this.TransBlockOperation = eOperation.OR;
-    //        }
-    //    }
+        /// <summary>
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.BlockAND("pill").OR(new DBreeze.TextSearch.BlockAND("blue", "#LNDDE"))
+        /// .GetDocumentIDs
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        public BlockAND(string containsWords, string fullMatchWords = "")
+            :this()
+        {
+            this._containsWords = containsWords;
+            this._fullMatchWords = fullMatchWords;
+            this.InternalBlockOperation = SBlock.eOperation.AND;
+            this.IsLogicalBlock = false;
+        }
+    }
 
-    //    internal class BlockXOR : SBlock
-    //    {
-    //        public BlockXOR()
-    //        {
-    //            this.TransBlockOperation = eOperation.XOR;
-    //        }
-    //    }
+    /// <summary>
+    /// 
+    /// </summary>
+    public class BlockOR : SBlock
+    {
+        internal BlockOR()
+        {
+            //this.TransBlockOperation = eOperation.OR;
+        }
 
-    //    internal class BlockEXCLUDE : SBlock
-    //    {
-    //        public BlockEXCLUDE()
-    //        {
-    //            this.TransBlockOperation = eOperation.EXCLUDE;
-    //        }
-    //    }
+        /// <summary>
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.BlockAND("pill").OR(new DBreeze.TextSearch.BlockOR("blue red", "#LNDDE"))
+        /// .GetDocumentIDs
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        public BlockOR(string containsWords, string fullMatchWords = "")
+            : this()
+        {
+            this._containsWords = containsWords;
+            this._fullMatchWords = fullMatchWords;
+            this.InternalBlockOperation = SBlock.eOperation.OR;
+            this.IsLogicalBlock = false;
+        }
+    }
+
+    internal class BlockXOR : SBlock
+    {
+        public BlockXOR()
+        {
+            //this.TransBlockOperation = eOperation.XOR;
+        }
+    }
+
+    internal class BlockEXCLUDE : SBlock
+    {
+        public BlockEXCLUDE()
+        {
+            //this.TransBlockOperation = eOperation.EXCLUDE;
+        }
+    }
+
+
     /// <summary>
     /// Text search block
     /// </summary>
-    public class SBlock
+    public abstract class SBlock
     {
         internal enum eOperation
         {
@@ -70,6 +112,9 @@ namespace DBreeze.TextSearch
             NONE
         }
 
+        internal string _containsWords = "";
+        internal string _fullMatchWords = "";
+
         /// <summary>
         /// TextSearchManager
         /// </summary>
@@ -83,8 +128,8 @@ namespace DBreeze.TextSearch
         /// 
         /// </summary>
         internal int BlockId = 0;
-        internal int LeftBlockId = 0;
-        internal int RightBlockId = 0;
+        internal int LeftBlockId = -1;
+        internal int RightBlockId = -1;
         internal eOperation TransBlockOperation = eOperation.OR;
         /// <summary>
         /// This block is a result of operation between 2 other blocks.
@@ -109,39 +154,53 @@ namespace DBreeze.TextSearch
         SBlock CreateBlock(SBlock block, eOperation operation)
         {
             if (_tsm == null)
-                throw new Exception("DBreeze.Exception: search block must be added via TextSearchMangager");
+                throw new Exception("DBreeze.Exception: first search block must be added via TextSearchTable");
 
-            //SBlock b = null;
-            //switch (operation)
-            //{
-            //    case eOperation.AND:
-            //        b = new BlockAND();
-            //        break;
-            //    case eOperation.OR:
-            //        b = new BlockOR();
-            //        break;
-            //    case eOperation.XOR:
-            //        b = new BlockXOR();
-            //        break;
-            //    case eOperation.EXCLUDE:
-            //        b = new BlockEXCLUDE();
-            //        break; 
-            //}
-
-            //b._tsm = this._tsm;
-            //b.BlockId = this._tsm.cntBlockId++;
-            //b.LeftBlockId = BlockId;
-            //b.RightBlockId = block.BlockId;
-
-
-            SBlock b = new SBlock()
+            if (block._tsm == null)
             {
-                _tsm = this._tsm,
-                BlockId = this._tsm.cntBlockId++,
-                LeftBlockId = this.BlockId,
-                RightBlockId = block.BlockId,
-                TransBlockOperation = operation
-            };
+                //Creating real block
+                block._tsm = this._tsm;
+                block.BlockId = this._tsm.cntBlockId++;
+                this._tsm.WordsPrepare(block._fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref block.ParsedWords);
+                this._tsm.WordsPrepare(block._containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), false, ref block.ParsedWords);
+
+                this._tsm.toComputeWordsOrigin = true;
+                this._tsm.Blocks[block.BlockId] = block;
+            }
+            
+            //Creating logical block
+
+            SBlock b = null;
+            switch (operation)
+            {
+                case eOperation.AND:
+                    b = new BlockAND();
+                    break;
+                case eOperation.OR:
+                    b = new BlockOR();
+                    break;
+                case eOperation.XOR:
+                    b = new BlockXOR();
+                    break;
+                case eOperation.EXCLUDE:
+                    b = new BlockEXCLUDE();
+                    break;             
+            }
+
+            b._tsm = this._tsm;
+            b.BlockId = this._tsm.cntBlockId++;
+            b.LeftBlockId = BlockId;
+            b.RightBlockId = block.BlockId;
+            b.TransBlockOperation = operation;
+
+            //SBlock b = new SBlock()
+            //{
+            //    _tsm = this._tsm,
+            //    BlockId = this._tsm.cntBlockId++,
+            //    LeftBlockId = this.BlockId,
+            //    RightBlockId = block.BlockId,
+            //    TransBlockOperation = operation
+            //};
 
             this._tsm.Blocks[b.BlockId] = b;
 
@@ -149,7 +208,8 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
-        /// Returns last added block
+        /// Returns last added block. Can be added existing block or new block in format
+        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
@@ -159,7 +219,8 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
-        /// Returns last added block
+        /// Returns last added block. Can be added existing block or new block in format
+        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
@@ -169,7 +230,8 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
-        /// Returns last added block
+        /// Returns last added block. Can be added existing block or new block in format
+        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
@@ -179,7 +241,8 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
-        /// Returns last added block
+        /// Returns last added block. Can be added existing block or new block in format
+        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>

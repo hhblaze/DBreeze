@@ -1399,9 +1399,7 @@ namespace DBreeze.Transactions
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
 
-            TextSearchTable w = new TextSearchTable();
-            w._tran = this;
-            w._tableName = tableName;
+            TextSearchTable w = new TextSearchTable(this, tableName);
 
             return w;
         }

@@ -21,8 +21,8 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// 
         /// </summary>
-        internal Transactions.Transaction _tran = null;
-        internal string _tableName = String.Empty;
+        Transactions.Transaction _tran = null;
+        string _tableName = String.Empty;
          
         /// <summary>
         /// 
@@ -32,6 +32,9 @@ namespace DBreeze.TextSearch
         /// 
         /// </summary>
         public bool SearchCriteriaIsNoisy = false;
+
+
+
 
         internal NestedTable tbWords = null;
         internal NestedTable tbBlocks = null;
@@ -56,7 +59,21 @@ namespace DBreeze.TextSearch
         internal Dictionary<int, SBlock> Blocks = new Dictionary<int, SBlock>();
         internal int cntBlockId = 1;
 
-        bool toComputeWordsOrigin = true; 
+        internal bool toComputeWordsOrigin = true;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="tableName"></param>
+        public TextSearchTable(Transactions.Transaction tran, string tableName)
+        {
+            if (tran == null || String.IsNullOrEmpty(tableName))
+                throw new Exception("DBreeze.TextSearch.TextSearchTable constructor: transaction or tableName is not supplied");
+
+            this._tran = tran;
+            this._tableName = tableName;
+        }
 
         /// <summary>
         /// 
@@ -179,14 +196,17 @@ namespace DBreeze.TextSearch
 
             toComputeWordsOrigin = false;
         }
-        
+
 
 
         /// <summary>
-        /// 
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords"></param>
-        /// <param name="fullMatchWords"></param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
         public SBlock BlockAND(string containsWords, string fullMatchWords="")
         {
@@ -201,13 +221,15 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new SBlock()
+            SBlock sb = new BlockAND()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.AND,
                 BlockId = this.cntBlockId++,
                 IsLogicalBlock = false
             };
+
+
 
             Blocks.Add(sb.BlockId, sb);
             
@@ -220,10 +242,13 @@ namespace DBreeze.TextSearch
 
 
         /// <summary>
-        /// 
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords"></param>
-        /// <param name="fullMatchWords"></param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
         public SBlock BlockAND(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
@@ -235,7 +260,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new SBlock()
+            SBlock sb = new BlockAND()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.AND,
@@ -254,10 +279,13 @@ namespace DBreeze.TextSearch
 
 
         /// <summary>
-        /// 
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords"></param>
-        /// <param name="fullMatchWords"></param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
         public SBlock BlockOR(string containsWords, string fullMatchWords="")
         {
@@ -272,7 +300,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new SBlock()
+            SBlock sb = new BlockOR()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.OR,
@@ -291,10 +319,13 @@ namespace DBreeze.TextSearch
 
 
         /// <summary>
-        /// 
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords"></param>
-        /// <param name="fullMatchWords"></param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
         public SBlock BlockOR(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
@@ -307,7 +338,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new SBlock()
+            SBlock sb = new BlockOR()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.OR,
@@ -331,7 +362,7 @@ namespace DBreeze.TextSearch
         /// <param name="searchKeywords"></param>
         /// <param name="fullMatch"></param>
         /// <param name="wordsList"></param>
-        void WordsPrepare(IEnumerable<string> searchKeywords, bool fullMatch, ref Dictionary<string,bool> wordsList)
+        internal void WordsPrepare(IEnumerable<string> searchKeywords, bool fullMatch, ref Dictionary<string,bool> wordsList)
         {
             string word = "";
 
