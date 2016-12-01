@@ -16,22 +16,22 @@ namespace DBreeze.TextSearch
     /// <summary>
     /// 
     /// </summary>
-    public class BlockAND : SBlock
+    public class BlockAnd : SBlock
     {
-        internal BlockAND()
+        internal BlockAnd()
         {
-            //this.TransBlockOperation = eOperation.AND;
+            
         }
 
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAND("pill").OR(new DBreeze.TextSearch.BlockAND("blue", "#LNDDE"))
+        /// tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockAnd("blue", "#LNDDE"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-        public BlockAND(string containsWords, string fullMatchWords = "")
+        public BlockAnd(string containsWords, string fullMatchWords = "")
             :this()
         {
             this._containsWords = containsWords;
@@ -44,22 +44,22 @@ namespace DBreeze.TextSearch
     /// <summary>
     /// 
     /// </summary>
-    public class BlockOR : SBlock
+    public class BlockOr : SBlock
     {
-        internal BlockOR()
+        internal BlockOr()
         {
-            //this.TransBlockOperation = eOperation.OR;
+           
         }
 
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAND("pill").OR(new DBreeze.TextSearch.BlockOR("blue red", "#LNDDE"))
+        /// tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockOr("blue red", "#LNDDE"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-        public BlockOR(string containsWords, string fullMatchWords = "")
+        public BlockOr(string containsWords, string fullMatchWords = "")
             : this()
         {
             this._containsWords = containsWords;
@@ -73,7 +73,7 @@ namespace DBreeze.TextSearch
     {
         public BlockXOR()
         {
-            //this.TransBlockOperation = eOperation.XOR;
+          
         }
     }
 
@@ -81,7 +81,7 @@ namespace DBreeze.TextSearch
     {
         public BlockEXCLUDE()
         {
-            //this.TransBlockOperation = eOperation.EXCLUDE;
+           
         }
     }
 
@@ -174,10 +174,10 @@ namespace DBreeze.TextSearch
             switch (operation)
             {
                 case eOperation.AND:
-                    b = new BlockAND();
+                    b = new BlockAnd();
                     break;
                 case eOperation.OR:
-                    b = new BlockOR();
+                    b = new BlockOr();
                     break;
                 case eOperation.XOR:
                     b = new BlockXOR();
@@ -207,46 +207,95 @@ namespace DBreeze.TextSearch
             return b;
         }
 
+
+        /// <summary>
+        /// Adding new logical block (And or Or, depending upon parameter blockAnd)
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="blockAnd">default value is true, indicating and block</param>
+        /// <returns></returns>
+        public SBlock And(string containsWords, string fullMatchWords = "", bool blockAnd=true)
+        {
+            return this.CreateBlock(blockAnd ? (SBlock)(new BlockAnd(containsWords, fullMatchWords)) : (new BlockOr(containsWords, fullMatchWords)), eOperation.AND);
+        }
+        /// <summary>
+        /// Adding new logical block (And or Or, depending upon parameter blockAnd)
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="blockAnd">default value is true, indicating and block</param>
+        /// <returns></returns>
+        public SBlock Or(string containsWords, string fullMatchWords = "", bool blockAnd = true)
+        {
+            return this.CreateBlock(blockAnd ? (SBlock)(new BlockAnd(containsWords, fullMatchWords)) : (new BlockOr(containsWords, fullMatchWords)), eOperation.OR);
+        }
+        /// <summary>
+        /// Adding new logical block (And or Or, depending upon parameter blockAnd)
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="blockAnd">default value is true, indicating and block</param>
+        /// <returns></returns>
+        public SBlock Xor(string containsWords, string fullMatchWords = "", bool blockAnd = true)
+        {
+            return this.CreateBlock(blockAnd ? (SBlock)(new BlockAnd(containsWords, fullMatchWords)) : (new BlockOr(containsWords, fullMatchWords)), eOperation.XOR);
+        }
+        /// <summary>
+        /// Adding new logical block (And or Or, depending upon parameter blockAnd)
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="blockAnd">default value is true, indicating and block</param>
+        /// <returns></returns>
+        public SBlock Exclude(string containsWords, string fullMatchWords = "", bool blockAnd = true)
+        {
+            return this.CreateBlock(blockAnd ? (SBlock)(new BlockAnd(containsWords, fullMatchWords)) : (new BlockOr(containsWords, fullMatchWords)), eOperation.EXCLUDE);
+        }
+
+
+
         /// <summary>
         /// Returns last added block. Can be added existing block or new block in format
-        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
+        /// new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        public SBlock AND(SBlock block)
+        public SBlock And(SBlock block)
         {
             return this.CreateBlock(block, eOperation.AND);
         }
 
+
         /// <summary>
         /// Returns last added block. Can be added existing block or new block in format
-        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
+        /// new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        public SBlock OR(SBlock block)
+        public SBlock Or(SBlock block)
         {
             return this.CreateBlock(block, eOperation.OR);
         }
 
         /// <summary>
         /// Returns last added block. Can be added existing block or new block in format
-        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
+        /// new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        public SBlock XOR(SBlock block)
+        public SBlock Xor(SBlock block)
         {
             return this.CreateBlock(block, eOperation.XOR);
         }
 
         /// <summary>
         /// Returns last added block. Can be added existing block or new block in format
-        /// new DBreeze.TextSearch.BlockAND(... or new DBreeze.TextSearch.BlockOR(
+        /// new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
         /// </summary>
         /// <param name="block"></param>
         /// <returns></returns>
-        public SBlock EXCLUDE(SBlock block)
+        public SBlock Exclude(SBlock block)
         {
             return this.CreateBlock(block, eOperation.EXCLUDE);
         }

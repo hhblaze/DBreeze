@@ -197,23 +197,36 @@ namespace DBreeze.TextSearch
             toComputeWordsOrigin = false;
         }
 
-
+        /// <summary>
+        /// Generates a logical block: 
+        /// var tsm = tran.TextSearch("MyTextSearchTable");
+        /// tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+        /// .GetDocumentIDs
+        /// </summary>
+        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="blockAnd">default value is true, indicating BlockAnd</param>
+        /// <returns></returns>
+        public SBlock Block(string containsWords, string fullMatchWords = "", bool blockAnd = true)
+        {
+            return blockAnd ? BlockAnd(containsWords, fullMatchWords) : BlockOr(containsWords, fullMatchWords);
+        }
 
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
-        public SBlock BlockAND(string containsWords, string fullMatchWords="")
+        public SBlock BlockAnd(string containsWords, string fullMatchWords="")
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
 
-            //SBlock sb = new BlockAND()
+            //SBlock sb = new BlockAnd()
             //{
             //    _tsm = this,
             //    InternalBlockOperation = SBlock.eOperation.AND,
@@ -221,7 +234,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new BlockAND()
+            SBlock sb = new BlockAnd()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.AND,
@@ -244,15 +257,15 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
-        public SBlock BlockAND(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
+        public SBlock BlockAnd(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
-            //SBlock sb = new BlockAND()
+            //SBlock sb = new BlockAnd()
             //{
             //    _tsm = this,
             //    InternalBlockOperation = SBlock.eOperation.AND,
@@ -260,7 +273,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new BlockAND()
+            SBlock sb = new BlockAnd()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.AND,
@@ -281,18 +294,18 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
-        public SBlock BlockOR(string containsWords, string fullMatchWords="")
+        public SBlock BlockOr(string containsWords, string fullMatchWords="")
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
 
-            //SBlock sb = new BlockOR()
+            //SBlock sb = new BlockOr()
             //{
             //    _tsm = this,
             //    InternalBlockOperation = SBlock.eOperation.OR,
@@ -300,7 +313,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new BlockOR()
+            SBlock sb = new BlockOr()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.OR,
@@ -321,16 +334,16 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAND("pill").OR(tsm.BlockOR("blue red"))
+        /// tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
-        public SBlock BlockOR(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
+        public SBlock BlockOr(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
         {
 
-            //SBlock sb = new BlockOR()
+            //SBlock sb = new BlockOr()
             //{
             //    _tsm = this,
             //    InternalBlockOperation = SBlock.eOperation.OR,
@@ -338,7 +351,7 @@ namespace DBreeze.TextSearch
             //    IsLogicalBlock = false
             //};
 
-            SBlock sb = new BlockOR()
+            SBlock sb = new BlockOr()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.OR,
