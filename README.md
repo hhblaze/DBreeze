@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Documentation/Dbreeze.Logo1.JPG) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze build-1.079%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze build-1.080%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
@@ -49,6 +49,7 @@ Key features:
 - Nested / Fractal tables which can reside inside of master tables values.
 - Incremental backup/restore option.
 - Integrated text-search subsystem (full-text/partial).
+- Fast multi-parameter search subsystem with powerful query possibilities.
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 hhblaze@gmail.com
