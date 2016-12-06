@@ -4,6 +4,564 @@
         <name>DBreeze</name>
     </assembly>
     <members>
+        <member name="T:DBreeze.TextSearch.BlockAnd">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.BlockAnd.#ctor(System.String,System.String)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockAnd("blue", "#LNDDE"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        </member>
+        <member name="T:DBreeze.TextSearch.BlockOr">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.BlockOr.#ctor(System.String,System.String)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockOr("blue red", "#LNDDE"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        </member>
+        <member name="T:DBreeze.TextSearch.SBlock">
+            <summary>
+            Text search block
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.AND">
+            <summary>
+            Possible in and between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.OR">
+            <summary>
+            Possible in and between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.XOR">
+            <summary>
+            Possible only between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.EXCLUDE">
+            <summary>
+            Possible only between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock._tsm">
+            <summary>
+            TextSearchManager
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.ParsedWords">
+            <summary>
+            Word, fullMatch  
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.BlockId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.IsLogicalBlock">
+            <summary>
+            This block is a result of operation between 2 other blocks.
+            False is a pure block added via TextSearchManager
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.InternalBlockOperation">
+            <summary>
+            Internal in-block operation between words.
+            Generation-term
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.foundArrays">
+            <summary>
+            Generation-term
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.And(System.String,System.String,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Or(System.String,System.String,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Xor(System.String,System.String,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Exclude(System.String,System.String,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.And(DBreeze.TextSearch.SBlock)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Or(DBreeze.TextSearch.SBlock)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Xor(DBreeze.TextSearch.SBlock)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Exclude(DBreeze.TextSearch.SBlock)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.GetDocumentIDs">
+            <summary>
+            IEnumerable returning External GetDocumentIDs
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.GetArrays">
+            <summary>
+            Universal function resulting final one/many arrays (in AND) and one array in (OR, XOR, EXCLUDE)
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.GetPureBlockArrays">
+            <summary>
+            Fills up foundArrays for the current block. If logic is And and word is not found can clear already array on that level.
+            Concenrs only pure (not logical) blocks
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler">
+            <summary>
+            New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">
+            <summary>
+            Internal search-table structure.       
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.e2i">
+            <summary>
+            External document index to internal - 1. Key byte[], Value int
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.i2e">
+            <summary>
+            Internal document index to external - 2. Key int, Value byte[]
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.srch">
+            <summary>
+            Searchables to insert - 3. internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
+            Insert always compares newly intended with current and if no changes exits. 
+            Indexer replaces new with current.
+            itbls.Value.ChangedDocIds contains IDs of changed docs per search table
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.blocks">
+            <summary>
+            Key 10: [uint,byte[]] where K is BlockID[uint] (1000 words per block), Value is GzippedAndProtobufed Dictionary of [uint, byte[]] where K is ID of the word in Key2 and value its WAH reserved (init reservation 100KB per block)            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.currentBlock">
+            <summary>
+            Key 11: [int] - current blockNumber
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.numberInBlock">
+            <summary>
+            Key 12: [int] used number in the block
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.words">
+            <summary>
+            Key 20 : [string,byte[]] NestedTable(Index to search by words)
+            <para>Where Key: string - word</para>
+            <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.itbls">
+            <summary>
+            Registering all search-tables mutated during transaction
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetDocumentsSearchables(DBreeze.Transactions.Transaction,System.String,System.Collections.Generic.HashSet{System.Byte[]})">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+            <param name="documentIDs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+            <param name="documentId"></param>
+            <param name="containsWords"></param>
+            <param name="fullMatchWords"></param>
+            <param name="deferredIndexing"></param>
+            <param name="containsMinimalLength"></param>
+            <param name="iMode"></param>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.BlockId">
+            <summary>
+            Wah2 block id
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.NumberInBlock">
+            <summary>
+            Number in Wah2 block
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.Processed">
+            <summary>
+            Processed
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.wahArray">
+            <summary>
+            Unzipped WABI
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.BeforeCommit">
+            <summary>
+            Started only in case if InsertWasPerformed in deffered or not deffered way
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.AfterCommit">
+            <summary>
+             Started only in case if InsertWasPerformed in deffered or not deffered way
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing(DBreeze.Transactions.Transaction,System.Collections.Generic.Dictionary{System.String,DBreeze.TextSearch.TextSearchHandler.ITS})">
+            <summary>
+            itbls and transaction must be supplied, to make it working from outside
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[])">
+            <summary>
+            This function accepts old value of searchables for one document and new value,
+            decides what must be Removed (par1) and what should be Added (par2)
+            </summary>
+            <param name="oldtext"></param>
+            <param name="newtext"></param>
+            <returns>List 2remove, List 2add</returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String)">
+            <summary>
+            Converter from searchbales to byte[]
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[])">
+            <summary>
+            Converter from byte[] searchables.
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordDefinition">
+            <summary>
+            
+            </summary>        
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,System.String,System.Int32)">
+            <summary>
+            Returns null in case of notfound anything or what ever
+            </summary>
+            <param name="containsWords"></param>
+            <param name="fullMatchWords"></param>
+            <param name="containsMinimalLength"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchTable">
+            <summary>
+            Manager for word aligned bitmap indexes
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable._tran">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.NoisyQuantity">
+            <summary>
+            Default value is 1000
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.SearchCriteriaIsNoisy">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.PureWords">
+            <summary>
+            Second preparation layer after parsing. After this layer we grab words from db and put into real words
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.PureWordDef.StartsWith">
+            <summary>
+            In case if word must be searched using contains logic in db can be StartsWith echoes
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.#ctor(DBreeze.Transactions.Transaction,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.ComputeWordsOrigin">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.Block(System.String,System.String,System.Boolean)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating BlockAnd</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.String,System.String)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.String,System.String)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.WordsPrepare(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Collections.Generic.Dictionary{System.String,System.Boolean}@)">
+            <summary>
+            
+            </summary>
+            <param name="searchKeywords"></param>
+            <param name="fullMatch"></param>
+            <param name="wordsList"></param>
+        </member>
+        <member name="T:DBreeze.TextSearch.WABI">
+            <summary>
+            Word aligned bitmap index
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.#ctor(System.Byte[])">
+            <summary>
+            Must be supplied CompressedByteArray taken from GetCompressedByteArray function
+            </summary>
+            <param name="array"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.GetUncompressedByteArray">
+            <summary>
+            Working byte[]
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.GetCompressedByteArray">
+            <summary>
+            With extra protocol definition, ready for save into DB
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Add(System.Int32,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Resize(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="len"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Contains(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByAndLogic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using AND logic: 1 and 1 = 1; 1 and 0 = 0; 0 and 0 = 0
+            </summary>
+            <param name="arraysToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByOrLogic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using OR logic: 1or1 = 1or0 = 1; 0or0 = 0
+            </summary>
+            <param name="arraysToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByXorLogic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using XOR logic: 1xor1 = 0; 0xor0 = 0; 1xor0 = 1
+            </summary>
+            <param name="arraysToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByExcludeLogic(System.Byte[],System.Byte[])">
+            <summary>
+            Using EXCLUDE logic: 1notin1 = 0; 1notin0 = 1; 0notin0 = 0; 0notin1 = 0;
+            </summary>
+            <param name="array1"></param>
+            <param name="array2"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.TextSearch.WABI.ExistsInDB">
+            <summary>
+            Technical if already in DB
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Returns last added documents first
+            </summary>
+            <param name="indexesToCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.TextSearch_OR_logic(System.Collections.Generic.List{System.Byte[]},System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="indexesToCheck"></param>
+            <param name="maximalReturnQuantity"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
+            <summary>
+            TextDeferredIndexer
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Dispose">
+            <summary>
+            Disposing
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Add tables and their InternalDocumentIDs for paraller indexing
+            </summary>
+            <param name="defferedDocIds"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.StartDefferedIndexing">
+            <summary>
+            Runs Indexer. Only one instance is allowed
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Indexer">
+            <summary>
+            Indexer self
+            </summary>
+        </member>
         <member name="T:DBreeze.DataStructures.DataAsTree">
             <summary>
             Ierarchical DataStructure. Any node can have subnodes and own binary content
@@ -1208,11 +1766,6 @@
             <summary>
             Search Index setting. Reservation block growth size
             <para>Mobile recommendations year 2015: 1000</para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MaxQuantityOfWordsToBeSearched">
-            <summary>
-            Default is 10. MaxQuantityOfWordsToBeSearched via SearchDocumentSpace
             </summary>
         </member>
         <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfig">
@@ -3448,344 +4001,6 @@
             Next 3 concern alternative table storage pathes.
             </summary>
         </member>
-        <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
-            <summary>
-            TextDeferredIndexer
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Dispose">
-            <summary>
-            Disposing
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
-            <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing
-            </summary>
-            <param name="defferedDocIds"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.StartDefferedIndexing">
-            <summary>
-            Runs Indexer. Only one instance is allowed
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Indexer">
-            <summary>
-            Indexer self
-            </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler">
-            <summary>
-            New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
-            </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">
-            <summary>
-            Internal search-table structure.       
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.e2i">
-            <summary>
-            External document index to internal - 1. Key byte[], Value int
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.i2e">
-            <summary>
-            Internal document index to external - 2. Key int, Value byte[]
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.srch">
-            <summary>
-            Searchables to insert - 3. internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
-            Insert always compares newly intended with current and if no changes exits. 
-            Indexer replaces new with current.
-            itbls.Value.ChangedDocIds contains IDs of changed docs per search table
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.blocks">
-            <summary>
-            Key 10: [uint,byte[]] where K is BlockID[uint] (1000 words per block), Value is GzippedAndProtobufed Dictionary of [uint, byte[]] where K is ID of the word in Key2 and value its WAH reserved (init reservation 100KB per block)            
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.currentBlock">
-            <summary>
-            Key 11: [int] - current blockNumber
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.numberInBlock">
-            <summary>
-            Key 12: [int] used number in the block
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.words">
-            <summary>
-            Key 20 : [string,byte[]] NestedTable(Index to search by words)
-            <para>Where Key: string - word</para>
-            <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.itbls">
-            <summary>
-            Registering all search-tables mutated during transaction
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
-            <summary>
-            
-            </summary>
-            <param name="tran"></param>
-            <param name="tableName">Search document space/physical dbreeze table, that's why must be synchronized</param>
-            <param name="documentId"></param>
-            <param name="searchables"></param>
-            <param name="opt"></param>
-            <param name="iMode"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.SearchTextInDocuments(System.String,DBreeze.TextSearch.TextSearchRequest)">
-            <summary>
-            SearchTextInDocuments
-            </summary>
-            <param name="tableName"></param>
-            <param name="req"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.BeforeCommit">
-            <summary>
-            Started only in case if InsertWasPerformed in deffered or not deffered way
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.AfterCommit">
-            <summary>
-             Started only in case if InsertWasPerformed in deffered or not deffered way
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing(DBreeze.Transactions.Transaction,System.Collections.Generic.Dictionary{System.String,DBreeze.TextSearch.TextSearchHandler.ITS})">
-            <summary>
-            itbls and transaction must be supplied, to make it working from outside
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[])">
-            <summary>
-            This function accepts old value of searchables for one document and new value,
-            decides what must be Removed (par1) and what should be Added (par2)
-            </summary>
-            <param name="oldtext"></param>
-            <param name="newtext"></param>
-            <returns>List 2remove, List 2add</returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String)">
-            <summary>
-            Converter from searchbales to byte[]
-            </summary>
-            <param name="searchables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[])">
-            <summary>
-            Converter from byte[] searchables.
-            </summary>
-            <param name="searchables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="searchables"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordDefinition">
-            <summary>
-            
-            </summary>        
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
-            <summary>
-            Returns null in case of notfound anything or what ever
-            </summary>
-            <param name="text"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.PrepareSearchKeyWords(System.String)">
-            <summary>
-            
-            </summary>
-            <param name="searchKeywords"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchStorageOptions">
-            <summary>
-            Options which are used while tran.InsertDocumentText
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.FullTextOnly">
-            <summary>
-            Will store complete word. Search StartWith will be only available. Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.SearchWordMinimalLength">
-            <summary>
-            Minimal lenghth of the word to be searched. Default is 3. 
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchStorageOptions.DeferredIndexing">
-            <summary>
-            Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
-            Is good for the fast main entity Commit and relatively large searchables-set .
-            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.
-            </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchRequest">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchRequest.eSearchLogicType">
-            <summary>
-            eSearchLogicType for multiple words 
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.AND">
-            <summary>
-            Occurance of all search words in a document is expected.
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR">
-            <summary>
-            Occurance of any of the search words in a documented is expected.
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchRequest.SearchWords">
-            <summary>
-            Words separated by space or whatever to search
-            </summary>        
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchRequest.Quantity">
-            <summary>
-            Maximal quantity of documents to be returned. Lower value - lower RAM and speed economy.
-            </summary>        
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchRequest.SearchLogicType">
-            <summary>
-            AND/OR. Default OR
-            </summary>        
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchRequest.NoisyQuantity">
-            <summary>
-            Default value is 1000. It means if such word's Starts With found more than "NoisyQuantity" times, 
-            it will be excluded from the search.
-            For example, after uploading 122 russian books and having 700000 unique words, we try to search combination of "ал".
-            We have found it 3240 times:
-            ал
-            ала
-            алабан
-            алаберная
-            алаберный
-            алаболки
-            алаболь
-            ...
-            etc.
-            !This is not the quantity of documents where such pattern exists, but StartsWith result of all unique words
-            </summary>        
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchResponse">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchResponse.FoundDocumentIDs">
-            <summary>
-            Document external IDs, supplied while insert
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchResponse.SearchCriteriaIsNoisy">
-            <summary>
-            SearchCriteriaIsNoisy. When one of words in search request contains more then 1000 intersections it will become true.
-            It can mean that better is to change search word criteria.
-            Lobster 
-            Lopata
-            ...
-            Loshad
-            Lom 
-            .. e.g. words starting from "Lo" is more then 10000
-            ......and we search by "Lo".
-            This "Lo" will be automatically excluded from search
-            </summary>        
-        </member>
-        <member name="T:DBreeze.TextSearch.WAH2">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.#ctor">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.#ctor(System.Byte[])">
-            <summary>
-            Must be supplied CompressedByteArray taken from GetCompressedByteArray function
-            </summary>
-            <param name="array"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.GetUncompressedByteArray">
-            <summary>
-            Working byte[]
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.GetCompressedByteArray">
-            <summary>
-            With extra protocol definition, ready for save into DB
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.Add(System.Int32,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="index"></param>
-            <param name="value"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.Resize(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="len"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.Contains(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="index"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.MergeAllUncompressedIntoOne(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            Using OR logic: 1|1 = 1|0 = 1; 0|0 = 0
-            </summary>
-            <param name="indexesToMerge"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.TextSearch.WAH2.ExistsInDB">
-            <summary>
-            Technical if already in DB
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            Returns last added documents first
-            </summary>
-            <param name="indexesToCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WAH2.TextSearch_OR_logic(System.Collections.Generic.List{System.Byte[]},System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="indexesToCheck"></param>
-            <param name="maximalReturnQuantity"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.ITransactable.ITRCommitFinished">
             <summary>
             Is called by Transaction Journal, to make root available for all and delete rollback file
@@ -4283,48 +4498,70 @@
             <param name="tableName"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextInsertToDocument(System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
             <summary>
-            Inserts/updates searchable text for the documentID
+            Inserts/Updates searchable words per external documentID
             </summary>
-            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-            <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
-            <param name="searchables">text used for search the document</param>
-            <param name="opt">TextSearchOptions</param>
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
+            <param name="containsWords">Space separated words, which will be stored using "contains" logic.</param>
+            <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+            <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possibly search functionality for the document
+            will be available a bit later after commit. 
+            It's good for the fast Commits while inserting relatively large searchables-set .
+            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextAppendWordsToDocument(System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+        <member name="M:DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
             <summary>
-            Appends words to existing searchable text for the documentID
+            Appends words to the searchable set of the external documentID
             </summary>
-            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-            <param name="documentId">External document id, it will be returned after executing TextSearch</param>        
-            <param name="searchables">text used for search the document</param>
-            <param name="opt">TextSearchOptions</param>
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>      
+            <param name="containsWords">Space separated words, which will be stored using "contains" logic.</param>
+            <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+            <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+            It's good for the fast Commits while inserting relatively large searchables-set .
+            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextRemoveWordsFromDocument(System.String,System.Byte[],System.String,DBreeze.TextSearch.TextSearchStorageOptions)">
+        <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
             <summary>
-            Removes words from searchable text for the documentID. If document doesn't exist, it will do nothing.
-            opt.FullTextOnly = true will be set automatically
+            Removes words from the searchable set of the external documentID
             </summary>
-            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-            <param name="documentId">External document id, it will be returned after executing TextSearch</param>
-            <param name="searchables">text used for search the document</param>
-            <param name="opt"></param>
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
+            <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+            <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+            It's good for the fast Commits while inserting relatively large searchables-set .
+            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[])">
+        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[],System.Boolean)">
             <summary>
-            Removes searchable text for the documentID
+            Removes external documentID from the search index
             </summary>
-            <param name="tableName">Must be added to tran.SynchronizeTables by programmer. DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-            <param name="documentId">External document id, it will be returned after executing TextSearch</param>                
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>  
+            <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
+            It's good for the fast Commits while inserting relatively large searchables-set .
+            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String,DBreeze.TextSearch.TextSearchRequest)">
+        <member name="M:DBreeze.Transactions.Transaction.TextGetDocumentsSearchables(System.String,System.Collections.Generic.HashSet{System.Byte[]})">
             <summary>
-            Search text and returns documents (External document IDs), containing words or word parts
+            Returns existng searchables for the given documents external IDs
             </summary>
-            <param name="tableName">DocumentSpace name, groups documents to be searched. Also is a real DBreeze table name.</param>
-            <param name="req">TextSearchRequest</param>
-            <returns>TextSearchResponse</returns>
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <param name="documentIds"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String)">
+            <summary>
+            Returns TextSearchTable (word aligned bitmap index manager for the search-index table). 
+            Allows to make logical block based comparative operations.
+            </summary>
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextSearchHandlerCommit">
             <summary>

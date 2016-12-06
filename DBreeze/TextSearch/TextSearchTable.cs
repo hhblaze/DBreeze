@@ -25,7 +25,7 @@ namespace DBreeze.TextSearch
         string _tableName = String.Empty;
          
         /// <summary>
-        /// 
+        /// Default value is 1000
         /// </summary>
         public int NoisyQuantity = 1000;
         /// <summary>
@@ -200,7 +200,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+        /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -215,7 +215,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+        /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -257,7 +257,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+        /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -294,7 +294,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+        /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -334,7 +334,7 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// Generates a logical block: 
         /// var tsm = tran.TextSearch("MyTextSearchTable");
-        /// tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+        /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
