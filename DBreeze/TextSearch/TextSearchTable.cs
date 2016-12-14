@@ -33,12 +33,34 @@ namespace DBreeze.TextSearch
         /// </summary>
         public bool SearchCriteriaIsNoisy = false;
 
-
+        /// <summary>
+        /// If not null limits the search range of the documents.
+        /// ExternalDocumentID will be converted into InternalID and will be used as a ranges start
+        /// </summary>
+        public byte[] ExternalDocumentIdStart = null;
+        /// <summary>
+        /// If not null limits the search range of the documents.
+        /// ExternalDocumentID will be converted into InternalID and will be used as a ranges stop
+        /// </summary>
+        public byte[] ExternalDocumentIdStop = null;
+        /// <summary>
+        /// Default found documents will be returned descending (last added document first)
+        /// </summary>
+        public bool Descending = true;
+        /// <summary>
+        /// Converted ExternalDocumentIdStart
+        /// </summary>
+        internal int DocIdA = 0;
+        /// <summary>
+        /// Converted ExternalDocumentIdStop
+        /// </summary>
+        internal int DocIdZ = 0;
 
 
         internal NestedTable tbWords = null;
         internal NestedTable tbBlocks = null;
-        internal NestedTable tbExternalIDs = null;
+        internal NestedTable i2e = null;
+        internal NestedTable e2i = null;
 
         internal Dictionary <string, TextSearchHandler.WordInDocs> RealWords = new Dictionary<string, TextSearchHandler.WordInDocs>();
         /// <summary>
@@ -88,7 +110,7 @@ namespace DBreeze.TextSearch
             if (this.tbWords == null)
             {
                 if (this._tran == null || String.IsNullOrEmpty(this._tableName))
-                    throw new Exception("DBreeze.TextSearch.WABIs.AddWords: transaction is not initialzed");
+                    throw new Exception("DBreeze.TextSearch.TextSearchTable.ComputeWordsOrigin: transaction is not initialzed");
 
                 this.tbWords = this._tran.SelectTable<byte>(this._tableName, 20, 0);
                 this.tbWords.ValuesLazyLoadingIsOn = false;
@@ -100,10 +122,16 @@ namespace DBreeze.TextSearch
                 this.tbBlocks.ValuesLazyLoadingIsOn = false;
             }
 
-            if (this.tbExternalIDs == null)
+            if (this.i2e == null)
             {
-                tbExternalIDs = this._tran.SelectTable<byte>(this._tableName, 2, 0);
-                tbExternalIDs.ValuesLazyLoadingIsOn = false;
+                i2e = this._tran.SelectTable<byte>(this._tableName, 2, 0);
+                i2e.ValuesLazyLoadingIsOn = false;
+            }
+
+            if (this.e2i == null && (ExternalDocumentIdStart != null || ExternalDocumentIdStop != null))
+            {
+                e2i = this._tran.SelectTable<byte>(this._tableName, 1, 0);
+                e2i.ValuesLazyLoadingIsOn = false;
             }
 
             ////DEBUG
@@ -111,7 +139,7 @@ namespace DBreeze.TextSearch
             //{
             //    Console.WriteLine(dbgWrd.Key);
             //}
-          
+
 
             TextSearchHandler.WordInDocs wid = null;
             int containsFound = 0;

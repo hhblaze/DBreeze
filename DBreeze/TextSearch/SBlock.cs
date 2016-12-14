@@ -312,15 +312,31 @@ namespace DBreeze.TextSearch
 
             //New Logical block is always a result of operation between 2 blocks
             //Usual block is added via TextSearchManager
+                        
+            if (this._tsm.ExternalDocumentIdStart != null)
+                this._tsm.DocIdA = this._tsm.e2i.Select<byte[], int>(this._tsm.ExternalDocumentIdStart).Value;
+
+            if (this._tsm.ExternalDocumentIdStop != null)
+                this._tsm.DocIdZ = this._tsm.e2i.Select<byte[], int>(this._tsm.ExternalDocumentIdStop).Value;
+
+
+
 
             var myArray = this.GetArrays();
             if (myArray.Count != 0)
             {
                 DBreeze.DataTypes.Row<int, byte[]> docRow = null;
-                foreach (var el in WABI.TextSearch_AND_logic(myArray))
+                //foreach (var el in WABI.TextSearch_AND_logic(myArray))
+
+                var q = WABI.TextSearch_AND_logic(myArray);
+
+                if (this._tsm.DocIdA > 0 || this._tsm.DocIdZ > 0 || !this._tsm.Descending)
+                    q = WABI.TextSearch_AND_logic(myArray, this._tsm.DocIdA, this._tsm.DocIdZ, this._tsm.Descending);
+
+                foreach (var el in q)
                 {
                     //Getting document external ID
-                    docRow = this._tsm.tbExternalIDs.Select<int, byte[]>((int)el);
+                    docRow = this._tsm.i2e.Select<int, byte[]>((int)el);
                     if (docRow.Exists)
                         yield return docRow.Value;
                 }

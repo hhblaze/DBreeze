@@ -352,7 +352,7 @@ namespace DBreeze.TextSearch
         public static IEnumerable<uint> TextSearch_AND_logic(List<byte[]> indexesToCheck)
         {
             if (indexesToCheck != null && indexesToCheck.Count > 0)
-            {                
+            {
                 int MinLenght = indexesToCheck.Min(r => r == null ? 0 : r.Length);
                 if (MinLenght != 0)
                 {
@@ -378,6 +378,189 @@ namespace DBreeze.TextSearch
                             docId--;
                         }
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="indexesToCheck"></param>
+        /// <param name="docStart">when 0 not counted</param>
+        /// <param name="docStop">when 0 not counted</param>
+        /// <param name="descending"></param>
+        /// <returns></returns>
+        public static IEnumerable<uint> TextSearch_AND_logic(List<byte[]> indexesToCheck, int docStart=0, int docStop=0, bool descending = true)
+        {
+            if (indexesToCheck != null && indexesToCheck.Count > 0)
+            {
+                int MinLenght = indexesToCheck.Min(r => r == null ? 0 : r.Length);
+
+                if (MinLenght != 0)
+                {
+                    byte res = 0;
+                    uint docId = 0;
+                    byte mask = 0;
+
+                    int start = 0;
+                    int stop = 0;
+
+                    if (descending)
+                    {                      
+                        start = MinLenght - 1;
+                        stop = 0;
+
+                        if (docStart > 0)
+                        {
+                            start = docStart / 8;
+                            if (start > MinLenght - 1)
+                                start = MinLenght - 1;
+                        }
+
+                        if (docStop > 0)
+                            stop = docStop / 8;
+
+                        if(stop <= start && start <= MinLenght - 1 && stop <= MinLenght - 1)
+                        {
+                            docId = Convert.ToUInt32((start + 1) * 8) - 1;
+                            for (int i = start; i >= stop; i--)
+                            {                              
+
+                                res = 255;
+                                foreach (var wah in indexesToCheck)
+                                {
+                                    res &= wah[i];
+                                }
+
+                                if (i == start && docStart > 0)
+                                {
+                                    for (int j = 7; j >= 0; j--)
+                                    {
+                                        if (docId > docStart)
+                                        {
+                                            docId--;
+                                            continue;
+                                        }
+
+                                        mask = (byte)(1 << j);
+
+                                        if ((res & mask) != 0)
+                                            yield return (uint)docId;
+
+                                        docId--;
+                                    }
+                                }
+                                else if(i == stop && docStop > 0)
+                                {
+                                    for (int j = 7; j >= 0; j--)
+                                    {
+                                        if (docId < docStop)
+                                            break;
+
+                                        mask = (byte)(1 << j);
+
+                                        if ((res & mask) != 0)
+                                            yield return (uint)docId;
+
+                                        docId--;
+                                    }
+                                }
+                                else
+                                { 
+                                    for (int j = 7; j >= 0; j--)
+                                    {
+                                        mask = (byte)(1 << j);
+
+                                        if ((res & mask) != 0)
+                                            yield return (uint)docId;
+
+                                        docId--;
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                    else
+                    {//ASCENDING
+                        start = 0;
+                        stop = MinLenght - 1;
+
+                        if (docStart > 0)
+                            start = docStart / 8;
+
+                        if (docStop > 0)
+                        {
+                            stop = docStop / 8;
+                            if (MinLenght - 1 < stop)
+                                stop = MinLenght - 1;
+                        }
+
+                        if (start <= stop && stop <= MinLenght - 1 && start <= MinLenght - 1)
+                        {
+                            docId = Convert.ToUInt32((start + 1) * 8) - 8;
+                            for (int i = start; i <= stop; i++)
+                            {
+                                
+
+                                res = 255;
+                                foreach (var wah in indexesToCheck)
+                                {
+                                    res &= wah[i];
+                                }
+
+                                if (i == start && docStart > 0)
+                                {
+                                    for (int j = 0; j <= 7; j++)
+                                    {
+                                        if (docId < docStart)
+                                        {
+                                            docId++;
+                                            continue;
+                                        }
+
+                                        mask = (byte)(1 << j);
+
+                                        if ((res & mask) != 0)
+                                            yield return (uint)docId;
+
+                                        docId++;
+                                    }
+                                }
+                                else if (i == stop && docStop > 0)
+                                {
+                                    for (int j = 0; j <= 7; j++)
+                                    {
+                                        if (docId > docStop)
+                                            break;
+
+                                        mask = (byte)(1 << j);
+
+                                        if ((res & mask) != 0)
+                                            yield return (uint)docId;
+
+                                        docId++;
+                                    }
+                                   
+                                }
+                                else
+                                {
+                                    for (int j = 0; j <= 7; j++)
+                                    {
+                                        mask = (byte)(1 << j);
+
+                                        if ((res & mask) != 0)
+                                            yield return (uint)docId;
+
+                                        docId++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+
                 }
             }
         }
