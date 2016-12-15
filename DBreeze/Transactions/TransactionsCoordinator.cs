@@ -570,72 +570,77 @@ namespace DBreeze.Transactions
                  }
                  else
                  {
-                   
-                     //Gettign new TransactionJournalId
-                     ulong tranNumber = this._engine._transactionsJournal.GetTransactionNumber();
 
-                     foreach (var tt in tablesForTransaction)
-                     {
-                         try
-                         {
-                             //Adding table
-                             this._engine._transactionsJournal.AddTableForTransaction(tranNumber, tt);                             
-                             tt.ITRCommit();
-                             
-                         }
-                         catch (Exception ex)
-                         {
-                             //SMTH HAPPENED INSIDE OF COMMIT Trying to rollBack tables
-                             try
-                             {
-                                 foreach (var tt1 in tablesForTransaction)
-                                 {
-                                     tt1.ITRRollBack();
-                                 }
+                    //Gettign new TransactionJournalId
+                    ulong tranNumber = this._engine._transactionsJournal.GetTransactionNumber();
 
-                                 this._engine._transactionsJournal.RemoveTransactionFromDictionary(tranNumber);
-                             }
-                             catch (System.Threading.ThreadAbortException ex1)
-                             {
-                                 //We don'T make DBisOperable = false;                         
-                                 throw ex1;
-                             }
-                             catch (Exception ex1)
-                             {
-                                 //CASCADE, WHICH MUST BRING TO DB is not opearatbale state
-                                 this._engine.DBisOperable = false;
-                                 this._engine.DBisOperableReason = "TransactionsCoordinator.Commit tablesForTransaction.Count > 1";
-                                 throw new Exception(ex.ToString() +" --> " + ex1.ToString());
-                             }
+                    foreach (var tt in tablesForTransaction)
+                    {
+                        try
+                        {
+                            //Adding table
+                            this._engine._transactionsJournal.AddTableForTransaction(tranNumber, tt);
+                            tt.ITRCommit();
 
-                             //In case if rollback succeeded we throw exception brough by bad commit
+                        }
+                        catch (System.Threading.ThreadAbortException ex)
+                        {
+                            //We don'T make DBisOperable = false;                         
+                            throw ex;
+                        }
+                        catch (Exception ex)
+                        {
+                            //SMTH HAPPENED INSIDE OF COMMIT Trying to rollBack tables
+                            try
+                            {
+                                foreach (var tt1 in tablesForTransaction)
+                                {
+                                    tt1.ITRRollBack();
+                                }
 
-                             //CASCADE from LTrieRootNode.TransactionalCommit
-                             throw ex;                             
-                         }
-                         
-                     }//end of foreach
+                                this._engine._transactionsJournal.RemoveTransactionFromDictionary(tranNumber);
+                            }
+                            catch (System.Threading.ThreadAbortException ex1)
+                            {
+                                //We don'T make DBisOperable = false;                         
+                                throw ex1;
+                            }
+                            catch (Exception ex1)
+                            {
+                                //CASCADE, WHICH MUST BRING TO DB is not opearable state
+                                this._engine.DBisOperable = false;
+                                this._engine.DBisOperableReason = "TransactionsCoordinator.Commit tablesForTransaction.Count > 1";
+                                throw new Exception(ex.ToString() + " --> " + ex1.ToString());
+                            }
 
-                     //Here we appear if all tables were succesfully commited (but it's not visible still for READING THREDS and all tables still have their rollback files active)
-                     
-                     //We have to finish the transaction
-                     try
-                     {
-                         this._engine._transactionsJournal.FinishTransaction(tranNumber);
-                     }
-                     catch (System.Threading.ThreadAbortException ex)
-                     {
-                         //We don'T make DBisOperable = false;                         
-                         throw ex;
-                     }
-                     catch (Exception ex)
-                     {
-                         this._engine.DBisOperable = false;
-                         this._engine.DBisOperableReason = "TransactionsCoordinator.Commit FinishTransaction";                       
-                         throw ex;
-                     }                   
+                            //In case if rollback succeeded we throw exception brough by bad commit
 
-                 }
+                            //CASCADE from LTrieRootNode.TransactionalCommit
+                            throw ex;
+                        }
+
+                    }//end of foreach
+
+                    //Here we appear if all tables were succesfully commited (but it's not visible still for READING THREDS and all tables still have their rollback files active)
+
+                    //We have to finish the transaction
+                    try
+                    {
+                        this._engine._transactionsJournal.FinishTransaction(tranNumber);
+                    }
+                    catch (System.Threading.ThreadAbortException ex)
+                    {
+                        //We don'T make DBisOperable = false;                         
+                        throw ex;
+                    }
+                    catch (Exception ex)
+                    {
+                        this._engine.DBisOperable = false;
+                        this._engine.DBisOperableReason = "TransactionsCoordinator.Commit FinishTransaction";
+                        throw ex;
+                    }
+
+                }
             }
             else
             {

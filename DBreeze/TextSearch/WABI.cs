@@ -529,12 +529,12 @@ namespace DBreeze.TextSearch
                                 }
                                 else if (i == stop && docStop > 0)
                                 {
-                                    for (int j = 0; j <= 7; j++)
+                                    for (byte j = 0; j <= 7; j++)
                                     {
                                         if (docId > docStop)
                                             break;
 
-                                        mask = (byte)(1 << j);
+                                        mask = (byte)(1 << j);                                       
 
                                         if ((res & mask) != 0)
                                             yield return (uint)docId;

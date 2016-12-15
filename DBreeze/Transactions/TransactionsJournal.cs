@@ -221,6 +221,10 @@ namespace DBreeze.Transactions
 
         }
 
+        /// <summary>
+        /// FinishTransaction
+        /// </summary>
+        /// <param name="tranNumber"></param>
         public void FinishTransaction(ulong tranNumber)
         {
 
@@ -261,6 +265,11 @@ namespace DBreeze.Transactions
                             tt.Value.ITRCommitFinished();
                         }
                     }
+                    catch (System.Threading.ThreadAbortException ex)
+                    {
+                        //CASCADE 
+                        throw ex;
+                    }
                     catch (Exception ex)
                     {
                         //CASCADE from ITRCommitFinished, brings to NON-OPERATABLE
@@ -288,6 +297,11 @@ namespace DBreeze.Transactions
                     }
                 }
 
+            }
+            catch (System.Threading.ThreadAbortException ex)
+            {
+                //CASCADE 
+                throw ex;
             }
             catch (System.Exception ex)
             {

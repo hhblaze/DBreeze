@@ -3654,6 +3654,33 @@
             
             </summary>
         </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.ExternalDocumentIdStart">
+            <summary>
+            If not null limits the search range of the documents.
+            ExternalDocumentID will be converted into InternalID and will be used as a ranges start
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.ExternalDocumentIdStop">
+            <summary>
+            If not null limits the search range of the documents.
+            ExternalDocumentID will be converted into InternalID and will be used as a ranges stop
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.Descending">
+            <summary>
+            Default found documents will be returned descending (last added document first)
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdA">
+            <summary>
+            Converted ExternalDocumentIdStart
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdZ">
+            <summary>
+            Converted ExternalDocumentIdStop
+            </summary>
+        </member>
         <member name="F:DBreeze.TextSearch.TextSearchTable.PureWords">
             <summary>
             Second preparation layer after parsing. After this layer we grab words from db and put into real words
@@ -3680,7 +3707,7 @@
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -3692,7 +3719,7 @@
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose")And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -3703,7 +3730,7 @@
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -3714,7 +3741,7 @@
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -3725,7 +3752,7 @@
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.BlockAnd("pill").OR(tsm.BlockOr("blue red"))
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
@@ -3827,6 +3854,16 @@
             Returns last added documents first
             </summary>
             <param name="indexesToCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]},System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="indexesToCheck"></param>
+            <param name="docStart">when 0 not counted</param>
+            <param name="docStop">when 0 not counted</param>
+            <param name="descending"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.TextSearch.WABI.TextSearch_OR_logic(System.Collections.Generic.List{System.Byte[]},System.Int32)">
@@ -5073,6 +5110,12 @@
             </summary>
             <param name="tranNumber"></param>
             <param name="table"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.FinishTransaction(System.UInt64)">
+            <summary>
+            FinishTransaction
+            </summary>
+            <param name="tranNumber"></param>
         </member>
         <member name="M:DBreeze.Transactions.TransactionsJournal.RemoveTransactionFromDictionary(System.UInt64)">
             <summary>
