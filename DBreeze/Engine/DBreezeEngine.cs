@@ -289,17 +289,17 @@ namespace DBreeze
                     }
                 };
 
-                #if NET35 || NETr40   //The same must be use for .NET 4.0
+#if NET35 || NETr40   //The same must be use for .NET 4.0
 
-                                            new System.Threading.Thread(new System.Threading.ThreadStart(() =>
-                                            {
-                                                a();
-                                            })).Start(); 
-                #else
-                                System.Threading.Tasks.Task.Run(() => {
-                                    a();
-                                });
-                #endif
+                new System.Threading.Thread(new System.Threading.ThreadStart(a)).Start();
+
+                //new System.Threading.Thread(new System.Threading.ThreadStart(() =>
+                //{
+                //    a();
+                //})).Start();
+#else
+                                System.Threading.Tasks.Task.Run(a);
+#endif
             }
         }
 
