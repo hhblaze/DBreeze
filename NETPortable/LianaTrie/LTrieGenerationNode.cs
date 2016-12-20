@@ -1491,7 +1491,7 @@ namespace DBreeze.LianaTrie
 
 
             //We need correction for the case when we use one cursor for Select (with standard "write" visibility scope) and Insert statement in one transaction            
-            if (KidsBeforeModification != null && bKids != null && bKids.Length > KidsBeforeModification.Length)
+            if (KidsBeforeModification != null && bKids.Length > KidsBeforeModification.Length)
                 OverWrite = false;
 
             //Checking if we can write on the same place or overWrite  
