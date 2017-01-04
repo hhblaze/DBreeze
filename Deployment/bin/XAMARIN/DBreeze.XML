@@ -5062,6 +5062,12 @@
             <param name="transactionThreadId"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.Commit(System.Int32)">
+            <summary>
+            Commit
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
         <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
             <summary>
             Normal Engine Stop, usually in case of Main Thread or DLL disposing

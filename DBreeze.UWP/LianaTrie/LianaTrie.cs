@@ -1845,6 +1845,10 @@ namespace DBreeze.LianaTrie
                 GenerationMapSaved = true;
                 DtTableFixed = DateTime.Now.Ticks;
             }
+            catch (OperationCanceledException ex)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
                 //MUST BRING TO NON-OPERATABLE

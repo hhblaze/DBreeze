@@ -526,7 +526,10 @@ namespace DBreeze.Transactions
 
 
     
-
+        /// <summary>
+        /// Commit
+        /// </summary>
+        /// <param name="transactionThreadId"></param>
         public void Commit(int transactionThreadId)
         {
             if (!this._engine.DBisOperable)
