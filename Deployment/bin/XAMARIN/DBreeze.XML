@@ -6444,6 +6444,66 @@
             <param name="seed"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.Utils.StringProcessing">
+            <summary>
+            Set of string processing extensions
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.To_AsciiBytes(System.String)">
+            <summary>
+            Encoding.ASCII.GetBytes
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.To_UTF8Bytes(System.String)">
+            <summary>
+            Encoding.UTF8.GetBytes
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.To_UnicodeBytes(System.String)">
+            <summary>
+            Encoding.Unicode.GetBytes
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.UTF8_GetString(System.Byte[])">
+            <summary>
+            UTF8.GetString
+            </summary>
+            <param name="btText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.Unicode_GetString(System.Byte[])">
+            <summary>
+            Unicode.GetString
+            </summary>
+            <param name="btText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.Ascii_GetString(System.Byte[])">
+            <summary>
+            ASCII.GetString
+            </summary>
+            <param name="btText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.ReplaceMultiple(System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            <para>Will efficiently replace multiple string by supplied templates.</para>
+            var replacements = new Dictionary&lt;string, string&gt;()
+            {
+              {"big","hot"},
+              {"mac","dog"}
+            };       
+            </summary>
+            <param name="input"></param>
+            <param name="replaceWith"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
             <summary>
             Serializes object to XML string

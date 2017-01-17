@@ -6581,6 +6581,19 @@
             <param name="seed"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Utils.StringProcessing.ReplaceMultiple(System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            <para>Will efficiently replace multiple string by supplied templates.</para>
+            var replacements = new Dictionary&lt;string, string&gt;()
+            {
+              {"big","hot"},
+              {"mac","dog"}
+            };       
+            </summary>
+            <param name="input"></param>
+            <param name="replaceWith"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
             <summary>
             Serializes object to XML string

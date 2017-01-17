@@ -43,5 +43,22 @@ namespace DBreeze.Utils
             return btText == null ? null : System.Text.Encoding.UTF8.GetString(btText, 0, btText.Length);
         }
 
+        /// <summary>
+        /// <para>Will efficiently replace multiple string by supplied templates.</para>
+        /// var replacements = new Dictionary&lt;string, string&gt;()
+        /// {
+        ///   {"big","hot"},
+        ///   {"mac","dog"}
+        /// };       
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="replaceWith"></param>
+        /// <returns></returns>
+        public static string ReplaceMultiple(this string input, Dictionary<string, string> replaceWith)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(String.Join("|", replaceWith.Keys.Select(k => System.Text.RegularExpressions.Regex.Escape(k))));
+            return regex.Replace(input, m => replaceWith[m.Value]);
+        }
+
     }
 }
