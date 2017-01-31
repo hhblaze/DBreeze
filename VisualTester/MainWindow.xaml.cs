@@ -1081,60 +1081,60 @@ namespace VisualTester
             //Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(btx, d1, Compression.eCompressionType.NoCompression);
 
             //return;
-            if (textsearchengine == null)
-            {              
-                textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");
-            }            
-            MyTask tsk = null;
+            //if (textsearchengine == null)
+            //{              
+            //    textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");
+            //}            
+            //MyTask tsk = null;
 
 
-            using (var tran = textsearchengine.GetTransaction())
-            {
-                var resp = tran.TextSearch("TaskText", new DBreeze.TextSearch.TextSearchRequest()
-                {
-                    // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
-                    SearchWords = "Xamarin"
-                });
+            //using (var tran = textsearchengine.GetTransaction())
+            //{
+            //    var resp = tran.TextSearch("TaskText", new DBreeze.TextSearch.TextSearchRequest()
+            //    {
+            //        // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
+            //        SearchWords = "Xamarin"
+            //    });
 
-            }
+            //}
 
             return;
 
             //Testing External indexer concept.
             //Table where we will store Docs to be indexed
-            using (var tran = textsearchengine.GetTransaction())
-            {
+            //using (var tran = textsearchengine.GetTransaction())
+            //{
 
-                //we want to use table PendingTextSearchIndexing to communicate with AutomaticIndexer (so we will write into it also)
-                tran.SynchronizeTables("Tasks", "TaskText");
+            //    //we want to use table PendingTextSearchIndexing to communicate with AutomaticIndexer (so we will write into it also)
+            //    tran.SynchronizeTables("Tasks", "TaskText");
         
                 
-                //Storing task
-                tsk = new MyTask()
-                {
-                    Id = 1,
-                    Description = "Starting with the .NET Framework version 2.0, well if you derive a class from Random and override the Sample method, the distribution provided by the derived class implementation of the Sample method is not used in calls to the base class implementation of the NextBytes method. Instead, the uniform",
-                    Notes = "distribution returned by the base Random class is used. This behavior improves the overall performance of the Random class. To modify this behavior to call the Sample method in the derived class, you must also override the NextBytes method"
-                };
-                //Inserting task value must be, of course tsk
-                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+            //    //Storing task
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 1,
+            //        Description = "Starting with the .NET Framework version 2.0, well if you derive a class from Random and override the Sample method, the distribution provided by the derived class implementation of the Sample method is not used in calls to the base class implementation of the NextBytes method. Instead, the uniform",
+            //        Notes = "distribution returned by the base Random class is used. This behavior improves the overall performance of the Random class. To modify this behavior to call the Sample method in the derived class, you must also override the NextBytes method"
+            //    };
+            //    //Inserting task value must be, of course tsk
+            //    tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
 
-                tran.TextInsertToDocument("TaskText", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, 
-                    new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, DeferredIndexing = true });
+            //    tran.TextInsertToDocument("TaskText", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, 
+            //        new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, DeferredIndexing = true });
 
-                tsk = new MyTask()
-                {
-                    Id = 2,
-                    Description = "VI guess in Universal Apps for Xamarin you need to include the assembly when loading embedded resources. I had to change",
-                    Notes = "I work on.NET for UWP.This is super interesting and I'd well love to take a deeper look at it after the holiday. If "
-                };
-                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 2,
+            //        Description = "VI guess in Universal Apps for Xamarin you need to include the assembly when loading embedded resources. I had to change",
+            //        Notes = "I work on.NET for UWP.This is super interesting and I'd well love to take a deeper look at it after the holiday. If "
+            //    };
+            //    tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
 
-                tran.TextInsertToDocument("TaskText", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes,
-                  new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, DeferredIndexing = true });
+            //    tran.TextInsertToDocument("TaskText", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes,
+            //      new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, DeferredIndexing = true });
 
-                tran.Commit();
-            }
+            //    tran.Commit();
+            //}
 
             return;
 
@@ -1187,49 +1187,49 @@ namespace VisualTester
             //}
             //return;
 
-            using (var tran = textsearchengine.GetTransaction())
-            {
+            //using (var tran = textsearchengine.GetTransaction())
+            //{
 
-                //we want to store text index in table “TaskFullTextSearch” and task itself in table "Tasks"
-                tran.SynchronizeTables("Tasks", "TaskFullTextSearch");
+            //    //we want to store text index in table “TaskFullTextSearch” and task itself in table "Tasks"
+            //    tran.SynchronizeTables("Tasks", "TaskFullTextSearch");
 
-                //Storing task
-                tsk = new MyTask()
-                {
-                    Id = 1,                    
-                    Description = "Starting with the .NET Framework version 2.0, well if you derive a class from Random and override the Sample method, the distribution provided by the derived class implementation of the Sample method is not used in calls to the base class implementation of the NextBytes method. Instead, the uniform",
-                    Notes = "distribution returned by the base Random class is used. This behavior improves the overall performance of the Random class. To modify this behavior to call the Sample method in the derived class, you must also override the NextBytes method"
-                };
-                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+            //    //Storing task
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 1,                    
+            //        Description = "Starting with the .NET Framework version 2.0, well if you derive a class from Random and override the Sample method, the distribution provided by the derived class implementation of the Sample method is not used in calls to the base class implementation of the NextBytes method. Instead, the uniform",
+            //        Notes = "distribution returned by the base Random class is used. This behavior improves the overall performance of the Random class. To modify this behavior to call the Sample method in the derived class, you must also override the NextBytes method"
+            //    };
+            //    tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
 
-                //Creating text, for the document search. any word or word part (minimum 3 chars, check TextSearchStorageOptions) from Description and Notes will return us this document in the future
-                tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
+            //    //Creating text, for the document search. any word or word part (minimum 3 chars, check TextSearchStorageOptions) from Description and Notes will return us this document in the future
+            //    tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
 
                 
-                tsk = new MyTask()
-                {
-                    Id = 2,                    
-                    Description = "VI guess in Universal Apps for Xamarin you need to include the assembly when loading embedded resources. I had to change",
-                    Notes = "I work on.NET for UWP.This is super interesting and I'd well love to take a deeper look at it after the holiday. If "
-                };
-                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);                
-                tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 2,                    
+            //        Description = "VI guess in Universal Apps for Xamarin you need to include the assembly when loading embedded resources. I had to change",
+            //        Notes = "I work on.NET for UWP.This is super interesting and I'd well love to take a deeper look at it after the holiday. If "
+            //    };
+            //    tran.Insert<long, byte[]>("Tasks", tsk.Id, null);                
+            //    tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
                                 
                                 
-                tsk = new MyTask()
-                {
-                    Id = 3,                    
-                    Description = "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met",
-                    Notes = "This clause was objected to on the grounds that as people well changed the license to reflect their name or organization it led to escalating advertising requirements when programs were combined together in a software distribution: every occurrence of the license with a different name required a separate acknowledgment. In arguing against it, Richard Stallman has stated that he counted 75 such acknowledgments "
-                };
-                tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
-                tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
+            //    tsk = new MyTask()
+            //    {
+            //        Id = 3,                    
+            //        Description = "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met",
+            //        Notes = "This clause was objected to on the grounds that as people well changed the license to reflect their name or organization it led to escalating advertising requirements when programs were combined together in a software distribution: every occurrence of the license with a different name required a separate acknowledgment. In arguing against it, Richard Stallman has stated that he counted 75 such acknowledgments "
+            //    };
+            //    tran.Insert<long, byte[]>("Tasks", tsk.Id, null);
+            //    tran.TextInsertToDocument("TaskFullTextSearch", tsk.Id.To_8_bytes_array_BigEndian(), tsk.Description + " " + tsk.Notes, new DBreeze.TextSearch.TextSearchStorageOptions() { FullTextOnly = false, });
 
-                //Committing all together. 
-                //Though its possible to build an automatic indexer for the huge text and call it in parallel thread and here to store only changed documentIDs which must be indexed.
-                //All depends upon necessary insert speed.
-                tran.Commit(); 
-            }
+            //    //Committing all together. 
+            //    //Though its possible to build an automatic indexer for the huge text and call it in parallel thread and here to store only changed documentIDs which must be indexed.
+            //    //All depends upon necessary insert speed.
+            //    tran.Commit(); 
+            //}
 
             SpeedStatistic.PrintOut("a",true);
 

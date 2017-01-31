@@ -60,6 +60,7 @@
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
     <Compile Include="Engine\DBreezeRemoteEngine.cs" />
+    <Compile Include="Engine\DBreezeResources.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTable.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableInternal.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />

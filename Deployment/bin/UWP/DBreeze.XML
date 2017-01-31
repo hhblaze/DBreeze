@@ -4,6 +4,59 @@
         <name>DBreeze</name>
     </assembly>
     <members>
+        <member name="T:DBreeze.DBreezeResources">
+            <summary>
+            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
+            Key is a string, Value any standard DBreeze.DataType (or serialized object, when custom serializer is supplied).
+            Can be called from anywhere, even from other transactions. There is no need to add into sync table
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.#ctor(DBreeze.DBreezeEngine)">
+            <summary>
+            constructor
+            </summary>
+            <param name="engine"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Dispose">
+            <summary>
+            Disposing
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="resourceName"></param>
+            <param name="resourceObject"></param>
+            <param name="holdInMemory"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},System.Boolean)">
+            <summary>
+            Batch insert of resources
+            </summary>
+            <param name="resources"></param>
+            <param name="holdInMemory"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
+            <summary>
+            Removes resources from database and In-Memory dictionary 
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Remove(System.String)">
+            <summary>
+            Removes resource from database and 
+            </summary>        
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Select``1(System.String,System.Boolean)">
+            <summary>
+            Gets resource from memory or database (if not yet loaded)
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="resourceName"></param>
+            <param name="holdInMemory">first time will grab fro database and will leave in-memory</param>
+            <returns></returns>
+        </member>
         <member name="T:DBreeze.TextSearch.BlockAnd">
             <summary>
             
@@ -2966,6 +3019,13 @@
             Helper for table file names transitions for backup
             </summary>
             <param name="fileName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.Backup.BackupFileNamesParser.ParseFilenameBack(System.UInt64)">
+            <summary>
+            
+            </summary>
+            <param name="filenumber"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Storage.Backup.WriteBackupElement(System.UInt64,System.Byte,System.Int64,System.Byte[])">

@@ -36,6 +36,9 @@
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze\Engine\DBreezeResources.cs">
+      <Link>Engine\DBreezeResources.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
     </Compile>

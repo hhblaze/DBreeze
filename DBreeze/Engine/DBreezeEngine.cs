@@ -38,6 +38,12 @@ namespace DBreeze
         internal Scheme DBreezeSchema = null;
         internal TransactionsCoordinator _transactionsCoordinator = null;
         internal TextDeferredIndexer DeferredIndexer = null;
+        /// <summary>
+        /// DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
+        /// Key is a string, Value any standard DBreeze.DataType (or serialized object by supplied serializer).
+        /// Can be called from anywhere, even from other transactions. There is no need to add into sync table
+        /// </summary>
+        public DBreezeResources Resources = null;
         internal bool DBisOperable = true;
         /// <summary>
         /// must be filled with a text note who brought to DBisOperable = false
@@ -181,6 +187,9 @@ namespace DBreeze
 
                 //Initializing 
                 DeferredIndexer = new TextDeferredIndexer(this);
+
+                //Init DBreezeResources
+                Resources = new DBreezeResources(this);
             }
             catch (Exception ex)
             {
@@ -221,6 +230,9 @@ namespace DBreeze
 
             //Disposing DeferredIndexer
             DeferredIndexer.Dispose();
+
+            //Disposing Resources
+            Resources.Dispose();
         }
 
 

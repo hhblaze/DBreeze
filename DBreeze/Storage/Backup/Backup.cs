@@ -136,12 +136,19 @@ namespace DBreeze.Storage
                         return UInt64.MaxValue - 2;
                     case "_DBreezeTextIndexer":
                         return UInt64.MaxValue - 3;
+                    case "_DBreezeResources":
+                        return UInt64.MaxValue - 4;
                     default:
                         return Convert.ToUInt64(fileName);
                 }
 
             }
 
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="filenumber"></param>
+            /// <returns></returns>
             internal string ParseFilenameBack(ulong filenumber)
             {
                 switch (filenumber)
@@ -150,6 +157,10 @@ namespace DBreeze.Storage
                         return "_DBreezeSchema";
                     case (UInt64.MaxValue - 2):
                         return "_DBreezeTranJrnl";
+                    case (UInt64.MaxValue - 3):
+                        return "_DBreezeTextIndexer";
+                    case (UInt64.MaxValue - 4):
+                        return "_DBreezeResources";
                     default:
                         return filenumber.ToString();
                 }
