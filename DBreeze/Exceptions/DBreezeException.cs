@@ -134,7 +134,11 @@ namespace DBreeze.Exceptions
 
             BACKUP_FOLDER_CREATE_FAILED,
 
-            TABLE_WAS_CHANGED_LINKS_ARE_NOT_ACTUAL
+            TABLE_WAS_CHANGED_LINKS_ARE_NOT_ACTUAL,
+            /// <summary>
+            /// The rest must be supplied via extra params
+            /// </summary>
+            DBREEZE_RESOURCES_CONCERNING
         }
 
         public static Exception Throw(Exception innerException)
@@ -305,6 +309,9 @@ namespace DBreeze.Exceptions
                 //Backup
                 case eDBreezeExceptions.BACKUP_FOLDER_CREATE_FAILED:
                     return new DBreezeException(String.Format("Backup folder creation has failed"), innerException);
+
+                case eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING:
+                    return new DBreezeException(String.Format("DBreeze.DbreezeResources err: \"{0}\"!", message), innerException);
             }
 
             //Fake

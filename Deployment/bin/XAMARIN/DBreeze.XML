@@ -2289,6 +2289,11 @@
             Unified class for Debreeze exceptions
             </summary>
         </member>
+        <member name="F:DBreeze.Exceptions.DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING">
+            <summary>
+            The rest must be supplied via extra params
+            </summary>
+        </member>
         <member name="M:DBreeze.Exceptions.DBreezeException.GenerateException(DBreeze.Exceptions.DBreezeException.eDBreezeExceptions,System.String,System.Exception)">
             <summary>
             Internal

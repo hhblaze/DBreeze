@@ -13,6 +13,8 @@ using DBreeze.LianaTrie;
 using DBreeze.Storage;
 using DBreeze.Utils;
 using DBreeze.DataTypes;
+using DBreeze.Exceptions;
+
 using System.Threading;
 
 namespace DBreeze
@@ -183,7 +185,7 @@ namespace DBreeze
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Insert", ex);
             }
             finally
             {
@@ -327,7 +329,7 @@ namespace DBreeze
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Insert batch", ex);
             }
             finally
             {
@@ -366,7 +368,7 @@ namespace DBreeze
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Remove batch", ex);
             }
             finally
             {
@@ -395,7 +397,7 @@ namespace DBreeze
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Remove", ex);
             }
             finally
             {
@@ -480,7 +482,7 @@ namespace DBreeze
                         }
                         catch (Exception ex)
                         {
-                            throw ex;
+                            throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Select 1", ex);
                         }
                         finally
                         {
@@ -489,7 +491,7 @@ namespace DBreeze
 
                     }
                     else
-                    {
+                    {                        
                         if (val == null)
                             ret[rsn] = default(TValue);
                         else
@@ -501,7 +503,7 @@ namespace DBreeze
             }
             catch (System.Exception ex)
             {
-                throw ex;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Select 2", ex);
             }
             finally
             {
@@ -544,10 +546,7 @@ namespace DBreeze
                         //At this moment value appeared
                         if (_d.TryGetValue(rn, out val))
                         {
-                            if (val != null)
-                                return DataTypesConvertor.ConvertBack<TValue>(val);
-                            else
-                                return default(TValue);
+                            return val == null ? default(TValue) : DataTypesConvertor.ConvertBack<TValue>(val);                        
                         }
 
                         //trying to get from database
@@ -567,6 +566,7 @@ namespace DBreeze
                             {
                                 if (resourceSettings.HoldInMemory)
                                     _d[rn] = val;
+
                                 return DataTypesConvertor.ConvertBack<TValue>(val);
                             }
                         }
@@ -580,7 +580,7 @@ namespace DBreeze
                     }
                     catch (Exception ex)
                     {
-                        throw ex;
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Select 1", ex);
                     }
                     finally
                     {
@@ -590,16 +590,12 @@ namespace DBreeze
                 }
                 else
                 {
-                    if (val == null)
-                        return default(TValue);
-                    else
-                        return DataTypesConvertor.ConvertBack<TValue>(val);
-
+                    return val == null ? default(TValue) : DataTypesConvertor.ConvertBack<TValue>(val);                 
                 }
             }
             catch (System.Exception ex)
-            {                    
-                throw ex;
+            {
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING, "in Select 2", ex);
             }
             finally
             {
