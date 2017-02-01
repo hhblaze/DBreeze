@@ -327,10 +327,10 @@ namespace DBreeze
 
                             //trying to get from database
                             byte[] btKey = DataTypesConvertor.ConvertKey<string>(rn);
-                            var row = LTrie.GetKey(btKey, true);
+                            var row = LTrie.GetKey(btKey, false);
                             if (row.Exists)
                             {
-                                val = row.GetFullValue(true);
+                                val = row.GetFullValue(false);
                                 if (val == null)
                                 {
                                     if (holdInMemory)
@@ -425,10 +425,10 @@ namespace DBreeze
 
                         //trying to get from database
                         byte[] btKey = DataTypesConvertor.ConvertKey<string>(rn);
-                        var row = LTrie.GetKey(btKey, true);
+                        var row = LTrie.GetKey(btKey, false);
                         if (row.Exists)
                         {
-                            val = row.GetFullValue(true);
+                            val = row.GetFullValue(false);
                             if (val == null)
                             {
                                 if (holdInMemory)
