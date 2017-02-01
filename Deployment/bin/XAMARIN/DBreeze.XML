@@ -1211,6 +1211,11 @@
             Can be called from anywhere, even from other transactions. There is no need to add into sync table
             </summary>
         </member>
+        <member name="F:DBreeze.DBreezeResources._urp">
+            <summary>
+            UserResourcePrefix. Having prefixes gives us ability to reuse the table for smth. else
+            </summary>
+        </member>
         <member name="M:DBreeze.DBreezeResources.#ctor(DBreeze.DBreezeEngine)">
             <summary>
             constructor
@@ -1222,21 +1227,23 @@
             Disposing
             </summary>
         </member>
-        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,System.Boolean)">
+        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,System.Boolean,System.Boolean)">
             <summary>
-            
+            Insert resource
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourceName"></param>
             <param name="resourceObject"></param>
-            <param name="holdInMemory"></param>
+            <param name="holdInMemory">will store resource also in memory for the fast access</param>
+            <param name="holdOnDisk">resource is synchronized with disk</param>
         </member>
-        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},System.Boolean)">
+        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},System.Boolean,System.Boolean)">
             <summary>
             Batch insert of resources
             </summary>
             <param name="resources"></param>
-            <param name="holdInMemory"></param>
+            <param name="holdInMemory">will store resource also in memory for the fast access</param>
+            <param name="holdOnDisk">resource is synchronized with disk</param>
         </member>
         <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
             <summary>
@@ -1247,6 +1254,15 @@
             <summary>
             Removes resource from database and 
             </summary>        
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},System.Boolean)">
+            <summary>
+            Gets resources of the same type as a batch from memory or database (if not yet loaded)
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="resourcesNames"></param>
+            <param name="holdInMemory">first time will grab fro database and will leave in-memory</param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.String,System.Boolean)">
             <summary>
