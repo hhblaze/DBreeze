@@ -70,7 +70,44 @@ namespace DBreeze
             }
         }
 
+        /// <summary>
+        /// Settings regulating resources behaviour
+        /// </summary>
+        public class Settings
+        {
+            public Settings()
+            {
+                HoldInMemory = true;
+                HoldOnDisk = true;
+                FastUpdates = false;
+                InsertWithVerification = true;
+            }
+            /// <summary>
+            /// Resource will be stored in-memory, for the fast access.
+            /// Default is true
+            /// </summary>
+            public bool HoldInMemory { get; set; }
 
+            /// <summary>
+            /// Resource will be stored on-disk
+            /// Default is true
+            /// </summary>
+            public bool HoldOnDisk { get; set; }
+
+            /// <summary>            
+            /// Sets OverWriteIsAllowed = false.
+            /// Toggle only if it's not enough the speed of the update.
+            /// Default is false.
+            /// </summary>
+            public bool FastUpdates { get; set; }
+
+            /// <summary>
+            /// Prevents disk insert of the identical value of the existing key.
+            /// Is interesting in case of intensive writes.
+            /// Default is true.
+            /// </summary>
+            public bool InsertWithVerification { get; set; }
+        }
 
         /// <summary>
         /// Insert resource
@@ -78,28 +115,70 @@ namespace DBreeze
         /// <typeparam name="TValue"></typeparam>
         /// <param name="resourceName"></param>
         /// <param name="resourceObject"></param>
-        /// <param name="holdInMemory">will store resource also in memory for the fast access</param>
-        /// <param name="holdOnDisk">resource is synchronized with disk</param>
-        public void Insert<TValue>(string resourceName, TValue resourceObject, bool holdInMemory=true, bool holdOnDisk = true)
+        /// <param name="resourceSettings">resource extra behaviour</param>        
+        public void Insert<TValue>(string resourceName, TValue resourceObject, Settings resourceSettings = null)
         {
             if (String.IsNullOrEmpty(resourceName))
                 return;
 
+            if (resourceSettings == null)
+                resourceSettings = new Settings();
+
             string rn = _urp + resourceName;
 
             byte[] btKey = DataTypesConvertor.ConvertKey<string>(rn);
-            byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(resourceObject);
+            byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(resourceObject);            
 
             _sync.EnterWriteLock();
             try
             {
-                if (holdOnDisk)
+                //------- Verification, to prevent storing of the identical value
+                if (resourceSettings.InsertWithVerification)
                 {
+                    byte[] btExVal = null;
+                    if (_d.TryGetValue(rn, out btExVal))
+                    {
+                        if (btExVal._ByteArrayEquals(btValue))
+                            return;
+                    }
+                    else
+                    {
+                        //Grabbing from disk
+                        if (resourceSettings.HoldOnDisk)
+                        {
+                            var row = LTrie.GetKey(btKey, false);
+                            if (row.Exists)
+                            {
+                                btExVal = row.GetFullValue(false);
+                                if (btExVal._ByteArrayEquals(btValue))
+                                {
+                                    if (resourceSettings.HoldInMemory)
+                                        _d[rn] = btValue;
+
+                                    return;
+                                }
+                            }
+                        }
+
+                    }
+                }
+                //------- 
+
+
+                if (resourceSettings.HoldOnDisk)
+                {
+                    bool cov = LTrie.OverWriteIsAllowed;
+                    if (resourceSettings.FastUpdates)
+                        LTrie.OverWriteIsAllowed = false;
+
                     LTrie.Add(btKey, btValue);
                     LTrie.Commit();
+
+                    if (resourceSettings.FastUpdates)
+                        LTrie.OverWriteIsAllowed = cov;
                 }
 
-                if (holdInMemory)
+                if (resourceSettings.HoldInMemory)
                     _d[rn] = btValue;
             }
             catch (Exception ex)
@@ -168,19 +247,26 @@ namespace DBreeze
         /// Batch insert of resources
         /// </summary>
         /// <param name="resources"></param>
-        /// <param name="holdInMemory">will store resource also in memory for the fast access</param>
-        /// <param name="holdOnDisk">resource is synchronized with disk</param>
-        public void Insert(IDictionary<string, byte[]> resources, bool holdInMemory = true, bool holdOnDisk = true)
+        /// <param name="resourceSettings">resource extra behaviour</param>
+        public void Insert(IDictionary<string, byte[]> resources, Settings resourceSettings = null)
         {
             if (resources == null || resources.Count < 1)
                 return;
 
+            if (resourceSettings == null)
+                resourceSettings = new Settings();
+
             byte[] btKey = null;
+            byte[] btExVal = null;
             string rn = String.Empty;
 
             _sync.EnterWriteLock();
             try
             {
+                bool cov = LTrie.OverWriteIsAllowed;
+                if (resourceSettings.HoldOnDisk && resourceSettings.FastUpdates)
+                    LTrie.OverWriteIsAllowed = false;
+
                 foreach (var rs in resources)
                 {
                     if (String.IsNullOrEmpty(rs.Key))
@@ -188,19 +274,56 @@ namespace DBreeze
 
                     rn = _urp + rs.Key;
 
-                    if (holdInMemory)
+                    //------- Verification, to prevent storing of the identical value
+                    if (resourceSettings.InsertWithVerification)
+                    { 
+                        if (_d.TryGetValue(rn, out btExVal))
+                        {
+                            if (btExVal._ByteArrayEquals(rs.Value))
+                                continue;
+                        }
+                        else
+                        {
+                            //Grabbing from disk
+                            if (resourceSettings.HoldOnDisk)
+                            {
+                                var row = LTrie.GetKey(btKey, false);
+                                if (row.Exists)
+                                {
+                                    btExVal = row.GetFullValue(false);
+                                    if (btExVal._ByteArrayEquals(rs.Value))
+                                    {
+                                        if (resourceSettings.HoldInMemory)
+                                            _d[rn] = rs.Value;
+
+                                        continue;
+                                    }
+                                }
+                            }
+                          
+                        }
+                    }
+                    //------- 
+
+                    if (resourceSettings.HoldInMemory)
                         _d[rn] = rs.Value;
 
-                    if (holdOnDisk)
+                    if (resourceSettings.HoldOnDisk)
                     {
                         btKey = DataTypesConvertor.ConvertKey<string>(rn);
                         LTrie.Add(btKey, rs.Value);
                     }
                 }
 
-                if (holdOnDisk)
-                    LTrie.Commit();
+                if (resourceSettings.HoldOnDisk)
+                {
+                    if (resourceSettings.FastUpdates)
+                        LTrie.OverWriteIsAllowed = cov;
 
+                    LTrie.Commit();
+                }
+
+                
             }
             catch (Exception ex)
             {
@@ -289,13 +412,15 @@ namespace DBreeze
         /// </summary>
         /// <typeparam name="TValue"></typeparam>
         /// <param name="resourcesNames"></param>
-        /// <param name="holdInMemory">first time will grab fro database and will leave in-memory</param>
+        /// <param name="resourceSettings">resource extra behaviour</param>
         /// <returns></returns>
-        public IDictionary<string,TValue> Select<TValue>(IList<string> resourcesNames, bool holdInMemory = true)
+        public IDictionary<string,TValue> Select<TValue>(IList<string> resourcesNames, Settings resourceSettings = null)
         {
             Dictionary<string, TValue> ret = new Dictionary<string, TValue>();
             if (resourcesNames == null || resourcesNames.Count < 1)
                 return ret;
+            if (resourceSettings == null)
+                resourceSettings = new Settings();
 
             byte[] val = null;
             string rn = String.Empty;
@@ -333,21 +458,21 @@ namespace DBreeze
                                 val = row.GetFullValue(false);
                                 if (val == null)
                                 {
-                                    if (holdInMemory)
+                                    if (resourceSettings.HoldInMemory)
                                         _d[rn] = null;
 
                                     ret[rsn] = default(TValue);
                                 }
                                 else
                                 {
-                                    if (holdInMemory)
+                                    if (resourceSettings.HoldInMemory)
                                         _d[rn] = val;
                                     ret[rsn] = DataTypesConvertor.ConvertBack<TValue>(val);
                                 }
                             }
                             else
                             {
-                                if (holdInMemory)
+                                if (resourceSettings.HoldInMemory)
                                     _d[rn] = null;
 
                                 ret[rsn] = default(TValue);
@@ -395,12 +520,14 @@ namespace DBreeze
         /// </summary>
         /// <typeparam name="TValue"></typeparam>
         /// <param name="resourceName"></param>
-        /// <param name="holdInMemory">first time will grab fro database and will leave in-memory</param>
+        /// <param name="resourceSettings">resource extra behaviour</param>
         /// <returns></returns>
-        public TValue Select<TValue>(string resourceName, bool holdInMemory = true)
+        public TValue Select<TValue>(string resourceName, Settings resourceSettings = null)
         {
             if (String.IsNullOrEmpty(resourceName))
                 return default(TValue);
+            if (resourceSettings == null)
+                resourceSettings = new Settings();
 
             byte[] val = null;
             string rn = _urp + resourceName;
@@ -431,21 +558,21 @@ namespace DBreeze
                             val = row.GetFullValue(false);
                             if (val == null)
                             {
-                                if (holdInMemory)
+                                if (resourceSettings.HoldInMemory)
                                     _d[rn] = null;
 
                                 return default(TValue);
                             }
                             else
                             {
-                                if (holdInMemory)
+                                if (resourceSettings.HoldInMemory)
                                     _d[rn] = val;
                                 return DataTypesConvertor.ConvertBack<TValue>(val);
                             }
                         }
                         else
                         {
-                            if (holdInMemory)
+                            if (resourceSettings.HoldInMemory)
                                 _d[rn] = null;
 
                             return default(TValue);

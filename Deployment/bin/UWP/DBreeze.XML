@@ -27,23 +27,52 @@
             Disposing
             </summary>
         </member>
-        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,System.Boolean,System.Boolean)">
+        <member name="T:DBreeze.DBreezeResources.Settings">
+            <summary>
+            Settings regulating resources behaviour
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
+            <summary>
+            Resource will be stored in-memory, for the fast access.
+            Default is true
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.HoldOnDisk">
+            <summary>
+            Resource will be stored on-disk
+            Default is true
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.FastUpdates">
+            <summary>            
+            Sets OverWriteIsAllowed = false.
+            Toggle only if it's not enough the speed of the update.
+            Default is false.
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.InsertWithVerification">
+            <summary>
+            Prevents disk insert of the identical value of the existing key.
+            Is interesting in case of intensive writes.
+            Default is true.
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,DBreeze.DBreezeResources.Settings)">
             <summary>
             Insert resource
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourceName"></param>
             <param name="resourceObject"></param>
-            <param name="holdInMemory">will store resource also in memory for the fast access</param>
-            <param name="holdOnDisk">resource is synchronized with disk</param>
+            <param name="resourceSettings">resource extra behaviour</param>        
         </member>
-        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},System.Boolean,System.Boolean)">
+        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},DBreeze.DBreezeResources.Settings)">
             <summary>
             Batch insert of resources
             </summary>
             <param name="resources"></param>
-            <param name="holdInMemory">will store resource also in memory for the fast access</param>
-            <param name="holdOnDisk">resource is synchronized with disk</param>
+            <param name="resourceSettings">resource extra behaviour</param>
         </member>
         <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
             <summary>
@@ -55,22 +84,22 @@
             Removes resource from database and 
             </summary>        
         </member>
-        <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},System.Boolean)">
+        <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
             <summary>
             Gets resources of the same type as a batch from memory or database (if not yet loaded)
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourcesNames"></param>
-            <param name="holdInMemory">first time will grab fro database and will leave in-memory</param>
+            <param name="resourceSettings">resource extra behaviour</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.DBreezeResources.Select``1(System.String,System.Boolean)">
+        <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
             <summary>
             Gets resource from memory or database (if not yet loaded)
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourceName"></param>
-            <param name="holdInMemory">first time will grab fro database and will leave in-memory</param>
+            <param name="resourceSettings">resource extra behaviour</param>
             <returns></returns>
         </member>
         <member name="T:DBreeze.TextSearch.BlockAnd">
