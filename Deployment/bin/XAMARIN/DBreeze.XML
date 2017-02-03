@@ -1232,6 +1232,11 @@
             Settings regulating resources behaviour
             </summary>
         </member>
+        <member name="M:DBreeze.DBreezeResources.Settings.#ctor">
+            <summary>
+            Constructor
+            </summary>
+        </member>
         <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
             <summary>
             Resource will be stored in-memory, for the fast access.
@@ -1255,6 +1260,12 @@
             <summary>
             Prevents disk insert of the identical value of the existing key.
             Is interesting in case of intensive writes.
+            Default is true.
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.SortingAscending">
+            <summary>
+            Needed for getting resources via SelectStartsWith.
             Default is true.
             </summary>
         </member>
@@ -1284,9 +1295,20 @@
             Removes resource from database and 
             </summary>        
         </member>
+        <member name="M:DBreeze.DBreezeResources.SelectStartsWith``1(System.String,DBreeze.DBreezeResources.Settings)">
+            <summary>
+            SelectStartsWith.
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="resourceNameStartsWith"></param>
+            <param name="resourceSettings"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
             <summary>
-            Gets resources of the same type as a batch from memory or database (if not yet loaded)
+            Gets resources of the same type as a batch from memory or database (if not yet loaded).
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourcesNames"></param>
@@ -1296,6 +1318,7 @@
         <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
             <summary>
             Gets resource from memory or database (if not yet loaded)
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourceName"></param>

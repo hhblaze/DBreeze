@@ -77,12 +77,16 @@ namespace DBreeze
         /// </summary>
         public class Settings
         {
+            /// <summary>
+            /// Constructor
+            /// </summary>
             public Settings()
             {
                 HoldInMemory = true;
                 HoldOnDisk = true;
                 FastUpdates = false;
                 InsertWithVerification = true;
+                SortingAscending = true;
             }
             /// <summary>
             /// Resource will be stored in-memory, for the fast access.
@@ -109,6 +113,12 @@ namespace DBreeze
             /// Default is true.
             /// </summary>
             public bool InsertWithVerification { get; set; }
+
+            /// <summary>
+            /// Needed for getting resources via SelectStartsWith.
+            /// Default is true.
+            /// </summary>
+            public bool SortingAscending { get; set; }
         }
 
         /// <summary>
@@ -407,10 +417,75 @@ namespace DBreeze
         }
 
 
+        /// <summary>
+        /// SelectStartsWith.
+        /// Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="resourceNameStartsWith"></param>
+        /// <param name="resourceSettings"></param>
+        /// <returns></returns>
+        public IEnumerable<KeyValuePair<string, TValue>> SelectStartsWith<TValue>(string resourceNameStartsWith, Settings resourceSettings = null)
+        {
+            if (!String.IsNullOrEmpty(resourceNameStartsWith))
+            {
+                if (resourceSettings == null)
+                    resourceSettings = new Settings();
+
+                byte[] val = null;
+                string rn = String.Empty;
+                byte[] btKey = null;
+
+
+
+                _sync.EnterUpgradeableReadLock();
+
+                btKey = DataTypesConvertor.ConvertKey<string>(_urp + resourceNameStartsWith);
+                var q = LTrie.IterateForwardStartsWith(btKey);
+                if(!resourceSettings.SortingAscending)
+                    q = LTrie.IterateBackwardStartsWith(btKey);
+
+                foreach (var el in q)
+                {
+                    rn = el.Key.UTF8_GetString();
+
+                    if (!_d.TryGetValue(rn, out val))
+                    {
+                        val = el.GetFullValue(false);
+
+                        if (resourceSettings.HoldInMemory)
+                        {
+                            _sync.EnterWriteLock();
+                            try
+                            {
+                                _d[rn] = val;
+                            }
+                            catch (Exception)
+                            { }
+                            finally
+                            {
+                                _sync.ExitWriteLock();
+                            }
+                        }
+                    }
+
+                    //no try..catch for yield return
+                    yield return new KeyValuePair<string, TValue>(rn.Substring(1), val == null ? default(TValue) : DataTypesConvertor.ConvertBack<TValue>(val));
+                }
+
+                _sync.ExitUpgradeableReadLock();
+
+            }//if is null or
+
+
+        }
+
+
 
 
         /// <summary>
-        /// Gets resources of the same type as a batch from memory or database (if not yet loaded)
+        /// Gets resources of the same type as a batch from memory or database (if not yet loaded).
+        /// Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
         /// </summary>
         /// <typeparam name="TValue"></typeparam>
         /// <param name="resourcesNames"></param>
@@ -426,6 +501,8 @@ namespace DBreeze
 
             byte[] val = null;
             string rn = String.Empty;
+
+            //bool ba = typeof(TValue) == typeof(byte[]);
 
             _sync.EnterUpgradeableReadLock();
             try
@@ -450,6 +527,8 @@ namespace DBreeze
                                     ret[rsn] = DataTypesConvertor.ConvertBack<TValue>(val);
                                 else
                                     ret[rsn] = default(TValue);
+
+                                continue;
                             }
 
                             //trying to get from database
@@ -519,6 +598,7 @@ namespace DBreeze
 
         /// <summary>
         /// Gets resource from memory or database (if not yet loaded)
+        /// Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
         /// </summary>
         /// <typeparam name="TValue"></typeparam>
         /// <param name="resourceName"></param>

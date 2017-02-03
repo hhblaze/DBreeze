@@ -113,6 +113,9 @@
     <Compile Include="..\DBreeze\Engine\DBreezeResources.cs">
       <Link>Engine\DBreezeResources.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs">
+      <Link>Exceptions\DBreezeException.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
     </Compile>
@@ -139,7 +142,6 @@
     <Compile Include="Engine\DBreezeEngine.cs" />
     <Compile Include="Engine\DBreezeRemoteEngine.cs" />
     <Compile Include="Engine\Scheme.cs" />
-    <Compile Include="Exceptions\DBreezeException.cs" />
     <Compile Include="Exceptions\TableNotOperableException.cs" />
     <Compile Include="LianaTrie\Iterations\Backward.cs" />
     <Compile Include="LianaTrie\Iterations\Forward.cs" />

@@ -32,6 +32,11 @@
             Settings regulating resources behaviour
             </summary>
         </member>
+        <member name="M:DBreeze.DBreezeResources.Settings.#ctor">
+            <summary>
+            Constructor
+            </summary>
+        </member>
         <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
             <summary>
             Resource will be stored in-memory, for the fast access.
@@ -55,6 +60,12 @@
             <summary>
             Prevents disk insert of the identical value of the existing key.
             Is interesting in case of intensive writes.
+            Default is true.
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.SortingAscending">
+            <summary>
+            Needed for getting resources via SelectStartsWith.
             Default is true.
             </summary>
         </member>
@@ -84,9 +95,20 @@
             Removes resource from database and 
             </summary>        
         </member>
+        <member name="M:DBreeze.DBreezeResources.SelectStartsWith``1(System.String,DBreeze.DBreezeResources.Settings)">
+            <summary>
+            SelectStartsWith.
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="resourceNameStartsWith"></param>
+            <param name="resourceSettings"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
             <summary>
-            Gets resources of the same type as a batch from memory or database (if not yet loaded)
+            Gets resources of the same type as a batch from memory or database (if not yet loaded).
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourcesNames"></param>
@@ -96,11 +118,36 @@
         <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
             <summary>
             Gets resource from memory or database (if not yet loaded)
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
             </summary>
             <typeparam name="TValue"></typeparam>
             <param name="resourceName"></param>
             <param name="resourceSettings">resource extra behaviour</param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Exceptions.DBreezeException">
+            <summary>
+            Unified class for Debreeze exceptions
+            </summary>
+        </member>
+        <member name="F:DBreeze.Exceptions.DBreezeException.eDBreezeExceptions.DBREEZE_RESOURCES_CONCERNING">
+            <summary>
+            The rest must be supplied via extra params
+            </summary>
+        </member>
+        <member name="M:DBreeze.Exceptions.DBreezeException.GenerateException(DBreeze.Exceptions.DBreezeException.eDBreezeExceptions,System.String,System.Exception)">
+            <summary>
+            Internal
+            </summary>
+            <param name="exceptionType"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Exceptions.TableNotOperableException">
+            <summary>
+            This is a specific Exception which will bring to DB is not opearable state, we need to analyze this type of exception separately,
+            that's why extra class.
+            </summary>
         </member>
         <member name="T:DBreeze.TextSearch.BlockAnd">
             <summary>
@@ -2142,25 +2189,6 @@
             <param name="oldUserTableName"></param>
             <param name="newUserTableName"></param>
             <returns>true if successfully renamed, otherwise false</returns>
-        </member>
-        <member name="T:DBreeze.Exceptions.DBreezeException">
-            <summary>
-            Unified class for Debreeze exceptions
-            </summary>
-        </member>
-        <member name="M:DBreeze.Exceptions.DBreezeException.GenerateException(DBreeze.Exceptions.DBreezeException.eDBreezeExceptions,System.String,System.Exception)">
-            <summary>
-            Internal
-            </summary>
-            <param name="exceptionType"></param>
-            <param name="message"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.Exceptions.TableNotOperableException">
-            <summary>
-            This is a specific Exception which will bring to DB is not opearable state, we need to analyze this type of exception separately,
-            that's why extra class.
-            </summary>
         </member>
         <member name="F:DBreeze.LianaTrie.Iterations.Backward.ReturnKeyValuePair">
             <summary>
