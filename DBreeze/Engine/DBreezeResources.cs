@@ -279,7 +279,7 @@ namespace DBreeze
                 if (resourceSettings.HoldOnDisk && resourceSettings.FastUpdates)
                     LTrie.OverWriteIsAllowed = false;
 
-                foreach (var rs in resources)
+                foreach (var rs in resources.OrderBy(r=>r.Key))
                 {
                     if (String.IsNullOrEmpty(rs.Key))
                         continue;
@@ -508,7 +508,7 @@ namespace DBreeze
             try
             {
 
-                foreach (var rsn in resourcesNames)
+                foreach (var rsn in resourcesNames.OrderBy(r => r))
                 {
                     if (String.IsNullOrEmpty(rsn))
                         continue;
