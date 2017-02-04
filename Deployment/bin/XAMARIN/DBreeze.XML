@@ -1278,9 +1278,17 @@
             <param name="resourceObject"></param>
             <param name="resourceSettings">resource extra behaviour</param>        
         </member>
+        <member name="M:DBreeze.DBreezeResources.Insert``1(System.Collections.Generic.IDictionary{System.String,``0},DBreeze.DBreezeResources.Settings)">
+            <summary>
+            Batch insert of resources where value is a defined DBreeze or DBreeze.CustomSerializer type
+            </summary>
+            <typeparam name="TValue"></typeparam>
+            <param name="resources"></param>
+            <param name="resourceSettings"></param>
+        </member>
         <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},DBreeze.DBreezeResources.Settings)">
             <summary>
-            Batch insert of resources
+            Batch insert of resources where value is a byte[]
             </summary>
             <param name="resources"></param>
             <param name="resourceSettings">resource extra behaviour</param>

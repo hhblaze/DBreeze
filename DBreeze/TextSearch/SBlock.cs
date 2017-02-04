@@ -405,6 +405,10 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.OR:
+                    if(ra != null || ra.Count == 0)
+                        return this.foundArrays;
+                    if (la == null)
+                        la = new List<byte[]>();
                     la.AddRange(ra);
                     mrg = WABI.MergeByOrLogic(la);
                     if (mrg != null)
@@ -412,6 +416,10 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.XOR:
+                    if (ra != null || ra.Count == 0)
+                        return this.foundArrays;
+                    if (la == null)
+                        la = new List<byte[]>();
                     la.AddRange(ra);
                     mrg = WABI.MergeByXorLogic(la);
                     if (mrg != null)
@@ -419,6 +427,8 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.EXCLUDE:
+                    if (la == null || ra == null || la.Count == 0 || ra.Count == 0)
+                        return this.foundArrays;
                     mrg = WABI.MergeByExcludeLogic(la.FirstOrDefault(), ra.FirstOrDefault());
                     if (mrg != null)
                         this.foundArrays.Add(mrg);

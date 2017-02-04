@@ -37,6 +37,8 @@ namespace DBreeze
         Dictionary<string, byte[]> _d = new Dictionary<string, byte[]>();
         ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
 
+        Settings _defaultSetting = new Settings();
+
         /// <summary>
         /// UserResourcePrefix. Having prefixes gives us ability to reuse the table for smth. else
         /// </summary>
@@ -134,7 +136,7 @@ namespace DBreeze
                 return;
 
             if (resourceSettings == null)
-                resourceSettings = new Settings();
+                resourceSettings = _defaultSetting;
 
             string rn = _urp + resourceName;
 
@@ -256,7 +258,18 @@ namespace DBreeze
         }
 
         /// <summary>
-        /// Batch insert of resources
+        /// Batch insert of resources where value is a defined DBreeze or DBreeze.CustomSerializer type
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="resourceSettings"></param>
+        public void Insert<TValue>(IDictionary<string, TValue> resources, Settings resourceSettings = null)
+        {
+            this.Insert(resources.ToDictionary(r => r.Key, r=> DataTypesConvertor.ConvertValue<TValue>(r.Value)),resourceSettings);
+        }
+
+        /// <summary>
+        /// Batch insert of resources where value is a byte[]
         /// </summary>
         /// <param name="resources"></param>
         /// <param name="resourceSettings">resource extra behaviour</param>
@@ -266,7 +279,7 @@ namespace DBreeze
                 return;
 
             if (resourceSettings == null)
-                resourceSettings = new Settings();
+                resourceSettings = _defaultSetting;
 
             byte[] btKey = null;
             byte[] btExVal = null;
@@ -430,7 +443,7 @@ namespace DBreeze
             if (!String.IsNullOrEmpty(resourceNameStartsWith))
             {
                 if (resourceSettings == null)
-                    resourceSettings = new Settings();
+                    resourceSettings = _defaultSetting;
 
                 byte[] val = null;
                 string rn = String.Empty;
@@ -497,7 +510,7 @@ namespace DBreeze
             if (resourcesNames == null || resourcesNames.Count < 1)
                 return ret;
             if (resourceSettings == null)
-                resourceSettings = new Settings();
+                resourceSettings = _defaultSetting;
 
             byte[] val = null;
             string rn = String.Empty;
@@ -609,7 +622,7 @@ namespace DBreeze
             if (String.IsNullOrEmpty(resourceName))
                 return default(TValue);
             if (resourceSettings == null)
-                resourceSettings = new Settings();
+                resourceSettings = _defaultSetting;
 
             byte[] val = null;
             string rn = _urp + resourceName;

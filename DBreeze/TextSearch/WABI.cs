@@ -242,6 +242,7 @@ namespace DBreeze.TextSearch
             {
                 for (int j = 0; j < arraysToMerge.Count; j++)
                 {  
+                    
                     if (j == 0)
                         res[i] = arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
                     else
