@@ -405,7 +405,7 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.OR:
-                    if(ra != null || ra.Count == 0)
+                    if(ra == null || ra.Count == 0)
                         return this.foundArrays;
                     if (la == null)
                         la = new List<byte[]>();
@@ -416,7 +416,7 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.XOR:
-                    if (ra != null || ra.Count == 0)
+                    if (ra == null || ra.Count == 0)
                         return this.foundArrays;
                     if (la == null)
                         la = new List<byte[]>();
