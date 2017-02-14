@@ -161,8 +161,8 @@ namespace DBreeze.TextSearch
                 //Creating real block
                 block._tsm = this._tsm;
                 block.BlockId = this._tsm.cntBlockId++;
-                this._tsm.WordsPrepare(block._fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref block.ParsedWords);
-                this._tsm.WordsPrepare(block._containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), false, ref block.ParsedWords);
+                this._tsm.WordsPrepare(block._fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref block.ParsedWords);
+                this._tsm.WordsPrepare(block._containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), false, ref block.ParsedWords);
 
                 this._tsm.toComputeWordsOrigin = true;
                 this._tsm.Blocks[block.BlockId] = block;
@@ -404,9 +404,9 @@ namespace DBreeze.TextSearch
                     this.foundArrays = la;
                     return this.foundArrays;
 
-                case eOperation.OR:
-                    if(ra == null || ra.Count == 0)
-                        return this.foundArrays;
+                case eOperation.OR:                    
+                    if (ra == null)
+                        ra = new List<byte[]>();
                     if (la == null)
                         la = new List<byte[]>();
                     la.AddRange(ra);
@@ -415,9 +415,9 @@ namespace DBreeze.TextSearch
                         this.foundArrays.Add(mrg);
                     return this.foundArrays;
 
-                case eOperation.XOR:
-                    if (ra == null || ra.Count == 0)
-                        return this.foundArrays;
+                case eOperation.XOR:                   
+                    if (ra == null)
+                        ra = new List<byte[]>();
                     if (la == null)
                         la = new List<byte[]>();
                     la.AddRange(ra);

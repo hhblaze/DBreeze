@@ -274,8 +274,8 @@ namespace DBreeze.TextSearch
 
             Blocks.Add(sb.BlockId, sb);
             
-            this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref sb.ParsedWords);
-            this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), false, ref sb.ParsedWords);
+            this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref sb.ParsedWords);
+            this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), false, ref sb.ParsedWords);
 
             toComputeWordsOrigin = true;
             return sb;
@@ -351,8 +351,8 @@ namespace DBreeze.TextSearch
 
             Blocks.Add(sb.BlockId, sb);
             
-            this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), true, ref sb.ParsedWords);
-            this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= 2), false, ref sb.ParsedWords);
+            this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref sb.ParsedWords);
+            this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), false, ref sb.ParsedWords);
 
             toComputeWordsOrigin = true;
             return sb;
