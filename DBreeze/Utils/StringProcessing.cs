@@ -89,6 +89,9 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public static string ReplaceMultiple(this string input, Dictionary<string, string> replaceWith)
         {
+            if (input == null || replaceWith == null || replaceWith.Count < 1)
+                return input;
+
             System.Text.RegularExpressions.Regex regex = null;
 #if NET35
             //|| NETr40   //The same must be use for .NET 4.0

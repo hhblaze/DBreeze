@@ -89,6 +89,9 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public static string ReplaceMultiple(this string input, Dictionary<string, string> replaceWith)
         {
+            if (input == null || replaceWith == null || replaceWith.Count < 1)
+                return input;
+
             var regex = new System.Text.RegularExpressions.Regex(String.Join("|", replaceWith.Keys.Select(k => System.Text.RegularExpressions.Regex.Escape(k))));
             return regex.Replace(input, m => replaceWith[m.Value]);
         }
