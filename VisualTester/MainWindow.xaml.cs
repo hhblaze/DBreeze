@@ -99,9 +99,23 @@ namespace VisualTester
         DBreezeEngine xfre = null;
         private void btTest3_Click(object sender, RoutedEventArgs e)
         {
+            return;
             DBreeze.Diagnostic.SpeedStatistic.ToConsole = false;
             if (xfre == null)
                 xfre = new DBreezeEngine(@"D:\temp\DBR1");
+
+
+            using (var t = xfre.GetTransaction())
+            {
+                t.SynchronizeTables("t1", "t2");
+
+                t.Insert<byte[], string>("t1", new byte[] { 1 }, "test");
+                t.Insert<byte[], string>("t2", new byte[] { 1 }, "t1t");
+
+                t.Commit();             
+            }
+
+            return;
 
             //using (var t = xfre.GetTransaction())
             //{

@@ -197,11 +197,11 @@ namespace DBreeze
                     return Path.Combine(Engine.MainFolder, fileName.ToString());
                 }
             }
-            catch (System.Threading.ThreadAbortException ex)
-            {
-                //We don'T make DBisOperable = false;                
-                throw ex;
-            }
+            //catch (System.Threading.ThreadAbortException ex)
+            //{
+            //    //We don'T make DBisOperable = false;                
+            //    throw ex;
+            //}
             catch (Exception ex)
             {
                 this.Engine.DBisOperable = false;

@@ -553,8 +553,9 @@ namespace DBreeze.Transactions
                      }
                      catch (System.Threading.ThreadAbortException ex)
                      {
-                         //We don'T make DBisOperable = false;                         
-                         throw ex;
+                        //Rollback was ok, so we just return mistake, why commit failed
+                        //We don'T make DBisOperable = false;                         
+                        throw ex;
                      }
                      catch (TableNotOperableException ex1)
                      {
@@ -586,11 +587,11 @@ namespace DBreeze.Transactions
                             tt.ITRCommit();
 
                         }
-                        catch (System.Threading.ThreadAbortException ex)
-                        {
-                            //We don'T make DBisOperable = false;                         
-                            throw ex;
-                        }
+                        //catch (System.Threading.ThreadAbortException ex)
+                        //{
+                        //    //We don'T make DBisOperable = false;                         
+                        //    throw ex;
+                        //}
                         catch (Exception ex)
                         {
                             //SMTH HAPPENED INSIDE OF COMMIT Trying to rollBack tables
@@ -603,11 +604,11 @@ namespace DBreeze.Transactions
 
                                 this._engine._transactionsJournal.RemoveTransactionFromDictionary(tranNumber);
                             }
-                            catch (System.Threading.ThreadAbortException ex1)
-                            {
-                                //We don'T make DBisOperable = false;                         
-                                throw ex1;
-                            }
+                            //catch (System.Threading.ThreadAbortException ex1)
+                            //{
+                            //    //We don'T make DBisOperable = false;                         
+                            //    throw ex1;
+                            //}
                             catch (Exception ex1)
                             {
                                 //CASCADE, WHICH MUST BRING TO DB is not opearable state
@@ -631,11 +632,11 @@ namespace DBreeze.Transactions
                     {
                         this._engine._transactionsJournal.FinishTransaction(tranNumber);
                     }
-                    catch (System.Threading.ThreadAbortException ex)
-                    {
-                        //We don'T make DBisOperable = false;                         
-                        throw ex;
-                    }
+                    //catch (System.Threading.ThreadAbortException ex)
+                    //{
+                    //    //We don'T make DBisOperable = false;                         
+                    //    throw ex;
+                    //}
                     catch (Exception ex)
                     {
                         this._engine.DBisOperable = false;
@@ -672,11 +673,11 @@ namespace DBreeze.Transactions
                     {
                         tablesForTransaction[0].SingleRollback();
                     }
-                    catch (System.Threading.ThreadAbortException ex)
-                    {
-                        //We don'T make DBisOperable = false;                         
-                        throw ex;
-                    }
+                    //catch (System.Threading.ThreadAbortException ex)
+                    //{
+                    //    //We don'T make DBisOperable = false;                         
+                    //    throw ex;
+                    //}
                     catch (Exception ex)
                     {
                         this._engine.DBisOperable = false;
@@ -696,11 +697,11 @@ namespace DBreeze.Transactions
                             tt1.SingleRollback();
                         }
                     }
-                    catch (System.Threading.ThreadAbortException ex1)
-                    {
-                        //We don'T make DBisOperable = false;                         
-                        throw ex1;
-                    }
+                    //catch (System.Threading.ThreadAbortException ex1)
+                    //{
+                    //    //We don'T make DBisOperable = false;                         
+                    //    throw ex1;
+                    //}
                     catch (Exception ex1)
                     {
                         //CASCADE, WHICH MUST BRING TO DB is not opearatbale state

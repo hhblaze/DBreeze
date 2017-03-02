@@ -166,11 +166,11 @@ namespace DBreeze.Transactions
                 //If all ok, recreate file
                 LTrie.RemoveAll(true);
             }
-            catch (System.Threading.ThreadAbortException ex)
-            {
-                //We don'T make DBisOperable = false;                         
-                throw ex;
-            }
+            //catch (System.Threading.ThreadAbortException ex)
+            //{
+            //    //We don'T make DBisOperable = false;                         
+            //    throw ex;
+            //}
             catch (Exception ex)
             {
                 //BRINGS TO DB NOT OPERATABLE
@@ -262,11 +262,12 @@ namespace DBreeze.Transactions
                     {
                         foreach (var tt in tbls)
                         {
-                            tt.Value.ITRCommitFinished();
+                            tt.Value.ITRCommitFinished();                            
                         }
                     }
                     catch (System.Threading.ThreadAbortException ex)
                     {
+                        //CASCADE from ITRCommitFinished, brings to NON-OPERATABL
                         //CASCADE 
                         throw ex;
                     }

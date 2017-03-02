@@ -1845,10 +1845,10 @@ namespace DBreeze.LianaTrie
                 GenerationMapSaved = true;
                 DtTableFixed = DateTime.Now.Ticks;
             }
-            catch (System.Threading.ThreadAbortException ex)
-            {                                   
-                throw ex;
-            }
+            //catch (System.Threading.ThreadAbortException ex)
+            //{                                   
+            //    throw ex;
+            //}
             catch (Exception ex)
             {
                 //MUST BRING TO NON-OPERATABLE
