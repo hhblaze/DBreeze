@@ -696,20 +696,20 @@ namespace DBreeze.Transactions
         /// <param name="initialPointer">if null creates new data block, if not null tries to overwrite existing data block</param>
         /// <param name="data"></param>        
         /// <returns></returns>
-        public byte[] InsertDataBlockWithFixedAddress(string tableName, byte[] initialPointer, byte[] data)
+        public byte[] InsertDataBlockWithFixedAddress<TValue>(string tableName, byte[] initialPointer, TValue data)
         {
             byte[] refToDataBlock = null;
 
             if (initialPointer == null)
             {
-                refToDataBlock = this.InsertDataBlock(tableName, initialPointer, data);
+                refToDataBlock = this.InsertDataBlock(tableName, initialPointer, DataTypesConvertor.ConvertValue<TValue>(data));
                 //Inserting fix
                 return this.InsertDataBlock(tableName, null, refToDataBlock);
             }
             else
             {
                 refToDataBlock = this.SelectDataBlock(tableName, initialPointer);
-                refToDataBlock = this.InsertDataBlock(tableName, refToDataBlock, data);
+                refToDataBlock = this.InsertDataBlock(tableName, refToDataBlock, DataTypesConvertor.ConvertValue<TValue>(data));
                 this.InsertDataBlock(tableName, initialPointer, refToDataBlock);
                 return initialPointer;
             }
@@ -743,10 +743,10 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="ptrToDataBlock"></param>
         /// <returns></returns>
-        public byte[] SelectDataBlockWithFixedAddress(string tableName, byte[] ptrToDataBlock)
+        public TValue SelectDataBlockWithFixedAddress<TValue>(string tableName, byte[] ptrToDataBlock)
         {
             byte[] refToDataBlock = this.SelectDataBlock(tableName, ptrToDataBlock);
-            return this.SelectDataBlock(tableName, refToDataBlock);
+            return DataTypesConvertor.ConvertBack<TValue>(this.SelectDataBlock(tableName, refToDataBlock));
         }
 
         /// <summary>
