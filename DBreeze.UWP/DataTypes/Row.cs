@@ -222,7 +222,7 @@ namespace DBreeze.DataTypes
         /// <para></para>
         /// can return null.
         /// </summary>
-        /// <param name="dataBlockId"></param>
+        /// <param name="startIndex"></param>
         /// <returns></returns>
         public byte[] GetDataBlock(uint startIndex)
         {
@@ -249,7 +249,49 @@ namespace DBreeze.DataTypes
             return null;
         }
 
-       
+        /// <summary>
+        /// Returns datablock which fixed address, which identifier is stored in this row from specified index.
+        /// </summary>
+        /// <typeparam name="TVal"></typeparam>
+        /// <param name="startIndex"></param>
+        /// <returns></returns>
+        public TVal GetDataBlockWithFixedAddress<TVal>(uint startIndex)
+        {
+            byte[] dataBlockId = null;
+
+            if (_exists)
+            {
+                if (_row.ValueIsReadOut)
+                {
+                    if (_row.Value == null)
+                        return default(TVal);
+
+                    dataBlockId = _row.Value.Substring((int)startIndex, 16);
+
+                    //dataBlockId=this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+                    //return DataTypesConvertor.ConvertBack<TValue>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
+
+                    //return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+
+                }
+
+                long valueStartPointer = 0;
+                uint valueFullLength = 0;
+                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+                //return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+
+                //dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+                //return DataTypesConvertor.ConvertBack<TValue>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
+            }
+
+            if (dataBlockId == null)
+                return default(TVal);
+
+            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+            return DataTypesConvertor.ConvertBack<TVal>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
+        }
+
+
         /// <summary>
         /// Returns full value and converts it to the value data type.
         /// <para>To take full value or part of the value as byte[] use GetValuePart or GetBytes (for string types like DbAscii etc.)</para>
