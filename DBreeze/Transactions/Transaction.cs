@@ -669,7 +669,7 @@ namespace DBreeze.Transactions
 
 
         /// <summary>
-        /// Insert a dynamic size data block in the table storage, returns fixed 16 bytes length identifier
+        /// Insert a dynamic size data block in the table storage, returns 16 bytes length identifier
         /// <para></para>
         /// which can be stored in a table value from specified index.
         /// <para></para>
@@ -689,6 +689,34 @@ namespace DBreeze.Transactions
 
             return table.InsertDataBlock(ref initialPointer, ref data);
         }
+
+        /// <summary>
+        /// Modification of InsertDataBlock.
+        /// Insert a dynamic size data block in the table storage, returns a fixed 16 bytes length identifier -
+        /// it never changes even the value is updated.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="initialPointer">if null creates new data block, if not null tries to overwrite existing data block</param>
+        /// <param name="data"></param>        
+        /// <returns></returns>
+        public byte[] InsertDataBlockWithFixedAddress(string tableName, byte[] initialPointer, byte[] data)
+        {
+            byte[] refToDataBlock = null;
+
+            if (initialPointer == null)
+            {
+                refToDataBlock = this.InsertDataBlock(tableName, initialPointer, data);
+                //Inserting fix
+                return this.InsertDataBlock(tableName, null, refToDataBlock);
+            }
+            else
+            {
+                refToDataBlock = this.SelectDataBlock(tableName, initialPointer);
+                refToDataBlock = this.InsertDataBlock(tableName, refToDataBlock, data);
+                this.InsertDataBlock(tableName, initialPointer, refToDataBlock);
+                return initialPointer;
+            }
+        }    
 
         /// <summary>
         /// Another way (second is via row by index where pointer is stored) to get stored data block
@@ -711,6 +739,21 @@ namespace DBreeze.Transactions
                 return table.SelectDataBlock(ref ptrToDataBlock, !(readRoot == null));
             }
         }
+
+        /// <summary>
+        /// Gets data block with fixed identifier saved via InsertDataBlockWithFixedAddress
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="ptrToDataBlock"></param>
+        /// <returns></returns>
+        public byte[] SelectDataBlockWithFixedAddress(string tableName, byte[] ptrToDataBlock)
+        {            
+            byte[] refToDataBlock = this.SelectDataBlock(tableName, ptrToDataBlock);
+            return this.SelectDataBlock(tableName, refToDataBlock);
+        }
+
+
+
 
         /// <summary>
         /// Inserts or updates the key

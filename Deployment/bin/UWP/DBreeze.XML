@@ -4427,12 +4427,31 @@
             <para>and later reused for getting data block back</para>
             </returns>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.InsertDataBlockWithFixedAddress(System.String,System.Byte[],System.Byte[])">
+            <summary>
+            Modification of InsertDataBlock.
+            Insert a dynamic size data block in the table storage, returns a fixed 16 bytes length identifier -
+            it never changes even the value is updated.
+            </summary>
+            <param name="tableName"></param>
+            <param name="initialPointer">if null creates new data block, if not null tries to overwrite existing data block</param>
+            <param name="data"></param>        
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectDataBlock(System.String,System.Byte[])">
             <summary>
             Another way (second is via row by index where pointer is stored) to get stored data block
             </summary>
             <param name="tableName"></param>
             <param name="ptrToDataBlock">16 byte pointer identifier, received after insertDataBlock</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.SelectDataBlockWithFixedAddress(System.String,System.Byte[])">
+            <summary>
+            Gets data block with fixed identifier saved via InsertDataBlockWithFixedAddress
+            </summary>
+            <param name="tableName"></param>
+            <param name="ptrToDataBlock"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Insert``2(System.String,``0,``1)">
