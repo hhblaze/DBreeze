@@ -4379,7 +4379,7 @@
             <param name="tableName"></param>
             <param name="initialPointer">if null creates new data block, if not null tries to overwrite existing data block</param>
             <param name="data"></param>        
-            <returns></returns>
+            <returns></returns>        
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectDataBlock(System.String,System.Byte[])">
             <summary>

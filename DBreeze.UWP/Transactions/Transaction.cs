@@ -699,21 +699,32 @@ namespace DBreeze.Transactions
         public byte[] InsertDataBlockWithFixedAddress<TValue>(string tableName, byte[] initialPointer, TValue data)
         {
             byte[] refToDataBlock = null;
+            LTrie table = GetWriteTableFromBuffer(tableName);
+            bool state = table.OverWriteIsAllowed;
+            byte[] dt = null;
+
+            table.OverWriteIsAllowed = true;
+            dt = DataTypesConvertor.ConvertValue<TValue>(data);
 
             if (initialPointer == null)
             {
-                refToDataBlock = this.InsertDataBlock(tableName, initialPointer, DataTypesConvertor.ConvertValue<TValue>(data));
-                //Inserting fix
-                return this.InsertDataBlock(tableName, null, refToDataBlock);
+                refToDataBlock = table.InsertDataBlock(ref initialPointer, ref dt);
+                refToDataBlock = table.InsertDataBlock(ref initialPointer, ref refToDataBlock);
+                table.OverWriteIsAllowed = state;
+                return refToDataBlock;
             }
             else
             {
                 refToDataBlock = this.SelectDataBlock(tableName, initialPointer);
-                refToDataBlock = this.InsertDataBlock(tableName, refToDataBlock, DataTypesConvertor.ConvertValue<TValue>(data));
-                this.InsertDataBlock(tableName, initialPointer, refToDataBlock);
+
+                refToDataBlock = table.InsertDataBlock(ref refToDataBlock, ref dt);
+                table.InsertDataBlock(ref initialPointer, ref refToDataBlock);
+
+                table.OverWriteIsAllowed = state;
                 return initialPointer;
             }
         }
+
 
         /// <summary>
         /// Another way (second is via row by index where pointer is stored) to get stored data block
