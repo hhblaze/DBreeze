@@ -705,15 +705,13 @@ namespace DBreeze.Transactions
             LTrie table = GetWriteTableFromBuffer(tableName);
             bool state = table.OverWriteIsAllowed;
             byte[] dt = null;           
-
-            table.OverWriteIsAllowed = true;
+            
             dt = DataTypesConvertor.ConvertValue<TValue>(data);
 
             if (initialPointer == null)
             {
                 refToDataBlock = table.InsertDataBlock(ref initialPointer, ref dt);
-                refToDataBlock = table.InsertDataBlock(ref initialPointer, ref refToDataBlock);
-                table.OverWriteIsAllowed = state;
+                refToDataBlock = table.InsertDataBlock(ref initialPointer, ref refToDataBlock);              
                 return refToDataBlock;                
             }
             else
@@ -721,8 +719,9 @@ namespace DBreeze.Transactions
                 refToDataBlock = this.SelectDataBlock(tableName, initialPointer);
 
                 refToDataBlock = table.InsertDataBlock(ref refToDataBlock, ref dt);
-                table.InsertDataBlock(ref initialPointer, ref refToDataBlock);
-                
+
+                table.OverWriteIsAllowed = true;
+                table.InsertDataBlock(ref initialPointer, ref refToDataBlock);                
                 table.OverWriteIsAllowed = state;
                 return initialPointer;                
             }
