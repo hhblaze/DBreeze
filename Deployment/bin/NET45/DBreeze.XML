@@ -249,14 +249,12 @@
         </member>
         <member name="M:DBreeze.DataTypes.Row`2.GetDataBlock(System.UInt32)">
             <summary>
-            Returns datablock which identifier is stored in this row from specified index.
-            <para></para>
             Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
             <para></para>
             can return null.
             </summary>
-            <param name="dataBlockId"></param>
-            <returns></returns>
+            <param name="startIndex"></param>
+            <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
         </member>
         <member name="M:DBreeze.DataTypes.Row`2.GetDataBlockWithFixedAddress``1(System.UInt32)">
             <summary>

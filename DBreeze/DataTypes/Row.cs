@@ -215,16 +215,15 @@ namespace DBreeze.DataTypes
             }
         }
 
+
         /// <summary>
-        /// Returns datablock which identifier is stored in this row from specified index.
-        /// <para></para>
         /// Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
         /// <para></para>
         /// can return null.
         /// </summary>
-        /// <param name="dataBlockId"></param>
-        /// <returns></returns>
-        public byte[] GetDataBlock(uint startIndex)
+        /// <param name="startIndex"></param>
+        /// <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
+        public byte[] GetDataBlock(uint startIndex=0)
         {
             byte[] dataBlockId = null;
 
@@ -256,7 +255,7 @@ namespace DBreeze.DataTypes
         /// <typeparam name="TVal"></typeparam>
         /// <param name="startIndex"></param>
         /// <returns></returns>
-        public TVal GetDataBlockWithFixedAddress<TVal>(uint startIndex)
+        public TVal GetDataBlockWithFixedAddress<TVal>(uint startIndex=0)
         {
             byte[] dataBlockId = null;
 
@@ -267,22 +266,12 @@ namespace DBreeze.DataTypes
                     if (_row.Value == null)
                         return default(TVal);
 
-                    dataBlockId = _row.Value.Substring((int)startIndex, 16);
-
-                    //dataBlockId=this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
-                    //return DataTypesConvertor.ConvertBack<TValue>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
-
-                    //return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
-
+                    dataBlockId = _row.Value.Substring((int)startIndex, 16);                    
                 }
 
                 long valueStartPointer = 0;
                 uint valueFullLength = 0;
-                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
-                //return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
-
-                //dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
-                //return DataTypesConvertor.ConvertBack<TValue>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
+                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);                
             }
 
             if (dataBlockId == null)

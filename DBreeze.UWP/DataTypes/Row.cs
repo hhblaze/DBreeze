@@ -216,15 +216,13 @@ namespace DBreeze.DataTypes
         }
 
         /// <summary>
-        /// Returns datablock which identifier is stored in this row from specified index.
-        /// <para></para>
         /// Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
         /// <para></para>
         /// can return null.
         /// </summary>
         /// <param name="startIndex"></param>
-        /// <returns></returns>
-        public byte[] GetDataBlock(uint startIndex)
+        /// <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
+        public byte[] GetDataBlock(uint startIndex=0)
         {
             byte[] dataBlockId = null;
 
@@ -255,7 +253,7 @@ namespace DBreeze.DataTypes
         /// <typeparam name="TVal"></typeparam>
         /// <param name="startIndex"></param>
         /// <returns></returns>
-        public TVal GetDataBlockWithFixedAddress<TVal>(uint startIndex)
+        public TVal GetDataBlockWithFixedAddress<TVal>(uint startIndex=0)
         {
             byte[] dataBlockId = null;
 
