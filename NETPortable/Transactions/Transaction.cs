@@ -46,7 +46,7 @@ namespace DBreeze.Transactions
 
         /// <summary>
         /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-        /// When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+        /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
         /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
         /// sorted by key ascending
         /// </summary>
@@ -545,6 +545,24 @@ namespace DBreeze.Transactions
         #region "Table Add Remove RenameKey"
 
         /// <summary>
+        /// Syntax-sugar for  this.RandomKeySorter.Remove(tableName, key, value);
+        /// 
+        /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+        /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+        /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+        /// sorted by key ascending
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tableName"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void RemoveRandomKeySorter<TKey>(string tableName, TKey key)
+        {
+            this.RandomKeySorter.Remove(tableName, key);
+        }
+
+        /// <summary>
         /// Removes specified key, if it existed
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
@@ -774,6 +792,23 @@ namespace DBreeze.Transactions
             return DataTypesConvertor.ConvertBack<TValue>(this.SelectDataBlock(tableName, refToDataBlock));
         }
 
+        /// <summary>
+        /// Syntax-sugar for  this.RandomKeySorter.Insert(tableName, key, value);
+        /// 
+        /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+        /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+        /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+        /// sorted by key ascending
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tableName"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void InsertRandomKeySorter<TKey, TValue>(string tableName, TKey key, TValue value)
+        {
+            this.RandomKeySorter.Insert(tableName, key, value);
+        }
 
         /// <summary>
         /// Inserts or updates the key

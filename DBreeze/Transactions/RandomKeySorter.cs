@@ -9,7 +9,7 @@ namespace DBreeze.Transactions
 {
     /// <summary>
     /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-    /// When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+    /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
     /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
     /// sorted by key ascending
     /// </summary>
@@ -22,11 +22,12 @@ namespace DBreeze.Transactions
         Dictionary<string, int> _cnt = new Dictionary<string, int>();
 
         internal Transaction _t = null;
+        
         bool isUsed = false;
         /// <summary>
-        /// Value indicating when content should be cleared. Default is 1000 (inserts and removes)
+        /// Value indicating when content should be cleared. Default is 10000 (inserts and removes)
         /// </summary>
-        public int AutomaticFlushLimitQuantityPerTable = 1000;
+        public int AutomaticFlushLimitQuantityPerTable = 10000;
 
         /// <summary>
         /// 
@@ -34,7 +35,7 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>        
-        public void Add<TKey,TValue>(string tableName, TKey key, TValue value)
+        public void Insert<TKey,TValue>(string tableName, TKey key, TValue value)
         {
             if (key == null)
                 throw new Exception("RandomKeySorter, key can't be null");
@@ -91,12 +92,12 @@ namespace DBreeze.Transactions
                 Flush(tableName);
         }
 
-        void Flush(string tableName)
+        public void Flush(string tableName)
         {
             if (_dRemove.ContainsKey(tableName))
             {
                 foreach (var el2 in _dRemove[tableName].OrderBy(r => r.Key))
-                {
+                {                    
                     _t.RemoveKey<byte[]>(tableName, el2.Value);
                 }
 

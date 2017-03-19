@@ -755,17 +755,17 @@
         <member name="T:DBreeze.Transactions.RandomKeySorter">
             <summary>
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
             within Commit command, all entites will be flushed (first removed then inserted) on the disk 
             sorted by key ascending
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
             <summary>
-            Value indicating when content should be cleared. Default is 1000 (inserts and removes)
+            Value indicating when content should be cleared. Default is 10000 (inserts and removes)
             </summary>
         </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Add``2(System.String,``0,``1)">
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
             <summary>
             
             </summary>
@@ -829,7 +829,7 @@
         <member name="F:DBreeze.Transactions.Transaction.RandomKeySorter">
             <summary>
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
             within Commit command, all entites will be flushed (first removed then inserted) on the disk 
             sorted by key ascending
             </summary>
@@ -958,6 +958,21 @@
             Rollsback all changes made by current transaction before last Commit.
             </summary>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.RemoveRandomKeySorter``1(System.String,``0)">
+            <summary>
+            Syntax-sugar for  this.RandomKeySorter.Remove(tableName, key, value);
+            
+            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+            sorted by key ascending
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="value"></param>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.RemoveKey``1(System.String,``0)">
             <summary>
             Removes specified key, if it existed
@@ -1072,11 +1087,26 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectDataBlockWithFixedAddress``1(System.String,System.Byte[])">
             <summary>
-            Gets data block with fixed identifier saved via InsertDataBlockWithFixedAddress
+            Gets data block with fixed identifier saved via InsertDataBlockWithFixedAddress.
             </summary>
             <param name="tableName"></param>
             <param name="ptrToDataBlock"></param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.InsertRandomKeySorter``2(System.String,``0,``1)">
+            <summary>
+            Syntax-sugar for  this.RandomKeySorter.Insert(tableName, key, value);
+            
+            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+            sorted by key ascending
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="value"></param>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Insert``2(System.String,``0,``1)">
             <summary>
@@ -2363,6 +2393,15 @@
             <typeparam name="TVal"></typeparam>
             <param name="startIndex"></param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.UpdateDataBlockWithFixedAddress``1(``0,System.UInt32)">
+            <summary>
+            Tries to update value stored by InsertDataBlockWithFixedAddress,
+            having that reference to it is a part of value
+            </summary>
+            <typeparam name="TVal"></typeparam>
+            <param name="newValue"></param>
+            <param name="startIndex">reference to InsertDataBlockWithFixedAddress</param>
         </member>
         <member name="P:DBreeze.DataTypes.Row`2.Value">
             <summary>

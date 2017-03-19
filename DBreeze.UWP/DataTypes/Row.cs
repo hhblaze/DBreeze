@@ -289,6 +289,40 @@ namespace DBreeze.DataTypes
             return DataTypesConvertor.ConvertBack<TVal>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
         }
 
+        /// <summary>
+        /// Tries to update value stored by InsertDataBlockWithFixedAddress,
+        /// having that reference to it is a part of value
+        /// </summary>
+        /// <typeparam name="TVal"></typeparam>
+        /// <param name="newValue"></param>
+        /// <param name="startIndex">reference to InsertDataBlockWithFixedAddress</param>
+        public void UpdateDataBlockWithFixedAddress<TVal>(TVal newValue, uint startIndex = 0)
+        {
+
+            byte[] dataBlockId = null;
+
+            if (_exists)
+            {
+                if (_row.ValueIsReadOut)
+                {
+                    if (_row.Value == null)
+                        return;
+
+                    dataBlockId = _row.Value.Substring((int)startIndex, 16);
+                }
+
+                long valueStartPointer = 0;
+                uint valueFullLength = 0;
+                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+            }
+
+            if (dataBlockId == null)
+                return;
+
+            byte[] data = DataTypesConvertor.ConvertValue(newValue);
+            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+            this._row.Root.Tree.Cache.WriteDynamicDataBlock(ref dataBlockId, ref data);
+        }
 
         /// <summary>
         /// Returns full value and converts it to the value data type.
