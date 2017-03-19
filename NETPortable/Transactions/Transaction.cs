@@ -44,6 +44,21 @@ namespace DBreeze.Transactions
         /// </summary>
         internal TextSearchHandler tsh = null;
 
+        /// <summary>
+        /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+        /// When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+        /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+        /// sorted by key ascending
+        /// </summary>
+        public RandomKeySorter RandomKeySorter = new RandomKeySorter();
+
+        /// <summary>
+        /// Transaction
+        /// </summary>
+        /// <param name="transactionType"></param>
+        /// <param name="transactionUnit"></param>
+        /// <param name="lockType"></param>
+        /// <param name="tables"></param>
         public Transaction(int transactionType, TransactionUnit transactionUnit, eTransactionTablesLockTypes lockType, params string[] tables)
         {
             _transactionType = transactionType;
@@ -63,8 +78,8 @@ namespace DBreeze.Transactions
                 break;
             }
 
-          
-           
+            this.RandomKeySorter._t = this;
+
         }
 
         /// <summary>
@@ -512,6 +527,7 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Commit()
         {
+            RandomKeySorter.Flush();
             TextSearchHandlerCommit();
             this._transactionUnit.TransactionsCoordinator.Commit(this.ManagedThreadId);
             TextSearchHandlerAfterCommit();

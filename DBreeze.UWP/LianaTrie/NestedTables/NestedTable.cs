@@ -22,7 +22,9 @@ namespace DBreeze.DataTypes
         private NestedTableInternal _tbl = null;
         internal bool _insertAllowed = false;
         private bool _tableExists = false;
-        
+
+        //public Transactions.RandomKeySorter RandomKeySorter = new Transactions.RandomKeySorter();
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -34,6 +36,8 @@ namespace DBreeze.DataTypes
             _tbl = nt;
             _insertAllowed = insertTablesAllowed;
             _tableExists = tableExists;
+
+
         }
 
 

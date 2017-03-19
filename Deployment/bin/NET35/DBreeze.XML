@@ -4021,130 +4021,39 @@
             <param name="maximalReturnQuantity"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
+        <member name="T:DBreeze.Transactions.RandomKeySorter">
+            <summary>
+            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+            When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+            sorted by key ascending
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
+            <summary>
+            Value indicating when content should be cleared. Default is 1000 (inserts and removes)
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Add``2(System.String,``0,``1)">
             <summary>
             
             </summary>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns>false if thread grants access, false if thread is in a queue</returns>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="value"></param>        
         </member>
-        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession">
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
             <summary>
-            
+            Removes from the table key
             </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
         </member>
-        <member name="M:DBreeze.TransactionTablesLocker.Dispose">
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
             <summary>
-            MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
+            Flushing all 
             </summary>
-        </member>
-        <member name="T:DBreeze.Tries.ITrieRootNode">
-            <summary>
-            Identifies any type of RootNode in different tries
-            </summary>
-        </member>
-        <member name="T:DBreeze.DBreezeEngine">
-            <summary>
-            Main DBreeze Database class.
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.MainFolder">
-            <summary>
-            DBreeze version number
-            </summary>        
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.Resources">
-            <summary>
-            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
-            Key is a string, Value any standard DBreeze.DataType (or serialized object by supplied serializer).
-            Can be called from anywhere, even from other transactions. There is no need to add into sync table
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
-            <summary>
-            must be filled with a text note who brought to DBisOperable = false
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.RemoteEngine">
-            <summary>
-            Initialized from DBreezeRemoteEngine
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.BackgroundTasksExternalNotifier">
-            <summary>
-            DBreeze may execute some tasks in the background (like deffered text indexing). 
-            External delegate can receive notifications about that.
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeEngine.Configuration">
-            <summary>
-            Dbreeze Configuration.
-            For now BackupPlan is included.
-            Later can be added special settings for each entity defined by string pattern.
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.#ctor">
-            <summary>
-            For DbreezeRemoteEngine wrapper
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.#ctor(DBreeze.DBreezeConfiguration)">
-            <summary>
-            Dbreeze instantiator
-            </summary>
-            <param name="dbreezeConfiguration"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.ConstructFromConfiguration(DBreeze.DBreezeConfiguration)">
-            <summary>
-            Constructing Dbreeze from dbreezeConfiguration
-            </summary>
-            <param name="dbreezeConfiguration"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.#ctor(System.String)">
-            <summary>
-            
-            </summary>
-            <param name="DBreezeDataFolderName"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.InitDb">
-            <summary>
-            InitDb
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.Dispose">
-            <summary>
-            Dispose
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.GetTransaction">
-            <summary>
-            Returns transaction object.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            Returns transaction object.
-            </summary>
-            <param name="tablesLockType">
-            <para>SHARED: threads can use listed tables in parallel. Must be used together with tran.SynchronizeTables command, if necessary.</para>
-            <para>EXCLUSIVE: if other threads use listed tables for reading or writing, current thread will be in a waiting queue.</para>
-            </param>
-            <param name="tables"></param>
-            <returns>Returns transaction object</returns>
-        </member>
-        <member name="P:DBreeze.DBreezeEngine.Scheme">
-            <summary>
-            Returns DBreeze schema object
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeEngine.BackgroundNotify(System.String,System.Object)">
-            <summary>
-            Notifier about background events.
-            </summary>
-            <param name="noti"></param>
-            <param name="obj"></param>
         </member>
         <member name="M:DBreeze.Transactions.ITransactable.ITRCommitFinished">
             <summary>
@@ -4185,6 +4094,23 @@
             <summary>
             TextSearchHandler instance
             </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.RandomKeySorter">
+            <summary>
+            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+            When AutomaticFlushLimitQuantityPerTable per table (default 1000) is exceed or 
+            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+            sorted by key ascending
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.#ctor(System.Int32,DBreeze.Transactions.TransactionUnit,DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            Transaction
+            </summary>
+            <param name="transactionType"></param>
+            <param name="transactionUnit"></param>
+            <param name="lockType"></param>
+            <param name="tables"></param>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Dispose">
             <summary>
@@ -5400,6 +5326,131 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns>false if thread grants access, false if thread is in a queue</returns>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.Dispose">
+            <summary>
+            MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
+            </summary>
+        </member>
+        <member name="T:DBreeze.Tries.ITrieRootNode">
+            <summary>
+            Identifies any type of RootNode in different tries
+            </summary>
+        </member>
+        <member name="T:DBreeze.DBreezeEngine">
+            <summary>
+            Main DBreeze Database class.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.MainFolder">
+            <summary>
+            DBreeze version number
+            </summary>        
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.Resources">
+            <summary>
+            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
+            Key is a string, Value any standard DBreeze.DataType (or serialized object by supplied serializer).
+            Can be called from anywhere, even from other transactions. There is no need to add into sync table
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
+            <summary>
+            must be filled with a text note who brought to DBisOperable = false
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.RemoteEngine">
+            <summary>
+            Initialized from DBreezeRemoteEngine
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.BackgroundTasksExternalNotifier">
+            <summary>
+            DBreeze may execute some tasks in the background (like deffered text indexing). 
+            External delegate can receive notifications about that.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeEngine.Configuration">
+            <summary>
+            Dbreeze Configuration.
+            For now BackupPlan is included.
+            Later can be added special settings for each entity defined by string pattern.
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.#ctor">
+            <summary>
+            For DbreezeRemoteEngine wrapper
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.#ctor(DBreeze.DBreezeConfiguration)">
+            <summary>
+            Dbreeze instantiator
+            </summary>
+            <param name="dbreezeConfiguration"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.ConstructFromConfiguration(DBreeze.DBreezeConfiguration)">
+            <summary>
+            Constructing Dbreeze from dbreezeConfiguration
+            </summary>
+            <param name="dbreezeConfiguration"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="DBreezeDataFolderName"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.InitDb">
+            <summary>
+            InitDb
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.Dispose">
+            <summary>
+            Dispose
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.GetTransaction">
+            <summary>
+            Returns transaction object.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            Returns transaction object.
+            </summary>
+            <param name="tablesLockType">
+            <para>SHARED: threads can use listed tables in parallel. Must be used together with tran.SynchronizeTables command, if necessary.</para>
+            <para>EXCLUSIVE: if other threads use listed tables for reading or writing, current thread will be in a waiting queue.</para>
+            </param>
+            <param name="tables"></param>
+            <returns>Returns transaction object</returns>
+        </member>
+        <member name="P:DBreeze.DBreezeEngine.Scheme">
+            <summary>
+            Returns DBreeze schema object
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.BackgroundNotify(System.String,System.Object)">
+            <summary>
+            Notifier about background events.
+            </summary>
+            <param name="noti"></param>
+            <param name="obj"></param>
         </member>
         <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
             <summary>
