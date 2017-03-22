@@ -235,7 +235,7 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        private LTrie GetWriteTableFromBuffer(string tableName)
+        internal LTrie GetWriteTableFromBuffer(string tableName)
         {
             LTrie table = null;
 
@@ -814,6 +814,337 @@ namespace DBreeze.Transactions
         {
             this.RandomKeySorter.Insert(tableName, key, value);
         }
+
+
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321)
+        /// Automatically gets entity ID (automatically will be stored in table after commit)
+        /// </summary>
+        /// <typeparam name="TIdentity">type of identity (long,ulong,int,uint,short,ushort)</typeparam>
+        /// <param name="tableName">Table name</param>
+        /// <returns></returns>
+        public TIdentity ObjectGetNewIdentity<TIdentity>(string tableName)
+        {
+            Type td = typeof(TIdentity);
+
+            byte[] btcnt = this.RandomKeySorter.TryGetValueByKey(tableName, "00");
+
+            if(btcnt == null)
+                btcnt = this.Select<byte[], byte[]>(tableName, new byte[] { 0 }).Value;
+            
+            if (td == DataTypesConvertor.TYPE_LONG)
+            {
+                var ci = (btcnt == null) ? 1 : btcnt.To_Int64_BigEndian() + 1;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_8_bytes_array_BigEndian());                
+                return (TIdentity)((object)ci);
+            }
+            else if (td == DataTypesConvertor.TYPE_INT)
+            {
+                var ci = (btcnt == null) ? 1 : btcnt.To_Int32_BigEndian() + 1;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_4_bytes_array_BigEndian());
+                return (TIdentity)((object)ci);
+            }            
+            else if (td == DataTypesConvertor.TYPE_ULONG)
+            {
+                var ci = (btcnt == null) ? 1 : btcnt.To_UInt64_BigEndian() + 1;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_8_bytes_array_BigEndian());
+                return (TIdentity)((object)ci);
+            }
+            else if (td == DataTypesConvertor.TYPE_UINT)
+            {
+                var ci = (btcnt == null) ? 1 : btcnt.To_UInt32_BigEndian() + 1;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_4_bytes_array_BigEndian());
+                return (TIdentity)((object)ci);
+            }          
+            else if(td == DataTypesConvertor.TYPE_SHORT)
+            {
+                var ci = (short)((btcnt == null) ? 1 : (btcnt.To_Int16_BigEndian() + 1));
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_2_bytes_array_BigEndian());
+                return (TIdentity)((object)ci);
+            }
+            else if (td == DataTypesConvertor.TYPE_USHORT)
+            {
+                var ci = (ushort)((btcnt == null) ? 1 : (btcnt.To_UInt16_BigEndian() + 1));
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_2_bytes_array_BigEndian());
+                return (TIdentity)((object)ci);
+            }
+            else
+                throw new Exception("DBreeze.Transaction.ObjectGetNewIdentity: not acceptable identity type. (Only (long,ulong,int,uint,short,ushort))");
+        }
+
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321)
+        /// Insert/Updates entity and its secondary keys
+        /// </summary>
+        /// <typeparam name="TObject"></typeparam>
+        /// <param name="tableName">Table name</param>
+        /// <param name="toInsert">Configuration for the inserting object</param>
+        /// <param name="speedUpdate">Set to true to increase update speed (table can consume more physical space)</param>
+        /// <returns></returns>
+        public DBreeze.Objects.DBreezeObjectInsertResult<TObject> ObjectInsert<TObject>(string tableName, DBreeze.Objects.DBreezeObject<TObject> toInsert, bool speedUpdate = false)
+        {
+           
+            DBreeze.Objects.DBreezeObjectInsertResult<TObject> res = new Objects.DBreezeObjectInsertResult<TObject>();
+
+            if (toInsert == null || toInsert.Indexes == null || toInsert.Indexes.Count < 1)
+                throw new Exception("DBreeze.Transaction.InsertObject: indexes are not supplied");
+
+            DBreeze.Objects.DBreezeIndex primary = null;
+
+            //Newly supplied indexes, their count may not correspond to the stored indexes
+            Dictionary<byte, byte[]> nidx = new Dictionary<byte, byte[]>();
+            foreach (var idx in toInsert.Indexes.OrderByDescending(r=>r.PrimaryIndex).ThenByDescending(r=>r.AddPrimaryToTheEnd))
+            {
+                if (idx.PrimaryIndex)
+                {
+                    if (primary != null)
+                        throw new Exception("DBreeze.Transaction.ObjectInsert: primary index can be defined only once");
+                    primary = idx;
+                    primary.FormIndex(null);
+                }
+                else if (idx.AddPrimaryToTheEnd)
+                {
+                    if (primary == null)
+                        throw new Exception("DBreeze.Transaction.ObjectInsert: primary index has to be supplied");
+                    idx.FormIndex(primary.IndexNoPrefix);
+                }
+                else
+                {
+                    idx.FormIndex(null);
+
+                    //Possible candidate to grab existing entity
+                    if (!toInsert.NewEntity && toInsert.ptrToExisingEntity == null && primary == null && idx.IndexNoPrefix != null)
+                    {   
+                        primary = idx;
+                    }
+                }
+                if (nidx.ContainsKey(idx.IndexNumber))
+                    throw new Exception("DBreeze.Transaction.ObjectInsert: index definition is duplicated");
+
+                nidx[idx.IndexNumber] = idx.IndexFull;
+            }
+
+            if (!toInsert.NewEntity && toInsert.ptrToExisingEntity == null && primary == null)
+                throw new Exception("DBreeze.Transaction.ObjectInsert: Not supplied index helping to grab entity");
+
+
+            byte[] ptr = null;
+            bool newptr = true;
+
+            //First element (index 0) holds value itself
+            //Other elements are existing indexes
+            Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();            
+
+            //New indexes to be added
+            List<byte[]> newIdx = new List<byte[]>();
+            byte[] encodedVal = null;
+            byte[] val = null;
+
+            if (!toInsert.NewEntity)
+            {
+                ITrieRootNode readRoot = null;
+                LTrie table = null;
+
+                if (toInsert.ptrToExisingEntity == null)
+                {
+                    table = GetReadTableFromBuffer(tableName, out readRoot, true);
+                    if (table != null)
+                    {
+                        table.ValuesLazyLoadingIsOn = false;
+                        var row = table.GetKey(ref primary.IndexFull, readRoot);
+                        if (row.Exists)
+                            ptr = row.Value.Substring(0, 16);
+                    }
+                }
+                else
+                {
+                    ptr = toInsert.ptrToExisingEntity;
+                    val = toInsert.ExisingEntity;
+                }
+
+                newptr = ptr == null;
+
+                if (!newptr)
+                {
+                    //Getting existing value
+                    if (toInsert.ptrToExisingEntity == null)
+                    {
+                        val = this.SelectDataBlock(tableName, ptr);
+                        val = table.SelectDataBlock(ref val, !(readRoot == null));
+                    }                  
+
+                    Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(val, d);
+
+                    if(toInsert.IncludeOldEntityIntoResult)
+                        res.OldEntity = DataTypesConvertor.ConvertBack<TObject>(d[0]);
+                    res.OldEntityWasFound = true;
+                    
+                    d[0] = DataTypesConvertor.ConvertValue<TObject>(toInsert.Entity);
+                    
+                    if (speedUpdate)
+                    {
+                        //We must in any case delete all indexes and then insert new
+                        foreach (var idx in d.Skip(1))
+                        {
+                            if (nidx.ContainsKey((byte)idx.Key))
+                            {
+                                if (nidx[(byte)idx.Key] == null)
+                                    this.RandomKeySorter.Remove<byte[]>(tableName, idx.Value);
+                                else if (!nidx[(byte)idx.Key]._ByteArrayEquals(idx.Value))
+                                    this.RandomKeySorter.Remove<byte[]>(tableName, idx.Value);
+                            }
+                            else
+                                this.RandomKeySorter.Remove<byte[]>(tableName, idx.Value);
+                        }
+
+                        foreach (var idx in nidx)
+                        {
+                            if (idx.Value == null)
+                                d.Remove(idx.Key);
+                            else
+                                d[idx.Key] = idx.Value;
+                        }
+
+                        ptr = null;
+                        newptr = true;
+                    }
+                    else
+                    {
+                        //In first element we got value itself
+                        //In other - stored indexes
+                        foreach (var idx in nidx)
+                        {
+                            if (d.ContainsKey(idx.Key))
+                            {
+                                if (idx.Value == null)
+                                {
+                                    this.RandomKeySorter.Remove<byte[]>(tableName, d[idx.Key]);
+                                    d.Remove(idx.Key);
+                                    continue;
+                                }else if (!idx.Value._ByteArrayEquals(d[idx.Key]))
+                                {
+                                    this.RandomKeySorter.Remove<byte[]>(tableName, d[idx.Key]);
+                                    d[idx.Key] = idx.Value;
+                                    newIdx.Add(idx.Value);
+                                }
+                            }
+                            else
+                            {
+                                if (idx.Value == null)
+                                    continue;
+                                //new index must be added
+                                d[idx.Key] = idx.Value;
+                                newIdx.Add(idx.Value);
+                            }
+                        }
+
+                        //Checking may be we don't need to update anything                       
+                        encodedVal = d.Encode_DICT_PROTO_UINT_BYTEARRAY();
+                        if (newIdx.Count == 0 && val._ByteArrayEquals(encodedVal))
+                        {
+                            res.EntityWasInserted = false;
+                            return res;
+                        }
+                    }
+
+                }
+                else
+                {
+                    d[0] = DataTypesConvertor.ConvertValue<TObject>(toInsert.Entity);
+                    foreach (var idx in nidx)
+                    {
+                        if (idx.Value == null)
+                            continue;
+                        d[idx.Key] = idx.Value;
+                    }
+                }               
+            }
+            else
+            {
+                d[0] = DataTypesConvertor.ConvertValue<TObject>(toInsert.Entity);
+                foreach (var idx in nidx)
+                {
+                    if (idx.Value == null)
+                        continue;
+                    d[idx.Key] = idx.Value;
+                }
+            }
+            
+            if(encodedVal == null)
+                encodedVal = d.Encode_DICT_PROTO_UINT_BYTEARRAY();
+       
+            //Inserting enhanced object with current indexes                       
+            ptr = this.InsertDataBlockWithFixedAddress(tableName, ptr, encodedVal);
+
+            //Updating real primary/secondary keys references. Via RandomKeySorter
+            if (speedUpdate || newptr)
+            {
+                //Massive update will come always via RandomKeySorter
+                foreach (var idx in d.Skip(1))
+                {
+                    this.RandomKeySorter.Insert<byte[], byte[]>(tableName, idx.Value, ptr);
+                }
+
+            }
+            else
+            {
+                //Only new index
+                foreach (var idx in newIdx)
+                {
+                    this.RandomKeySorter.Insert<byte[], byte[]>(tableName, idx, ptr);
+                }
+            }
+
+            if (speedUpdate)
+                this.RandomKeySorter.TablesWithOverwriteIsNotAllowed(tableName);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321)
+        /// Removes entity and its keys
+        /// </summary>
+        /// <param name="tableName">Table name</param>
+        /// <param name="index">Any of formed index to lookup the entity for deletion</param>
+        /// <param name="speedUpdate">Aet to true to increase update speed (table can consume more physical space)</param>
+        public void ObjectRemove(string tableName, byte[] index, bool speedUpdate = false)
+        {
+            if (index == null)
+                return;
+            
+            ITrieRootNode readRoot = null;
+            LTrie table = GetReadTableFromBuffer(tableName, out readRoot, true);
+            byte[] ptr = null;
+
+            if (table != null)
+            {
+                table.ValuesLazyLoadingIsOn = false;
+                var row = table.GetKey(ref index, readRoot);
+                if (row.Exists)
+                    ptr = row.Value.Substring(0, 16);
+            }
+            
+            if (ptr != null)
+            {
+                Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
+
+                //Getting existing value
+                byte[] val = this.SelectDataBlock(tableName, ptr);
+                val = table.SelectDataBlock(ref val, !(readRoot == null));
+                Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(val, d);
+
+                foreach (var idx in d.Skip(1))
+                {
+                    this.RandomKeySorter.Remove<byte[]>(tableName, idx.Value);
+                }
+
+                if (speedUpdate)
+                    this.RandomKeySorter.TablesWithOverwriteIsNotAllowed(tableName);
+            }
+            
+        }
+
 
         /// <summary>
         /// Inserts or updates the key

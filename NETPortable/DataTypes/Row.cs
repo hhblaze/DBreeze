@@ -247,6 +247,49 @@ namespace DBreeze.DataTypes
             return null;
         }
 
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321)
+        /// Get object from a datablock with a fixed address, 
+        /// having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.  
+        /// </summary>
+        /// <typeparam name="TVal"></typeparam>
+        /// <returns></returns>
+        public DBreeze.Objects.DBreezeObject<TVal> ObjectGet<TVal>()
+        {
+            var ret = new Objects.DBreezeObject<TVal>();
+
+            byte[] dataBlockId = null;
+            int startIndex = 0;
+
+            if (_exists)
+            {
+                if (_row.ValueIsReadOut)
+                {
+                    if (_row.Value == null)
+                        return ret;
+
+                    dataBlockId = _row.Value.Substring(startIndex, 16);
+                }
+
+                long valueStartPointer = 0;
+                uint valueFullLength = 0;
+                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, (uint)startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+            }
+
+            if (dataBlockId == null)
+                return ret;
+
+            ret.ptrToExisingEntity = dataBlockId;
+            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+            Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
+            ret.ExisingEntity = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+            Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(ret.ExisingEntity, d);
+            if (d == null || d.Count < 1)
+                return ret;
+            ret.Entity = DataTypesConvertor.ConvertBack<TVal>(d[0]);
+            return ret;
+        }
+
 
         /// <summary>
         /// Returns datablock which fixed address, which identifier is stored in this row from specified index.
@@ -290,40 +333,7 @@ namespace DBreeze.DataTypes
             return DataTypesConvertor.ConvertBack<TVal>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
         }
 
-        /// <summary>
-        /// Tries to update value stored by InsertDataBlockWithFixedAddress,
-        /// having that reference to it is a part of value
-        /// </summary>
-        /// <typeparam name="TVal"></typeparam>
-        /// <param name="newValue"></param>
-        /// <param name="startIndex">reference to InsertDataBlockWithFixedAddress</param>
-        public void UpdateDataBlockWithFixedAddress<TVal>(TVal newValue, uint startIndex = 0)
-        {
-
-            byte[] dataBlockId = null;
-
-            if (_exists)
-            {
-                if (_row.ValueIsReadOut)
-                {
-                    if (_row.Value == null)
-                        return;
-
-                    dataBlockId = _row.Value.Substring((int)startIndex, 16);
-                }
-
-                long valueStartPointer = 0;
-                uint valueFullLength = 0;
-                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
-            }
-
-            if (dataBlockId == null)
-                return;
-
-            byte[] data = DataTypesConvertor.ConvertValue(newValue);
-            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
-            this._row.Root.Tree.Cache.WriteDynamicDataBlock(ref dataBlockId, ref data);
-        }
+    
 
         /// <summary>
         /// Returns full value and converts it to the value data type.

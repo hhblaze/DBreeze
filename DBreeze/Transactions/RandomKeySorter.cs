@@ -1,9 +1,14 @@
-﻿using System;
+﻿/* 
+  Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
+  It's a free software for those, who think that it should be free.
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using DBreeze.Utils;
 using DBreeze.DataTypes;
+using DBreeze.LianaTrie;
 
 namespace DBreeze.Transactions
 {
@@ -25,9 +30,42 @@ namespace DBreeze.Transactions
         
         bool isUsed = false;
         /// <summary>
-        /// Value indicating when content should be cleared. Default is 10000 (inserts and removes)
+        /// Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
         /// </summary>
-        public int AutomaticFlushLimitQuantityPerTable = 10000;
+        public int AutomaticFlushLimitQuantityPerTable = 1000000;
+               
+        HashSet<string> _tablesWithOverwriteIsNotAllowed = new HashSet<string>();
+
+        /// <summary>
+        /// Internal regulator telling, that specified tables should work via fast update
+        /// </summary>
+        internal void TablesWithOverwriteIsNotAllowed(string tableName)
+        {
+            if (!_tablesWithOverwriteIsNotAllowed.Contains(tableName))
+            {
+                _tablesWithOverwriteIsNotAllowed.Add(tableName);
+                _t.Technical_SetTable_OverwriteIsNotAllowed(tableName);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        internal byte[] TryGetValueByKey(string tableName, string key)
+        {
+            if (!_dInsert.ContainsKey(tableName))
+                return null;
+
+            KeyValuePair<byte[], byte[]> kvp;
+
+            if (!_dInsert[tableName].TryGetValue(key, out kvp))
+                return null;
+
+            return kvp.Value;
+        }
 
         /// <summary>
         /// 
@@ -92,13 +130,34 @@ namespace DBreeze.Transactions
                 Flush(tableName);
         }
 
+
+
+        /// <summary>
+        /// Contains writing LTrie tables
+        /// </summary>
+        Dictionary<string, LTrie> tbls = new Dictionary<string, LTrie>();
+
         public void Flush(string tableName)
         {
+            LTrie table = null;
+            bool WasOperated = false;
+            byte[] deletedValue = null;
+            byte[] btKey = null;
+            byte[] btVal = null;
+
             if (_dRemove.ContainsKey(tableName))
             {
+                if (!tbls.TryGetValue(tableName, out table))
+                {
+                    table = _t.GetWriteTableFromBuffer(tableName);
+                    tbls[tableName] = table;
+                }
+
                 foreach (var el2 in _dRemove[tableName].OrderBy(r => r.Key))
-                {                    
-                    _t.RemoveKey<byte[]>(tableName, el2.Value);
+                {
+                    // _t.RemoveKey<byte[]>(tableName, el2.Value);
+                    btKey = el2.Value;
+                    table.Remove(ref btKey, out WasOperated, false, out deletedValue);
                 }
 
                 _dRemove[tableName].Clear();
@@ -107,9 +166,18 @@ namespace DBreeze.Transactions
 
             if (_dInsert.ContainsKey(tableName))
             {
+                if (!tbls.TryGetValue(tableName, out table))
+                {
+                    table = _t.GetWriteTableFromBuffer(tableName);
+                    tbls[tableName] = table;
+                }
+
                 foreach (var el2 in _dInsert[tableName].OrderBy(r => r.Key))
                 {
-                    _t.Insert<byte[],byte[]>(tableName, el2.Value.Key, el2.Value.Value);
+                    //_t.Insert<byte[],byte[]>(tableName, el2.Value.Key, el2.Value.Value);
+                    btKey = el2.Value.Key;
+                    btVal = el2.Value.Value;
+                    table.Add(ref btKey, ref btVal, out WasOperated, false);
                 }
                 _dInsert[tableName].Clear();
                 _dInsert.Remove(tableName);
@@ -118,6 +186,7 @@ namespace DBreeze.Transactions
             _cnt[tableName] = 0;
         }
 
+      
         /// <summary>
         /// Flushing all 
         /// </summary>
@@ -126,11 +195,25 @@ namespace DBreeze.Transactions
             if (!isUsed)
                 return;
 
+            LTrie table = null;
+            bool WasOperated = false;
+            byte[] deletedValue = null;
+            byte[] btKey = null;
+            byte[] btVal = null;
+
             foreach (var el1 in _dRemove.OrderBy(r => r.Key))
             {
+                if (!tbls.TryGetValue(el1.Key, out table))
+                {
+                    table = _t.GetWriteTableFromBuffer(el1.Key);
+                    tbls[el1.Key] = table;
+                }
+
                 foreach (var el2 in el1.Value.OrderBy(r => r.Key))
                 {
-                    _t.RemoveKey<byte[]>(el1.Key, el2.Value);
+                    //_t.RemoveKey<byte[]>(el1.Key, el2.Value);
+                    btKey = el2.Value;
+                    table.Remove(ref btKey, out WasOperated, false, out deletedValue);
                 }
             }
 
@@ -138,9 +221,20 @@ namespace DBreeze.Transactions
 
             foreach (var el1 in _dInsert.OrderBy(r => r.Key))
             {
+                if (!tbls.TryGetValue(el1.Key, out table))
+                {
+                    table = _t.GetWriteTableFromBuffer(el1.Key);
+                    tbls[el1.Key] = table;
+                }
+
+                //List<string> tt = el1.Value.OrderBy(r => r.Key).Select(r => r.Key).ToList();
                 foreach (var el2 in el1.Value.OrderBy(r => r.Key))
                 {
-                    _t.Insert<byte[], byte[]>(el1.Key, el2.Value.Key, el2.Value.Value);
+                    //_t.Insert<byte[], byte[]>(el1.Key, el2.Value.Key, el2.Value.Value);
+                    btKey = el2.Value.Key;
+                    btVal = el2.Value.Value;
+                    table.Add(ref btKey, ref btVal, out WasOperated, false);
+                    
                 }
             }
 

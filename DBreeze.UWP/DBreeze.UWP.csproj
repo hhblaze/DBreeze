@@ -116,6 +116,12 @@
     <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs">
       <Link>Exceptions\DBreezeException.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Objects\DBreezeIndex.cs">
+      <Link>Objects\DBreezeIndex.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Objects\DBreezeObject.cs">
+      <Link>Objects\DBreezeObject.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
     </Compile>

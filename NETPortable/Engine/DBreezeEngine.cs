@@ -156,6 +156,8 @@ namespace DBreeze
 
             try
             {
+                //Init type converter
+                DataTypes.DataTypesConvertor.InitDict();
 
                 if (Configuration.Storage == DBreezeConfiguration.eStorage.DISK)
                 {

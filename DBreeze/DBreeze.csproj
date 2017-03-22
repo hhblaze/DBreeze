@@ -88,6 +88,8 @@
     <Compile Include="TextSearch\TextSearchHandler.cs" />
     <Compile Include="TextSearch\TextSearchTable.cs" />
     <Compile Include="TextSearch\WABI.cs" />
+    <Compile Include="Objects\DBreezeIndex.cs" />
+    <Compile Include="Objects\DBreezeObject.cs" />
     <Compile Include="Transactions\RandomKeySorter.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Storage\Backup\Backup.cs" />

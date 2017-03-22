@@ -396,6 +396,126 @@ namespace DBreeze.Utils
 
         }
 
+        /// <summary>
+        /// Concats many byte arrays
+        /// </summary>
+        /// <param name="ar1"></param>
+        /// <param name="arrays"></param>
+        /// <returns></returns>
+        public static byte[] ConcatMany(this byte[] ar1, IList<byte[]> arrays)
+        {
+            if (ar1 == null)
+                ar1 = new byte[] { };
+
+            //Faster then arrays.Sum(x => (x == null) ? 0 : x.Length)
+            long len = 0;
+            foreach (var data in arrays)
+            {
+                if (data == null)
+                    continue;
+                len += data.Length;
+            }
+
+            //byte[] ret = new byte[ar1.Length + arrays.Sum(x => (x == null) ? 0 : x.Length)];
+            byte[] ret = new byte[ar1.Length + len];
+            int offset = 0;
+
+            Buffer.BlockCopy(ar1, 0, ret, offset, ar1.Length);
+            offset += ar1.Length;
+
+            foreach (byte[] data in arrays)
+            {
+                if (data == null) //faster than foreach (byte[] data in arrays.Where(r=>r != null))
+                    continue;
+
+                Buffer.BlockCopy(data, 0, ret, offset, data.Length);
+                offset += data.Length;
+            }
+            return ret;
+
+        }
+
+        /// <summary>
+        /// Concats all arrays into one byte[]
+        /// </summary>
+        /// <param name="arrays"></param>
+        /// <returns></returns>
+        public static byte[] Concat(this IList<byte[]> arrays)
+        {
+            //Faster then arrays.Sum(x => (x == null) ? 0 : x.Length)
+            long len = 0;
+            foreach (var data in arrays)
+            {
+                if (data == null)
+                    continue;
+                len += data.Length;
+            }
+
+            byte[] ret = new byte[len];
+            int offset = 0;
+
+            foreach (byte[] data in arrays)
+            {
+                if (data == null) //faster than foreach (byte[] data in arrays.Where(r=>r != null))
+                    continue;
+
+                Buffer.BlockCopy(data, 0, ret, offset, data.Length);
+                offset += data.Length;
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321)
+        /// Helps to form a byte[] from a complex index, representing combination of several data-types.
+        /// </summary>
+        /// <param name="indexNumber">Index number (byte 1-255)</param>
+        /// <param name="pars">Parts of the index to be casted to byte[]</param>
+        /// <returns></returns>
+        public static byte[] KeyChain(this int indexNumber, params object[] pars)
+        {
+            if (indexNumber < 1 || indexNumber > 255)
+                throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
+            return KeyChain((byte)indexNumber, pars);
+        }
+
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321)
+        /// Helps to form a byte[] from a complex index, representing combination of several data-types.
+        /// </summary>
+        /// <param name="indexNumber">Index number (byte 1-255)</param>
+        /// <param name="pars">Parts of the index to be casted to byte[]</param>
+        /// <returns></returns>
+        public static byte[] KeyChain(this byte indexNumber, params object[] pars)
+        {
+            if (indexNumber < 1)
+                throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
+
+            if (pars == null || pars.Length < 1)
+                return null;
+            List<byte[]> xbts = new List<byte[]>();
+            xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(indexNumber, typeof(byte)));
+            foreach (var prop in pars)
+                xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
+
+            return xbts.Concat();
+        }
+
+        /// <summary>
+        /// Helps to form a byte[] from a complex index, representing combination of several data-types.
+        /// </summary>
+        /// <param name="pars"></param>
+        /// <returns></returns>
+        public static byte[] KeyChain(params object[] pars)
+        {
+            if (pars == null || pars.Length < 1)
+                return null;
+            List<byte[]> xbts = new List<byte[]>();
+            foreach (var prop in pars)
+                xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
+
+            return xbts.Concat();
+        }
 
         ///// <summary>
         ///// Slower then _ConcatByteArray. Linq concat is used. Yield return is used. Be sure byte arrays are safely boxed. ToArray() is used to get byte[] from IEnumerable.
@@ -444,7 +564,7 @@ namespace DBreeze.Utils
         //}
         #endregion
 
-       
+
 
         private static byte[] substringByteArray(byte[] ar, int startIndex, int length)
         {

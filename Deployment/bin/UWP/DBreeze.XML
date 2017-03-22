@@ -157,6 +157,106 @@
             that's why extra class.
             </summary>
         </member>
+        <member name="T:DBreeze.Objects.DBreezeIndex">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            </summary>
+        </member>
+        <member name="F:DBreeze.Objects.DBreezeIndex.IndexNumber">
+            <summary>
+            Must be unique for every index, will be used for searches
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeIndex.AddPrimaryToTheEnd">
+            <summary>
+            Only for not primary index
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeIndex.PrimaryIndex">
+            <summary>
+            Set a flag that this index is a primary key
+            </summary>
+        </member>
+        <member name="M:DBreeze.Objects.DBreezeIndex.#ctor(System.Byte,System.Object[])">
+            <summary>
+            
+            </summary>
+            <param name="indexNumber">Must be unique for every index, will be used for searches</param>
+            <param name="props">chain of data types forming byte[] index. if null is supplied existing index entry will be removed</param>
+        </member>
+        <member name="M:DBreeze.Objects.DBreezeIndex.FormIndex(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="primaryIdx"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Objects.DBreezeObject`1">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            </summary>
+            <typeparam name="TEntityType"></typeparam>
+        </member>
+        <member name="M:DBreeze.Objects.DBreezeObject`1.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObject`1.Indexes">
+            <summary>
+            List of indexes
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObject`1.NewEntity">
+            <summary>
+            Deafult false. Skips reading existing value on the disk (insert time economy)
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObject`1.Entity">
+            <summary>
+            Entity itself
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObject`1.ExisingEntity">
+            <summary>
+            If existing entity was taken before it can be supplied to speed up insert process
+            by skipping reading value from new.
+            Existing object must be taken from roe
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObject`1.IncludeOldEntityIntoResult">
+            <summary>
+            Default false. If true updated value will be included into DBreezeObjectInsertResult.OldEntity
+            </summary>
+        </member>
+        <member name="T:DBreeze.Objects.DBreezeObjectInsertResult`1">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Answer after transaction.ObjectInsert
+            </summary>
+            <typeparam name="TEntityType"></typeparam>
+        </member>
+        <member name="M:DBreeze.Objects.DBreezeObjectInsertResult`1.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObjectInsertResult`1.OldEntityWasFound">
+            <summary>
+            Indicates that old entity exists
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObjectInsertResult`1.OldEntity">
+            <summary>
+            Entity which was found in database before update.
+            Will be included if DBreezeObject.IncludeOldEntityIntoResult = true;
+            </summary>
+        </member>
+        <member name="P:DBreeze.Objects.DBreezeObjectInsertResult`1.EntityWasInserted">
+            <summary>
+            In case if entity was inserted is set to true
+            </summary>
+        </member>
         <member name="T:DBreeze.TextSearch.BlockAnd">
             <summary>
             
@@ -762,8 +862,21 @@
         </member>
         <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
             <summary>
-            Value indicating when content should be cleared. Default is 10000 (inserts and removes)
+            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
             </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
+            <summary>
+            Internal regulator telling, that specified tables should work via fast update
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.TryGetValueByKey(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
             <summary>
@@ -780,6 +893,11 @@
             <typeparam name="TKey"></typeparam>
             <param name="tableName"></param>
             <param name="key"></param>
+        </member>
+        <member name="F:DBreeze.Transactions.RandomKeySorter.tbls">
+            <summary>
+            Contains writing LTrie tables
+            </summary>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
             <summary>
@@ -1107,6 +1225,35 @@
             <param name="tableName"></param>
             <param name="key"></param>
             <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.ObjectGetNewIdentity``1(System.String)">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Automatically gets entity ID (automatically will be stored in table after commit)
+            </summary>
+            <typeparam name="TIdentity">type of identity (long,ulong,int,uint,short,ushort)</typeparam>
+            <param name="tableName">Table name</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.ObjectInsert``1(System.String,DBreeze.Objects.DBreezeObject{``0},System.Boolean)">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Insert/Updates entity and its secondary keys
+            </summary>
+            <typeparam name="TObject"></typeparam>
+            <param name="tableName">Table name</param>
+            <param name="toInsert">Configuration for the inserting object</param>
+            <param name="speedUpdate">Set to true to increase update speed (table can consume more physical space)</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.ObjectRemove(System.String,System.Byte[],System.Boolean)">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Removes entity and its keys
+            </summary>
+            <param name="tableName">Table name</param>
+            <param name="index">Any of formed index to lookup the entity for deletion</param>
+            <param name="speedUpdate">Aet to true to increase update speed (table can consume more physical space)</param>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Insert``2(System.String,``0,``1)">
             <summary>
@@ -2247,6 +2394,22 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertValue``1(``0)">
+            <summary>
+            Converts type to a byte[] 
+            </summary>
+            <typeparam name="TData"></typeparam>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertKey``1(``0)">
+            <summary>
+            Converts key type to a byte[] 
+            </summary>
+            <typeparam name="TData"></typeparam>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertBack``1(System.Byte[])">
             <summary>
             CONVERTING FROM byte[] to the generic type
@@ -2386,6 +2549,15 @@
             <param name="startIndex"></param>
             <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
         </member>
+        <member name="M:DBreeze.DataTypes.Row`2.ObjectGet``1">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Get object from a datablock with a fixed address, 
+            having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.  
+            </summary>
+            <typeparam name="TVal"></typeparam>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.DataTypes.Row`2.GetDataBlockWithFixedAddress``1(System.UInt32)">
             <summary>
             Returns datablock which fixed address, which identifier is stored in this row from specified index.
@@ -2393,15 +2565,6 @@
             <typeparam name="TVal"></typeparam>
             <param name="startIndex"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.UpdateDataBlockWithFixedAddress``1(``0,System.UInt32)">
-            <summary>
-            Tries to update value stored by InsertDataBlockWithFixedAddress,
-            having that reference to it is a part of value
-            </summary>
-            <typeparam name="TVal"></typeparam>
-            <param name="newValue"></param>
-            <param name="startIndex">reference to InsertDataBlockWithFixedAddress</param>
         </member>
         <member name="P:DBreeze.DataTypes.Row`2.Value">
             <summary>
@@ -5852,6 +6015,46 @@
             </summary>
             <param name="ar1"></param>
             <param name="ar2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ConcatMany(System.Byte[],System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            Concats many byte arrays
+            </summary>
+            <param name="ar1"></param>
+            <param name="arrays"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            Concats all arrays into one byte[]
+            </summary>
+            <param name="arrays"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.KeyChain(System.Int32,System.Object[])">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Helps to form a byte[] from a complex index, representing combination of several data-types.
+            </summary>
+            <param name="indexNumber">Index number (byte 1-255)</param>
+            <param name="pars">Parts of the index to be casted to byte[]</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.KeyChain(System.Byte,System.Object[])">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Helps to form a byte[] from a complex index, representing combination of several data-types.
+            </summary>
+            <param name="indexNumber">Index number (byte 1-255)</param>
+            <param name="pars">Parts of the index to be casted to byte[]</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.KeyChain(System.Object[])">
+            <summary>
+            Helps to form a byte[] from a complex index, representing combination of several data-types.
+            </summary>
+            <param name="pars"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.indexOfStringInByteArray(System.Byte[],System.String,System.Text.Encoding)">

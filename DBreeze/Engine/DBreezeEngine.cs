@@ -158,11 +158,13 @@ namespace DBreeze
         /// </summary>
         private void InitDb()
         {
-            //trying to check and create folder
-            
+            //trying to check and create folder           
 
             try
             {
+
+                //Init type converter
+                DataTypes.DataTypesConvertor.InitDict();
 
                 if (Configuration.Storage == DBreezeConfiguration.eStorage.DISK)
                 {
