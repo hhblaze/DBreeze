@@ -467,26 +467,26 @@ namespace DBreeze.Utils
 
         /// <summary>
         /// Concept of the objects storage (read docu from 20170321)
-        /// Helps to form a byte[] from a complex index, representing combination of several data-types.
+        /// Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
         /// </summary>
-        /// <param name="indexNumber">Index number (byte 1-255)</param>
-        /// <param name="pars">Parts of the index to be casted to byte[]</param>
+        /// <param name="indexNumber">Index number (one byte from 1-255)</param>
+        /// <param name="pars">Parts of the index to be converted to byte[]</param>
         /// <returns></returns>
-        public static byte[] KeyChain(this int indexNumber, params object[] pars)
+        public static byte[] ChainIndex(this int indexNumber, params object[] pars)
         {
             if (indexNumber < 1 || indexNumber > 255)
                 throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
-            return KeyChain((byte)indexNumber, pars);
+            return ChainIndex((byte)indexNumber, pars);
         }
 
         /// <summary>
         /// Concept of the objects storage (read docu from 20170321)
-        /// Helps to form a byte[] from a complex index, representing combination of several data-types.
+        /// Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
         /// </summary>
-        /// <param name="indexNumber">Index number (byte 1-255)</param>
-        /// <param name="pars">Parts of the index to be casted to byte[]</param>
+        /// <param name="indexNumber">Index number (one byte from 1-255)</param>
+        /// <param name="pars">Parts of the index to be converted to byte[]</param>
         /// <returns></returns>
-        public static byte[] KeyChain(this byte indexNumber, params object[] pars)
+        public static byte[] ChainIndex(this byte indexNumber, params object[] pars)
         {
             if (indexNumber < 1)
                 throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
@@ -502,17 +502,39 @@ namespace DBreeze.Utils
         }
 
         /// <summary>
-        /// Helps to form a byte[] from a complex index, representing combination of several data-types.
+        /// Concatenates converted to byte[] elements sequentially. 
+        /// DBreeze converters are used.
         /// </summary>
         /// <param name="pars"></param>
         /// <returns></returns>
-        public static byte[] KeyChain(params object[] pars)
+        public static byte[] ChainBytes(params object[] pars)
         {
             if (pars == null || pars.Length < 1)
                 return null;
             List<byte[]> xbts = new List<byte[]>();
             foreach (var prop in pars)
                 xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
+
+            return xbts.Concat();
+        }
+
+        /// <summary>
+        /// Concatenates converted to byte[] elements sequentially. 
+        /// DBreeze converters are used.
+        /// </summary>
+        /// <param name="par1"></param>
+        /// <param name="pars"></param>
+        /// <returns></returns>
+        public static byte[] ChainBytes(this object par1, params object[] pars)
+        {
+            if (par1 == null)
+                return null;
+
+            List<byte[]> xbts = new List<byte[]>();
+            xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(par1, par1.GetType()));
+            if (pars != null)
+                foreach (var prop in pars)
+                    xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
 
             return xbts.Concat();
         }
