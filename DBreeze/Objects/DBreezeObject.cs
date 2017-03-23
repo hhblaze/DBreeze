@@ -21,7 +21,7 @@ namespace DBreeze.Objects
         /// </summary>
         public DBreezeObject()
         {
-            Indexes = new List<DBreezeIndex>();
+            //Indexes = new List<DBreezeIndex>();
             NewEntity = false;
             IncludeOldEntityIntoResult = false;
         }

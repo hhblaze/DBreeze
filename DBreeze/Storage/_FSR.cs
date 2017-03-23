@@ -22,7 +22,6 @@ namespace DBreeze.Storage
     internal class FSR : IStorage
     {
         //!!try catches can be taken away from reads and writes, when procs are fully balanced
-        //!!fsLength instead of this._fsData.Length was added on 23.03.2017 for now only in DBreeze .NET4.5, later integrate everywhere
 
         #region "Variables"
 
@@ -84,7 +83,7 @@ namespace DBreeze.Storage
         /// </summary>
         long eofData = 0;
         long eofRollback = 0;
-        long fsLength = 0;
+        long flLength = 0;
 
         TrieSettings _trieSettings = null;
         ushort DefaultPointerLen = 0;
@@ -165,7 +164,6 @@ namespace DBreeze.Storage
             {
                 if (_fsData != null)
                 {
-
                     _fsData.Close();
                     _fsData.Dispose();
                     _fsData = null;
@@ -173,7 +171,6 @@ namespace DBreeze.Storage
 
                 if (_fsRollback != null)
                 {
-
                     _fsRollback.Close();
                     _fsRollback.Dispose();
                     _fsRollback = null;
@@ -181,7 +178,6 @@ namespace DBreeze.Storage
 
                 if (_fsRollbackHelper != null)
                 {
-
                     _fsRollbackHelper.Close();
                     _fsRollbackHelper.Dispose();
                     _fsRollbackHelper = null;
@@ -224,7 +220,6 @@ namespace DBreeze.Storage
                 }
 
                 eofData = this._fsData.Length;
-                fsLength = this._fsData.Length;
 
                 //Check is .rhp is empty add 0 pointer
                 if (this._fsRollbackHelper.Length == 0)
@@ -511,7 +506,6 @@ namespace DBreeze.Storage
                 usedBufferSize = 0;
                 eofRollback = 0;
                 eofData = 0;
-                fsLength = 0;
                 _seqBuf.Clear(true);
 
 
@@ -569,7 +563,6 @@ namespace DBreeze.Storage
                 usedBufferSize = 0;
                 eofRollback = 0;
                 eofData = 0;
-                fsLength = 0;
                 _seqBuf.Clear(true);
 
                 File.Delete(this._fileName);
@@ -593,13 +586,9 @@ namespace DBreeze.Storage
             if (_seqBuf.EOF == 0)
                 return;
 
-            //long pos = _fsData.Length;
-            long pos = fsLength;
+            long pos = _fsData.Length;
             _fsData.Position = pos;
             _fsData.Write(_seqBuf.RawBuffer, 0, _seqBuf.EOF);
-
-            fsLength += _seqBuf.EOF;
-
 
             if (_backupIsActive)
             {
@@ -640,11 +629,8 @@ namespace DBreeze.Storage
                 if (data.Length > _seqBufCapacity)
                 {
                     FlushSequentialBuffer();
-                    //_fsData.Position = position = _fsData.Length;
-                    _fsData.Position = position = fsLength;
+                    _fsData.Position = position = _fsData.Length;
                     _fsData.Write(data, 0, data.Length);
-
-                    fsLength += data.Length;
 
                     return ((ulong)position).To_8_bytes_array_BigEndian().Substring(8 - DefaultPointerLen, DefaultPointerLen);
                 }
@@ -657,8 +643,7 @@ namespace DBreeze.Storage
 
                 //Writing into buffer
 
-                //position = _fsData.Length + _seqBuf.EOF;
-                position = fsLength + _seqBuf.EOF;
+                position = _fsData.Length + _seqBuf.EOF;
 
                 _seqBuf.Write_ToTheEnd(data);
 
@@ -713,23 +698,19 @@ namespace DBreeze.Storage
             lock (lock_fs)
             {
 
-                //if (offset >= _fsData.Length)
-                if (offset >= fsLength)
+                if (offset >= _fsData.Length)
                 {
                     //Overwriting sequential buffer
-                    //_seqBuf.Write_ByOffset(Convert.ToInt32(offset - _fsData.Length), data);                    
-                    _seqBuf.Write_ByOffset(Convert.ToInt32(offset - fsLength), data);
+                    _seqBuf.Write_ByOffset(Convert.ToInt32(offset - _fsData.Length), data);
                     return;
                 }
 
-                //if (offset < _fsData.Length && offset + data.Length > _fsData.Length)
-                if (offset < fsLength && offset + data.Length > fsLength)
+                if (offset < _fsData.Length && offset + data.Length > _fsData.Length)
                 {
                     throw new Exception("FSR.WriteByOffset: offset < _fsData.Length && offset + data.Length > _fsData.Length");
                 }
 
-                //if (offset + data.Length > (_fsData.Length + _seqBuf.EOF))
-                if (offset + data.Length > (fsLength + _seqBuf.EOF))
+                if (offset + data.Length > (_fsData.Length + _seqBuf.EOF))
                 {
                     //DB RULE1. We cant update and go out of the end of file. Only if we write into empty file root in the beginning
                     throw new Exception("FSR.WriteByOffset: offset + data.Length > (_fsData.Length + seqEOF)");
@@ -852,9 +833,6 @@ namespace DBreeze.Storage
                 _fsData.Position = de.Key;
                 _fsData.Write(de.Value, 0, de.Value.Length);
 
-                if (de.Key + de.Value.Length > fsLength)
-                    fsLength = de.Key + de.Value.Length;
-
                 if (_backupIsActive)
                 {
                     this._configuration.Backup.WriteBackupElement(ulFileName, 0, de.Key, de.Value);
@@ -924,17 +902,14 @@ namespace DBreeze.Storage
 
                     //reading full byte[] from original file and putting on top keys
                     //We use full length of the file
-                    //if (offset + count > _fsData.Length + _seqBuf.EOF)
-                    if (offset + count > fsLength + _seqBuf.EOF)
-                        res = new byte[fsLength + _seqBuf.EOF - offset];
-                    //res = new byte[_fsData.Length + _seqBuf.EOF - offset];
+                    if (offset + count > _fsData.Length + _seqBuf.EOF)
+                        res = new byte[_fsData.Length + _seqBuf.EOF - offset];
                     else
                         res = new byte[count];
 
                     byte[] btWork = null;
 
-                    //if (offset < _fsData.Length)
-                    if (offset < fsLength)
+                    if (offset < _fsData.Length)
                     {
                         //Starting reading from file
                         _fsData.Position = offset;
@@ -948,8 +923,7 @@ namespace DBreeze.Storage
                         else
                         {
                             //partly from file, partly from sequential cache
-                            //int v1 = Convert.ToInt32(_fsData.Length - offset);
-                            int v1 = Convert.ToInt32(fsLength - offset);
+                            int v1 = Convert.ToInt32(_fsData.Length - offset);
                             _fsData.Read(res, 0, v1);
                             //Console.WriteLine("4;{0};{1}", offset, ((res == null) ? -1 : res.Length));
                             Buffer.BlockCopy(_seqBuf.RawBuffer, 0, res, v1, res.Length - v1);
@@ -960,8 +934,7 @@ namespace DBreeze.Storage
                         //!!! threat if seqBuf is empty, should not happen thou
 
                         //completely taken from seqbuf
-                        //Buffer.BlockCopy(_seqBuf.RawBuffer, Convert.ToInt32(offset - _fsData.Length), res, 0, res.Length);
-                        Buffer.BlockCopy(_seqBuf.RawBuffer, Convert.ToInt32(offset - fsLength), res, 0, res.Length);
+                        Buffer.BlockCopy(_seqBuf.RawBuffer, Convert.ToInt32(offset - _fsData.Length), res, 0, res.Length);
                     }
 
 
@@ -1056,11 +1029,9 @@ namespace DBreeze.Storage
                             //Probably not finished transaction and SelectDirect case. We return value,
                             //because at this momont all transaction table have successfully gone through TransactionalCommit() procedure.
 
-                            //if (offset + count > this._fsData.Length)
-                            if (offset + count > fsLength)
+                            if (offset + count > this._fsData.Length)
                             {
-                                //res = new byte[this._fsData.Length - offset];
-                                res = new byte[fsLength - offset];
+                                res = new byte[this._fsData.Length - offset];
                             }
                             else
                             {
@@ -1162,8 +1133,7 @@ namespace DBreeze.Storage
 
                 _rollbackCache.Clear();
 
-                //eofData = this._fsData.Length;
-                eofData = fsLength;
+                eofData = this._fsData.Length;
 
             }
         }
@@ -1220,8 +1190,7 @@ namespace DBreeze.Storage
 
                 _rollbackCache.Clear();
 
-                //eofData = this._fsData.Length;
-                eofData = fsLength;
+                eofData = this._fsData.Length;
 
                 TransactionalCommitIsStarted = false;
             }
@@ -1267,9 +1236,6 @@ namespace DBreeze.Storage
                             _fsData.Position = rb.Key;
                             _fsData.Write(btWork, 0, btWork.Length);
 
-                            if (rb.Key + btWork.Length > fsLength)
-                                fsLength = rb.Key + btWork.Length;
-
                             if (_backupIsActive)
                             {
                                 this._configuration.Backup.WriteBackupElement(ulFileName, 0, rb.Key, btWork);
@@ -1302,7 +1268,7 @@ namespace DBreeze.Storage
                     }
 
                     //we dont move eofData, space can be re-used up to next restart (may be root can have this info in next protocols)
-                    ////eofData = this._fsData.Length;
+                    //eofData = this._fsData.Length;
                 }
             }
             catch (Exception ex)
