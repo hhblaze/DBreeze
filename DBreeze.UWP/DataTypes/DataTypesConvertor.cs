@@ -68,7 +68,8 @@ namespace DBreeze.DataTypes
 
         internal static void InitDict()
         {
-
+            if (dcb.Count > 0)
+                return;
             //--------------- Convert Back
             dcb.Add(TYPE_BYTE_ARRAY, (dt) => { return (object)dt; });
             dcb.Add(TYPE_ULONG, (dt) => { return (object)dt.To_UInt64_BigEndian(); });
