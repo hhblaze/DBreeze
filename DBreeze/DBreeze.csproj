@@ -78,6 +78,7 @@
     <Compile Include="Exceptions\DBreezeException.cs" />
     <Compile Include="Exceptions\TableNotOperableException.cs" />
     <Compile Include="Diagnostic\SpeedStatistic.cs" />
+    <Compile Include="Storage\FSR.cs" />
     <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommunicator.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteInstanceCommander.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />
@@ -95,7 +96,6 @@
     <Compile Include="Storage\Backup\Backup.cs" />
     <Compile Include="Storage\Backup\BackupRestorer.cs" />
     <Compile Include="Storage\MSR.cs" />
-    <Compile Include="Storage\FSR.cs" />
     <Compile Include="Storage\IStorage.cs" />
     <Compile Include="Storage\MemoryStorage.cs" />
     <Compile Include="Storage\StorageLayer.cs" />

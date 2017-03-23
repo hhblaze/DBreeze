@@ -20,7 +20,7 @@ DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value stor
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
-- <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guide.-Customers-and-orders'  target='_blank'>Quick start guide. Customers and orders</a> 
+- <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guides'  target='_blank'>Quick start guides.</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/tree/master/DBreeze/bin/Release'  target='_blank'>Assemblies location</a> 
 - <a href='https://github.com/hhblaze/DBreeze/raw/master/Documentation/_DBreeze.Documentation.actual.pdf' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
