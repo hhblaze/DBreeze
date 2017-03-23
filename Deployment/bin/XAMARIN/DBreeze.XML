@@ -243,6 +243,7 @@
             Concept of the objects storage (read docu from 20170321)
             Get object from a datablock with a fixed address, 
             having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.  
+            Returns null if object is not found.
             </summary>
             <typeparam name="TVal"></typeparam>
             <returns></returns>
@@ -4084,7 +4085,7 @@
             <summary>
             If existing entity was taken before it can be supplied to speed up insert process
             by skipping reading value from new.
-            Existing object must be taken from roe
+            Existing object must be taken from row
             </summary>
         </member>
         <member name="P:DBreeze.Objects.DBreezeObject`1.IncludeOldEntityIntoResult">
@@ -4494,13 +4495,17 @@
             <param name="key"></param>
             <param name="value"></param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.ObjectGetNewIdentity``1(System.String)">
+        <member name="M:DBreeze.Transactions.Transaction.ObjectGetNewIdentity``1(System.String,System.Byte[],System.UInt32)">
             <summary>
             Concept of the objects storage (read docu from 20170321)
-            Automatically gets entity ID (automatically will be stored in table after commit)
+            Automatically gets monotonically grown entity ID (automatically will be stored in table after commit).
+            Table can contain and handle many monotonically grown identities, 
+            but for that must be explicitely set addressOfIdentity
             </summary>
             <typeparam name="TIdentity">type of identity (long,ulong,int,uint,short,ushort)</typeparam>
             <param name="tableName">Table name</param>
+            <param name="addressOfIdentity">by default is stored to th key address byte[]{0}</param>
+            <param name="seed">Step of growth</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.ObjectInsert``1(System.String,DBreeze.Objects.DBreezeObject{``0},System.Boolean)">

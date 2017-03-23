@@ -44,7 +44,7 @@ namespace DBreeze.Objects
         /// <summary>
         /// If existing entity was taken before it can be supplied to speed up insert process
         /// by skipping reading value from new.
-        /// Existing object must be taken from roe
+        /// Existing object must be taken from row
         /// </summary>
         internal byte[] ExisingEntity { get; set; }
 

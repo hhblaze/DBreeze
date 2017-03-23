@@ -295,6 +295,7 @@ namespace DBreeze.DataTypes
         /// Concept of the objects storage (read docu from 20170321)
         /// Get object from a datablock with a fixed address, 
         /// having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.  
+        /// Returns null if object is not found.
         /// </summary>
         /// <typeparam name="TVal"></typeparam>
         /// <returns></returns>
@@ -310,7 +311,7 @@ namespace DBreeze.DataTypes
                 if (_row.ValueIsReadOut)
                 {
                     if (_row.Value == null)
-                        return ret;
+                        return null;
 
                     dataBlockId = _row.Value.Substring(startIndex, 16);
                 }
@@ -319,17 +320,19 @@ namespace DBreeze.DataTypes
                 uint valueFullLength = 0;
                 dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, (uint)startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
             }
+            else
+                return null;
 
             if (dataBlockId == null)
-                return ret;
+                return null;
 
             ret.ptrToExisingEntity = dataBlockId;
-            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);           
-            Dictionary <uint, byte[]> d = new Dictionary<uint, byte[]>();
-            ret.ExisingEntity = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);            
+            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+            Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
+            ret.ExisingEntity = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
             Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(ret.ExisingEntity, d);
             if (d == null || d.Count < 1)
-                return ret;
+                return null;
             ret.Entity = DataTypesConvertor.ConvertBack<TVal>(d[0]);
             return ret;
         }

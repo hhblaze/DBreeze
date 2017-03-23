@@ -818,54 +818,63 @@ namespace DBreeze.Transactions
 
         /// <summary>
         /// Concept of the objects storage (read docu from 20170321)
-        /// Automatically gets entity ID (automatically will be stored in table after commit)
+        /// Automatically gets monotonically grown entity ID (automatically will be stored in table after commit).
+        /// Table can contain and handle many monotonically grown identities, 
+        /// but for that must be explicitely set addressOfIdentity
         /// </summary>
         /// <typeparam name="TIdentity">type of identity (long,ulong,int,uint,short,ushort)</typeparam>
         /// <param name="tableName">Table name</param>
+        /// <param name="addressOfIdentity">by default is stored to th key address byte[]{0}</param>
+        /// <param name="seed">Step of growth</param>
         /// <returns></returns>
-        public TIdentity ObjectGetNewIdentity<TIdentity>(string tableName)
+        public TIdentity ObjectGetNewIdentity<TIdentity>(string tableName, byte[] addressOfIdentity = null, uint seed = 1)
         {
+            if (seed < 1)
+                seed = 1;
+
+            addressOfIdentity = addressOfIdentity ?? new byte[] { 0 };
+
             Type td = typeof(TIdentity);
 
-            byte[] btcnt = this.RandomKeySorter.TryGetValueByKey(tableName, "00");
+            byte[] btcnt = this.RandomKeySorter.TryGetValueByKey(tableName, addressOfIdentity.ToBytesString());
 
-            if(btcnt == null)
-                btcnt = this.Select<byte[], byte[]>(tableName, new byte[] { 0 }).Value;
-            
+            if (btcnt == null)
+                btcnt = this.Select<byte[], byte[]>(tableName, addressOfIdentity).Value;
+
             if (td == DataTypesConvertor.TYPE_LONG)
             {
-                var ci = (btcnt == null) ? 1 : btcnt.To_Int64_BigEndian() + 1;
-                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_8_bytes_array_BigEndian());                
+                var ci = (btcnt == null) ? (long)seed : btcnt.To_Int64_BigEndian() + (long)seed;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, addressOfIdentity, ci.ChainBytes());
                 return (TIdentity)((object)ci);
             }
             else if (td == DataTypesConvertor.TYPE_INT)
             {
-                var ci = (btcnt == null) ? 1 : btcnt.To_Int32_BigEndian() + 1;
-                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_4_bytes_array_BigEndian());
+                var ci = (btcnt == null) ? (int)seed : btcnt.To_Int32_BigEndian() + (int)seed;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, addressOfIdentity, ci.ChainBytes());
                 return (TIdentity)((object)ci);
-            }            
+            }
             else if (td == DataTypesConvertor.TYPE_ULONG)
             {
-                var ci = (btcnt == null) ? 1 : btcnt.To_UInt64_BigEndian() + 1;
-                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_8_bytes_array_BigEndian());
+                var ci = (btcnt == null) ? (ulong)seed : btcnt.To_UInt64_BigEndian() + (ulong)seed;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, addressOfIdentity, ci.ChainBytes());
                 return (TIdentity)((object)ci);
             }
             else if (td == DataTypesConvertor.TYPE_UINT)
             {
-                var ci = (btcnt == null) ? 1 : btcnt.To_UInt32_BigEndian() + 1;
-                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_4_bytes_array_BigEndian());
+                var ci = (btcnt == null) ? (uint)seed : btcnt.To_UInt32_BigEndian() + (uint)seed;
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, addressOfIdentity, ci.ChainBytes());
                 return (TIdentity)((object)ci);
-            }          
-            else if(td == DataTypesConvertor.TYPE_SHORT)
+            }
+            else if (td == DataTypesConvertor.TYPE_SHORT)
             {
-                var ci = (short)((btcnt == null) ? 1 : (btcnt.To_Int16_BigEndian() + 1));
-                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_2_bytes_array_BigEndian());
+                var ci = (short)((btcnt == null) ? (short)seed : (btcnt.To_Int16_BigEndian() + (short)seed));
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, addressOfIdentity, ci.ChainBytes());
                 return (TIdentity)((object)ci);
             }
             else if (td == DataTypesConvertor.TYPE_USHORT)
             {
-                var ci = (ushort)((btcnt == null) ? 1 : (btcnt.To_UInt16_BigEndian() + 1));
-                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, new byte[] { 0 }, ci.To_2_bytes_array_BigEndian());
+                var ci = (ushort)((btcnt == null) ? (ushort)seed : (btcnt.To_UInt16_BigEndian() + (ushort)seed));
+                this.RandomKeySorter.Insert<byte[], byte[]>(tableName, addressOfIdentity, ci.ChainBytes());
                 return (TIdentity)((object)ci);
             }
             else
