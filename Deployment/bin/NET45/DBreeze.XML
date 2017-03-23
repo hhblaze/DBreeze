@@ -256,6 +256,14 @@
             <param name="startIndex"></param>
             <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
         </member>
+        <member name="M:DBreeze.DataTypes.Row`2.GetDataBlockWithFixedAddress``1(System.UInt32)">
+            <summary>
+            Returns datablock which fixed address, which identifier is stored in this row from specified index.
+            </summary>
+            <typeparam name="TVal"></typeparam>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.DataTypes.Row`2.ObjectGet``1">
             <summary>
             Concept of the objects storage (read docu from 20170321)

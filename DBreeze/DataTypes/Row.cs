@@ -249,43 +249,47 @@ namespace DBreeze.DataTypes
         }
 
 
-        ///// <summary>
-        ///// Concept of the objects storage (read docu from 20170321)
-        ///// Get object from a datablock with a fixed address, 
-        ///// having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.      
-        ///// </summary>
-        ///// <typeparam name="TVal"></typeparam>
-        ///// <returns></returns>
-        //public TVal ObjectGet<TVal>()
-        //{
-        //    byte[] dataBlockId = null;
-        //    int startIndex = 0;
+        /// <summary>
+        /// Returns datablock which fixed address, which identifier is stored in this row from specified index.
+        /// </summary>
+        /// <typeparam name="TVal"></typeparam>
+        /// <param name="startIndex"></param>
+        /// <returns></returns>
+        public TVal GetDataBlockWithFixedAddress<TVal>(uint startIndex = 0)
+        {
+            byte[] dataBlockId = null;
 
-        //    if (_exists)
-        //    {
-        //        if (_row.ValueIsReadOut)
-        //        {
-        //            if (_row.Value == null)
-        //                return default(TVal);
+            if (_exists)
+            {
+                if (_row.ValueIsReadOut)
+                {
+                    if (_row.Value == null)
+                        return default(TVal);
 
-        //            dataBlockId = _row.Value.Substring(startIndex, 16);                    
-        //        }
+                    dataBlockId = _row.Value.Substring((int)startIndex, 16);
 
-        //        long valueStartPointer = 0;
-        //        uint valueFullLength = 0;
-        //        dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, (uint)startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);                
-        //    }
+                    //dataBlockId=this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+                    //return DataTypesConvertor.ConvertBack<TValue>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
 
-        //    if (dataBlockId == null)
-        //        return default(TVal);
+                    //return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
 
-        //    dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
-        //    Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
-        //    Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache), d);
-        //    if (d == null || d.Count < 1)
-        //        return default(TVal);
-        //    return DataTypesConvertor.ConvertBack<TVal>(d[0]);                       
-        //}
+                }
+
+                long valueStartPointer = 0;
+                uint valueFullLength = 0;
+                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+                //return this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+
+                //dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+                //return DataTypesConvertor.ConvertBack<TValue>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
+            }
+
+            if (dataBlockId == null)
+                return default(TVal);
+
+            dataBlockId = this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache);
+            return DataTypesConvertor.ConvertBack<TVal>(this._row.Root.Tree.Cache.ReadDynamicDataBlock(ref dataBlockId, this._useCache));
+        }
 
         /// <summary>
         /// Concept of the objects storage (read docu from 20170321)
