@@ -9,5 +9,6 @@
 <Reference Include="System.Web.Extensions" />
 <Compile Include="DataTypes\DbMJSON.cs" />
 <Compile Include="Utils\MJsonSerializator.cs" />
+<TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
 
 

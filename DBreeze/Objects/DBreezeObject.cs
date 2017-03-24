@@ -29,7 +29,7 @@ namespace DBreeze.Objects
         /// <summary>
         /// List of indexes
         /// </summary>
-        public List<DBreezeIndex> Indexes { get; set; }
+        public IList<DBreezeIndex> Indexes { get; set; }
 
         /// <summary>
         /// Deafult false. Skips reading existing value on the disk (insert time economy)
