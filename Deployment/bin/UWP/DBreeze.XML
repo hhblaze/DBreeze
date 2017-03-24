@@ -6037,7 +6037,7 @@
             <param name="arrays"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ChainIndex(System.Int32,System.Object[])">
+        <member name="M:DBreeze.Utils.BytesProcessing.ToIndex(System.Int32,System.Object[])">
             <summary>
             Concept of the objects storage (read docu from 20170321)
             Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
@@ -6046,7 +6046,7 @@
             <param name="pars">Parts of the index to be converted to byte[]</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ChainIndex(System.Byte,System.Object[])">
+        <member name="M:DBreeze.Utils.BytesProcessing.ToIndex(System.Byte,System.Object[])">
             <summary>
             Concept of the objects storage (read docu from 20170321)
             Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
@@ -6055,7 +6055,7 @@
             <param name="pars">Parts of the index to be converted to byte[]</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ChainBytes(System.Object[])">
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytes(System.Object[])">
             <summary>
             Concatenates converted to byte[] elements sequentially. 
             DBreeze converters are used.
@@ -6063,7 +6063,7 @@
             <param name="pars"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ChainBytes(System.Object,System.Object[])">
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytes(System.Object,System.Object[])">
             <summary>
             Concatenates converted to byte[] elements sequentially. 
             DBreeze converters are used.

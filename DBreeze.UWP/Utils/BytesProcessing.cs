@@ -472,11 +472,11 @@ namespace DBreeze.Utils
         /// <param name="indexNumber">Index number (one byte from 1-255)</param>
         /// <param name="pars">Parts of the index to be converted to byte[]</param>
         /// <returns></returns>
-        public static byte[] ChainIndex(this int indexNumber, params object[] pars)
+        public static byte[] ToIndex(this int indexNumber, params object[] pars)
         {
             if (indexNumber < 1 || indexNumber > 255)
                 throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
-            return ChainIndex((byte)indexNumber, pars);
+            return ToIndex((byte)indexNumber, pars);
         }
 
         /// <summary>
@@ -486,7 +486,7 @@ namespace DBreeze.Utils
         /// <param name="indexNumber">Index number (one byte from 1-255)</param>
         /// <param name="pars">Parts of the index to be converted to byte[]</param>
         /// <returns></returns>
-        public static byte[] ChainIndex(this byte indexNumber, params object[] pars)
+        public static byte[] ToIndex(this byte indexNumber, params object[] pars)
         {
             if (indexNumber < 1)
                 throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
@@ -507,7 +507,7 @@ namespace DBreeze.Utils
         /// </summary>
         /// <param name="pars"></param>
         /// <returns></returns>
-        public static byte[] ChainBytes(params object[] pars)
+        public static byte[] ToBytes(params object[] pars)
         {
             if (pars == null || pars.Length < 1)
                 return null;
@@ -525,7 +525,7 @@ namespace DBreeze.Utils
         /// <param name="par1"></param>
         /// <param name="pars"></param>
         /// <returns></returns>
-        public static byte[] ChainBytes(this object par1, params object[] pars)
+        public static byte[] ToBytes(this object par1, params object[] pars)
         {
             if (par1 == null)
                 return null;
