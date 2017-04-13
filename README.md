@@ -1,4 +1,4 @@
-DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Documentation/Dbreeze.Logo1.JPG) Database
+DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Documentation/Dbreeze.Logo.png) Database
 =====================
 ![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.084%20production-9933FF.svg) 
 ![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg) 
