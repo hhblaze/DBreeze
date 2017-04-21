@@ -19,6 +19,9 @@ using DBreeze.TextSearch;
 
 namespace DBreeze.Transactions
 {
+    /// <summary>
+    /// Transaction
+    /// </summary>
     public class Transaction:IDisposable
     {
         /// <summary>
@@ -60,7 +63,7 @@ namespace DBreeze.Transactions
         /// <param name="transactionUnit"></param>
         /// <param name="lockType"></param>
         /// <param name="tables"></param>
-        public Transaction(int transactionType, TransactionUnit transactionUnit, eTransactionTablesLockTypes lockType, params string[] tables)
+        internal Transaction(int transactionType, TransactionUnit transactionUnit, eTransactionTablesLockTypes lockType, params string[] tables)
         {
             _transactionType = transactionType;
             ManagedThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;

@@ -379,8 +379,60 @@ namespace DBreeze.TextSearch
                 //Dictionary<string, byte[]> tmpWrds = new Dictionary<string, byte[]>(StringComparison.Ordinal);
                 var tmpWrds = new SortedDictionary<string, byte[]>(StringComparer.Ordinal);
 
-                foreach (var docId in its.ChangedDocIds)
+                Action<string> createNew = (word) =>
                 {
+                    if (!tmpWrds.ContainsKey(word))
+                    {
+                        rWord = its.words.Select<string, byte[]>(word, true);
+                        wd = new WordInDocs();
+
+                        if (rWord.Exists)
+                        {
+                            wd.BlockId = rWord.Value.Substring(0, 4).To_UInt32_BigEndian();
+                            wd.NumberInBlock = rWord.Value.Substring(4, 4).To_UInt32_BigEndian();
+                        }
+                        else
+                        {
+                            its.numberInBlock++;
+
+                            if (its.numberInBlock > itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
+                            {
+                                its.currentBlock++;
+                                its.numberInBlock = 1;
+                            }
+
+                            wd.BlockId = its.currentBlock;
+                            wd.NumberInBlock = its.numberInBlock;
+                            //Inserting new definition
+
+
+
+                            // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
+                            if (tmpWrds.Count < 100000)
+                                tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
+                            else
+                            {
+                                // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
+
+                                foreach (var tmpwrd in tmpWrds)
+                                {
+                                    its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
+
+                                }
+                                tmpWrds.Clear();
+                            }
+
+                        }
+                        tpl = new Tuple<HashSet<int>, HashSet<int>, WordInDocs>(new HashSet<int>(), new HashSet<int>(), wd);
+                        ds[word] = tpl;
+                    }
+                };
+
+                List<byte[]> docs2Change = new List<byte[]>();
+                              
+                //foreach (var docId in its.ChangedDocIds)
+                foreach (var docId in its.ChangedDocIds.OrderBy(r=>r))
+                {                
                     //diff will return list of words to be removed and list of words to be added
                     newSrch = its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 })).Value;
 
@@ -390,59 +442,9 @@ namespace DBreeze.TextSearch
                         );
 
                     //Copying new searchables to current searchables
-                    its.srch.ChangeKey<byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }));
-                    //its.srch.Insert<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), newSrch);
+                    docs2Change.Add(docId.To_4_bytes_array_BigEndian());
+                    //its.srch.ChangeKey<byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }));
 
-                   
-
-                    Action <string> createNew = (word) =>
-                    {                    
-                        if (!tmpWrds.ContainsKey(word))
-                        {
-                            rWord = its.words.Select<string, byte[]>(word, true);
-                            wd = new WordInDocs();
-
-                            if (rWord.Exists)
-                            {
-                                wd.BlockId = rWord.Value.Substring(0, 4).To_UInt32_BigEndian();
-                                wd.NumberInBlock = rWord.Value.Substring(4, 4).To_UInt32_BigEndian();
-                            }                        
-                            else
-                            {
-                                its.numberInBlock++;
-                            
-                                if (its.numberInBlock > itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
-                                {
-                                    its.currentBlock++;
-                                    its.numberInBlock = 1;
-                                }
-
-                                wd.BlockId = its.currentBlock;
-                                wd.NumberInBlock = its.numberInBlock;
-                                //Inserting new definition
-
-                                
-
-                                // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
-                                if (tmpWrds.Count < 100000)
-                                    tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
-                                else
-                                {
-                                    // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
-
-                                    foreach (var tmpwrd in tmpWrds)
-                                    {
-                                        its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
-
-                                    }
-                                    tmpWrds.Clear();
-                                }
-                           
-                            }
-                            tpl = new Tuple<HashSet<int>, HashSet<int>, WordInDocs>(new HashSet<int>(), new HashSet<int>(), wd);
-                            ds[word] = tpl;
-                        }                        
-                    };
 
                     //To be removed
                     foreach (var word in diff.Item1)
@@ -461,7 +463,12 @@ namespace DBreeze.TextSearch
 
                         tpl.Item2.Add(docId);
                     }
-                }//eo foreach new searchables, end of document itteration              
+                }//eo foreach new searchables, end of document itteration 
+
+                foreach (var d2c in docs2Change.OrderBy(r=>r.ToBytesString()))
+                {
+                    its.srch.ChangeKey<byte[]>(d2c.Concat(new byte[] { 1 }), d2c.Concat(new byte[] { 0 }));
+                }
 
                 foreach (var tmpwrd in tmpWrds)
                 {

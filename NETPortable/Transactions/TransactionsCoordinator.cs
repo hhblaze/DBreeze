@@ -16,7 +16,7 @@ using DBreeze.SchemeInternal;
 
 namespace DBreeze.Transactions
 {
-    public class TransactionsCoordinator
+    internal class TransactionsCoordinator
     {
         DbReaderWriterLock _sync_transactions = new DbReaderWriterLock();
         /// <summary>

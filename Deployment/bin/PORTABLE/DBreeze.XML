@@ -2032,78 +2032,6 @@
             <param name="tableName"></param>
             <param name="newTableFullPath"></param>
         </member>
-        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
-            <summary>
-            Dictionary of all active transactions. Key is ManagedThreadId
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
-            <summary>
-            Fast access to the Schema object.
-            Used by Transaction class
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            
-            </summary>
-            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
-            <summary>
-            Is called by the engine on Dispose.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
-            <summary>
-            Access synchronizer.
-            All calls of the WRITE LOCATOR come over this function.
-            </summary>
-            <param name="transactionThreadId"></param>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
-            <summary>
-            Can return NULL (if DbIsNotOperatable)
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32)">
-            <summary>
-            Can return NULL if table doesn't exist
-            Can return NULL (if DbIsNotOperatable)
-            
-            Differs from GetTable_Write:
-            1. table is not registered for Write;
-            2. Table is not created, if doesn't exist.
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
-            <summary>
-            Normal Engine Stop, usually in case of Main Thread or DLL disposing
-            </summary>
-        </member>
         <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
             <summary>
             We try to clear tranasction file, when its length is more then 10MB and if it's possible
@@ -2225,6 +2153,78 @@
         <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
             <summary>
             
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
+            <summary>
+            Dictionary of all active transactions. Key is ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
+            <summary>
+            Fast access to the Schema object.
+            Used by Transaction class
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
+            <summary>
+            Is called by the engine on Dispose.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
+            <summary>
+            Access synchronizer.
+            All calls of the WRITE LOCATOR come over this function.
+            </summary>
+            <param name="transactionThreadId"></param>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
+            <summary>
+            Can return NULL (if DbIsNotOperatable)
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32)">
+            <summary>
+            Can return NULL if table doesn't exist
+            Can return NULL (if DbIsNotOperatable)
+            
+            Differs from GetTable_Write:
+            1. table is not registered for Write;
+            2. Table is not created, if doesn't exist.
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
+            <summary>
+            Normal Engine Stop, usually in case of Main Thread or DLL disposing
             </summary>
         </member>
         <member name="T:DBreeze.DataStructures.DataAsTree">

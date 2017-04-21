@@ -16,7 +16,7 @@ namespace DBreeze.Transactions
     /// <summary>
     /// This object includes class Transaction (visible for the user) and holds internally technical transaction information.
     /// </summary>
-    public class TransactionUnit:IDisposable
+    internal class TransactionUnit:IDisposable
     {
         TransactionsCoordinator _transactionsCoordinator = null;
         /// <summary>

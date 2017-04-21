@@ -58,6 +58,7 @@
     <Compile Include="DataTypes\DbMJSON.cs" />
     <Compile Include="DataTypes\Row.cs" />
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
+    <Compile Include="Diagnostic\ActiveTransactionState.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
     <Compile Include="Engine\DBreezeRemoteEngine.cs" />
     <Compile Include="Engine\DBreezeResources.cs" />

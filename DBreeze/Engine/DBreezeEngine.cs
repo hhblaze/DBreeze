@@ -317,6 +317,15 @@ namespace DBreeze
             }
         }
 
+        /// <summary>
+        /// Gets list of reserved for write tables per ManagedThreadId
+        /// </summary>
+        /// <returns></returns>
+        public List<Diagnostic.ActiveTransactionState> Diagnostic_GetActiveTransactionsState()
+        {
+            return this._transactionsCoordinator.Diagnostic_GetActiveTransactionsState();
+        }
+
     }//end of class
 
 }

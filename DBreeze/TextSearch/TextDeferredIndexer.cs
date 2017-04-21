@@ -187,7 +187,7 @@ namespace DBreeze.TextSearch
                 {
                     byte[] key = null;
 
-                    foreach (var el in defTasks)
+                    foreach (var el in defTasks.OrderBy(r=>r.Key.ToBytesString()))
                     {
                         key = el.Key;
                         LTrie.Remove(ref key);

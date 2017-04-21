@@ -16,19 +16,29 @@ namespace DBreeze.Transactions
     /// <summary>
     /// This object includes class Transaction (visible for the user) and holds internally technical transaction information.
     /// </summary>
-    public class TransactionUnit:IDisposable
+    internal class TransactionUnit:IDisposable
     {
         TransactionsCoordinator _transactionsCoordinator = null;
         /// <summary>
         /// Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
         /// </summary>
         Transaction _transaction = null;
+        /// <summary>
+        /// Time of unit creation
+        /// </summary>
+        public DateTime udtStart = DateTime.UtcNow;
+        /// <summary>
+        /// Time of sync table stop, DateTime.MinValue when sync is not finished yet (or there is no tables to sync)
+        /// </summary>
+        public DateTime udtSyncStop = DateTime.MinValue;
 
         //public TransactionUnit(TransactionsCoordinator transactionsCoordinator)
         //{  
         //    this._transactionsCoordinator = transactionsCoordinator;            
         //    this._transaction = new Transaction(this);           
         //}
+
+
 
         public TransactionUnit(int transactionType, TransactionsCoordinator transactionsCoordinator, eTransactionTablesLockTypes lockType, params string[] tables)            
         {
@@ -150,6 +160,7 @@ namespace DBreeze.Transactions
             try
             {
                 _transactionWriteTablesAwaitingReservation.RemoveAll(r => tablesNames.Contains(r));
+                udtSyncStop = DateTime.UtcNow;
             }
             finally
             {

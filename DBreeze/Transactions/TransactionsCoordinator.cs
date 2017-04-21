@@ -16,7 +16,7 @@ using DBreeze.SchemeInternal;
 
 namespace DBreeze.Transactions
 {
-    public class TransactionsCoordinator
+    internal class TransactionsCoordinator
     {
         DbReaderWriterLock _sync_transactions = new DbReaderWriterLock();
         /// <summary>
@@ -275,9 +275,56 @@ namespace DBreeze.Transactions
 
         #region "Registering Tables for Writing or Read-Commited before making operations, for avoiding deadLocks"
 
+        /// <summary>
+        /// Gets ActiveTransactionsState
+        /// </summary>
+        /// <returns</returns>
+        public List<Diagnostic.ActiveTransactionState> Diagnostic_GetActiveTransactionsState()
+        {
+            List<Diagnostic.ActiveTransactionState> ret = new List<Diagnostic.ActiveTransactionState>();
+            Diagnostic.ActiveTransactionState s = null;
+            _sync_transactions.EnterReadLock();
+            try
+            {
+                foreach (var t in this._transactions)
+                {
+                    s = new Diagnostic.ActiveTransactionState()
+                    {
+                      ManagedThreadId = t.Key
+                    };
+
+                    s.TablesToBeSynced.AddRange(t.Value.GetTransactionWriteTablesAwaitingReservation());
+
+                    if(s.TablesToBeSynced.Count<1)
+                        s.TablesToBeSynced.AddRange(t.Value.GetTransactionWriteTablesNames());
+
+                    s.ActiveTime = DateTime.UtcNow.Subtract(t.Value.udtStart);
+
+                    if (s.TablesToBeSynced.Count > 0)
+                    {
+                        s.SyncTableTime = t.Value.udtSyncStop != DateTime.MinValue ? DateTime.UtcNow.Subtract(t.Value.udtSyncStop) 
+                            : DateTime.UtcNow.Subtract(t.Value.udtStart);
+                    }
+
+                    ret.Add(s);                   
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                _sync_transactions.ExitReadLock();
+            }
+
+            return ret;
+        }
+
         //System.Threading.ManualResetEvent mreWriteTransactionLock = new System.Threading.ManualResetEvent(true);
         DbThreadsGator ThreadsGator = new DbThreadsGator();
         object _sync_dl = new object();
+
 
         /// <summary>
         /// Access synchronizer.
@@ -285,6 +332,7 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="transactionThreadId"></param>
         /// <param name="tablesNames"></param>
+        /// <param name="calledBySynchronizer"></param>
         public void RegisterWriteTablesForTransaction(int transactionThreadId, List<string> tablesNames,bool calledBySynchronizer)
         {
             //in every transaction unit we got a list of reserved for WRITING tables

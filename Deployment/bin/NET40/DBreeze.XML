@@ -1158,6 +1158,80 @@
             Returns string from the object
             </summary>
         </member>
+        <member name="T:DBreeze.Diagnostic.ActiveTransactionState">
+            <summary>
+            Diagnostic class showing how state of the transaction
+            </summary>
+        </member>
+        <member name="P:DBreeze.Diagnostic.ActiveTransactionState.ManagedThreadId">
+            <summary>
+            ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Diagnostic.ActiveTransactionState.SyncTableTime">
+            <summary>
+            SyncTableTime null if there is no tables to be synced or 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Diagnostic.ActiveTransactionState.ActiveTime">
+            <summary>
+            ActiveTime
+            </summary>
+        </member>
+        <member name="P:DBreeze.Diagnostic.ActiveTransactionState.TablesToBeSynced">
+            <summary>
+            Tables to be modified
+            </summary>
+        </member>
+        <member name="F:DBreeze.Diagnostic.SpeedStatistic.ToConsole">
+            <summary>
+            Default is Debug.WriteLine, can be changed to Console.WriteLine
+            </summary>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.StartCounter(System.String)">
+            <summary>
+            Starts counter
+            </summary>
+            <param name="counterName"></param>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.StopCounter(System.String)">
+            <summary>
+            Stops counter
+            </summary>
+            <param name="counterName"></param>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.GetCounter(System.String)">
+            <summary>
+            Returns Counter object.
+            Can return NULL if counter not found
+            </summary>
+            <param name="counterName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut">
+            <summary>
+            Prints out stat for all counters without clearing statistic 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut(System.String)">
+            <summary>
+            Prints out counter without clearing statistic for this counter
+            </summary>
+            <param name="counterName"></param>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut(System.String,System.Boolean)">
+            <summary>
+            Prints out specified counter.
+            </summary>
+            <param name="counterName"></param>
+            <param name="withClearingCounter"></param>
+        </member>
+        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut(System.Boolean)">
+            <summary>
+            Prints out stats for all counters
+            </summary>
+            <param name="withResetingStatistic">resets statistic</param>
+        </member>
         <member name="P:DBreeze.DBreezeConfiguration.Backup">
             <summary>
             Incremental backup plan. If is not instantiated, incremental backup will be switch off
@@ -2396,55 +2470,6 @@
             This is a specific Exception which will bring to DB is not opearable state, we need to analyze this type of exception separately,
             that's why extra class.
             </summary>
-        </member>
-        <member name="F:DBreeze.Diagnostic.SpeedStatistic.ToConsole">
-            <summary>
-            Default is Debug.WriteLine, can be changed to Console.WriteLine
-            </summary>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.StartCounter(System.String)">
-            <summary>
-            Starts counter
-            </summary>
-            <param name="counterName"></param>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.StopCounter(System.String)">
-            <summary>
-            Stops counter
-            </summary>
-            <param name="counterName"></param>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.GetCounter(System.String)">
-            <summary>
-            Returns Counter object.
-            Can return NULL if counter not found
-            </summary>
-            <param name="counterName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut">
-            <summary>
-            Prints out stat for all counters without clearing statistic 
-            </summary>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut(System.String)">
-            <summary>
-            Prints out counter without clearing statistic for this counter
-            </summary>
-            <param name="counterName"></param>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut(System.String,System.Boolean)">
-            <summary>
-            Prints out specified counter.
-            </summary>
-            <param name="counterName"></param>
-            <param name="withClearingCounter"></param>
-        </member>
-        <member name="M:DBreeze.Diagnostic.SpeedStatistic.PrintOut(System.Boolean)">
-            <summary>
-            Prints out stats for all counters
-            </summary>
-            <param name="withResetingStatistic">resets statistic</param>
         </member>
         <member name="T:DBreeze.Storage.FSR">
             <summary>
@@ -4218,6 +4243,11 @@
             </summary>
             <param name="transactionThreadId"></param>
         </member>
+        <member name="T:DBreeze.Transactions.Transaction">
+            <summary>
+            Transaction
+            </summary>
+        </member>
         <member name="F:DBreeze.Transactions.Transaction.ManagedThreadId">
             <summary>
             Managed threadId of the transaction
@@ -5365,6 +5395,7 @@
             Is called by the engine on Dispose.
             </summary>
         </member>
+        <!-- Проигнорирован некорректный комментарий XML для члена "M:DBreeze.Transactions.TransactionsCoordinator.Diagnostic_GetActiveTransactionsState" -->
         <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
             <summary>
             Access synchronizer.
@@ -5372,6 +5403,7 @@
             </summary>
             <param name="transactionThreadId"></param>
             <param name="tablesNames"></param>
+            <param name="calledBySynchronizer"></param>
         </member>
         <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
             <summary>
@@ -5449,6 +5481,16 @@
         <member name="F:DBreeze.Transactions.TransactionUnit._transaction">
             <summary>
             Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit.udtStart">
+            <summary>
+            Time of unit creation
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit.udtSyncStop">
+            <summary>
+            Time of sync table stop, DateTime.MinValue when sync is not finished yet (or there is no tables to sync)
             </summary>
         </member>
         <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
@@ -5658,6 +5700,12 @@
             </summary>
             <param name="noti"></param>
             <param name="obj"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeEngine.Diagnostic_GetActiveTransactionsState">
+            <summary>
+            Gets list of reserved for write tables per ManagedThreadId
+            </summary>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
             <summary>
