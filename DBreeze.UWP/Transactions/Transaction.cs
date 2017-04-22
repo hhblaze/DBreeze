@@ -1151,6 +1151,40 @@ namespace DBreeze.Transactions
 
         }
 
+
+        /// <summary>
+        /// Concept of the objects storage (read docu from 20170321).
+        /// Gets object directly if available datablockId, can be useful for the indexes stored in different from the object table.
+        /// Returns DBreezeObject, to get entity use property.Entity. If returns null, then such entity doesn't exist.
+        /// </summary>
+        /// <typeparam name="TVal"></typeparam>
+        /// <param name="tableName">name of the table</param>
+        /// <param name="dataBlockId">dataBlockId</param>
+        /// <returns></returns>
+        public DBreeze.Objects.DBreezeObject<TVal> ObjectGet<TVal>(string tableName, byte[] dataBlockId)
+        {
+            if (dataBlockId == null)
+                return null;
+
+            var ret = new Objects.DBreezeObject<TVal>();
+
+            ret.ptrToExisingEntity = dataBlockId;
+            ITrieRootNode readRoot = null;
+            LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
+
+            if (table == null)
+                return null;
+
+            dataBlockId = table.SelectDataBlock(ref dataBlockId, !(readRoot == null));
+            Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
+            ret.ExisingEntity = table.SelectDataBlock(ref dataBlockId, !(readRoot == null));
+            Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(ret.ExisingEntity, d);
+            if (d == null || d.Count < 1)
+                return null;
+            ret.Entity = DataTypesConvertor.ConvertBack<TVal>(d[0]);
+            return ret;
+        }
+
         /// <summary>
         /// Inserts or updates the key
         /// </summary>
@@ -1867,45 +1901,7 @@ namespace DBreeze.Transactions
         #endregion
 
         #region "Select one key"
-
-        /// <summary>
-        /// Selects specified key from the table
-        /// <para>Always check row.Exists property</para>
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public Row<TKey, TValue> Select<TKey, TValue>(string tableName, TKey key)
-        {
-            return Select<TKey, TValue>(tableName, key, false);
-
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    return new Row<TKey, TValue>(null, null, false);
-            //    //return new Row<TKey, TValue>(null, null, false, null, true);
-            //}
-            //else
-            //{
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-                
-            //    LTrieRow row = table.GetKey(ref btKey, readRoot);
-            //    /*
-            //     * !(readRoot == null) means 
-            //     * (readRoot == null) ? WRITING TABLE TRANSACTION, doesn't use cache for getting value : READING TABLE TRANSACTION, always uses value via cache
-            //     */
-
-            //    return new Row<TKey, TValue>(row, null, !(readRoot == null));
-            //    //return new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, !(readRoot == null));
-
-            //}
-        }
-
-
+        
         /// <summary>
         /// Selects specified key from the table
         /// <para>Always check row.Exists property</para>
@@ -1920,7 +1916,7 @@ namespace DBreeze.Transactions
         /// <para>like it was before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public Row<TKey, TValue> Select<TKey, TValue>(string tableName, TKey key, bool AsReadVisibilityScope)
+        public Row<TKey, TValue> Select<TKey, TValue>(string tableName, TKey key, bool AsReadVisibilityScope = false)
         {
             ITrieRootNode readRoot = null;
             LTrie table = GetReadTableFromBuffer(tableName, out readRoot, AsReadVisibilityScope);
@@ -2010,37 +2006,7 @@ namespace DBreeze.Transactions
 
         #region "Fetch variations"
 
-        /// <summary>
-        /// Iterates table forward (ordered by key ascending).
-        /// <para>Always check row.Exists property</para>
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForward<TKey, TValue>(string tableName)
-        {
-            return SelectForward<TKey, TValue>(tableName, false);
-                        
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-            
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateForward(readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
+    
         /// <summary>
         /// 
         /// </summary>
@@ -2053,7 +2019,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForward<TKey, TValue>(string tableName, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForward<TKey, TValue>(string tableName, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2077,35 +2043,6 @@ namespace DBreeze.Transactions
             }
         }
 
-        /// <summary>
-        /// Iterates table backward (ordered by key descending).
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackward<TKey, TValue>(string tableName)
-        {
-            return SelectBackward<TKey, TValue>(tableName, false);
-
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateBackward(readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
 
         /// <summary>
         /// Iterates table backward (ordered by key descending).
@@ -2119,7 +2056,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackward<TKey, TValue>(string tableName, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackward<TKey, TValue>(string tableName, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2142,41 +2079,7 @@ namespace DBreeze.Transactions
             }
         }
 
-
-
-        /// <summary>
-        /// Iterates table forward (ordered by key ascending). Starting from specified key
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="key"></param>
-        /// <param name="includeStartFromKey">if start key will be included in the final result</param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardStartFrom<TKey, TValue>(string tableName,TKey key, bool includeStartFromKey)
-        {
-            return SelectForwardStartFrom<TKey, TValue>(tableName,key, includeStartFromKey, false);
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateForwardStartFrom(btKey, includeStartFromKey,readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
+        
 
         /// <summary>
         /// Iterates table forward (ordered by key ascending). Starting from specified key
@@ -2192,7 +2095,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2217,41 +2120,7 @@ namespace DBreeze.Transactions
             }
         }
 
-
-        /// <summary>
-        /// Iterates table backward (ordered by key descending). Starting from specified key
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="key"></param>
-        /// <param name="includeStartFromKey">if start key will be included in the final result</param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey)
-        {
-            return SelectBackwardStartFrom<TKey, TValue>(tableName, key, includeStartFromKey, false);
-
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateBackwardStartFrom(btKey, includeStartFromKey, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
+        
 
         /// <summary>
         /// Iterates table backward (ordered by key descending). Starting from specified key
@@ -2267,7 +2136,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2292,42 +2161,7 @@ namespace DBreeze.Transactions
             }
         }
 
-
-        /// <summary>
-        /// Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="startKey"></param>
-        /// <param name="includeStartKey">if start key will be included in the final result</param>
-        /// <param name="stopKey"></param>
-        /// <param name="includeStopKey">if stop key will be included in the final result</param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey)
-        {
-            return SelectForwardFromTo<TKey, TValue>(tableName, startKey, includeStartKey, stopKey, includeStopKey, false);
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
-            //    byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
+        
 
         /// <summary>
         /// Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
@@ -2345,7 +2179,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2373,42 +2207,7 @@ namespace DBreeze.Transactions
         }
 
 
-        /// <summary>
-        /// Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="startKey"></param>
-        /// <param name="includeStartKey">if start key will be included in the final result</param>
-        /// <param name="stopKey"></param>
-        /// <param name="includeStopKey">if stop key will be included in the final result</param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey)
-        {
-            return SelectBackwardFromTo<TKey, TValue>(tableName, startKey, includeStartKey, stopKey, includeStopKey, false);
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
-            //    byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
+       
         /// <summary>
         /// Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
         /// </summary>
@@ -2425,7 +2224,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2460,46 +2259,13 @@ namespace DBreeze.Transactions
         /// <typeparam name="TValue"></typeparam>
         /// <param name="tableName"></param>
         /// <param name="startWithKeyPart"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWith<TKey, TValue>(string tableName, TKey startWithKeyPart)
-        {
-            return SelectForwardStartsWith<TKey, TValue>(tableName, startWithKeyPart, false);
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btStartWithKeyPart = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateForwardStartsWith(btStartWithKeyPart, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
-        /// <summary>
-        /// <para>Mostly can be used for string or byte[] keys</para>
-        /// <para>Iterates table forward (ordered by key ascending). Starting and including specified key part (big-endian from byte[] point of view)</para>
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="startWithKeyPart"></param>
         /// <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
         /// <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
         /// <para>If this parameter set to true, enumerator will return key/value,</para>
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWith<TKey, TValue>(string tableName, TKey startWithKeyPart, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWith<TKey, TValue>(string tableName, TKey startWithKeyPart, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2529,28 +2295,7 @@ namespace DBreeze.Transactions
 
 
         #region "Select Forward StartsWith ClosestToPrefix"
-        /// <summary>
-        /// <para>Mostly can be used for string or byte[] keys</para>
-        /// <para>Iterates table forward (ordered by key ascending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-        /// <para>If we have in a table keys:</para>
-        /// <para>"check"</para>
-        /// <para>"sam"</para>
-        /// <para>"slam"</para>
-        /// <para>"slash"</para>
-        /// <para>"what"</para>
-        /// <para>our search prefix is "slap", we will get:</para>
-        /// <para>"slam"</para>
-        /// <para>"slash"</para>
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="startWithClosestPrefix"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix)
-        {
-            return SelectForwardStartsWithClosestToPrefix<TKey, TValue>(tableName, startWithClosestPrefix, false);          
-        }
+      
 
         /// <summary>
         /// <para>Mostly can be used for string or byte[] keys</para>
@@ -2575,7 +2320,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2605,29 +2350,7 @@ namespace DBreeze.Transactions
 
 
         #region "Select Backward StartsWith ClosestToPrefix"
-        /// <summary>
-        /// <para>Mostly can be used for string or byte[] keys</para>
-        /// <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-        /// <para>If we have in a table keys:</para>
-        /// <para>"check"</para>
-        /// <para>"sam"</para>
-        /// <para>"slam"</para>
-        /// <para>"slash"</para>
-        /// <para>"what"</para>
-        /// <para>our search prefix is "slap", we will get:</para>
-        /// <para>"slash"</para>
-        /// <para>"slam"</para>
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="startWithClosestPrefix"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix)
-        {
-            return SelectBackwardStartsWithClosestToPrefix<TKey, TValue>(tableName, startWithClosestPrefix, false);
-        }
-
+       
         /// <summary>
         /// <para>Mostly can be used for string or byte[] keys</para>
         /// <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
@@ -2651,7 +2374,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2681,39 +2404,6 @@ namespace DBreeze.Transactions
 
 
 
-        /// <summary>
-        /// <para>Mostly can be used for string or byte[] keys</para>
-        /// <para>Iterates table backward (ordered by key descending). Starting and including specified key part (big-endian from byte[] point of view)</para>
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="startWithKeyPart"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartsWith<TKey, TValue>(string tableName, TKey startWithKeyPart)
-        {
-            return SelectBackwardStartsWith<TKey, TValue>(tableName, startWithKeyPart, false);
-
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btStartWithKeyPart = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateBackwardStartsWith(btStartWithKeyPart, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
 
         /// <summary>
         /// <para>Mostly can be used for string or byte[] keys</para>
@@ -2729,7 +2419,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartsWith<TKey, TValue>(string tableName, TKey startWithKeyPart, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardStartsWith<TKey, TValue>(string tableName, TKey startWithKeyPart, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2765,44 +2455,13 @@ namespace DBreeze.Transactions
         /// <typeparam name="TValue"></typeparam>
         /// <param name="tableName"></param>
         /// <param name="skippingQuantity"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardSkip<TKey, TValue>(string tableName, ulong skippingQuantity)
-        {
-
-            return SelectForwardSkip<TKey, TValue>(tableName, skippingQuantity, false);
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateForwardSkip(skippingQuantity,readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
-        /// <summary>
-        /// Iterates table forward (ordered by key ascending), skipping from the first key specified quantity of records
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="skippingQuantity"></param>
         /// <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
         /// <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
         /// <para>If this parameter set to true, enumerator will return key/value,</para>
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardSkip<TKey, TValue>(string tableName, ulong skippingQuantity, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardSkip<TKey, TValue>(string tableName, ulong skippingQuantity, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2826,36 +2485,6 @@ namespace DBreeze.Transactions
         }
 
 
-        /// <summary>
-        /// Iterates table backward (ordered by key descending), skipping from the last key back specified quantity of records
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="skippingQuantity"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardSkip<TKey, TValue>(string tableName,ulong skippingQuantity)
-        {
-            return SelectBackwardSkip<TKey, TValue>(tableName,skippingQuantity, false);
-
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateBackwardSkip(skippingQuantity, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
 
         /// <summary>
         /// Iterates table backward (ordered by key descending), skipping from the last key back specified quantity of records
@@ -2870,7 +2499,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardSkip<TKey, TValue>(string tableName, ulong skippingQuantity, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardSkip<TKey, TValue>(string tableName, ulong skippingQuantity, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2902,47 +2531,13 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="key"></param>
         /// <param name="skippingQuantity"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity)
-        {
-            return SelectForwardSkipFrom<TKey, TValue>(tableName, key, skippingQuantity, false);
-
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateForwardSkipFrom(btKey, skippingQuantity, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
-
-        /// <summary>
-        /// Iterates table forward (ordered by key ascending), skipping from specified key specified quantity of records
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="key"></param>
-        /// <param name="skippingQuantity"></param>
         /// <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
         /// <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
         /// <para>If this parameter set to true, enumerator will return key/value,</para>
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;
@@ -2967,39 +2562,7 @@ namespace DBreeze.Transactions
             }
         }
 
-
-        /// <summary>
-        /// Iterates table backward (ordered by key descending), skipping from specified key back specified quantity of records
-        /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="key"></param>
-        /// <param name="skippingQuantity"></param>
-        /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity)
-        {
-            return SelectBackwardSkipFrom<TKey, TValue>(tableName, key, skippingQuantity,false);
-            //ITrieRootNode readRoot = null;
-            //LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-
-            //if (table == null)
-            //{
-            //    //do nothing end of iteration                
-            //}
-            //else
-            //{
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //    //readRoot can be either filled or null
-            //    //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
-            //    foreach (var xrow in table.IterateBackwardSkipFrom(btKey, skippingQuantity, readRoot))
-            //    {
-            //        yield return new Row<TKey, TValue>(xrow,null, !(readRoot == null));
-            //        //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
-            //    }
-            //}
-        }
+        
 
         /// <summary>
         /// Iterates table backward (ordered by key descending), skipping from specified key back specified quantity of records
@@ -3015,7 +2578,7 @@ namespace DBreeze.Transactions
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity, bool AsReadVisibilityScope = false)
         {
 
             ITrieRootNode readRoot = null;

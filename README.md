@@ -5,8 +5,10 @@ DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Docum
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 ![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)
 
-DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value store ), transactional, ACID-compliant, multi-threaded, multi-paradigm database management system for
-.NET 3.5> / Xamarin MONO Android iOS / .NET Core / Universal Windows Platform / .NET Portable ...for servers and internet-of-things... Made with C# 
+DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql etc), 
+multi-threaded, transactional and ACID-compliant database management system for
+.NET 3.5> / Xamarin MONO Android iOS / .NET Core / Universal Windows Platform / .NET Portable 
+...for servers and internet-of-things... Made with C# 
 
 - It's a free software for those who think that it should be free.
 - It has been used in our own production environment since June 2012.
@@ -18,7 +20,7 @@ DBreeze Database is a professional, open-source, NoSql ( embedded Key-Value stor
 - Read "Changes in versions" document.
 
 
-Its homepage is http://dbreeze.tiesky.com or https://github.com/hhblaze/DBreeze
+Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
 - <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guides'  target='_blank'>Quick start guides</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/releases'  target='_blank'>Assemblies location</a> 
@@ -27,7 +29,7 @@ Its homepage is http://dbreeze.tiesky.com or https://github.com/hhblaze/DBreeze
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
 - <a href='https://docs.google.com/document/pub?id=188hY76go8bB2tSyQYoN0NMIJbMEuCOxYXNKZs_sEcpo' target="_blank">DBreeze tuning advices</a>
-- <a href='https://github.com/hhblaze/DBreeze/issues' target="_blank">Discussion on the forum </a>
+- <a href='https://dbreeze.codeplex.com/discussions' target="_blank">Discussion on the forum </a>
 
 Key features:
 

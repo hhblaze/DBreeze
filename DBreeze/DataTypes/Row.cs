@@ -315,10 +315,12 @@ namespace DBreeze.DataTypes
 
                     dataBlockId = _row.Value.Substring(startIndex, 16);
                 }
-
-                long valueStartPointer = 0;
-                uint valueFullLength = 0;
-                dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, (uint)startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+                else
+                {
+                    long valueStartPointer = 0;
+                    uint valueFullLength = 0;
+                    dataBlockId = this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, (uint)startIndex, 16, this._useCache, out valueStartPointer, out valueFullLength);
+                }
             }
             else
                 return null;

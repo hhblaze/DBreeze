@@ -1259,6 +1259,17 @@
             <param name="index">Any of formed index to lookup the entity for deletion</param>
             <param name="speedUpdate">Aet to true to increase update speed (table can consume more physical space)</param>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.ObjectGet``1(System.String,System.Byte[])">
+            <summary>
+            Concept of the objects storage (read docu from 20170321).
+            Gets object directly if available datablockId, can be useful for the indexes stored in different from the object table.
+            Returns DBreezeObject, to get entity use property.Entity. If returns null, then such entity doesn't exist.
+            </summary>
+            <typeparam name="TVal"></typeparam>
+            <param name="tableName">name of the table</param>
+            <param name="dataBlockId">dataBlockId</param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.Insert``2(System.String,``0,``1)">
             <summary>
             Inserts or updates the key
@@ -1575,17 +1586,6 @@
             Is called after COMMIT
             </summary>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.Select``2(System.String,``0)">
-            <summary>
-            Selects specified key from the table
-            <para>Always check row.Exists property</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.Select``2(System.String,``0,System.Boolean)">
             <summary>
             Selects specified key from the table
@@ -1612,16 +1612,6 @@
             <param name="refToInsertedValue"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForward``2(System.String)">
-            <summary>
-            Iterates table forward (ordered by key ascending).
-            <para>Always check row.Exists property</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForward``2(System.String,System.Boolean)">
             <summary>
             
@@ -1636,15 +1626,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackward``2(System.String)">
-            <summary>
-            Iterates table backward (ordered by key descending).
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackward``2(System.String,System.Boolean)">
             <summary>
             Iterates table backward (ordered by key descending).
@@ -1657,17 +1638,6 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForwardStartFrom``2(System.String,``0,System.Boolean)">
-            <summary>
-            Iterates table forward (ordered by key ascending). Starting from specified key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="includeStartFromKey">if start key will be included in the final result</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardStartFrom``2(System.String,``0,System.Boolean,System.Boolean)">
@@ -1686,17 +1656,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardStartFrom``2(System.String,``0,System.Boolean)">
-            <summary>
-            Iterates table backward (ordered by key descending). Starting from specified key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="includeStartFromKey">if start key will be included in the final result</param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardStartFrom``2(System.String,``0,System.Boolean,System.Boolean)">
             <summary>
             Iterates table backward (ordered by key descending). Starting from specified key
@@ -1711,19 +1670,6 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean)">
-            <summary>
-            Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="startKey"></param>
-            <param name="includeStartKey">if start key will be included in the final result</param>
-            <param name="stopKey"></param>
-            <param name="includeStopKey">if stop key will be included in the final result</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Boolean)">
@@ -1744,19 +1690,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean)">
-            <summary>
-            Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="startKey"></param>
-            <param name="includeStartKey">if start key will be included in the final result</param>
-            <param name="stopKey"></param>
-            <param name="includeStopKey">if stop key will be included in the final result</param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Boolean)">
             <summary>
             Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
@@ -1775,17 +1708,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForwardStartsWith``2(System.String,``0)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table forward (ordered by key ascending). Starting and including specified key part (big-endian from byte[] point of view)</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="startWithKeyPart"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardStartsWith``2(System.String,``0,System.Boolean)">
             <summary>
             <para>Mostly can be used for string or byte[] keys</para>
@@ -1800,26 +1722,6 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForwardStartsWithClosestToPrefix``2(System.String,``0)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table forward (ordered by key ascending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-            <para>If we have in a table keys:</para>
-            <para>"check"</para>
-            <para>"sam"</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            <para>"what"</para>
-            <para>our search prefix is "slap", we will get:</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="startWithClosestPrefix"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardStartsWithClosestToPrefix``2(System.String,``0,System.Boolean)">
@@ -1847,26 +1749,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardStartsWithClosestToPrefix``2(System.String,``0)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-            <para>If we have in a table keys:</para>
-            <para>"check"</para>
-            <para>"sam"</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            <para>"what"</para>
-            <para>our search prefix is "slap", we will get:</para>
-            <para>"slash"</para>
-            <para>"slam"</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="startWithClosestPrefix"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardStartsWithClosestToPrefix``2(System.String,``0,System.Boolean)">
             <summary>
             <para>Mostly can be used for string or byte[] keys</para>
@@ -1892,17 +1774,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardStartsWith``2(System.String,``0)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table backward (ordered by key descending). Starting and including specified key part (big-endian from byte[] point of view)</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="startWithKeyPart"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardStartsWith``2(System.String,``0,System.Boolean)">
             <summary>
             <para>Mostly can be used for string or byte[] keys</para>
@@ -1917,16 +1788,6 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForwardSkip``2(System.String,System.UInt64)">
-            <summary>
-            Iterates table forward (ordered by key ascending), skipping from the first key specified quantity of records
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="skippingQuantity"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardSkip``2(System.String,System.UInt64,System.Boolean)">
@@ -1944,16 +1805,6 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardSkip``2(System.String,System.UInt64)">
-            <summary>
-            Iterates table backward (ordered by key descending), skipping from the last key back specified quantity of records
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="skippingQuantity"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardSkip``2(System.String,System.UInt64,System.Boolean)">
             <summary>
             Iterates table backward (ordered by key descending), skipping from the last key back specified quantity of records
@@ -1967,17 +1818,6 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectForwardSkipFrom``2(System.String,``0,System.UInt64)">
-            <summary>
-            Iterates table forward (ordered by key ascending), skipping from specified key specified quantity of records
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="skippingQuantity"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardSkipFrom``2(System.String,``0,System.UInt64,System.Boolean)">
@@ -1994,17 +1834,6 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardSkipFrom``2(System.String,``0,System.UInt64)">
-            <summary>
-            Iterates table backward (ordered by key descending), skipping from specified key back specified quantity of records
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="skippingQuantity"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardSkipFrom``2(System.String,``0,System.UInt64,System.Boolean)">
