@@ -17,7 +17,7 @@ multi-threaded, transactional and ACID-compliant database management system for
 - DBreeze for .NETCore, UWP (Universal Windows Platform), .NET 4.5.1 grab via NuGet.
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in <a href = 'http://nosql-database.org'  target='_blank'>nosql-database.org</a>
-- Read "Changes in versions" document.
+- Read <a href = 'https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o'  target='_blank'>"Changes in versions"</a> document to get latest DBreeze news.
 
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
