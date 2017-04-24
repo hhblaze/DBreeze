@@ -1159,30 +1159,30 @@ namespace DBreeze.Transactions
 
         /// <summary>
         /// Concept of the objects storage (read docu from 20170321).
-        /// Gets object directly if available datablockId, can be useful for the indexes stored in different from the object table.
+        /// Gets object directly if available its fixed address in the file, can be useful for the indexes stored in different from the object table.
         /// Returns DBreezeObject, to get entity use property.Entity. If returns null, then such entity doesn't exist.
         /// </summary>
         /// <typeparam name="TVal"></typeparam>
         /// <param name="tableName">name of the table</param>
-        /// <param name="dataBlockId">dataBlockId</param>
+        /// <param name="address">fixed address in the file</param>
         /// <returns></returns>
-        public DBreeze.Objects.DBreezeObject<TVal> ObjectGet<TVal>(string tableName, byte[] dataBlockId)
+        public DBreeze.Objects.DBreezeObject<TVal> ObjectGetByFixedAddress<TVal>(string tableName, byte[] address)
         {
-            if (dataBlockId == null)
+            if (address == null)
                 return null;
 
             var ret = new Objects.DBreezeObject<TVal>();
-          
-            ret.ptrToExisingEntity = dataBlockId;
+
+            ret.ptrToExisingEntity = address;
             ITrieRootNode readRoot = null;
             LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
 
             if (table == null)
                 return null;
 
-            dataBlockId = table.SelectDataBlock(ref dataBlockId, !(readRoot == null));
+            address = table.SelectDataBlock(ref address, !(readRoot == null));
             Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
-            ret.ExisingEntity = table.SelectDataBlock(ref dataBlockId, !(readRoot == null));            
+            ret.ExisingEntity = table.SelectDataBlock(ref address, !(readRoot == null));
             Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(ret.ExisingEntity, d);
             if (d == null || d.Count < 1)
                 return null;

@@ -4558,15 +4558,15 @@
             <param name="index">Any of formed index to lookup the entity for deletion</param>
             <param name="speedUpdate">Aet to true to increase update speed (table can consume more physical space)</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.ObjectGet``1(System.String,System.Byte[])">
+        <member name="M:DBreeze.Transactions.Transaction.ObjectGetByFixedAddress``1(System.String,System.Byte[])">
             <summary>
             Concept of the objects storage (read docu from 20170321).
-            Gets object directly if available datablockId, can be useful for the indexes stored in different from the object table.
+            Gets object directly if available its fixed address in the file, can be useful for the indexes stored in different from the object table.
             Returns DBreezeObject, to get entity use property.Entity. If returns null, then such entity doesn't exist.
             </summary>
             <typeparam name="TVal"></typeparam>
             <param name="tableName">name of the table</param>
-            <param name="dataBlockId">dataBlockId</param>
+            <param name="address">fixed address in the file</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Insert``2(System.String,``0,``1)">
