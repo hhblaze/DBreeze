@@ -160,7 +160,7 @@ namespace DBreeze.Transactions
             try
             {
                 _transactionWriteTablesAwaitingReservation.RemoveAll(r => tablesNames.Contains(r));
-                udtSyncStop = DateTime.UtcNow;
+                udtSyncStop = DateTime.UtcNow;                
             }
             finally
             {

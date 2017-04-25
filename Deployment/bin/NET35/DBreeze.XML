@@ -1183,6 +1183,11 @@
             Tables to be modified
             </summary>
         </member>
+        <member name="P:DBreeze.Diagnostic.ActiveTransactionState.AwaitingReservataion">
+            <summary>
+            From Awaiting reservation list
+            </summary>
+        </member>
         <member name="F:DBreeze.Diagnostic.SpeedStatistic.ToConsole">
             <summary>
             Default is Debug.WriteLine, can be changed to Console.WriteLine

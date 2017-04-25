@@ -13,6 +13,7 @@ namespace DBreeze.Diagnostic
         public ActiveTransactionState()
         {
             TablesToBeSynced = new List<string>();
+            AwaitingReservataion = true;
         }
 
         /// <summary>
@@ -31,5 +32,9 @@ namespace DBreeze.Diagnostic
         /// Tables to be modified
         /// </summary>
         public List<string> TablesToBeSynced { get; set; }
+        /// <summary>
+        /// From Awaiting reservation list
+        /// </summary>
+        public bool AwaitingReservataion { get; set; }
     }
 }

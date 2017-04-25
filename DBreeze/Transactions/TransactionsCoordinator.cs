@@ -295,14 +295,18 @@ namespace DBreeze.Transactions
 
                     s.TablesToBeSynced.AddRange(t.Value.GetTransactionWriteTablesAwaitingReservation());
 
-                    if(s.TablesToBeSynced.Count<1)
+                    if (s.TablesToBeSynced.Count < 1)
+                    {
                         s.TablesToBeSynced.AddRange(t.Value.GetTransactionWriteTablesNames());
+                        s.AwaitingReservataion = false;
+
+                    }
 
                     s.ActiveTime = DateTime.UtcNow.Subtract(t.Value.udtStart);
 
                     if (s.TablesToBeSynced.Count > 0)
                     {
-                        s.SyncTableTime = t.Value.udtSyncStop != DateTime.MinValue ? DateTime.UtcNow.Subtract(t.Value.udtSyncStop) 
+                        s.SyncTableTime = t.Value.udtSyncStop != DateTime.MinValue ? t.Value.udtSyncStop.Subtract(t.Value.udtStart) 
                             : DateTime.UtcNow.Subtract(t.Value.udtStart);
                     }
 
@@ -343,11 +347,16 @@ namespace DBreeze.Transactions
             TransactionUnit transactionUnit = null;
             bool deadlock = false;
 
+            //When SyncTables is called
+            //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> SYNC IN Thread: " + transactionThreadId);
+
             while (true)    //loop till thread will get full access to write tables
             {
                 toWaitTillTransactionIsFinished = false;
                 breakOuterLoop = false;
                 deadlock = false;
+
+                //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> " + "Thread: " + transactionThreadId + "WHILE ");
 
                 //only tables required for writing or read-commited will have to go over this fast bottleneck
                 lock (_sync_dl)
@@ -372,7 +381,7 @@ namespace DBreeze.Transactions
                                 return;                       
                             }
                         }
-
+                        
 
                         //iterating over all open transactions except self, finding out if desired tables are locked by other threads.
                         foreach (var tu in this._transactions.Where(r => r.Value.TransactionThreadId != transactionThreadId))
@@ -400,6 +409,8 @@ namespace DBreeze.Transactions
 
                                     if (!deadlock)
                                     {
+                                        //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> " + "Thread: " + transactionThreadId + " GATE IS CLOSED ");
+
                                         ThreadsGator.CloseGate();  //closing gate only if no deadlock situation  
                                         //mreWriteTransactionLock.Reset();   //setting to signalled only in non-deadlock case
                                     }
@@ -434,6 +445,8 @@ namespace DBreeze.Transactions
                         foreach (var tbn in tablesNames)
                             transactionUnit.AddTransactionWriteTable(tbn, null);
 
+                        //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> SYNC OUT Thread: " + transactionThreadId + "   Sync stop: " + transactionUnit.udtSyncStop.ToString("dd.MM.yyyy HH:mm:ss"));
+
                         return;
                     }
 
@@ -449,12 +462,16 @@ namespace DBreeze.Transactions
 
                 if (toWaitTillTransactionIsFinished)
                 {
+                    //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> " + "Thread: " + transactionThreadId + " GATE IS PUT ");
+
                     //blocking thread which requires busy tables for writing, till they are released
                     //ThreadsGator.PutGateHere(20000);    //every 20 second (or by Gate open we give a chance to re-try, for safety reasons of hanged threads, if programmer didn't dispose DBreeze process after the programm end)
                     ThreadsGator.PutGateHere();
                     //mreWriteTransactionLock.WaitOne();
                 }
-            }
+            }//eo while
+
+           
         }
 
         #endregion //Eliminating Deadlocks. Registering tables for write before starting transaction operations
