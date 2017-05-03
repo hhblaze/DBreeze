@@ -38,7 +38,7 @@ Key features:
 - Multi-threaded, with a solution for deadlocks resolving/elimination, parallel reads and synchronized writes/reads. 
 - No fixed scheme for table names (construction and access on the fly).
 - Tables can reside in mixed locations: different folders, hard drives, memory.
-- Liana-Trie indexing technology. Database indexes (keys) never need to be defragmented. Speed of insert/update/remove operations doesn't change up during the time.
+- Liana-Trie indexing technology. Database indexes (keys) never need to be defragmented. Speed of insert/update/remove operations doesn't change during the time.
 - Ability to access Key/Value pair of a table by physical link, what can economize time for joining necessary data structures.
 - No limits for database size (except "long" size for each table and physical resources constraints).
 - Low memory and physical space consumption, also while random inserts and updates. Updates reside the same physical space, if possible.
