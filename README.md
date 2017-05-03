@@ -13,7 +13,7 @@ multi-threaded, transactional and ACID-compliant database management system for
 - It's a free software for those who think that it should be free.
 - It has been used in our own production environment since June 2012.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
-- DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since January 2014, [![NuGet Badge](https://buildstats.info/nuget/DBreeze)](https://www.nuget.org/packages/DBreeze/). 
+- DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since January 2014. [![NuGet Badge](https://buildstats.info/nuget/DBreeze)](https://www.nuget.org/packages/DBreeze/)
 - DBreeze for .NETCore, UWP (Universal Windows Platform), .NET 4.5.1 grab via NuGet.
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in <a href = 'http://nosql-database.org'  target='_blank'>nosql-database.org</a>
