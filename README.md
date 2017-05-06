@@ -29,7 +29,7 @@ Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
 - <a href='https://docs.google.com/document/pub?id=188hY76go8bB2tSyQYoN0NMIJbMEuCOxYXNKZs_sEcpo' target="_blank">DBreeze tuning advices</a>
-- <a href='https://github.com/hhblaze/DBreeze/issues' target="_blank">Discussion on the forum </a>
+- <a href='https://github.com/hhblaze/DBreeze/issues?utf8=%E2%9C%93&q=label%3Aquestion%20' target="_blank">Discussion on the forum </a>
 
 Key features:
 
