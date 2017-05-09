@@ -428,8 +428,9 @@ namespace DBreeze.TextSearch
                     }
                 };
 
-                List<byte[]> docs2Change = new List<byte[]>();
-                              
+                //List<byte[]> docs2Change = new List<byte[]>();
+                Dictionary<byte[],byte[]> docs2Change = new Dictionary<byte[],byte[]>();
+
                 //foreach (var docId in its.ChangedDocIds)
                 foreach (var docId in its.ChangedDocIds.OrderBy(r=>r))
                 {                
@@ -442,7 +443,7 @@ namespace DBreeze.TextSearch
                         );
 
                     //Copying new searchables to current searchables
-                    docs2Change.Add(docId.To_4_bytes_array_BigEndian());
+                    docs2Change.Add(docId.To_4_bytes_array_BigEndian(), newSrch);
                     //its.srch.ChangeKey<byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }));
 
 
@@ -465,10 +466,16 @@ namespace DBreeze.TextSearch
                     }
                 }//eo foreach new searchables, end of document itteration 
 
-                foreach (var d2c in docs2Change.OrderBy(r=>r.ToBytesString()))
+                
+                foreach (var d2c in docs2Change.OrderBy(r=>r.Key.ToBytesString()))
                 {
-                    its.srch.ChangeKey<byte[]>(d2c.Concat(new byte[] { 1 }), d2c.Concat(new byte[] { 0 }));
+                    its.srch.RemoveKey<byte[]>(d2c.Key.Concat(new byte[] { 1 }));                   
+                    its.srch.Insert<byte[],byte[]>(d2c.Key.Concat(new byte[] { 0 }), d2c.Value);
+                    // its.srch.ChangeKey<byte[]>(d2c.Concat(new byte[] { 1 }), d2c.Concat(new byte[] { 0 }));
                 }
+
+                //foreach (var eeel in its.srch.SelectForward<byte[], byte[]>(false).Take(50))
+                //    Console.WriteLine(eeel.Key.ToBytesString());
 
                 foreach (var tmpwrd in tmpWrds)
                 {
