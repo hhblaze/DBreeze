@@ -491,7 +491,7 @@ namespace DBreeze.Utils
                 throw new Exception("DBreezeIndex: 1-255 is an allowed index region!");
 
             if (pars == null || pars.Length < 1)
-                return null;
+                return new byte[] { indexNumber };
             List<byte[]> xbts = new List<byte[]>();
             xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(indexNumber, typeof(byte)));
             foreach (var prop in pars)
