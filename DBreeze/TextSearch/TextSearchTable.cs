@@ -231,11 +231,11 @@ namespace DBreeze.TextSearch
         /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <param name="blockAnd">default value is true, indicating BlockAnd</param>
         /// <returns></returns>
-        public SBlock Block(string containsWords, string fullMatchWords = "", bool blockAnd = true)
+        public SBlock Block(string containsWords="", string fullMatchWords = "", bool blockAnd = true)
         {
             return blockAnd ? BlockAnd(containsWords, fullMatchWords) : BlockOr(containsWords, fullMatchWords);
         }
@@ -249,7 +249,7 @@ namespace DBreeze.TextSearch
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
-        public SBlock BlockAnd(string containsWords, string fullMatchWords="")
+        public SBlock BlockAnd(string containsWords="", string fullMatchWords="")
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
@@ -288,7 +288,7 @@ namespace DBreeze.TextSearch
         /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
         public SBlock BlockAnd(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
@@ -325,10 +325,10 @@ namespace DBreeze.TextSearch
         /// tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
         /// .GetDocumentIDs
         /// </summary>
-        /// <param name="containsWords">space separated words to be used by "contains" logic</param>
+        /// <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <returns></returns>
-        public SBlock BlockOr(string containsWords, string fullMatchWords="")
+        public SBlock BlockOr(string containsWords="", string fullMatchWords="")
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;

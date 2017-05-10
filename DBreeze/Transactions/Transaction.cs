@@ -1789,13 +1789,13 @@ namespace DBreeze.Transactions
         /// <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
         /// <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
         /// <param name="containsWords">Space separated words, which will be stored using "contains" logic.</param>
-        /// <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic</param>
+        /// <param name="fullMatchWords">Space separated words, which will be stored using "full-match" logic (they can be also search via contains words by StartsWith logic)</param>
         /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possibly search functionality for the document
         /// will be available a bit later after commit. 
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
         /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-        public void TextInsert(string tableName, byte[] documentId, string containsWords, string fullMatchWords="", bool deferredIndexing=false, int containsMinimalLength=3)
+        public void TextInsert(string tableName, byte[] documentId, string containsWords="", string fullMatchWords="", bool deferredIndexing=false, int containsMinimalLength=3)
         {            
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
@@ -1814,7 +1814,7 @@ namespace DBreeze.Transactions
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
         /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-        public void TextAppend(string tableName, byte[] documentId, string containsWords, string fullMatchWords="", bool deferredIndexing = false, int containsMinimalLength = 3)
+        public void TextAppend(string tableName, byte[] documentId, string containsWords="", string fullMatchWords="", bool deferredIndexing = false, int containsMinimalLength = 3)
         {          
             if (tsh == null)
                 tsh = new TextSearchHandler(this);
