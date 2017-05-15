@@ -44,14 +44,22 @@ namespace DBreeze
         /// Can be called from anywhere, even from other transactions. There is no need to add into sync table
         /// </summary>
         public DBreezeResources Resources = null;
-        internal bool DBisOperable = true;
+        //internal bool DBisOperable = true;
         /// <summary>
-        /// must be filled with a text note who brought to DBisOperable = false
+        /// Db is not operable any more by DBisOperableReason reason 
         /// </summary>
-        internal string DBisOperableReason = "";
+        public bool DBisOperable { get; internal set; } = true;
+        /// <summary>
+        /// Is filled with a text note who brought to DBisOperable = false
+        /// </summary>
+        public string DBisOperableReason { get; internal set; } = String.Empty;
         internal TransactionsJournal _transactionsJournal = null;
         internal TransactionTablesLocker _transactionTablesLocker = null;
-        bool disposed = false;
+        /// <summary>
+        /// Whether engine is disposed
+        /// </summary>
+        public bool Disposed { get { return disposed == 1; } }
+        int disposed = 0;
         /// <summary>
         /// Initialized from DBreezeRemoteEngine
         /// </summary>
@@ -208,12 +216,15 @@ namespace DBreeze
         /// </summary>
         public void Dispose()
         {
-            if (disposed)
+            if (System.Threading.Interlocked.CompareExchange(ref disposed, 1, 0) != 0)
                 return;
+
+            //if (Disposed)
+            //    return;
 
             DBisOperable = false;
             DBisOperableReason = "DBreezeEngine.Dispose";
-            disposed = true;
+            //Disposed = true;
 
             //Disposing all transactions
             _transactionsCoordinator.StopEngine();

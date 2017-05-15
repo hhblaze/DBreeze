@@ -3309,9 +3309,19 @@
             DBreeze version number
             </summary>        
         </member>
-        <member name="F:DBreeze.DBreezeEngine.DBisOperableReason">
+        <member name="P:DBreeze.DBreezeEngine.DBisOperable">
             <summary>
-            must be filled with a text note who brought to DBisOperable = false
+            Db is not operable any more by DBisOperableReason reason 
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeEngine.DBisOperableReason">
+            <summary>
+            Is filled with a text note who brought to DBisOperable = false
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeEngine.Disposed">
+            <summary>
+            Whether engine is disposed
             </summary>
         </member>
         <member name="F:DBreeze.DBreezeEngine.RemoteEngine">
