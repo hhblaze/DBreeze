@@ -3900,7 +3900,7 @@
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>        
             <returns></returns>
         </member>
         <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
@@ -5203,7 +5203,7 @@
             Is called by the engine on Dispose.
             </summary>
         </member>
-        <!-- Проигнорирован некорректный комментарий XML для члена "M:DBreeze.Transactions.TransactionsCoordinator.Diagnostic_GetActiveTransactionsState" -->
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Transactions.TransactionsCoordinator.Diagnostic_GetActiveTransactionsState" -->
         <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
             <summary>
             Access synchronizer.
@@ -6551,7 +6551,7 @@
             <param name="bt"></param>
             <returns></returns>
         </member>
-        <!-- Проигнорирован некорректный комментарий XML для члена "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
         <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
             <summary>
             <para>USE _ByteArrayEquals</para>

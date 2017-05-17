@@ -247,7 +247,7 @@ namespace DBreeze.TextSearch
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
-        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>        
         /// <returns></returns>
         public SBlock BlockAnd(string containsWords="", string fullMatchWords="")
         {

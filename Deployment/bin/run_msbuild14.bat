@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\MSBuild\14.0\Bin\msbuild.exe" "%~dp0..\..\%1\DBreezeTMP.csproj" /t:rebuild

@@ -805,7 +805,7 @@ namespace DBreeze.TextSearch
                 //if (wordsCounter.Count() > 0)
                 //    return wordsCounter;
             }
-            catch (System.Exception ex)
+            catch
             {
 
             }

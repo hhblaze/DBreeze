@@ -60,7 +60,7 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET35\DBreeze.dll", true);
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET35\DBreeze.XML", true);
 
-
+           
             //.NET Framework 4.0
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
@@ -187,6 +187,28 @@ namespace Deployer
 
             File.Delete(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj");
 
+
+
+            //.NET STANDARD 1.6           
+            if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6"))
+                Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6", true);
+            //msbldpath = MyPath + "run_msbuild_uwp.bat";
+            prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+            tpr = prj;
+            Console.WriteLine("Creating .NET Standard 1.6");
+            //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+
+            File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze.NetStandard");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.dll", MyPath + @"NETSTANDARD16\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.XML", MyPath + @"NETSTANDARD16\DBreeze.XML", true);
+
+            File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
 
 
 
@@ -318,8 +340,10 @@ namespace Deployer
 
                 archive.GetEntry("lib/netstandard1.6/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netstandard1.6/DBreeze.XML").Delete();
-                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
+                //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
+                //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.dll").Delete();
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.XML").Delete();
@@ -347,13 +371,15 @@ namespace Deployer
             // Do you want to show a console window?
             start.WindowStyle = ProcessWindowStyle.Normal;
             int exitCode = 0;
+            
 
             using (Process proc = Process.Start(start))
-            {
+            {                
                 proc.WaitForExit();
 
                 // Retrieve the app's exit code
                 exitCode = proc.ExitCode;
+                
             }
 
         }

@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.6</TargetFramework>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>False</DelaySign>
+    <AssemblyName>DBreeze</AssemblyName>
+    <RootNamespace>DBreeze</RootNamespace>
+    <ApplicationIcon />
+    <Win32Resource />
+    <Version>1.085.2017.0515</Version>
+    <AssemblyVersion>1.085.2017.0515</AssemblyVersion>
+    <FileVersion>1.085.2017.0515</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>    
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard1.6\DBreeze.xml</DocumentationFile>
+  </PropertyGroup>
+ 
+  <ItemGroup>
+    <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs" Link="Exceptions\DBreezeException.cs" />
+    <Compile Include="..\DBreeze\Objects\DBreezeIndex.cs" Link="Objects\DBreezeIndex.cs" />
+    <Compile Include="..\DBreeze\Objects\DBreezeObject.cs" Link="Objects\DBreezeObject.cs" />
+    <Compile Include="..\DBreeze\TextSearch\SBlock.cs" Link="TextSearch\SBlock.cs" />
+    <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs" Link="TextSearch\TextSearchHandler.cs" />
+    <Compile Include="..\DBreeze\TextSearch\TextSearchOptions.cs" Link="TextSearch\TextSearchOptions.cs" />
+    <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs" Link="TextSearch\TextSearchTable.cs" />
+    <Compile Include="..\DBreeze\TextSearch\WABI.cs" Link="TextSearch\WABI.cs" />
+    <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs" Link="Transactions\RandomKeySorter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Objects\" />
+  </ItemGroup>
+
+</Project>

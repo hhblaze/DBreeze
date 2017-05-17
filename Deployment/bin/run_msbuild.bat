@@ -1,1 +1,1 @@
-"C:\Program Files (x86)\MSBuild\14.0\Bin\msbuild.exe" "%~dp0..\..\%1\DBreezeTMP.csproj" /t:rebuild
+"C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\MSBuild\15.0\Bin\msbuild.exe" "%~dp0..\..\%1\DBreezeTMP.csproj" /t:rebuild /p:Configuration=Release

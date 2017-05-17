@@ -675,7 +675,7 @@
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>        
             <returns></returns>
         </member>
         <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
@@ -6663,7 +6663,7 @@
             <param name="bt"></param>
             <returns></returns>
         </member>
-        <!-- Проигнорирован некорректный комментарий XML для члена "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
         <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
             <summary>
             <para>USE _ByteArrayEquals</para>
