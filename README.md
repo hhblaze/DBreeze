@@ -35,9 +35,8 @@ Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 
 Key features:
 
-- Fully managed code, platform independent and without reference to other libraries. 
-- ACID compliant. 
-- Multi-threaded, with a solution for deadlocks resolving/elimination, parallel reads and synchronized writes/reads. 
+- Embedded .NET family assembly, platform independent and without references to other libraries. 
+- Multi-threaded, ACID compliant, with a solution for deadlocks resolving/elimination, parallel reads and synchronized writes/reads. 
 - No fixed scheme for table names (construction and access on the fly).
 - Tables can reside in mixed locations: different folders, hard drives, memory.
 - Liana-Trie indexing technology. Database indexes (keys) never need to be defragmented. Speed of insert/update/remove operations doesn't change during the time.
