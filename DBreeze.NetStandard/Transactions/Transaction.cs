@@ -200,22 +200,26 @@ namespace DBreeze.Transactions
         //To achieve effect of correct table close We have extra dictionary where we calculate how many times
         //table was exclusively open for read and write using GetTable from Schema
         Dictionary<string, ulong?> _openTable = new Dictionary<string, ulong?>();
+        object sync_openTable = new object();
 
         /// <summary>
         /// This must be called only if we use not cached opening
         /// </summary>
         private void AddOpenTable(string tableName)
         {
-            ulong? cnt=null;
-            _openTable.TryGetValue(tableName, out cnt);
-
-            if (cnt == null)
+            lock (sync_openTable)
             {
-                _openTable.Add(tableName, 1);
-            }
-            else
-            {                
-                _openTable[tableName] =  cnt + 1;
+                ulong? cnt = null;
+                _openTable.TryGetValue(tableName, out cnt);
+
+                if (cnt == null)
+                {
+                    _openTable.Add(tableName, 1);
+                }
+                else
+                {
+                    _openTable[tableName] = cnt + 1;
+                }
             }
         }
 
@@ -400,6 +404,7 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="root"></param>
+        /// <param name="AsForRead"></param>
         /// <returns></returns>
         private LTrie GetReadTableFromBuffer(string tableName, out ITrieRootNode root, bool AsForRead)
         {
@@ -419,13 +424,22 @@ namespace DBreeze.Transactions
             long dtTableFixed = 0;
             root = null;
 
+            //Parallel read queries inside of one transaction, to use in TPL in manner Task.WaitAll(Task.Run(() => tran.Select...,Task.Run(() => tran.Select...,...);
+            //all reads become automatically with AsForRead flag
+            bool ignoreThreadIdCheck = false;
+            if (Environment.CurrentManagedThreadId != this.ManagedThreadId)
+            {
+                ignoreThreadIdCheck = true;
+                AsForRead = true;
+            }
+
             //READ VISIBILITY SCOPE MODIFIER
             //When we don't want to reuse cached READ_TABLE, but create the new one 
             //Switch ReadVisibilityScopeModifier_GenerateNewTableForRead can be changed many times during transaction.
             //May be switched on before call Select...,AsReadVisibilityScope = true, then can be switched back
-            if (ReadVisibilityScopeModifier_GenerateNewTableForRead && AsForRead)
+            if (ignoreThreadIdCheck || (ReadVisibilityScopeModifier_GenerateNewTableForRead && AsForRead))
             {
-                table = this._transactionUnit.TransactionsCoordinator.GetTable_READ(tableName, this.ManagedThreadId);
+                table = this._transactionUnit.TransactionsCoordinator.GetTable_READ(tableName, this.ManagedThreadId, ignoreThreadIdCheck: ignoreThreadIdCheck);
 
                 if (table == null)
                     return null;    //returns null (may be table doesn't exist it's ok for READ FUNCs)

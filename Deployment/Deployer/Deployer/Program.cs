@@ -100,6 +100,25 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET461\DBreeze.XML", true);
 
 
+            //.NET Framework 4.6.2
+            if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+            tpr = prj;
+            Console.WriteLine("Creating .NET4.6.2");
+            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+            tpr = tpr.Replace(rpl[2], rpl[12]); //4.5 on 4.6.1            
+
+            File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET462\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET462\DBreeze.XML", true);
+
+
             //.NET Framework Xamarin
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
@@ -306,49 +325,54 @@ namespace Deployer
                 archive.GetEntry("lib/MonoAndroid/DBreeze.dll").Delete();
                 archive.GetEntry("lib/MonoAndroid/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.dll", "lib/MonoAndroid/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.dll", "lib/MonoAndroid/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.xml", "lib/MonoAndroid/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/net35/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net35/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NET35" + @"\DBreeze.dll", "lib/net35/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "NET35" + @"\DBreeze.dll", "lib/net35/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET35" + @"\DBreeze.xml", "lib/net35/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/net40/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net40/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NET40" + @"\DBreeze.dll", "lib/net40/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "NET40" + @"\DBreeze.dll", "lib/net40/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET40" + @"\DBreeze.xml", "lib/net40/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/net461/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net461/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NET461" + @"\DBreeze.dll", "lib/net461/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "NET461" + @"\DBreeze.dll", "lib/net461/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET461" + @"\DBreeze.xml", "lib/net461/DBreeze.XML", CompressionLevel.Optimal);
+
+                archive.GetEntry("lib/net462/DBreeze.dll").Delete();
+                archive.GetEntry("lib/net462/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NET462" + @"\DBreeze.dll", "lib/net462/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET462" + @"\DBreeze.xml", "lib/net462/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/net45/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net45/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NET45" + @"\DBreeze.dll", "lib/net45/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "NET45" + @"\DBreeze.dll", "lib/net45/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET45" + @"\DBreeze.xml", "lib/net45/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/netcore451/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netcore451/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcore451/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcore451/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.xml", "lib/netcore451/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/netcoreapp1.0/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netcoreapp1.0/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcoreapp1.0/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcoreapp1.0/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.xml", "lib/netcoreapp1.0/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/netstandard1.6/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netstandard1.6/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.xml", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
                 //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
                 //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.dll").Delete();
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "PORTABLE" + @"\DBreeze.dll", "lib/portable-net45+win8+wp8+wpa81/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "PORTABLE" + @"\DBreeze.dll", "lib/portable-net45+win8+wp8+wpa81/DBreeze.XML", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "PORTABLE" + @"\DBreeze.xml", "lib/portable-net45+win8+wp8+wpa81/DBreeze.XML", CompressionLevel.Optimal);
 
 
 

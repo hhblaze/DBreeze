@@ -4394,6 +4394,7 @@
             </summary>
             <param name="tableName"></param>
             <param name="root"></param>
+            <param name="AsForRead"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Commit">
@@ -5247,7 +5248,7 @@
             <param name="transactionThreadId"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32)">
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
             <summary>
             Can return NULL if table doesn't exist
             Can return NULL (if DbIsNotOperatable)
@@ -5258,6 +5259,7 @@
             </summary>
             <param name="tableName"></param>
             <param name="transactionThreadId"></param>
+            <param name="ignoreThreadIdCheck"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.TransactionsCoordinator.Commit(System.Int32)">

@@ -10,5 +10,6 @@
 <Compile Include="DataTypes\DbMJSON.cs" />
 <Compile Include="Utils\MJsonSerializator.cs" />
 <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+<TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
 
 

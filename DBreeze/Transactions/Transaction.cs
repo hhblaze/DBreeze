@@ -104,7 +104,7 @@ namespace DBreeze.Transactions
             transactionWriteTables.Clear();
             //Clearing Read Tables buffer
             transactionReadTables.Clear();
-         
+
 
             //foreach (var tb in _openTable)
             //{
@@ -113,7 +113,10 @@ namespace DBreeze.Transactions
 
             this._transactionUnit.TransactionsCoordinator.GetSchema.CloseTables(_openTable);
 
-            _openTable.Clear();
+            lock (sync_openTable)
+            {
+                _openTable.Clear();
+            }
 
             //Transaction of type 1 is with Shared and Exclusive locks of the table. Can block even reading threads.
             if (_transactionType == 1)
@@ -204,22 +207,28 @@ namespace DBreeze.Transactions
         //To achieve effect of correct table close We have extra dictionary where we calculate how many times
         //table was exclusively open for read and write using GetTable from Schema
         Dictionary<string, ulong?> _openTable = new Dictionary<string, ulong?>();
+        object sync_openTable = new object();
 
         /// <summary>
         /// This must be called only if we use not cached opening
         /// </summary>
         private void AddOpenTable(string tableName)
         {
-            ulong? cnt=null;
-            _openTable.TryGetValue(tableName, out cnt);
-
-            if (cnt == null)
+            lock (sync_openTable)
             {
-                _openTable.Add(tableName, 1);
-            }
-            else
-            {                
-                _openTable[tableName] =  cnt + 1;
+                ulong? cnt = null;
+                _openTable.TryGetValue(tableName, out cnt);
+
+                if (cnt == null)
+                {
+                    _openTable.Add(tableName, 1);
+                    //System.Diagnostics.Debug.WriteLine("OTN " + tableName);
+                }
+                else
+                {
+                    _openTable[tableName] = cnt + 1;
+                    //System.Diagnostics.Debug.WriteLine("OT " + tableName + "  cnt:" + (cnt + 1));
+                }
             }
         }
 
@@ -267,7 +276,7 @@ namespace DBreeze.Transactions
         /// <summary>
         /// Small buffer for the tables, we are going to read from.
         /// </summary>
-        Dictionary<string, Rtbe> transactionReadTables = new Dictionary<string, Rtbe>();
+        Dictionary<string, Rtbe> transactionReadTables = new Dictionary<string, Rtbe>();        
 
         /// <summary>
         /// Technical class, who holds reference to the table and its last modification dts
@@ -404,6 +413,7 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="root"></param>
+        /// <param name="AsForRead"></param>
         /// <returns></returns>
         private LTrie GetReadTableFromBuffer(string tableName, out ITrieRootNode root, bool AsForRead)
         {
@@ -422,16 +432,23 @@ namespace DBreeze.Transactions
             Rtbe rtbe = null;
             long dtTableFixed = 0;
             root = null;
-                       
-            
+
+            //Parallel read queries inside of one transaction, to use in TPL in manner Task.WaitAll(Task.Run(() => tran.Select...,Task.Run(() => tran.Select...,...);
+            //all reads become automatically with AsForRead flag
+            bool ignoreThreadIdCheck = false;
+            if (System.Threading.Thread.CurrentThread.ManagedThreadId != this.ManagedThreadId)
+            {
+                ignoreThreadIdCheck = true;
+                AsForRead = true;
+            }
 
             //READ VISIBILITY SCOPE MODIFIER
             //When we don't want to reuse cached READ_TABLE, but create the new one 
             //Switch ReadVisibilityScopeModifier_GenerateNewTableForRead can be changed many times during transaction.
             //May be switched on before call Select...,AsReadVisibilityScope = true, then can be switched back
-            if (ReadVisibilityScopeModifier_GenerateNewTableForRead && AsForRead)
+            if (ignoreThreadIdCheck || (ReadVisibilityScopeModifier_GenerateNewTableForRead && AsForRead))
             {
-                table = this._transactionUnit.TransactionsCoordinator.GetTable_READ(tableName, this.ManagedThreadId);
+                table = this._transactionUnit.TransactionsCoordinator.GetTable_READ(tableName, this.ManagedThreadId, ignoreThreadIdCheck: ignoreThreadIdCheck);
 
                 if (table == null)
                     return null;    //returns null (may be table doesn't exist it's ok for READ FUNCs)
@@ -445,7 +462,7 @@ namespace DBreeze.Transactions
 
                 return table;
             }
-            //////////////////////////////////////////////////////////////////////////// END READ VISIBILITY SCOPE MODIFIER
+            //////////////////////////////////////////////////////////////////////////// END READ VISIBILITY SCOPE MODIFIER            
 
             transactionReadTables.TryGetValue(tableName, out rtbe);
 
@@ -521,7 +538,6 @@ namespace DBreeze.Transactions
 
                 return rtbe.Ltrie;
             }
-
 
         }
         #endregion

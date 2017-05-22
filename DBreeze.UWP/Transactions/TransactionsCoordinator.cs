@@ -470,7 +470,7 @@ namespace DBreeze.Transactions
             }
         }
 
-      
+
         /// <summary>
         /// Can return NULL if table doesn't exist
         /// Can return NULL (if DbIsNotOperatable)
@@ -481,8 +481,9 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="transactionThreadId"></param>
+        /// <param name="ignoreThreadIdCheck"></param>
         /// <returns></returns>
-        public LTrie GetTable_READ(string tableName, int transactionThreadId)
+        public LTrie GetTable_READ(string tableName, int transactionThreadId, bool ignoreThreadIdCheck = false)
         {           
             if (!this._engine.DBisOperable)
                 return null;
@@ -491,7 +492,7 @@ namespace DBreeze.Transactions
 
             if (transactionUnit != null)
             {
-                if (Environment.CurrentManagedThreadId != transactionThreadId)
+                if (!ignoreThreadIdCheck && Environment.CurrentManagedThreadId != transactionThreadId)
                 {
                     this.UnregisterTransaction(transactionThreadId);
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_CANBEUSED_FROM_ONE_THREAD);
