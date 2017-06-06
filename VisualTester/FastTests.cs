@@ -90,7 +90,7 @@ namespace VisualTester
             LTrie.Commit();
 
             Console.WriteLine("CNT: {0}", LTrie.Count(false));
-            foreach (var r in LTrie.IterateForward())
+            foreach (var r in LTrie.IterateForward(true,true))
             {
                 Console.WriteLine("K: {0}", r.Key.ToBytesString(""));
             }
@@ -104,7 +104,7 @@ namespace VisualTester
             Console.WriteLine("************************");
 
             Console.WriteLine("CNT: {0}", LTrie.Count(false));
-            foreach (var r in LTrie.IterateForward())
+            foreach (var r in LTrie.IterateForward(true, true))
             {
                 Console.WriteLine("K: {0}", r.Key.ToBytesString(""));
             }
@@ -118,7 +118,7 @@ namespace VisualTester
             Console.WriteLine("************************");
 
             Console.WriteLine("CNT: {0}", LTrie.Count(false));
-            foreach (var r in LTrie.IterateForward())
+            foreach (var r in LTrie.IterateForward(true, true))
             {
                 Console.WriteLine("K: {0}", r.Key.ToBytesString(""));
             }
@@ -136,7 +136,7 @@ namespace VisualTester
 
 
             Console.WriteLine("CNT: {0}", LTrie.Count(false));
-            foreach (var r in LTrie.IterateForward())
+            foreach (var r in LTrie.IterateForward(true, true))
             {
                 Console.WriteLine("K: {0}", r.Key.ToBytesString(""));
             }
@@ -149,7 +149,7 @@ namespace VisualTester
 
 
             Console.WriteLine("CNT: {0}", LTrie.Count(false));
-            foreach (var r in LTrie.IterateForward())
+            foreach (var r in LTrie.IterateForward(true, true))
             {
                 Console.WriteLine("K: {0}", r.Key.ToBytesString(""));
             }
@@ -165,7 +165,7 @@ namespace VisualTester
 
 
             Console.WriteLine("CNT: {0}", LTrie.Count(false));
-            foreach (var r in LTrie.IterateForward())
+            foreach (var r in LTrie.IterateForward(true, true))
             {
                 Console.WriteLine("K: {0}", r.Key.ToBytesString(""));
             }
@@ -766,7 +766,7 @@ namespace VisualTester
             ////foreach (var tkv in LTrie.IterateForwardStartFrom(new byte[] {0,0,0,10}).Take(15))
             ////foreach (var tkv in LTrie.IterateForwardStartFrom(GB("a")).Take(15))
             ////foreach (var tkv in LTrie.IterateBackward().Take(15))
-            foreach (var tkv in LTrie.IterateBackward().Take(10000))
+            foreach (var tkv in LTrie.IterateBackward(true, true).Take(10000))
             ////foreach (var tkv in LTrie.IterateForward().Take(27))
             //foreach (var tkv in LTrie.IterateForwardStartsWith(GB("wwww")))
             //foreach (var tkv in LTrie.IterateForward())  //5.9 sec 1 mln TEST1
@@ -7704,7 +7704,7 @@ namespace VisualTester
             InitLTrieAscii();
             //Thread will read data and put it into consloe
 
-            foreach (var row in LTrie.IterateForward())
+            foreach (var row in LTrie.IterateForward(true, false))
             {
                 //Console.WriteLine("READ KEY: {0}", row.Key.To_UInt32_BigEndian());
 

@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.086.2017.0522</Version>
-    <AssemblyVersion>1.086.2017.0522</AssemblyVersion>
-    <FileVersion>1.085.2017.0515</FileVersion>
+    <Version>1.087.2017.0606</Version>
+    <AssemblyVersion>1.087.2017.0606</AssemblyVersion>
+    <FileVersion>1.087.2017.0606</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -21,20 +21,45 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard1.6\DBreeze.xml</DocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DataTypes\1Row.cs" />
+    <Compile Remove="Engine\1Scheme.cs" />
+    <Compile Remove="LianaTrie\1LianaTrie.cs" />
+    <Compile Remove="LianaTrie\1LTrieRootNode.cs" />
+    <Compile Remove="LianaTrie\Iterations\1Backward.cs" />
+    <Compile Remove="LianaTrie\Iterations\1Forward.cs" />
+    <Compile Remove="LianaTrie\NestedTables\1NestedTable.cs" />
+    <Compile Remove="LianaTrie\NestedTables\1NestedTableInternal.cs" />
+    <Compile Remove="TextSearch\1TextDeferredIndexer.cs" />
+    <Compile Remove="Transactions\1Transaction.cs" />
+  </ItemGroup>
  
   <ItemGroup>
+    <Compile Include="..\DBreeze\DataTypes\Row.cs" Link="DataTypes\Row.cs" />
+    <Compile Include="..\DBreeze\Engine\DBreezeResources.cs" Link="Engine\DBreezeResources.cs" />
+    <Compile Include="..\DBreeze\Engine\Scheme.cs" Link="Engine\Scheme.cs" />
     <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs" Link="Exceptions\DBreezeException.cs" />
+    <Compile Include="..\DBreeze\LianaTrie\Iterations\Backward.cs" Link="LianaTrie\Iterations\Backward.cs" />
+    <Compile Include="..\DBreeze\LianaTrie\Iterations\Forward.cs" Link="LianaTrie\Iterations\Forward.cs" />
+    <Compile Include="..\DBreeze\LianaTrie\LianaTrie.cs" Link="LianaTrie\LianaTrie.cs" />
+    <Compile Include="..\DBreeze\LianaTrie\LTrieRootNode.cs" Link="LianaTrie\LTrieRootNode.cs" />
+    <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTable.cs" Link="LianaTrie\NestedTables\NestedTable.cs" />
+    <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTableInternal.cs" Link="LianaTrie\NestedTables\NestedTableInternal.cs" />
     <Compile Include="..\DBreeze\Objects\DBreezeIndex.cs" Link="Objects\DBreezeIndex.cs" />
     <Compile Include="..\DBreeze\Objects\DBreezeObject.cs" Link="Objects\DBreezeObject.cs" />
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs" Link="TextSearch\SBlock.cs" />
+    <Compile Include="..\DBreeze\TextSearch\TextDeferredIndexer.cs" Link="TextSearch\TextDeferredIndexer.cs" />
     <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs" Link="TextSearch\TextSearchHandler.cs" />
     <Compile Include="..\DBreeze\TextSearch\TextSearchOptions.cs" Link="TextSearch\TextSearchOptions.cs" />
     <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs" Link="TextSearch\TextSearchTable.cs" />
     <Compile Include="..\DBreeze\TextSearch\WABI.cs" Link="TextSearch\WABI.cs" />
     <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs" Link="Transactions\RandomKeySorter.cs" />
+    <Compile Include="..\DBreeze\Transactions\Transaction.cs" Link="Transactions\Transaction.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="LianaTrie\Iterations\" />
     <Folder Include="Objects\" />
   </ItemGroup>
 

@@ -121,7 +121,7 @@ namespace DBreeze
         private void ReadUserLastFileNumber()
         {
             byte[] btKeyName = Encoding.UTF8.GetBytes(LastFileNumberKeyName);
-            LTrieRow row = LTrie.GetKey(btKeyName, false);
+            LTrieRow row = LTrie.GetKey(btKeyName, false, false);
 
             if (row.Exists)
             {
@@ -151,7 +151,7 @@ namespace DBreeze
 
 
                 //Getting file name
-                LTrieRow row = LTrie.GetKey(btTableName, false);
+                LTrieRow row = LTrie.GetKey(btTableName, false, false);
 
                 if (row.Exists)
                 {
@@ -231,7 +231,7 @@ namespace DBreeze
             {
                 byte[] btTableName = GetUserTableNameAsByte(userTableName);
 
-                LTrieRow row = LTrie.GetKey(btTableName, true);
+                LTrieRow row = LTrie.GetKey(btTableName, true, false);
 
                 if (!row.Exists)
                 {
@@ -351,7 +351,7 @@ namespace DBreeze
 
                     if (fileName == 0)
                     {
-                        LTrieRow row = LTrie.GetKey(btTableName, false);
+                        LTrieRow row = LTrie.GetKey(btTableName, false, false);
 
 
                         if (row.Exists)
@@ -677,7 +677,7 @@ namespace DBreeze
 
                 ////Searching on the disk
                 byte[] btTableName = this.GetUserTableNameAsByte(userTableName);
-                var row = LTrie.GetKey(btTableName, false);
+                var row = LTrie.GetKey(btTableName, false, true);
                 return row.Exists;
             }
             catch (System.Exception ex)
@@ -727,7 +727,7 @@ namespace DBreeze
             //{
             byte[] btKeyName = Encoding.UTF8.GetBytes("@ut" + mask);
 
-            foreach (var row in LTrie.IterateForwardStartsWith(btKeyName))
+            foreach (var row in LTrie.IterateForwardStartsWith(btKeyName,true,true))
             {
                 //try       //try-catch could be necessary in case if we acquire value, which was deleted by other thread. Here we don't acquire value.
                 //{

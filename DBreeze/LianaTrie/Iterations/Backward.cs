@@ -21,11 +21,12 @@ namespace DBreeze.LianaTrie.Iterations
         /// </summary>
         bool ReturnKeyValuePair = false; 
 
-        public Backward(LTrieRootNode root)
+        public Backward(LTrieRootNode root, bool ValuesLazyLoadingIsOn)
         {
             _root = root;
 
-            ReturnKeyValuePair = !_root.Tree.ValuesLazyLoadingIsOn;
+            //ReturnKeyValuePair = !_root.Tree.ValuesLazyLoadingIsOn;
+            ReturnKeyValuePair = !ValuesLazyLoadingIsOn;
         }
 
         byte[] endKey = null;
@@ -1562,7 +1563,7 @@ namespace DBreeze.LianaTrie.Iterations
             if(initKey.Length<1)
                 return new List<LTrieRow>();
 
-            Forward fw = new Forward(this._root);
+            Forward fw = new Forward(this._root,!this.ReturnKeyValuePair);
             fw.IterateForwardStartsWith_Prefix_Helper(initKey, useCache);
 
             if (fw.PrefixDeep == -1)

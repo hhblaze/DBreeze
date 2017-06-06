@@ -1704,13 +1704,6 @@
             Flag can be setup only via nested table or transaction
             </summary>
         </member>
-        <member name="F:DBreeze.LianaTrie.LTrie.ValuesLazyLoadingIsOn">
-            <summary>
-            When it's on iterators, Select and SelectDirect return Row with the key and a pointer to the value.
-            <par>Value will be read out when we call it Row.Value.</par>
-            <pa>When it's off we read value together with the key in one round</pa>
-            </summary>
-        </member>
         <member name="M:DBreeze.LianaTrie.LTrie.#ctor(DBreeze.Storage.IStorage)">
             <summary>
             Liana Trie
@@ -1733,6 +1726,7 @@
             
             </summary>
             <param name="row"></param>
+            <param name="btKey"></param>
             <param name="tableIndex"></param>
             <param name="masterTrie"></param>
             <param name="insertTable">Regulates if InsertTable or SelectTable was called (ability to create table if it doesn't exist)</param>
@@ -1827,73 +1821,23 @@
             <param name="SYNCHRO_READ"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[],System.Boolean,System.Boolean)">
             <summary>
-            if useCache = true; uses newly created root node, else uses writing root node
+             if useCache = true; uses newly created root node, else uses writing root node
             </summary>
             <param name="key"></param>
+            <param name="useCache"></param>
+            <param name="ValuesLazyLoadingIsOn"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[]@,DBreeze.Tries.ITrieRootNode)">
+        <member name="M:DBreeze.LianaTrie.LTrie.GetKey(System.Byte[]@,DBreeze.Tries.ITrieRootNode,System.Boolean)">
             <summary>
             DBreeze compatible.
             Extension, which helps to READ-THREADS smartly utilize created before read-roots
             </summary>
             <param name="key"></param>
             <param name="readRootNode">if null then WRITE-ROOT NODE</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWith(System.Byte[])">
-            <summary>
-            Always creates new root to get committed data
-            </summary>
-            <param name="startKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[],System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateForwardStartsWithClosestToPrefix(System.Byte[],DBreeze.Tries.ITrieRootNode)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="readRootNode"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[],System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrie.IterateBackwardStartsWithClosestToPrefix(System.Byte[],DBreeze.Tries.ITrieRootNode)">
-            <summary>
-            
-            </summary>
-            <param name="startKey"></param>
-            <param name="readRootNode"></param>
+            <param name="ValuesLazyLoadingIsOn"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrie.SingleCommit">
@@ -2047,11 +1991,13 @@
             <param name="deletedValue">interesting only if WasRemoved = true and retrieveDeletedValue is true</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieRootNode.GetKey(System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.GetKey(System.Byte[],System.Boolean,System.Boolean)">
             <summary>
             
             </summary>
             <param name="key"></param>
+            <param name="useCache"></param>
+            <param name="ValuesLazyLoadingIsOn">if true reads key only</param>
             <returns></returns>
         </member>
         <member name="F:DBreeze.LianaTrie.LTrieSetupKidResult.ValueLink">
@@ -4299,8 +4245,9 @@
         <member name="P:DBreeze.Transactions.Transaction.ValuesLazyLoadingIsOn">
             <summary>
             When it's on iterators return Row with the key and a pointer to the value.
-            <par>Value will be read out when we call it Row.Value.</par>
-            <pa>When it's off we read value together with the key in one round</pa>
+            <para>Value will be read out when we call it Row.Value.</para>
+            <para>When it's off we read value together with the key in one round</para>
+            <para>Default is true</para>
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SynchronizeTables(System.Collections.Generic.IList{System.String})">
@@ -4702,8 +4649,11 @@
             <summary>
             Will create internal table if it doesn't exist and return it.
             </summary>
+            <typeparam name="TKey"></typeparam>
             <param name="tableName"></param>
-            <param name="tableNumber"></param>
+            <param name="key"></param>
+            <param name="tableIndex"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectTable``1(System.String,``0,System.UInt32)">
             <summary>

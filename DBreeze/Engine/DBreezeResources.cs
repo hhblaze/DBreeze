@@ -160,7 +160,7 @@ namespace DBreeze
                         //Grabbing from disk
                         if (resourceSettings.HoldOnDisk)
                         {
-                            var row = LTrie.GetKey(btKey, false);
+                            var row = LTrie.GetKey(btKey, false, false);
                             if (row.Exists)
                             {
                                 btExVal = row.GetFullValue(false);
@@ -312,7 +312,7 @@ namespace DBreeze
                             //Grabbing from disk
                             if (resourceSettings.HoldOnDisk)
                             {
-                                var row = LTrie.GetKey(btKey, false);
+                                var row = LTrie.GetKey(btKey, false, false);
                                 if (row.Exists)
                                 {
                                     btExVal = row.GetFullValue(false);
@@ -454,9 +454,9 @@ namespace DBreeze
                 _sync.EnterUpgradeableReadLock();
 
                 btKey = DataTypesConvertor.ConvertKey<string>(_urp + resourceNameStartsWith);
-                var q = LTrie.IterateForwardStartsWith(btKey);
+                var q = LTrie.IterateForwardStartsWith(btKey, true, false);
                 if(!resourceSettings.SortingAscending)
-                    q = LTrie.IterateBackwardStartsWith(btKey);
+                    q = LTrie.IterateBackwardStartsWith(btKey, true, false);
 
                 foreach (var el in q)
                 {
@@ -546,7 +546,7 @@ namespace DBreeze
 
                             //trying to get from database
                             byte[] btKey = DataTypesConvertor.ConvertKey<string>(rn);
-                            var row = LTrie.GetKey(btKey, false);
+                            var row = LTrie.GetKey(btKey, false, false);
                             if (row.Exists)
                             {
                                 val = row.GetFullValue(false);
@@ -644,7 +644,7 @@ namespace DBreeze
 
                         //trying to get from database
                         byte[] btKey = DataTypesConvertor.ConvertKey<string>(rn);
-                        var row = LTrie.GetKey(btKey, false);
+                        var row = LTrie.GetKey(btKey, false, false);
                         if (row.Exists)
                         {
                             val = row.GetFullValue(false);

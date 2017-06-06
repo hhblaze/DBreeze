@@ -29,6 +29,7 @@ namespace DBreeze.DataTypes
         LTrie _parentTable = null;
         byte[] _key = null;
         long _rootStart = 0;
+        internal bool ValuesLazyLoadingIsOn = true;
 
         public uint quantityOpenReads = 0;
 
@@ -134,22 +135,25 @@ namespace DBreeze.DataTypes
 
             if (insertIsAllowed)        //Insert of table is allowed by calls generation
             {
-                row = table.GetKey(ref btKey, null);
+                row = table.GetKey(ref btKey, null, true);
                 return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, true, false);
             }
 
             //Only selects are allowed
-
+#if NET35 || NETr40
             if (_masterTrie.NestedTablesCoordinator.ModificationThreadId == System.Threading.Thread.CurrentThread.ManagedThreadId)
+#else
+            if (_masterTrie.NestedTablesCoordinator.ModificationThreadId == Environment.CurrentManagedThreadId)                
+#endif            
             {
                 //This thread must NOT use cache
-                row = table.GetKey(ref btKey, null);
+                row = table.GetKey(ref btKey, null, true);
                 return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, false, false);
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(table);
-                row = table.GetKey(ref btKey, readRootNode);
+                row = table.GetKey(ref btKey, readRootNode, true);
 
                 return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, false, true);
             }

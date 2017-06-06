@@ -109,8 +109,8 @@ namespace DBreeze.DataTypes
                 //Master row select
                 var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, false, this._useCache);
 
-                if (_masterTrie != null)
-                    nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
+                //if (_masterTrie != null)
+                //    nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
 
                 return nt;
             }
@@ -119,7 +119,7 @@ namespace DBreeze.DataTypes
                 
                 //Nested table
                 var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, nestedTable._insertAllowed, this._useCache);
-                nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
+                //nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
                 return nt;
             }
 
@@ -401,7 +401,7 @@ namespace DBreeze.DataTypes
 
                     //Remembering once read out result
                     _row.ValueIsReadOut = true;
-                    _row.Value = res;
+                    _row.Value = res;                   
 
                     return DataTypesConvertor.ConvertBack<TValue>(res);
                 }
@@ -425,18 +425,21 @@ namespace DBreeze.DataTypes
         public void PrintOut(string leadingText)
         {
             if (!_exists)
-                Console.WriteLine("Key doesn't exist");
+            {
+                System.Diagnostics.Debug.WriteLine("Key doesn't exist");
+                //Console.WriteLine("Key doesn't exist");
+            }
             else
             {
-                
+
 
                 if (typeof(TKey) == DBreeze.DataTypes.DataTypesConvertor.TYPE_BYTE_ARRAY)
                 {
-                    Console.WriteLine("{2}; K: {0}; V: {1}", this._key, Value,leadingText);
+                    System.Diagnostics.Debug.WriteLine(String.Format("{2}; K: {0}; V: {1}", this._key, Value, leadingText));
                 }
                 else
                 {
-                    Console.WriteLine("{2}; K: {0}; V: {1}", this._key, Value, leadingText);
+                    System.Diagnostics.Debug.WriteLine(String.Format("{2}; K: {0}; V: {1}", this._key, Value, leadingText));
                 }
             }
         }

@@ -15,5 +15,6 @@ namespace DBreeze.Tries
     /// </summary>
     public interface ITrieRootNode
     {
+      
     }
 }

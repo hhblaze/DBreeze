@@ -21,11 +21,12 @@ namespace DBreeze.LianaTrie.Iterations
         /// </summary>
         public bool ReturnKeyValuePair = false; 
 
-        public Forward(LTrieRootNode root)
+        public Forward(LTrieRootNode root, bool ValuesLazyLoadingIsOn)
         {
             _root = root;
 
-            ReturnKeyValuePair = !_root.Tree.ValuesLazyLoadingIsOn;
+            //ReturnKeyValuePair = !_root.Tree.ValuesLazyLoadingIsOn;
+            ReturnKeyValuePair = !ValuesLazyLoadingIsOn;
         }
 
         byte[] endKey = null;

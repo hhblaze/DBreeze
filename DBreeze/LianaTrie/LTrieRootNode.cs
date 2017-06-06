@@ -21,7 +21,8 @@ namespace DBreeze.LianaTrie
         public byte[] LinkToZeroNode = null;
         ushort DefaultPointerLen = 0;
         ushort DefaultRootSize = 0;
-        public byte[] EmptyPointer = null;
+        public byte[] EmptyPointer = null;        
+      
 
         /// <summary>
         /// Indicates quantity of Records in the table
@@ -220,6 +221,8 @@ namespace DBreeze.LianaTrie
         }
 
         internal LTrieGenerationMap _generationMap = new LTrieGenerationMap();
+
+        
 
         public void Save_GM_nodes_Starting_From(int index)
         {
@@ -684,7 +687,7 @@ namespace DBreeze.LianaTrie
             //to make new value
             refToInsertedValue = null;
 
-            var row = this.GetKey(oldKey,false);
+            var row = this.GetKey(oldKey, false, false);
 
             if (row.Exists)
             {
@@ -853,7 +856,7 @@ namespace DBreeze.LianaTrie
         //                   ||
         //                   ptr[0] != 0
         //                   );
-                   
+
         //        case 3:     //17MB
         //             return !(
         //                   ptr[2] != 0
@@ -862,7 +865,7 @@ namespace DBreeze.LianaTrie
         //                   ||
         //                   ptr[0] != 0
         //                   );
-                    
+
         //        case 6:     //281 Terrabytes (281.474.976.710.655)
         //             return !(
         //                    ptr[5] != 0
@@ -877,7 +880,7 @@ namespace DBreeze.LianaTrie
         //                    ||
         //                    ptr[0] != 0
         //                    );
-                  
+
         //        case 7:     //72 Petabytes (72.057.594.037.927.935)
         //             return !(
         //                    ptr[6] != 0
@@ -912,12 +915,13 @@ namespace DBreeze.LianaTrie
         //#endregion
 
 
-       
+
 
 
         #region "DATA FETCHING"
 
-       
+
+
 
 
 
@@ -925,10 +929,11 @@ namespace DBreeze.LianaTrie
         /// 
         /// </summary>
         /// <param name="key"></param>
+        /// <param name="useCache"></param>
+        /// <param name="ValuesLazyLoadingIsOn">if true reads key only</param>
         /// <returns></returns>
-        public LTrieRow GetKey(byte[] key, bool useCache)
-        {
-            //Later change TreeKVP (for RootNode Interface or smth like this) and make it unversal, this one must return value
+        public LTrieRow GetKey(byte[] key, bool useCache, bool ValuesLazyLoadingIsOn)
+        {            
             LTrieRow kv = new LTrieRow(this);
 
             kv.Key = key;
@@ -1029,9 +1034,9 @@ namespace DBreeze.LianaTrie
                         byte[] xValue = null;
                         byte[] storedKey = null;
 
-                        if (!this.Tree.ValuesLazyLoadingIsOn)
+                        if (!ValuesLazyLoadingIsOn)
                         {
-                            this.Tree.Cache.ReadKeyValue(useCache, kidDef.Ptr, out valueStartPtr, out valueLength, out storedKey, out xValue);
+                            this.Tree.Cache.ReadKeyValue(useCache, kidDef.Ptr, out valueStartPtr, out valueLength, out storedKey, out xValue);                           
                         }
                         else
                         {
@@ -1043,11 +1048,11 @@ namespace DBreeze.LianaTrie
                         if (key.Length != storedKey.Length || !key._ByteArrayEquals(storedKey))
                             return kv;
 
-                        if (!this.Tree.ValuesLazyLoadingIsOn)
+                        if (!ValuesLazyLoadingIsOn)
                         {
                             kv.ValueStartPointer = valueStartPtr;
                             kv.ValueFullLength = valueLength;
-                            kv.Value = xValue;
+                            kv.Value = xValue;                           
                             kv.ValueIsReadOut = true;
                         }
                         kv.LinkToValue = kidDef.Ptr;

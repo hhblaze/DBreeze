@@ -145,7 +145,7 @@ namespace DBreeze.TextSearch
 
                 lock (lock_operation)
                 {                    
-                    foreach (var row in LTrie.IterateForward(false).Take(maximalIterations))
+                    foreach (var row in LTrie.IterateForward(true, false).Take(maximalIterations))
                     {
                         
                         currentItter++;

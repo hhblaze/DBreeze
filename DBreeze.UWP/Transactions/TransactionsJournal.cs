@@ -126,7 +126,7 @@ namespace DBreeze.Transactions
                 DBreeze.LianaTrie.LTrie ltrie = null;
                                 
 
-                foreach (var row in LTrie.IterateForward())
+                foreach (var row in LTrie.IterateForward(true, false))
                 {
                     btCommittedTablesNames = row.GetFullValue(true);
 

@@ -18,14 +18,14 @@ using DBreeze.DataTypes;
 using DBreeze.Utils;
 
 namespace DBreeze.LianaTrie
-{    
+{
     /// <summary>
     /// Liana Trie
     /// </summary>
-    public class LTrie:ITrie,ITransactable,IDisposable
+    public class LTrie : ITrie, ITransactable, IDisposable
     {
         internal IStorage Storage;
-        
+
         //Write Root Node, THE ONLY FOR WRITING FUNCTIONS.
         //Reading Functions create every time its own root node
         internal LTrieRootNode rn = null;
@@ -35,7 +35,7 @@ namespace DBreeze.LianaTrie
         /// Cache for overwriting nodes and values
         /// </summary>
         internal LTrieWriteCache Cache = null;
-                
+
         //Indicates that table is operatable
         private bool TableIsOperable = true;
         //Locker
@@ -55,7 +55,7 @@ namespace DBreeze.LianaTrie
         /// Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
         /// Access via DtTableFixed interface ITrie
         /// </summary>
-        long _DtTableFixed = (new DateTime(1970,1,1)).Ticks;
+        long _DtTableFixed = (new DateTime(1970, 1, 1)).Ticks;
 
         /// <summary>
         /// Coordinator of nested tables
@@ -69,12 +69,13 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal bool OverWriteIsAllowed = true;
 
-        /// <summary>
-        /// When it's on iterators, Select and SelectDirect return Row with the key and a pointer to the value.
-        /// <par>Value will be read out when we call it Row.Value.</par>
-        /// <pa>When it's off we read value together with the key in one round</pa>
-        /// </summary>
-        public bool ValuesLazyLoadingIsOn = true;
+        ///// <summary>
+        ///// When it's on iterators, Select and SelectDirect return Row with the key and a pointer to the value.
+        ///// <par>Value will be read out when we call it Row.Value.</par>
+        ///// <pa>When it's off we read value together with the key in one round</pa>
+        ///// </summary>
+        //public bool ValuesLazyLoadingIsOn = true;
+
 
         /// <summary>
         /// Liana Trie
@@ -229,6 +230,7 @@ namespace DBreeze.LianaTrie
         /// 
         /// </summary>
         /// <param name="row"></param>
+        /// <param name="btKey"></param>
         /// <param name="tableIndex"></param>
         /// <param name="masterTrie"></param>
         /// <param name="insertTable">Regulates if InsertTable or SelectTable was called (ability to create table if it doesn't exist)</param>
@@ -250,7 +252,15 @@ namespace DBreeze.LianaTrie
                 if (insertTable)
                 {
                     //settign up modification thread
+#if NET35 || NETr40
                     this.NestedTablesCoordinator.ModificationThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+
+#else
+                    this.NestedTablesCoordinator.ModificationThreadId = Environment.CurrentManagedThreadId;
+                   
+#endif
+
+
                 }
 
 
@@ -679,7 +689,7 @@ namespace DBreeze.LianaTrie
                     /*********** Support of the nested tables  *******/
                     if (this.NestedTablesCoordinator.IfKeyIsInNestedList(ref oldKey))
                     {
-                        var row = rn.GetKey(newKey, false);
+                        var row = rn.GetKey(newKey, false, true);
                         this.NestedTablesCoordinator.ChangeKeyAndMoveNestedTablesRootStart(ref oldKey, ref newKey, row.LinkToValue.DynamicLength_To_UInt64_BigEndian(), row.ValueStartPointer);
                     }
                     /*************************************************/
@@ -711,7 +721,7 @@ namespace DBreeze.LianaTrie
                     /*********** Support of the nested tables  *******/
                     if(this.NestedTablesCoordinator.IfKeyIsInNestedList(ref oldKey))
                     {
-                        var row = rn.GetKey(newKey, false);
+                        var row = rn.GetKey(newKey, false, true);
                         this.NestedTablesCoordinator.ChangeKeyAndMoveNestedTablesRootStart(ref oldKey, ref newKey, row.LinkToValue.DynamicLength_To_UInt64_BigEndian(), row.ValueStartPointer);
                     }
                     /*************************************************/
@@ -824,12 +834,15 @@ namespace DBreeze.LianaTrie
             }
         }
 
+
         /// <summary>
-        /// if useCache = true; uses newly created root node, else uses writing root node
+        ///  if useCache = true; uses newly created root node, else uses writing root node
         /// </summary>
         /// <param name="key"></param>
+        /// <param name="useCache"></param>
+        /// <param name="ValuesLazyLoadingIsOn"></param>
         /// <returns></returns>
-        public LTrieRow GetKey(byte[] key,bool useCache)
+        public LTrieRow GetKey(byte[] key, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -839,14 +852,14 @@ namespace DBreeze.LianaTrie
                 //Creating new Root -
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-                return readRootNode.GetKey(key, true);
+                return readRootNode.GetKey(key, true, ValuesLazyLoadingIsOn);
             }
             else
             {
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                return rn.GetKey(key, false);
+                return rn.GetKey(key, false, ValuesLazyLoadingIsOn);
             }
 
         }
@@ -858,8 +871,9 @@ namespace DBreeze.LianaTrie
         /// </summary>
         /// <param name="key"></param>
         /// <param name="readRootNode">if null then WRITE-ROOT NODE</param>
+        /// <param name="ValuesLazyLoadingIsOn"></param>
         /// <returns></returns>
-        public LTrieRow GetKey(ref byte[] key, ITrieRootNode readRootNode)
+        public LTrieRow GetKey(ref byte[] key, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -869,28 +883,28 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                return rn.GetKey(key,false);
+                return rn.GetKey(key, false, ValuesLazyLoadingIsOn);
 
             }
             else
             {
-                return ((LTrieRootNode)readRootNode).GetKey(key,true);
+                return ((LTrieRootNode)readRootNode).GetKey(key, true, ValuesLazyLoadingIsOn);
             }
         }
  
 
-        //Iterate
-        public IEnumerable<LTrieRow> IterateForward()
-        {
-            this.CheckTableIsOperable();
+        ////Iterate
+        //public IEnumerable<LTrieRow> IterateForward(bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-            Forward fw = new Forward(readRootNode);
-            return fw.IterateForward(true);            
-        }
+        //    Forward fw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return fw.IterateForward(true);            
+        //}
 
-        public IEnumerable<LTrieRow> IterateForward(bool useCache) //bool SYNCHRO_READ
+        public IEnumerable<LTrieRow> IterateForward(bool useCache, bool ValuesLazyLoadingIsOn) //bool SYNCHRO_READ
         {
             this.CheckTableIsOperable();
 
@@ -899,19 +913,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward fw = new Forward(rn);
+                Forward fw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return fw.IterateForward(false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward fw = new Forward(readRootNode);
+                Forward fw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return fw.IterateForward(true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateForward(ITrieRootNode readRootNode) //bool SYNCHRO_READ
+        public IEnumerable<LTrieRow> IterateForward(ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn) //bool SYNCHRO_READ
         {
             this.CheckTableIsOperable();
 
@@ -920,28 +934,28 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward fw = new Forward(rn);
+                Forward fw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return fw.IterateForward(false);
                
             }
             else
             {
-                Forward fw = new Forward((LTrieRootNode)readRootNode);
+                Forward fw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return fw.IterateForward(true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackward()
-        {
-            this.CheckTableIsOperable();
+        //public IEnumerable<LTrieRow> IterateBackward(bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackward(true);
-        }
+        //    Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return bw.IterateBackward(true);
+        //}
 
-        public IEnumerable<LTrieRow> IterateBackward(bool useCache)
+        public IEnumerable<LTrieRow> IterateBackward(bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -950,7 +964,7 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackward(false);
 
             }
@@ -958,12 +972,12 @@ namespace DBreeze.LianaTrie
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackward(true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackward(ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackward(ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -972,13 +986,13 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackward(false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackward(true);
             }
         }
@@ -986,18 +1000,18 @@ namespace DBreeze.LianaTrie
 
 
 
-        //Iterate  StartFrom
-        public IEnumerable<LTrieRow> IterateForwardStartFrom(byte[] key, bool includeStartKey)
-        {
-            this.CheckTableIsOperable();
+        ////Iterate  StartFrom
+        //public IEnumerable<LTrieRow> IterateForwardStartFrom(byte[] key, bool includeStartKey, bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-            Forward fw = new Forward(readRootNode);
-            return fw.IterateForwardStartFrom(key, includeStartKey,true);
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    Forward fw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return fw.IterateForwardStartFrom(key, includeStartKey,true);
             
-        }
+        //}
 
-        public IEnumerable<LTrieRow> IterateForwardStartFrom(byte[] key, bool includeStartKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateForwardStartFrom(byte[] key, bool includeStartKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1006,20 +1020,20 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward fw = new Forward(rn);
+                Forward fw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return fw.IterateForwardStartFrom(key, includeStartKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward fw = new Forward(readRootNode);
+                Forward fw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return fw.IterateForwardStartFrom(key, includeStartKey, true);
             }
 
         }
 
-        public IEnumerable<LTrieRow> IterateForwardStartFrom(byte[] key, bool includeStartKey,ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateForwardStartFrom(byte[] key, bool includeStartKey,ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1028,29 +1042,29 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward fw = new Forward(rn);
+                Forward fw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return fw.IterateForwardStartFrom(key, includeStartKey,false);
 
             }
             else
             {                
-                Forward fw = new Forward((LTrieRootNode)readRootNode);
+                Forward fw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return fw.IterateForwardStartFrom(key, includeStartKey,true);
             }
 
         }
 
 
-        public IEnumerable<LTrieRow> IterateBackwardStartFrom(byte[] key, bool includeStartKey)
-        {
-            this.CheckTableIsOperable();
+        //public IEnumerable<LTrieRow> IterateBackwardStartFrom(byte[] key, bool includeStartKey, bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardStartFrom(key, includeStartKey,true);
-        }
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return bw.IterateBackwardStartFrom(key, includeStartKey,true);
+        //}
 
-        public IEnumerable<LTrieRow> IterateBackwardStartFrom(byte[] key, bool includeStartKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateBackwardStartFrom(byte[] key, bool includeStartKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1059,19 +1073,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartFrom(key, includeStartKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartFrom(key, includeStartKey, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackwardStartFrom(byte[] key, bool includeStartKey, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackwardStartFrom(byte[] key, bool includeStartKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1080,31 +1094,31 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartFrom(key, includeStartKey,false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartFrom(key, includeStartKey,true);
             }
         }
 
 
 
-        //MIN-MAX
-        public LTrieRow IterateForwardForMinimal()
-        {
-            this.CheckTableIsOperable();
+        ////MIN-MAX
+        //public LTrieRow IterateForwardForMinimal(bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-            Forward bw = new Forward(readRootNode);
-            return bw.IterateForwardForMinimal(true);
-        }
+        //    Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return bw.IterateForwardForMinimal(true);
+        //}
 
-        public LTrieRow IterateForwardForMinimal(bool useCache)
+        public LTrieRow IterateForwardForMinimal(bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1113,7 +1127,7 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardForMinimal(false);
 
             }
@@ -1121,12 +1135,12 @@ namespace DBreeze.LianaTrie
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-                Forward bw = new Forward(readRootNode);
+                Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardForMinimal(true);
             }
         }
 
-        public LTrieRow IterateForwardForMinimal(ITrieRootNode readRootNode)
+        public LTrieRow IterateForwardForMinimal(ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1135,13 +1149,13 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardForMinimal(false);
 
             }
             else
             {
-                Forward bw = new Forward((LTrieRootNode)readRootNode);
+                Forward bw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardForMinimal(true);
             }
         }
@@ -1149,17 +1163,8 @@ namespace DBreeze.LianaTrie
 
 
 
-        public LTrieRow IterateBackwardForMaximal()
-        {
-            this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardForMaximal(true);
-        }
-
-        public LTrieRow IterateBackwardForMaximal(bool useCache)
+        public LTrieRow IterateBackwardForMaximal(bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1168,19 +1173,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardForMaximal(false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardForMaximal(true);
             }
         }
 
-        public LTrieRow IterateBackwardForMaximal(ITrieRootNode readRootNode)
+        public LTrieRow IterateBackwardForMaximal(ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1189,31 +1194,31 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardForMaximal(false);
 
             }
             else
             {              
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardForMaximal(true);
             }
         }
 
 
 
-        //SKIP FROM
-        public IEnumerable<LTrieRow> IterateForwardSkipFrom(byte[] key, ulong skippingQuantity)
-        {
-            this.CheckTableIsOperable();
+        ////SKIP FROM
+        //public IEnumerable<LTrieRow> IterateForwardSkipFrom(byte[] key, ulong skippingQuantity, bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-            Forward bw = new Forward(readRootNode);
-            return bw.IterateForwardSkipFrom(key,skippingQuantity,true);
-        }
+        //    Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return bw.IterateForwardSkipFrom(key,skippingQuantity,true);
+        //}
 
-        public IEnumerable<LTrieRow> IterateForwardSkipFrom(byte[] key, ulong skippingQuantity, bool useCache)
+        public IEnumerable<LTrieRow> IterateForwardSkipFrom(byte[] key, ulong skippingQuantity, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1222,19 +1227,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkipFrom(key, skippingQuantity, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward bw = new Forward(readRootNode);
+                Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkipFrom(key, skippingQuantity, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateForwardSkipFrom(byte[] key, ulong skippingQuantity,ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateForwardSkipFrom(byte[] key, ulong skippingQuantity,ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1243,31 +1248,31 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkipFrom(key, skippingQuantity,false);
 
             }
             else
             {
 
-                Forward bw = new Forward((LTrieRootNode)readRootNode);
+                Forward bw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkipFrom(key, skippingQuantity,true);
             }
         }
 
 
 
-        public IEnumerable<LTrieRow> IterateBackwardSkipFrom(byte[] key, ulong skippingQuantity)
-        {
-            this.CheckTableIsOperable();
+        //public IEnumerable<LTrieRow> IterateBackwardSkipFrom(byte[] key, ulong skippingQuantity, bool ValuesLazyLoadingIsOn)
+        //{
+        //    this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
+        //    LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardSkipFrom(key, skippingQuantity,true);
-        }
+        //    Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
+        //    return bw.IterateBackwardSkipFrom(key, skippingQuantity,true);
+        //}
 
-        public IEnumerable<LTrieRow> IterateBackwardSkipFrom(byte[] key, ulong skippingQuantity, bool useCache)
+        public IEnumerable<LTrieRow> IterateBackwardSkipFrom(byte[] key, ulong skippingQuantity, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1276,19 +1281,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkipFrom(key, skippingQuantity, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkipFrom(key, skippingQuantity, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackwardSkipFrom(byte[] key, ulong skippingQuantity, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackwardSkipFrom(byte[] key, ulong skippingQuantity, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1297,13 +1302,13 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkipFrom(key, skippingQuantity,false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkipFrom(key, skippingQuantity,true);
             }
         }
@@ -1311,17 +1316,8 @@ namespace DBreeze.LianaTrie
 
 
         //SKIP
-        public IEnumerable<LTrieRow> IterateForwardSkip(ulong skippingQuantity)
-        {
-            this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Forward bw = new Forward(readRootNode);
-            return bw.IterateForwardSkip(skippingQuantity,true);
-        }
-
-        public IEnumerable<LTrieRow> IterateForwardSkip(ulong skippingQuantity, bool useCache)
+        public IEnumerable<LTrieRow> IterateForwardSkip(ulong skippingQuantity, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1330,19 +1326,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkip(skippingQuantity, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward bw = new Forward(readRootNode);
+                Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkip(skippingQuantity, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateForwardSkip(ulong skippingQuantity, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateForwardSkip(ulong skippingQuantity, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1351,28 +1347,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkip(skippingQuantity,false);
 
             }
             else
             {
-                Forward bw = new Forward((LTrieRootNode)readRootNode);
+                Forward bw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardSkip(skippingQuantity,true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackwardSkip(ulong skippingQuantity)
-        {
-            this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardSkip(skippingQuantity,true);
-        }
-
-        public IEnumerable<LTrieRow> IterateBackwardSkip(ulong skippingQuantity, bool useCache)
+        public IEnumerable<LTrieRow> IterateBackwardSkip(ulong skippingQuantity, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1381,19 +1368,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkip(skippingQuantity, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkip(skippingQuantity, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackwardSkip(ulong skippingQuantity, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackwardSkip(ulong skippingQuantity, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1402,13 +1389,13 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkip(skippingQuantity,false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardSkip(skippingQuantity,true);
             }
         }
@@ -1416,17 +1403,8 @@ namespace DBreeze.LianaTrie
 
         //Iterate From - To
         
-        public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] startKey, byte[] stopKey,bool includeStartKey, bool includeStopKey)
-        {
-            this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Forward bw = new Forward(readRootNode);
-            return bw.IterateForwardFromTo(startKey,stopKey,includeStartKey,includeStopKey,true);
-        }
-
-        public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1435,19 +1413,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardFromTo(startKey, stopKey, includeStartKey, includeStopKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward bw = new Forward(readRootNode);
+                Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardFromTo(startKey, stopKey, includeStartKey, includeStopKey, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1456,31 +1434,21 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardFromTo(startKey, stopKey, includeStartKey, includeStopKey,false);
 
             }
             else
             {              
-                Forward bw = new Forward((LTrieRootNode)readRootNode);
+                Forward bw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardFromTo(startKey, stopKey, includeStartKey, includeStopKey,true);
             }
         }
 
+        
 
 
-
-        public IEnumerable<LTrieRow> IterateBackwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey)
-        {
-            this.CheckTableIsOperable();
-
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardFromTo(startKey, stopKey, includeStartKey, includeStopKey,true);
-        }
-
-        public IEnumerable<LTrieRow> IterateBackwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateBackwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1489,19 +1457,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardFromTo(startKey, stopKey, includeStartKey, includeStopKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardFromTo(startKey, stopKey, includeStartKey, includeStopKey, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackwardFromTo(byte[] startKey, byte[] stopKey, bool includeStartKey, bool includeStopKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1510,35 +1478,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardFromTo(startKey, stopKey, includeStartKey, includeStopKey,false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardFromTo(startKey, stopKey, includeStartKey, includeStopKey,true);
             }
         }
 
-        
-        /// <summary>
-        /// Always creates new root to get committed data
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateForwardStartsWith(byte[] startKey)
-        {
-            this.CheckTableIsOperable();
-
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Forward bw = new Forward(readRootNode);
-
-            return bw.IterateForwardStartsWith(startKey,true);
-        }
-
-        public IEnumerable<LTrieRow> IterateForwardStartsWith(byte[] startKey, bool useCache)
+ 
+        public IEnumerable<LTrieRow> IterateForwardStartsWith(byte[] startKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1547,19 +1499,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWith(startKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward bw = new Forward(readRootNode);
+                Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWith(startKey, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateForwardStartsWith(byte[] startKey, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateForwardStartsWith(byte[] startKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1568,13 +1520,13 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWith(startKey,false);
 
             }
             else
             {
-                Forward bw = new Forward((LTrieRootNode)readRootNode);
+                Forward bw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWith(startKey,true);
             }
         }
@@ -1583,30 +1535,11 @@ namespace DBreeze.LianaTrie
 
 
         //!!!!!!!!!!!!!!   add two more overloads like with starts with
-        #region "Iterate Forward StartsWith ClosestToPrefix"
+#region "Iterate Forward StartsWith ClosestToPrefix"
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateForwardStartsWithClosestToPrefix(byte[] startKey)
-        {
-            this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-            Forward bw = new Forward(readRootNode);
-            return bw.IterateForwardStartsWithClosestToPrefix(startKey, true);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <param name="useCache"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateForwardStartsWithClosestToPrefix(byte[] startKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateForwardStartsWithClosestToPrefix(byte[] startKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1615,25 +1548,20 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWithClosestToPrefix(startKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Forward bw = new Forward(readRootNode);
+                Forward bw = new Forward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWithClosestToPrefix(startKey, true);
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <param name="readRootNode"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateForwardStartsWithClosestToPrefix(byte[] startKey, ITrieRootNode readRootNode)
+
+        public IEnumerable<LTrieRow> IterateForwardStartsWithClosestToPrefix(byte[] startKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1642,45 +1570,25 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Forward bw = new Forward(rn);
+                Forward bw = new Forward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWithClosestToPrefix(startKey, false);
 
             }
             else
             {
-                Forward bw = new Forward((LTrieRootNode)readRootNode);
+                Forward bw = new Forward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateForwardStartsWithClosestToPrefix(startKey, true);
             }
         }
 
-        #endregion
+#endregion
 
 
 
-        #region "Iterate Backward StartsWith ClosestToPrefix"
+#region "Iterate Backward StartsWith ClosestToPrefix"
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateBackwardStartsWithClosestToPrefix(byte[] startKey)
-        {
-            this.CheckTableIsOperable();
 
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardStartsWithClosestToPrefix(startKey, true);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <param name="useCache"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateBackwardStartsWithClosestToPrefix(byte[] startKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateBackwardStartsWithClosestToPrefix(byte[] startKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1689,25 +1597,19 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWithClosestToPrefix(startKey, false);
 
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWithClosestToPrefix(startKey, true);
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="startKey"></param>
-        /// <param name="readRootNode"></param>
-        /// <returns></returns>
-        public IEnumerable<LTrieRow> IterateBackwardStartsWithClosestToPrefix(byte[] startKey, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackwardStartsWithClosestToPrefix(byte[] startKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1716,35 +1618,23 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWithClosestToPrefix(startKey, false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWithClosestToPrefix(startKey, true);
 
             }
         }
 
-        #endregion
+#endregion
 
 
 
-
-
-        public IEnumerable<LTrieRow> IterateBackwardStartsWith(byte[] startKey)
-        {
-            this.CheckTableIsOperable();
-
-            LTrieRootNode readRootNode = new LTrieRootNode(this);
-
-            Backward bw = new Backward(readRootNode);
-            return bw.IterateBackwardStartsWith(startKey,true);
-        }
-
-        public IEnumerable<LTrieRow> IterateBackwardStartsWith(byte[] startKey, bool useCache)
+        public IEnumerable<LTrieRow> IterateBackwardStartsWith(byte[] startKey, bool useCache, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1753,7 +1643,7 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWith(startKey, false);
 
             }
@@ -1761,12 +1651,12 @@ namespace DBreeze.LianaTrie
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-                Backward bw = new Backward(readRootNode);
+                Backward bw = new Backward(readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWith(startKey, true);
             }
         }
 
-        public IEnumerable<LTrieRow> IterateBackwardStartsWith(byte[] startKey, ITrieRootNode readRootNode)
+        public IEnumerable<LTrieRow> IterateBackwardStartsWith(byte[] startKey, ITrieRootNode readRootNode, bool ValuesLazyLoadingIsOn)
         {
             this.CheckTableIsOperable();
 
@@ -1775,13 +1665,13 @@ namespace DBreeze.LianaTrie
                 //Flashing changes on the disk before commit. In case if the same thread uses the same root node
                 this.SaveGenerationMap();
 
-                Backward bw = new Backward(rn);
+                Backward bw = new Backward(rn, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWith(startKey,false);
 
             }
             else
             {
-                Backward bw = new Backward((LTrieRootNode)readRootNode);
+                Backward bw = new Backward((LTrieRootNode)readRootNode, ValuesLazyLoadingIsOn);
                 return bw.IterateBackwardStartsWith(startKey,true);
             }
         }

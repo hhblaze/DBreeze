@@ -110,11 +110,35 @@
     <None Include="signature.snk" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze\DataTypes\Row.cs">
+      <Link>DataTypes\Row.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\Engine\DBreezeResources.cs">
       <Link>Engine\DBreezeResources.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Engine\Scheme.cs">
+      <Link>Engine\Scheme.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs">
       <Link>Exceptions\DBreezeException.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\Iterations\Backward.cs">
+      <Link>LianaTrie\Iterations\Backward.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\Iterations\Forward.cs">
+      <Link>LianaTrie\Iterations\Forward.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\LianaTrie.cs">
+      <Link>LianaTrie\LianaTrie.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\LTrieRootNode.cs">
+      <Link>LianaTrie\LTrieRootNode.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTable.cs">
+      <Link>LianaTrie\NestedTables\NestedTable.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTableInternal.cs">
+      <Link>LianaTrie\NestedTables\NestedTableInternal.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\Objects\DBreezeIndex.cs">
       <Link>Objects\DBreezeIndex.cs</Link>
@@ -124,6 +148,9 @@
     </Compile>
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextDeferredIndexer.cs">
+      <Link>TextSearch\TextDeferredIndexer.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
       <Link>TextSearch\TextSearchHandler.cs</Link>
@@ -137,6 +164,9 @@
     <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs">
       <Link>Transactions\RandomKeySorter.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Transactions\Transaction.cs">
+      <Link>Transactions\Transaction.cs</Link>
+    </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />
@@ -145,26 +175,18 @@
     <Compile Include="DataTypes\DbUTF8.cs" />
     <Compile Include="DataTypes\DbXML.cs" />
     <Compile Include="DataTypes\IDBConvertable.cs" />
-    <Compile Include="DataTypes\Row.cs" />
     <Compile Include="Diagnostic\SpeedStatistic.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
     <Compile Include="Engine\DBreezeEngine.cs" />
     <Compile Include="Engine\DBreezeRemoteEngine.cs" />
-    <Compile Include="Engine\Scheme.cs" />
     <Compile Include="Exceptions\TableNotOperableException.cs" />
-    <Compile Include="LianaTrie\Iterations\Backward.cs" />
-    <Compile Include="LianaTrie\Iterations\Forward.cs" />
-    <Compile Include="LianaTrie\LianaTrie.cs" />
     <Compile Include="LianaTrie\LTrieGenerationMap.cs" />
     <Compile Include="LianaTrie\LTrieGenerationNode.cs" />
     <Compile Include="LianaTrie\LTrieKid.cs" />
     <Compile Include="LianaTrie\LTrieKidsInNode.cs" />
-    <Compile Include="LianaTrie\LTrieRootNode.cs" />
     <Compile Include="LianaTrie\LTrieRow.cs" />
     <Compile Include="LianaTrie\LTrieSetupKidResult.cs" />
     <Compile Include="LianaTrie\LTrieWriteCache.cs" />
-    <Compile Include="LianaTrie\NestedTables\NestedTable.cs" />
-    <Compile Include="LianaTrie\NestedTables\NestedTableInternal.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTablesCoordinator.cs" />
     <Compile Include="LianaTrie\NestedTables\NestedTableStorage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -185,9 +207,7 @@
     <Compile Include="Storage\RISR.cs" />
     <Compile Include="Storage\StorageLayer.cs" />
     <Compile Include="Storage\TrieSettings.cs" />
-    <Compile Include="TextSearch\TextDeferredIndexer.cs" />
     <Compile Include="Transactions\ITransactable.cs" />
-    <Compile Include="Transactions\Transaction.cs" />
     <Compile Include="Transactions\TransactionsCoordinator.cs" />
     <Compile Include="Transactions\TransactionsJournal.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />

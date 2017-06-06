@@ -36,6 +36,7 @@ namespace DBreeze.DataTypes
             _tableExists = tableExists;
         }
 
+        bool _valuesLazyLoadingIsOn = true;
 
         /// <summary>
         /// When it's on iterators return Row with the key and a pointer to the value.
@@ -44,14 +45,16 @@ namespace DBreeze.DataTypes
         /// </summary>
         public bool ValuesLazyLoadingIsOn
         {
-            get { return (_tbl == null) ? true : _tbl.table.ValuesLazyLoadingIsOn; }
-            set
-            {
-                if (_tbl != null)
-                {
-                    _tbl.table.ValuesLazyLoadingIsOn = value;
-                }
-            }
+            get { return this._valuesLazyLoadingIsOn; }
+            set { this._valuesLazyLoadingIsOn = value; }
+            //get { return (_tbl == null) ? true : _tbl.ValuesLazyLoadingIsOn; }
+            //set
+            //{
+            //    if (_tbl != null)
+            //    {
+            //        _tbl.ValuesLazyLoadingIsOn = value;
+            //    }
+            //}
         }
 
         /// <summary>
@@ -117,7 +120,11 @@ namespace DBreeze.DataTypes
         /// <returns></returns>
         public byte[] SelectDataBlock(byte[] initialPointer)
         {
-            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#if NET35 || NETr40
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
             return _tbl.table.SelectDataBlock(ref initialPointer, useCache);
         }
@@ -488,30 +495,6 @@ namespace DBreeze.DataTypes
 
             return this.InsertPart(key, value, startIndex, out refToInsertedValue, out WasUpdated);
 
-            //refToInsertedValue = null;
-
-            //if (!this._tableExists)
-            //    return new NestedTable(null, false, false);
-
-            //if (!_insertAllowed)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            //}
-
-
-            ////Special check of null of nulls is integrated inside of the convertor
-            ////For keys and values different convertors.
-
-            //byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-            //byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(value);
-
-            //long valueStartPtr = 0;
-            //refToInsertedValue = _tbl.table.AddPartially(ref btKey, ref btValue, startIndex, out valueStartPtr);
-
-            //if (refToInsertedValue != null)
-            //    refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
-
-            //return this;
         }
 
         /// <summary>
@@ -567,24 +550,6 @@ namespace DBreeze.DataTypes
         {
             return Select<TKey,TValue>(key, false);
 
-            //if (!this._tableExists)   //Returning default value
-            //    return new Row<TKey, TValue>(null, null, false);
-            //    //return new Row<TKey, TValue>(null, null, false, null, false);
-
-            //byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-
-            //LTrieRow row = _tbl.table.GetKey(btKey, useCache);
-            //Row<TKey, TValue> rw = new Row<TKey, TValue>(row,_tbl._masterTrie, useCache);
-            ////Row<TKey, TValue> rw = new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, useCache);
-
-            //rw.nestedTable = this;
-
-            //return rw;
-
-            ////return new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, useCache);
-
         }
 
         /// <summary>
@@ -613,7 +578,11 @@ namespace DBreeze.DataTypes
 
             byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
-            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#if NET35 || NETr40
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
             if (AsReadVisibilityScope)
                 useCache = true;
@@ -624,10 +593,10 @@ namespace DBreeze.DataTypes
                 if (readRootNode == null)
                     readRootNode = new LTrieRootNode(_tbl.table);
 
-                row = readRootNode.GetKey(btKey, true);
+                row = readRootNode.GetKey(btKey, true, this._valuesLazyLoadingIsOn);
             }
             else
-                row = _tbl.table.GetKey(btKey, useCache);
+                row = _tbl.table.GetKey(btKey, useCache, this._valuesLazyLoadingIsOn);
 
             //LTrieRow row = _tbl.table.GetKey(btKey, useCache);
             Row<TKey, TValue> rw = new Row<TKey, TValue>(row, _tbl._masterTrie, useCache);
@@ -667,9 +636,13 @@ namespace DBreeze.DataTypes
                 refToInsertedValue = refToInsertedValue.RemoveLeadingElement(0).EnlargeByteArray_BigEndian(_tbl._masterTrie.Storage.TrieSettings.POINTER_LENGTH);
             }
 
-            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#if NET35 || NETr40
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif
 
-            
+
             LTrieRow ltr = new LTrieRow(((useCache) ? _tbl.table.rn : new LTrieRootNode(_tbl.table)));
             ltr.Key = _tbl.table.Cache.ReadKey(useCache, refToInsertedValue);
             ltr.LinkToValue = refToInsertedValue;
@@ -713,19 +686,6 @@ namespace DBreeze.DataTypes
             byte[] deletedValue = null;
             return RemoveKey(key, out WasRemoved, false, out deletedValue);
 
-            //if (!this._tableExists)
-            //    return new NestedTable(null, false, false);
-
-            //if (!_insertAllowed)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            //}
-
-            //byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //_tbl.table.Remove(ref btKey);
-
-            //return this;
         }
 
         /// <summary>
@@ -794,21 +754,7 @@ namespace DBreeze.DataTypes
             byte[] ptrToNewKey = null;
             bool WasChanged = false;
             return ChangeKey(oldKey, newKey, out ptrToNewKey, out WasChanged);
-
-            //if (!this._tableExists)
-            //    return new NestedTable(null, false, false);
-
-            //if (!_insertAllowed)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            //}
-
-            //byte[] btOldKey = DataTypesConvertor.ConvertKey<TKey>(oldKey);
-            //byte[] btNewKey = DataTypesConvertor.ConvertKey<TKey>(newKey);
-
-            //_tbl.table.ChangeKey(ref btOldKey, ref btNewKey);
-
-            //return this;
+            
         }
 
         /// <summary>
@@ -824,22 +770,7 @@ namespace DBreeze.DataTypes
             ptrToNewKey = null;
             bool WasChanged = false;
             return ChangeKey(oldKey, newKey, out ptrToNewKey, out WasChanged);
-
-            //ptrToNewKey = null;
-            //if (!this._tableExists)
-            //    return new NestedTable(null, false, false);
-
-            //if (!_insertAllowed)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            //}
-
-            //byte[] btOldKey = DataTypesConvertor.ConvertKey<TKey>(oldKey);
-            //byte[] btNewKey = DataTypesConvertor.ConvertKey<TKey>(newKey);
-
-            //_tbl.table.ChangeKey(ref btOldKey, ref btNewKey, out ptrToNewKey);
-
-            //return this;
+            
         }
 
 
@@ -882,7 +813,11 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return 0;
 
-            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#if NET35 || NETr40
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
             return _tbl.table.Count(useCache);
         }
@@ -897,11 +832,15 @@ namespace DBreeze.DataTypes
         {
             if (!this._tableExists)   //Returning default value
                 return new Row<TKey, TValue>(null, null, false);
-                //return new Row<TKey, TValue>(null, null, false, null, false);
+            //return new Row<TKey, TValue>(null, null, false, null, false);
 
-            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#if NET35 || NETr40
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
-            LTrieRow row = _tbl.table.IterateBackwardForMaximal(useCache);
+            LTrieRow row = _tbl.table.IterateBackwardForMaximal(useCache, false);
 
             Row<TKey, TValue> rw = new Row<TKey, TValue>(row, _tbl._masterTrie, useCache);
             //Row<TKey, TValue> rw = new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, useCache);
@@ -922,11 +861,14 @@ namespace DBreeze.DataTypes
         {
             if (!this._tableExists)   //Returning default value
                 return new Row<TKey, TValue>(null, null, false);
-                //return new Row<TKey, TValue>(null, null, false, null, false);
+            //return new Row<TKey, TValue>(null, null, false, null, false);
 
-            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-
-            LTrieRow row = _tbl.table.IterateForwardForMinimal(useCache);
+#if NET35 || NETr40
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+            bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
+            LTrieRow row = _tbl.table.IterateForwardForMinimal(useCache, false);
 
             Row<TKey, TValue> rw = new Row<TKey, TValue>(row, _tbl._masterTrie, useCache);
             //Row<TKey, TValue> rw = new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, useCache);
@@ -949,19 +891,6 @@ namespace DBreeze.DataTypes
         {
             return SelectForward<TKey, TValue>(false);
 
-            //if (this._tableExists)
-            //{               
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-            //    foreach (var xrow in _tbl.table.IterateForward(useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
         }
 
         /// <summary>
@@ -979,14 +908,18 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
 
                 Row<TKey, TValue> rw = null;
 
-                foreach (var xrow in _tbl.table.IterateForward(useCache))
+                foreach (var xrow in _tbl.table.IterateForward(useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1007,19 +940,6 @@ namespace DBreeze.DataTypes
         {
             return SelectBackward<TKey, TValue>(false);
 
-            //if (this._tableExists)
-            //{               
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-            //    foreach (var xrow in _tbl.table.IterateBackward(useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
         }
 
         /// <summary>
@@ -1037,14 +957,18 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
 
                 Row<TKey, TValue> rw = null;
 
-                foreach (var xrow in _tbl.table.IterateBackward(useCache))
+                foreach (var xrow in _tbl.table.IterateBackward(useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1067,20 +991,6 @@ namespace DBreeze.DataTypes
         {
             return SelectForwardStartFrom<TKey, TValue>(key, includeStartFromKey, false);
 
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //    foreach (var xrow in _tbl.table.IterateForwardStartFrom(btKey, includeStartFromKey,useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
         }
 
 
@@ -1101,7 +1011,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1109,7 +1023,7 @@ namespace DBreeze.DataTypes
                 Row<TKey, TValue> rw = null;
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
-                foreach (var xrow in _tbl.table.IterateForwardStartFrom(btKey, includeStartFromKey, useCache))
+                foreach (var xrow in _tbl.table.IterateForwardStartFrom(btKey, includeStartFromKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1131,21 +1045,7 @@ namespace DBreeze.DataTypes
         public IEnumerable<Row<TKey, TValue>> SelectBackwardStartFrom<TKey, TValue>(TKey key, bool includeStartFromKey)
         {
             return SelectBackwardStartFrom<TKey, TValue>(key, includeStartFromKey, false);
-
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-            //    byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-
-            //    foreach (var xrow in _tbl.table.IterateBackwardStartFrom(btKey, includeStartFromKey, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
+            
         }
 
 
@@ -1166,7 +1066,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1174,7 +1078,7 @@ namespace DBreeze.DataTypes
                 Row<TKey, TValue> rw = null;
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
-                foreach (var xrow in _tbl.table.IterateBackwardStartFrom(btKey, includeStartFromKey, useCache))
+                foreach (var xrow in _tbl.table.IterateBackwardStartFrom(btKey, includeStartFromKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1198,22 +1102,6 @@ namespace DBreeze.DataTypes
         {
             return SelectForwardFromTo<TKey, TValue>(startKey, includeStartKey, stopKey, includeStopKey, false);
 
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-            //    byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
-            //    byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
-
-            //    foreach (var xrow in _tbl.table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
         }
 
         /// <summary>
@@ -1235,7 +1123,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1246,7 +1138,7 @@ namespace DBreeze.DataTypes
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
                 byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
 
-                foreach (var xrow in _tbl.table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache))
+                foreach (var xrow in _tbl.table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1269,22 +1161,7 @@ namespace DBreeze.DataTypes
         public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey)
         {
             return SelectBackwardFromTo<TKey, TValue>(startKey, includeStartKey, stopKey, includeStopKey, false);
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-            //    byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
-            //    byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
-
-            //    foreach (var xrow in _tbl.table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
+           
         }
 
         /// <summary>
@@ -1306,7 +1183,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1316,7 +1197,7 @@ namespace DBreeze.DataTypes
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
                 byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
 
-                foreach (var xrow in _tbl.table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache))
+                foreach (var xrow in _tbl.table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1336,22 +1217,7 @@ namespace DBreeze.DataTypes
         public IEnumerable<Row<TKey, TValue>> SelectForwardStartsWith<TKey, TValue>(TKey startWithKeyPart)
         {
             return SelectForwardStartsWith<TKey, TValue>(startWithKeyPart, false);
-
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-            //    byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);              
-
-            //    foreach (var xrow in _tbl.table.IterateForwardStartsWith(btStartKey, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
+            
         }
 
 
@@ -1371,7 +1237,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1380,7 +1250,7 @@ namespace DBreeze.DataTypes
 
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
 
-                foreach (var xrow in _tbl.table.IterateForwardStartsWith(btStartKey, useCache))
+                foreach (var xrow in _tbl.table.IterateForwardStartsWith(btStartKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1440,7 +1310,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else 
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1449,7 +1323,7 @@ namespace DBreeze.DataTypes
 
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startWithClosestPrefix);
 
-                foreach (var xrow in _tbl.table.IterateForwardStartsWithClosestToPrefix(btStartKey, useCache))
+                foreach (var xrow in _tbl.table.IterateForwardStartsWithClosestToPrefix(btStartKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1511,7 +1385,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else 
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1520,7 +1398,7 @@ namespace DBreeze.DataTypes
 
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startWithClosestPrefix);
 
-                foreach (var xrow in _tbl.table.IterateBackwardStartsWithClosestToPrefix(btStartKey, useCache))
+                foreach (var xrow in _tbl.table.IterateBackwardStartsWithClosestToPrefix(btStartKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1543,21 +1421,7 @@ namespace DBreeze.DataTypes
         {
 
             return  SelectBackwardStartsWith<TKey, TValue>(startWithKeyPart, false);
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-            //    byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
-
-            //    foreach (var xrow in _tbl.table.IterateBackwardStartsWith(btStartKey, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
+            
         }
 
 
@@ -1577,7 +1441,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1586,7 +1454,7 @@ namespace DBreeze.DataTypes
 
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startWithKeyPart);
 
-                foreach (var xrow in _tbl.table.IterateBackwardStartsWith(btStartKey, useCache))
+                foreach (var xrow in _tbl.table.IterateBackwardStartsWith(btStartKey, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1612,20 +1480,7 @@ namespace DBreeze.DataTypes
         public IEnumerable<Row<TKey, TValue>> SelectForwardSkip<TKey, TValue>(ulong skippingQuantity)
         {
             return SelectForwardSkip<TKey, TValue>(skippingQuantity, false);
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-
-            //    foreach (var xrow in _tbl.table.IterateForwardSkip(skippingQuantity, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
+          
         }
 
         /// <summary>
@@ -1644,7 +1499,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1652,7 +1511,7 @@ namespace DBreeze.DataTypes
                 Row<TKey, TValue> rw = null;
 
 
-                foreach (var xrow in _tbl.table.IterateForwardSkip(skippingQuantity, useCache))
+                foreach (var xrow in _tbl.table.IterateForwardSkip(skippingQuantity, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1671,21 +1530,7 @@ namespace DBreeze.DataTypes
         /// <returns></returns>
         public IEnumerable<Row<TKey, TValue>> SelectBackwardSkip<TKey, TValue>(ulong skippingQuantity)
         {
-            return SelectBackwardSkip<TKey, TValue>(skippingQuantity, false);
-            //if (this._tableExists)
-            //{
-            //    bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
-            //    Row<TKey, TValue> rw = null;
-
-
-            //    foreach (var xrow in _tbl.table.IterateBackwardSkip(skippingQuantity, useCache))
-            //    {
-            //        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
-            //        //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
-            //        rw.nestedTable = this;
-            //        yield return rw;
-            //    }
-            //}
+            return SelectBackwardSkip<TKey, TValue>(skippingQuantity, false);          
         }
 
         /// <summary>
@@ -1704,7 +1549,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1712,7 +1561,7 @@ namespace DBreeze.DataTypes
                 Row<TKey, TValue> rw = null;
 
 
-                foreach (var xrow in _tbl.table.IterateBackwardSkip(skippingQuantity, useCache))
+                foreach (var xrow in _tbl.table.IterateBackwardSkip(skippingQuantity, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1767,7 +1616,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1776,7 +1629,7 @@ namespace DBreeze.DataTypes
 
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
-                foreach (var xrow in _tbl.table.IterateForwardSkipFrom(btKey, skippingQuantity, useCache))
+                foreach (var xrow in _tbl.table.IterateForwardSkipFrom(btKey, skippingQuantity, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1832,7 +1685,11 @@ namespace DBreeze.DataTypes
         {
             if (this._tableExists)
             {
+#if NET35 || NETr40
                 bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != System.Threading.Thread.CurrentThread.ManagedThreadId);
+#else 
+                bool useCache = (_tbl._masterTrie.NestedTablesCoordinator.ModificationThreadId != Environment.CurrentManagedThreadId);
+#endif 
 
                 if (AsReadVisibilityScope)
                     useCache = true;
@@ -1841,7 +1698,7 @@ namespace DBreeze.DataTypes
 
                 byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
-                foreach (var xrow in _tbl.table.IterateBackwardSkipFrom(btKey, skippingQuantity, useCache))
+                foreach (var xrow in _tbl.table.IterateBackwardSkipFrom(btKey, skippingQuantity, useCache, this._valuesLazyLoadingIsOn))
                 {
                     rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
                     //rw = new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, useCache);
@@ -1850,7 +1707,7 @@ namespace DBreeze.DataTypes
                 }
             }
         }
-        #endregion
+#endregion
 
 
 
