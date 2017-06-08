@@ -324,6 +324,7 @@ namespace DBreeze.TextSearch
             byte[] kA = null;
             byte[] kZ = null;           
             byte[] newSrch = null;
+            byte[] oldSrch = null;
             Row<string, byte[]> rWord = null;
             //Dictionary<string, WordInDocs> wds = new Dictionary<string, WordInDocs>();
             WordInDocs wd = null;
@@ -437,13 +438,19 @@ namespace DBreeze.TextSearch
                 foreach (var docId in its.ChangedDocIds.OrderBy(r=>r))
                 {
 
-                    //diff will return list of words to be removed and list of words to be added
+                    //diff will return list of words to be removed and list of words to be added                   
+                    oldSrch = its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 })).Value;
                     newSrch = its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 })).Value;
 
                     diff = WordsDiff(
-                                its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value, //Current searchables 
+                                oldSrch, //Current searchables 
                                 newSrch //new
                                 );
+
+                    //diff = WordsDiff(
+                    //            its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value, //Current searchables 
+                    //            newSrch //new
+                    //            );
 
                     //Copying new searchables to current searchables
                     docs2Change.Add(docId.To_4_bytes_array_BigEndian(), newSrch);
