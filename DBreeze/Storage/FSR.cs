@@ -968,6 +968,9 @@ namespace DBreeze.Storage
                     //putting on top
                     foreach (var bk in bufKeys)
                     {
+                        if (offset + res.Length <= bk)
+                            continue;
+
                         btWork = _randBuf[bk];
 
                         bool cut = false;
@@ -1085,6 +1088,9 @@ namespace DBreeze.Storage
                     //putting on top
                     foreach (var bk in bufKeys)
                     {
+                        if (offset + res.Length <= bk)
+                            continue;
+
                         rb = _rollbackCache[bk];
                         //reading from rollback
                         btWork = new byte[rb.l];

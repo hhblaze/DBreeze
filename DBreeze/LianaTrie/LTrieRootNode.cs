@@ -29,6 +29,7 @@ namespace DBreeze.LianaTrie
         /// </summary>
         public ulong RecordsCount = 0;
 
+
         public LTrieRootNode(LTrie tree)
         {
             Tree = tree;

@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.087.2017.0606</Version>
-    <AssemblyVersion>1.087.2017.0606</AssemblyVersion>
-    <FileVersion>1.087.2017.0606</FileVersion>
+    <Version>1.087.2017.0608</Version>
+    <AssemblyVersion>1.087.2017.0608</AssemblyVersion>
+    <FileVersion>1.087.2017.0608</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -31,6 +31,13 @@
     <Compile Remove="LianaTrie\Iterations\1Forward.cs" />
     <Compile Remove="LianaTrie\NestedTables\1NestedTable.cs" />
     <Compile Remove="LianaTrie\NestedTables\1NestedTableInternal.cs" />
+    <Compile Remove="Storage\1FSR.cs" />
+    <Compile Remove="Storage\1IStorage.cs" />
+    <Compile Remove="Storage\1MemoryStorage.cs" />
+    <Compile Remove="Storage\1MSR.cs" />
+    <Compile Remove="Storage\1RISR.cs" />
+    <Compile Remove="Storage\1StorageLayer.cs" />
+    <Compile Remove="Storage\1TrieSettings.cs" />
     <Compile Remove="TextSearch\1TextDeferredIndexer.cs" />
     <Compile Remove="Transactions\1Transaction.cs" />
   </ItemGroup>
@@ -48,6 +55,12 @@
     <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTableInternal.cs" Link="LianaTrie\NestedTables\NestedTableInternal.cs" />
     <Compile Include="..\DBreeze\Objects\DBreezeIndex.cs" Link="Objects\DBreezeIndex.cs" />
     <Compile Include="..\DBreeze\Objects\DBreezeObject.cs" Link="Objects\DBreezeObject.cs" />
+    <Compile Include="..\DBreeze\Storage\IStorage.cs" Link="Storage\IStorage.cs" />
+    <Compile Include="..\DBreeze\Storage\MemoryStorage.cs" Link="Storage\MemoryStorage.cs" />
+    <Compile Include="..\DBreeze\Storage\MSR.cs" Link="Storage\MSR.cs" />
+    <Compile Include="..\DBreeze\Storage\RISR.cs" Link="Storage\RISR.cs" />
+    <Compile Include="..\DBreeze\Storage\StorageLayer.cs" Link="Storage\StorageLayer.cs" />
+    <Compile Include="..\DBreeze\Storage\TrieSettings.cs" Link="Storage\TrieSettings.cs" />
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs" Link="TextSearch\SBlock.cs" />
     <Compile Include="..\DBreeze\TextSearch\TextDeferredIndexer.cs" Link="TextSearch\TextDeferredIndexer.cs" />
     <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs" Link="TextSearch\TextSearchHandler.cs" />

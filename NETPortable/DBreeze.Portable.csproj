@@ -69,6 +69,24 @@
     <Compile Include="..\DBreeze\Objects\DBreezeObject.cs">
       <Link>Objects\DBreezeObject.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Storage\IStorage.cs">
+      <Link>Storage\IStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\MemoryStorage.cs">
+      <Link>Storage\MemoryStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\MSR.cs">
+      <Link>Storage\MSR.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\RISR.cs">
+      <Link>Storage\RISR.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\StorageLayer.cs">
+      <Link>Storage\StorageLayer.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\TrieSettings.cs">
+      <Link>Storage\TrieSettings.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
     </Compile>
@@ -121,17 +139,11 @@
     <Compile Include="Storage\Backup\Backup.cs" />
     <Compile Include="Storage\Backup\BackupRestorer.cs" />
     <Compile Include="Storage\FSR.cs" />
-    <Compile Include="Storage\IStorage.cs" />
-    <Compile Include="Storage\MemoryStorage.cs" />
-    <Compile Include="Storage\MSR.cs" />
     <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommander.cs" />
     <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommunicator.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteInstanceCommander.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
-    <Compile Include="Storage\RISR.cs" />
-    <Compile Include="Storage\StorageLayer.cs" />
-    <Compile Include="Storage\TrieSettings.cs" />
     <Compile Include="Transactions\ITransactable.cs" />
     <Compile Include="Transactions\TransactionsJournal.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
