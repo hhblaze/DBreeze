@@ -1057,7 +1057,7 @@ namespace DBreeze.Storage
                         if (eofData < offset && TransactionalCommitIsStarted)   //NOT FINISHED multi-table COMMIT. SelectDirect case
                         {
                             //Probably not finished transaction and SelectDirect case. We return value,
-                            //because at this momont all transaction table have successfully gone through TransactionalCommit() procedure.
+                            //because at this moment all transaction table have successfully gone through TransactionalCommit() procedure.
 
                             //if (offset + count > this._fsData.Length)
                             if (offset + count > fsLength)
