@@ -43,7 +43,7 @@ Key features:
 - Ability to access Key/Value pair of a table by physical link, what can economize time for joining necessary data structures.
 - No limits for database size (except "long" size for each table and physical resources constraints).
 - Low memory and physical space consumption, also while random inserts and updates. Updates reside the same physical space, if possible.
-- High performance of CRUD operations. When you need, unleash DBreeze power and get 500000 key/value pairs insert or 260K updates per second per core into sorted table on the hard drive of standard PC.
+- High performance of CRUD operations. When you need, unleash DBreeze power and get 500000 key/value pairs insert or 260K updates per second per core into sorted table on the hard drive of standard PC (benchmark of year 2012).
 - High speed of random keys batch insert and updates (update mode is selectable).
 - Range selects / Traversing (Forward, Backward, From/To, Skip, StartsWith etc). Remove keys, change keys.
 - Keys and values, on the low level, are always byte arrays. 
