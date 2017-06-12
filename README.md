@@ -44,7 +44,7 @@ Key features:
 - No limits for database size (except "long" size for each table and physical resources constraints).
 - Low memory and physical space consumption, also while random inserts and updates. Updates reside the same physical space, if possible.
 - High performance of CRUD operations. When you need, unleash DBreeze power and get 500000 key/value pairs insert or 260K updates per second per core into sorted table on the hard drive of standard PC.
-- High speed of random keys batch insert and updates (batch must be sorted in memory ascending and non-overwrite flag must be set).
+- High speed of random keys batch insert and updates (update mode is selectable).
 - Range selects / Traversing (Forward, Backward, From/To, Skip, StartsWith etc). Remove keys, change keys.
 - Keys and values, on the low level, are always byte arrays. 
 - Max. key size is 65KB, max. value size is 2GB. Value can be represented as a set of columns, where can be stored data types of fixed or dynamic length. Every dynamic datablock can be of size 2GB. 
