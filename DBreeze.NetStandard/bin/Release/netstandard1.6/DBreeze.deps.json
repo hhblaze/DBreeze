@@ -7,7 +7,7 @@
   "targets": {
     ".NETStandard,Version=v1.6": {},
     ".NETStandard,Version=v1.6/": {
-      "dbreeze/1.087.2017.0608": {
+      "dbreeze/1.088.2017.0621": {
         "dependencies": {
           "NETStandard.Library": "1.6.1"
         },
@@ -755,7 +755,7 @@
     }
   },
   "libraries": {
-    "dbreeze/1.087.2017.0608": {
+    "dbreeze/1.088.2017.0621": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

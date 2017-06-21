@@ -3483,6 +3483,11 @@
             Possible only between blocks
             </summary>
         </member>
+        <member name="F:DBreeze.TextSearch.SBlock.Ignored">
+            <summary>
+            Block will not be counted in intersection calculations if has empty FullMatch and Contains words
+            </summary>
+        </member>
         <member name="F:DBreeze.TextSearch.SBlock._tsm">
             <summary>
             TextSearchManager
@@ -3515,72 +3520,80 @@
             Generation-term
             </summary>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.And(System.String,System.String,System.Boolean)">
+        <member name="M:DBreeze.TextSearch.SBlock.And(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
             Adding new logical block (And or Or, depending upon parameter blockAnd)
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
             <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Or(System.String,System.String,System.Boolean)">
+        <member name="M:DBreeze.TextSearch.SBlock.Or(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
             Adding new logical block (And or Or, depending upon parameter blockAnd)
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
             <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Xor(System.String,System.String,System.Boolean)">
+        <member name="M:DBreeze.TextSearch.SBlock.Xor(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
             Adding new logical block (And or Or, depending upon parameter blockAnd)
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
             <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Exclude(System.String,System.String,System.Boolean)">
+        <member name="M:DBreeze.TextSearch.SBlock.Exclude(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
             Adding new logical block (And or Or, depending upon parameter blockAnd)
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
             <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.And(DBreeze.TextSearch.SBlock)">
+        <member name="M:DBreeze.TextSearch.SBlock.And(DBreeze.TextSearch.SBlock,System.Boolean)">
             <summary>
             Returns last added block. Can be added existing block or new block in format
             new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
             </summary>
             <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Or(DBreeze.TextSearch.SBlock)">
+        <member name="M:DBreeze.TextSearch.SBlock.Or(DBreeze.TextSearch.SBlock,System.Boolean)">
             <summary>
             Returns last added block. Can be added existing block or new block in format
             new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
             </summary>
             <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Xor(DBreeze.TextSearch.SBlock)">
+        <member name="M:DBreeze.TextSearch.SBlock.Xor(DBreeze.TextSearch.SBlock,System.Boolean)">
             <summary>
             Returns last added block. Can be added existing block or new block in format
             new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
             </summary>
             <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Exclude(DBreeze.TextSearch.SBlock)">
+        <member name="M:DBreeze.TextSearch.SBlock.Exclude(DBreeze.TextSearch.SBlock,System.Boolean)">
             <summary>
             Returns last added block. Can be added existing block or new block in format
             new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
             </summary>
             <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.TextSearch.SBlock.GetDocumentIDs">
@@ -3826,7 +3839,7 @@
             
             </summary>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.Block(System.String,System.String,System.Boolean)">
+        <member name="M:DBreeze.TextSearch.TextSearchTable.Block(System.String,System.String,System.Boolean,System.Boolean)">
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
@@ -3836,9 +3849,10 @@
             <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
             <param name="blockAnd">default value is true, indicating BlockAnd</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.String,System.String)">
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.String,System.String,System.Boolean)">
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
@@ -3846,10 +3860,11 @@
             .GetDocumentIDs
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>        
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>   
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
@@ -3858,9 +3873,10 @@
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.String,System.String)">
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.String,System.String,System.Boolean)">
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
@@ -3869,9 +3885,10 @@
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
             <summary>
             Generates a logical block: 
             var tsm = tran.TextSearch("MyTextSearchTable");
@@ -3880,6 +3897,7 @@
             </summary>
             <param name="containsWords">space separated words to be used by "contains" logic</param>
             <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.TextSearch.TextSearchTable.WordsPrepare(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Collections.Generic.Dictionary{System.String,System.Boolean}@)">

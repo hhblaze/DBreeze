@@ -234,10 +234,11 @@ namespace DBreeze.TextSearch
         /// <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
         /// <param name="blockAnd">default value is true, indicating BlockAnd</param>
+        /// <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
         /// <returns></returns>
-        public SBlock Block(string containsWords="", string fullMatchWords = "", bool blockAnd = true)
+        public SBlock Block(string containsWords="", string fullMatchWords = "", bool blockAnd = true, bool ignoreOnEmptyParameters = false)
         {
-            return blockAnd ? BlockAnd(containsWords, fullMatchWords) : BlockOr(containsWords, fullMatchWords);
+            return blockAnd ? BlockAnd(containsWords, fullMatchWords, ignoreOnEmptyParameters) : BlockOr(containsWords, fullMatchWords, ignoreOnEmptyParameters);
         }
 
         /// <summary>
@@ -247,33 +248,28 @@ namespace DBreeze.TextSearch
         /// .GetDocumentIDs
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
-        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>        
+        /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>   
+        /// <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
         /// <returns></returns>
-        public SBlock BlockAnd(string containsWords="", string fullMatchWords="")
+        public SBlock BlockAnd(string containsWords="", string fullMatchWords="", bool ignoreOnEmptyParameters = false)
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
-
-            //SBlock sb = new BlockAnd()
-            //{
-            //    _tsm = this,
-            //    InternalBlockOperation = SBlock.eOperation.AND,
-            //    BlockId = this.cntBlockId++,
-            //    IsLogicalBlock = false
-            //};
-
+            
             SBlock sb = new BlockAnd()
             {
                 _tsm = this,
                 InternalBlockOperation = SBlock.eOperation.AND,
                 BlockId = this.cntBlockId++,
-                IsLogicalBlock = false
+                IsLogicalBlock = false                
             };
-
-
-
-            Blocks.Add(sb.BlockId, sb);
             
+            //First we add always but with the ignored flag
+            if (ignoreOnEmptyParameters && String.IsNullOrEmpty(fullMatchWords) && String.IsNullOrEmpty(containsWords))
+                sb.Ignored = true;
+
+            Blocks.Add(sb.BlockId, sb);                      
+
             this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref sb.ParsedWords);
             this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), false, ref sb.ParsedWords);
 
@@ -290,8 +286,9 @@ namespace DBreeze.TextSearch
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
         /// <returns></returns>
-        public SBlock BlockAnd(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
+        public SBlock BlockAnd(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords, bool ignoreOnEmptyParameters = false)
         {
             //SBlock sb = new BlockAnd()
             //{
@@ -308,6 +305,15 @@ namespace DBreeze.TextSearch
                 BlockId = this.cntBlockId++,
                 IsLogicalBlock = false
             };
+
+            //First we add always but with the ignored flag
+            if (ignoreOnEmptyParameters)
+            {
+                if((containsWords == null || containsWords.Count() == 0 || containsWords.Where(r=>r.Trim().Length > 0).Count() < 1)
+                    &&
+                   (fullMatchWords == null || fullMatchWords.Count() == 0 || fullMatchWords.Where(r => r.Trim().Length > 0).Count() < 1))
+                    sb.Ignored = true;
+            }
 
             Blocks.Add(sb.BlockId, sb);
 
@@ -327,8 +333,9 @@ namespace DBreeze.TextSearch
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
         /// <returns></returns>
-        public SBlock BlockOr(string containsWords="", string fullMatchWords="")
+        public SBlock BlockOr(string containsWords="", string fullMatchWords="", bool ignoreOnEmptyParameters = false)
         {
             fullMatchWords = String.IsNullOrEmpty(fullMatchWords) ? "" : fullMatchWords;
             containsWords = String.IsNullOrEmpty(containsWords) ? "" : containsWords;
@@ -349,6 +356,10 @@ namespace DBreeze.TextSearch
                 IsLogicalBlock = false
             };
 
+            //First we add always but with the ignored flag
+            if (ignoreOnEmptyParameters && String.IsNullOrEmpty(fullMatchWords) && String.IsNullOrEmpty(containsWords))
+                sb.Ignored = true;
+
             Blocks.Add(sb.BlockId, sb);
             
             this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref sb.ParsedWords);
@@ -367,8 +378,9 @@ namespace DBreeze.TextSearch
         /// </summary>
         /// <param name="containsWords">space separated words to be used by "contains" logic</param>
         /// <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        /// <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
         /// <returns></returns>
-        public SBlock BlockOr(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords)
+        public SBlock BlockOr(IEnumerable<string> containsWords, IEnumerable<string> fullMatchWords, bool ignoreOnEmptyParameters = false)
         {
 
             //SBlock sb = new BlockOr()
@@ -386,6 +398,15 @@ namespace DBreeze.TextSearch
                 BlockId = this.cntBlockId++,
                 IsLogicalBlock = false
             };
+
+            //First we add always but with the ignored flag
+            if (ignoreOnEmptyParameters)
+            {
+                if ((containsWords == null || containsWords.Count() == 0 || containsWords.Where(r => r.Trim().Length > 0).Count() < 1)
+                    &&
+                   (fullMatchWords == null || fullMatchWords.Count() == 0 || fullMatchWords.Where(r => r.Trim().Length > 0).Count() < 1))
+                    sb.Ignored = true;
+            }
 
             Blocks.Add(sb.BlockId, sb);
 
