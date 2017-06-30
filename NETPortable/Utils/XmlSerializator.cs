@@ -13,7 +13,7 @@ using DBreeze.Exceptions;
 
 namespace DBreeze.Utils
 {
-    
+
     public static class XmlSerializator
     {
         /// <summary>
