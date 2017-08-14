@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.6
+VisualStudioVersion = 15.0.26430.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze", "DBreeze\DBreeze.csproj", "{5C425A2A-5717-4D1B-9949-9C90785B6C57}"
 EndProject
@@ -11,7 +11,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze.UWP", "DBreeze.UWP\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze.Portable", "NETPortable\DBreeze.Portable.csproj", "{67F9D3A8-F71E-4428-913F-C37AE82CDB24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze.NetStandard", "DBreeze.NetStandard\DBreeze.NetStandard.csproj", "{C2164D2B-D4DA-4792-A0D7-EB34162A685A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBreeze.NetStandard", "DBreeze.NetStandard\DBreeze.NetStandard.csproj", "{C2164D2B-D4DA-4792-A0D7-EB34162A685A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze.NetCoreApp", "DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -120,6 +122,26 @@ Global
 		{C2164D2B-D4DA-4792-A0D7-EB34162A685A}.Release|x64.Build.0 = Release|Any CPU
 		{C2164D2B-D4DA-4792-A0D7-EB34162A685A}.Release|x86.ActiveCfg = Release|Any CPU
 		{C2164D2B-D4DA-4792-A0D7-EB34162A685A}.Release|x86.Build.0 = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|ARM.Build.0 = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|x64.Build.0 = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Debug|x86.Build.0 = Debug|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|ARM.ActiveCfg = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|ARM.Build.0 = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|x64.ActiveCfg = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|x64.Build.0 = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|x86.ActiveCfg = Release|Any CPU
+		{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

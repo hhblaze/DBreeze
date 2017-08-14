@@ -60,7 +60,7 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET35\DBreeze.dll", true);
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET35\DBreeze.XML", true);
 
-           
+
             //.NET Framework 4.0
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
@@ -205,6 +205,29 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.XML", MyPath + @"UWP\DBreeze.XML", true);
 
             File.Delete(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj");
+
+
+
+            //.NET Core App 1.1            
+            if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1"))
+                Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1", true);
+            //msbldpath = MyPath + "run_msbuild_uwp.bat";
+            prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+            tpr = prj;
+            Console.WriteLine("Creating netcoreapp1.1");
+            //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+
+            File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze.NetCoreApp");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll", MyPath + @"NETCOREAPP1_1\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.XML", MyPath + @"NETCOREAPP1_1\DBreeze.XML", true);
+
+            File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
 
 
 
@@ -361,6 +384,11 @@ namespace Deployer
                 archive.GetEntry("lib/netcoreapp1.0/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcoreapp1.0/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.xml", "lib/netcoreapp1.0/DBreeze.XML", CompressionLevel.Optimal);
+
+                archive.GetEntry("lib/netcoreapp1.1/DBreeze.dll").Delete();
+                archive.GetEntry("lib/netcoreapp1.1/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NETCOREAPP1_1" + @"\DBreeze.dll", "lib/netcoreapp1.1/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETCOREAPP1_1" + @"\DBreeze.xml", "lib/netcoreapp1.1/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/netstandard1.6/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netstandard1.6/DBreeze.XML").Delete();

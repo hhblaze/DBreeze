@@ -1,0 +1,100 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <AssemblyName>DBreeze</AssemblyName>
+    <RootNamespace>DBreeze</RootNamespace>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
+    <Version>1.088.2017.0630</Version>
+    <FileVersion>1.088.2017.0630</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netcoreapp1.1\DBreeze.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+        <Compile Include="..\DBreeze\DataTypes\Row.cs">
+      <Link>DataTypes\Row.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Engine\DBreezeResources.cs">
+      <Link>Engine\DBreezeResources.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Engine\Scheme.cs">
+      <Link>Engine\Scheme.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs">
+      <Link>Exceptions\DBreezeException.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\Iterations\Backward.cs">
+      <Link>LianaTrie\Iterations\Backward.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\Iterations\Forward.cs">
+      <Link>LianaTrie\Iterations\Forward.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\LianaTrie.cs">
+      <Link>LianaTrie\LianaTrie.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\LTrieRootNode.cs">
+      <Link>LianaTrie\LTrieRootNode.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTable.cs">
+      <Link>LianaTrie\NestedTables\NestedTable.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTableInternal.cs">
+      <Link>LianaTrie\NestedTables\NestedTableInternal.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Objects\DBreezeIndex.cs">
+      <Link>Objects\DBreezeIndex.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Objects\DBreezeObject.cs">
+      <Link>Objects\DBreezeObject.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\IStorage.cs">
+      <Link>Storage\IStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\MemoryStorage.cs">
+      <Link>Storage\MemoryStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\MSR.cs">
+      <Link>Storage\MSR.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\RISR.cs">
+      <Link>Storage\RISR.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\StorageLayer.cs">
+      <Link>Storage\StorageLayer.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\TrieSettings.cs">
+      <Link>Storage\TrieSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
+      <Link>TextSearch\SBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextDeferredIndexer.cs">
+      <Link>TextSearch\TextDeferredIndexer.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
+      <Link>TextSearch\TextSearchHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs">
+      <Link>TextSearch\TextSearchTable.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\TextSearch\WABI.cs">
+      <Link>TextSearch\WABI.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs">
+      <Link>Transactions\RandomKeySorter.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Transactions\Transaction.cs">
+      <Link>Transactions\Transaction.cs</Link>
+    </Compile>
+	
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>
