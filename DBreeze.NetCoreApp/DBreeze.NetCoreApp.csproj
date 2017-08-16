@@ -15,6 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DataTypes\DbXML.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
@@ -91,10 +95,6 @@
       <Link>Transactions\Transaction.cs</Link>
     </Compile>
 	
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
   </ItemGroup>
 
 </Project>

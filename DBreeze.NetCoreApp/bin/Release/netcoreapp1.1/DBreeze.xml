@@ -249,32 +249,6 @@
             Returns string from the object
             </summary>
         </member>
-        <member name="T:DBreeze.DataTypes.DbXML`1">
-            <summary>
-            <para>Microsoft XML</para>
-            <para></para>
-            <para>Possible to make like this, without class instantiating:</para>
-            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
-            <para>aa.Add("test1")</para>
-            <para>aa.Add("test2")</para>
-            <para>-----inside of transaction---------</para>
-            <para>tran.Insert&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1", i, aa);</para>
-            <para>-----------------------------------</para>
-            <para>foreach (var row in tran.SelectForward&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1"))</para>
-            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
-            </summary>
-            <typeparam name="T"></typeparam>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbXML`1.SerializedObject">
-            <summary>
-            Returns serialized string representing the internal object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbXML`1.Get">
-            <summary>
-            Gets deserialized object
-            </summary>
-        </member>
         <member name="T:DBreeze.DataTypes.Row`2">
             <summary>
             Row
@@ -5943,7 +5917,7 @@
             <param name="replaceWith"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
+        <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Collections.Generic.List{System.String})">
             <summary>
             Serializes object to XML string
             </summary>

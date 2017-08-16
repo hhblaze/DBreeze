@@ -11,48 +11,40 @@ using System.Text;
 using DBreeze.Utils;
 using DBreeze.Exceptions;
 
+using System.Text.RegularExpressions;
+
 namespace DBreeze.Utils
 {
-    
-    public static class XmlSerializator
+
+    internal static class XmlSerializator
     {
         /// <summary>
         /// Serializes object to XML string
         /// </summary>
         /// <param name="objectForSerialization"></param>
         /// <returns></returns>
-        public static string SerializeXml(this object objectForSerialization)
+        //public static string SerializeXml(this object objectForSerialization)
+        public static string SerializeXml(this List<string> objectForSerialization)
         {
-            System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
-
-            string r = String.Empty;
-
-            using (System.IO.StringWriter wr = new System.IO.StringWriter())
+            StringBuilder sb = new StringBuilder();
+            foreach (var el in objectForSerialization)
             {
-                xs.Serialize(wr, objectForSerialization);
-                r = wr.GetStringBuilder().ToString();
+                sb.Append("<string>" + el + "</string>\n");
             }
+            return sb.ToString();
 
-            return r;
+            //System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
 
-            //try
+            //string r = String.Empty;
+
+            //using (System.IO.StringWriter wr = new System.IO.StringWriter())
             //{
-            //    System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
-
-            //    string r = String.Empty;
-
-            //    using (System.IO.StringWriter wr = new System.IO.StringWriter())
-            //    {
-            //        xs.Serialize(wr, objectForSerialization);
-            //        r = wr.GetStringBuilder().ToString();                    
-            //    }
-
-            //    return r;
+            //    xs.Serialize(wr, objectForSerialization);
+            //    r = wr.GetStringBuilder().ToString();
             //}
-            //catch (Exception ex)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_SERIALIZATION_ERROR,ex);                  
-            //}
+
+            //return r;
+
 
         }
 
@@ -62,35 +54,127 @@ namespace DBreeze.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static T DeserializeXml<T>(this string str)
+        public static List<string> DeserializeXml<T>(this string str)
+        //public static T DeserializeXml<T>(this string str)
         {
-            System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
-
-            object r = null;
-            using (System.IO.StringReader sr = new System.IO.StringReader(str))
+            List<string> r = new List<string>();
+            Regex regex = new Regex("<string>(.*)</string>");
+            var mtch = regex.Matches(str);
+            for (int i = 0; i < mtch.Count; i++)
             {
-                r = xs.Deserialize(new System.IO.StringReader(str));
+                r.Add(mtch[i].Groups[1].Value);
             }
+            return r;
 
-            return (T)r;
+            //System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
 
-            //try
+            //object r = null;
+            //using (System.IO.StringReader sr = new System.IO.StringReader(str))
             //{
-            //    System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
-
-            //    object r = null;
-            //    using (System.IO.StringReader sr = new System.IO.StringReader(str))
-            //    {
-            //        r = xs.Deserialize(new System.IO.StringReader(str));                    
-            //    }
-
-            //    return (T)r;
+            //    r = xs.Deserialize(new System.IO.StringReader(str));
             //}
-            //catch (Exception ex)
-            //{
-            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_DESERIALIZATION_ERROR, ex);                
-            //}
+
+            //return (T)r;
 
         }
     }
 }
+
+
+
+///* 
+//  Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
+//  It's a free software for those, who think that it should be free.
+//*/
+
+//using System;
+//using System.Collections.Generic;
+//using System.Linq;
+//using System.Text;
+
+//using DBreeze.Utils;
+//using DBreeze.Exceptions;
+
+//namespace DBreeze.Utils
+//{
+
+//    public static class XmlSerializator
+//    {
+//        /// <summary>
+//        /// Serializes object to XML string
+//        /// </summary>
+//        /// <param name="objectForSerialization"></param>
+//        /// <returns></returns>
+//        public static string SerializeXml(this object objectForSerialization)
+//        {
+//            System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
+
+//            string r = String.Empty;
+
+//            using (System.IO.StringWriter wr = new System.IO.StringWriter())
+//            {
+//                xs.Serialize(wr, objectForSerialization);
+//                r = wr.GetStringBuilder().ToString();
+//            }
+
+//            return r;
+
+//            //try
+//            //{
+//            //    System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
+
+//            //    string r = String.Empty;
+
+//            //    using (System.IO.StringWriter wr = new System.IO.StringWriter())
+//            //    {
+//            //        xs.Serialize(wr, objectForSerialization);
+//            //        r = wr.GetStringBuilder().ToString();                    
+//            //    }
+
+//            //    return r;
+//            //}
+//            //catch (Exception ex)
+//            //{
+//            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_SERIALIZATION_ERROR,ex);                  
+//            //}
+
+//        }
+
+//        /// <summary>
+//        /// Deserializes object from XML string
+//        /// </summary>
+//        /// <typeparam name="T"></typeparam>
+//        /// <param name="str"></param>
+//        /// <returns></returns>
+//        public static T DeserializeXml<T>(this string str)
+//        {
+//            System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
+
+//            object r = null;
+//            using (System.IO.StringReader sr = new System.IO.StringReader(str))
+//            {
+//                r = xs.Deserialize(new System.IO.StringReader(str));
+//            }
+
+//            return (T)r;
+
+//            //try
+//            //{
+//            //    System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
+
+//            //    object r = null;
+//            //    using (System.IO.StringReader sr = new System.IO.StringReader(str))
+//            //    {
+//            //        r = xs.Deserialize(new System.IO.StringReader(str));                    
+//            //    }
+
+//            //    return (T)r;
+//            //}
+//            //catch (Exception ex)
+//            //{
+//            //    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.XML_DESERIALIZATION_ERROR, ex);                
+//            //}
+
+//        }
+//    }
+//}
