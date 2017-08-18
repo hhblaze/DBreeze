@@ -207,14 +207,14 @@ namespace Deployer
             File.Delete(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj");
 
 
-            //.NET Core App 1.0            
+            //.NET Core App 1.0 (default)           
             if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0"))
                 Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0", true);
             //msbldpath = MyPath + "run_msbuild_uwp.bat";
             prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
             tpr = prj;
             Console.WriteLine("Creating netcoreapp1.0");
-            tpr = tpr.Replace(rpl[14], rpl[13]);    //netcoreapp1.1 on netcoreapp1.0           
+            //tpr = tpr.Replace(rpl[14], rpl[13]);    //netcoreapp1.1 on netcoreapp1.0           
 
             File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze.NetCoreApp");
@@ -228,6 +228,7 @@ namespace Deployer
 
             File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
 
+
             //.NET Core App 1.1            
             if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1"))
                 Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1", true);
@@ -236,7 +237,7 @@ namespace Deployer
             tpr = prj;
             Console.WriteLine("Creating netcoreapp1.1");
             //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
-            //tpr = tpr.Replace(rpl[13], rpl[14]);
+            tpr = tpr.Replace(rpl[13], rpl[14]);
 
             File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze.NetCoreApp");
@@ -251,8 +252,30 @@ namespace Deployer
             File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
 
 
+            //.NET Core App 2.0            
+            if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0"))
+                Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0", true);
+            //msbldpath = MyPath + "run_msbuild_uwp.bat";
+            prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+            tpr = prj;
+            Console.WriteLine("Creating netcoreapp2.0");
+            //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
+            tpr = tpr.Replace(rpl[13], rpl[15]);
 
-            //.NET STANDARD 1.6           
+            File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze.NetCoreApp");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll", MyPath + @"NETCOREAPP2_0\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.XML", MyPath + @"NETCOREAPP2_0\DBreeze.XML", true);
+
+            File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
+
+
+            //.NET STANDARD 1.6  (default)         
             if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6"))
                 Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6", true);
             //msbldpath = MyPath + "run_msbuild_uwp.bat";
@@ -273,6 +296,28 @@ namespace Deployer
 
             File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
 
+
+
+            //.NET STANDARD 2.0           
+            if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
+                Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);
+            //msbldpath = MyPath + "run_msbuild_uwp.bat";
+            prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+            tpr = prj;
+            Console.WriteLine("Creating .NET Standard 2.0");
+            tpr = tpr.Replace(rpl[16], rpl[17]);    //Debug on Release           
+
+            File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze.NetStandard");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.dll", MyPath + @"NETSTANDARD2_0\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.XML", MyPath + @"NETSTANDARD2_0\DBreeze.XML", true);
+
+            File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
 
 
             Console.WriteLine("Packing DLLs and ULTIMATE ZIP");
@@ -413,12 +458,22 @@ namespace Deployer
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP1_1" + @"\DBreeze.dll", "lib/netcoreapp1.1/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP1_1" + @"\DBreeze.xml", "lib/netcoreapp1.1/DBreeze.XML", CompressionLevel.Optimal);
 
+                archive.GetEntry("lib/netcoreapp2.0/DBreeze.dll").Delete();
+                archive.GetEntry("lib/netcoreapp2.0/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.dll", "lib/netcoreapp2.0/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.xml", "lib/netcoreapp2.0/DBreeze.XML", CompressionLevel.Optimal);
+
                 archive.GetEntry("lib/netstandard1.6/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netstandard1.6/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD16" + @"\DBreeze.xml", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
                 //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
                 //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
+
+                archive.GetEntry("lib/netstandard2.0/DBreeze.dll").Delete();
+                archive.GetEntry("lib/netstandard2.0/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.dll", "lib/netstandard2.0/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.xml", "lib/netstandard2.0/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.dll").Delete();
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.XML").Delete();

@@ -8,7 +8,7 @@ DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Docum
 
 DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql etc), 
 multi-threaded, transactional and ACID-compliant database management system for
-.NET 3.5> / Xamarin MONO Android iOS / .NET Core / .NET Standard 1.6  / Universal Windows Platform / .NET Portable 
+.NET 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform / .NET Portable 
 ...for servers and internet-of-things...
 Made with C# 
 

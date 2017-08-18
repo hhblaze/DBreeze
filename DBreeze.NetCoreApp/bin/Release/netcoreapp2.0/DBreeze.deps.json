@@ -1,11 +1,11 @@
 {
   "runtimeTarget": {
-    "name": ".NETCoreApp,Version=v1.0",
+    "name": ".NETCoreApp,Version=v2.0",
     "signature": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
   },
   "compilationOptions": {},
   "targets": {
-    ".NETCoreApp,Version=v1.0": {
+    ".NETCoreApp,Version=v2.0": {
       "DBreeze/1.088.2017.0630": {
         "runtime": {
           "DBreeze.dll": {}
