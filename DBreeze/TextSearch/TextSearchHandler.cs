@@ -150,7 +150,10 @@ namespace DBreeze.TextSearch
             if ((iMode == eInsertMode.Append || iMode == eInsertMode.Remove) && (String.IsNullOrEmpty(containsWords) && String.IsNullOrEmpty(fullMatchWords)))
                 return;
 
-            SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(containsWords, fullMatchWords, containsMinimalLength); //flattend searchables
+            //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock
+            SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(containsWords, fullMatchWords, containsMinimalLength,
+                tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MaximalWordSize); //flattend searchables
+
             StringBuilder sbPs = new StringBuilder();
 
             //Registering all tables for text-search in current transaction
@@ -716,8 +719,9 @@ namespace DBreeze.TextSearch
         /// <param name="containsWords"></param>
         /// <param name="fullMatchWords"></param>
         /// <param name="containsMinimalLength"></param>
+        /// <param name="maxWordSize">Taken from configuration. Default is 50. word separated by spaces</param>
         /// <returns></returns>
-        SortedDictionary<string, WordDefinition> GetWordsDefinitionFromText(string containsWords, string fullMatchWords, int containsMinimalLength)
+        SortedDictionary<string, WordDefinition> GetWordsDefinitionFromText(string containsWords, string fullMatchWords, int containsMinimalLength, int maxWordSize)
         {
             SortedDictionary<string, WordDefinition> wordsCounter = new SortedDictionary<string, WordDefinition>();
 
@@ -784,7 +788,7 @@ namespace DBreeze.TextSearch
                 };
 
                 int wordLen = 0;
-                int maximalWordLengthBeforeSplit = 50;
+                int maximalWordLengthBeforeSplit = maxWordSize; //Default is 50
 
                 foreach (var c in containsWords)
                 {
@@ -793,7 +797,7 @@ namespace DBreeze.TextSearch
                     {
                         sb.Append(c);
                         wordLen++;
-
+                        
                         if (wordLen >= maximalWordLengthBeforeSplit)
                         {
                             //Processing ready word

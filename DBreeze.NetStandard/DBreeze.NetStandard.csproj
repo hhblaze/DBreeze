@@ -9,13 +9,14 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.088.2017.0630</Version>
-    <AssemblyVersion>1.088.2017.0630</AssemblyVersion>
-    <FileVersion>1.088.2017.0630</FileVersion>
+    <Version>1.089.2017.0829</Version>
+    <AssemblyVersion>1.089.2017.0829</AssemblyVersion>
+    <FileVersion>1.089.2017.0829</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>    
+    <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>
+    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40</DefineConstants>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

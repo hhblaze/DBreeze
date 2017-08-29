@@ -154,6 +154,8 @@ namespace DBreeze
             //Console.WriteLine("                      to get graceful finilization of all working threads! ");
         }
 
+        object lock_initDb = new object();
+
         /// <summary>
         /// InitDb
         /// </summary>
@@ -164,33 +166,36 @@ namespace DBreeze
 
             try
             {
-                //Init type converter
-                DataTypes.DataTypesConvertor.InitDict();
-
-                if (Configuration.Storage == DBreezeConfiguration.eStorage.DISK)
+                lock (lock_initDb)
                 {
-                    var di = Configuration.FSFactory.CreateDirectoryInfo(MainFolder);
-                    //DirectoryInfo di = new DirectoryInfo(MainFolder);
+                    //Init type converter
+                    DataTypes.DataTypesConvertor.InitDict();
 
-                    if (!di.Exists)
-                        di.Create();
-                }               
+                    if (Configuration.Storage == DBreezeConfiguration.eStorage.DISK)
+                    {
+                        var di = Configuration.FSFactory.CreateDirectoryInfo(MainFolder);
+                        //DirectoryInfo di = new DirectoryInfo(MainFolder);
 
-                //trying to open schema file
-                DBreezeSchema = new Scheme(this);
+                        if (!di.Exists)
+                            di.Create();
+                    }
 
-                //Initializing Transactions Coordinator
-                _transactionsCoordinator = new TransactionsCoordinator(this);
+                    //trying to open schema file
+                    DBreezeSchema = new Scheme(this);
 
-                //Initializing transactions Journal, may be later move journal into transactionsCoordinator
-                //We must create journal after Schema, for getting path to rollback files
-                _transactionsJournal = new TransactionsJournal(this);
+                    //Initializing Transactions Coordinator
+                    _transactionsCoordinator = new TransactionsCoordinator(this);
 
-                //Initializes transaction locker, who can help block tables of writing and reading threads
-                _transactionTablesLocker = new TransactionTablesLocker();
+                    //Initializing transactions Journal, may be later move journal into transactionsCoordinator
+                    //We must create journal after Schema, for getting path to rollback files
+                    _transactionsJournal = new TransactionsJournal(this);
 
-                //Initializing 
-                DeferredIndexer = new TextDeferredIndexer(this);
+                    //Initializes transaction locker, who can help block tables of writing and reading threads
+                    _transactionTablesLocker = new TransactionTablesLocker();
+
+                    //Initializing 
+                    DeferredIndexer = new TextDeferredIndexer(this);
+                }
             }
             catch (Exception ex)
             {

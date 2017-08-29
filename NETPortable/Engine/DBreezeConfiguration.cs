@@ -107,6 +107,10 @@ namespace DBreeze
             /// <para>Mobile recommendations year 2015: 1000</para>
             /// </summary>
             public int MinimalBlockReservInBytes = 100000;
+            /// <summary>
+            /// Maximal word size separated by the space. Default is 50 symbols
+            /// </summary>
+            public int MaximalWordSize = 50;
 
             ///// <summary>
             ///// Automatic indexer settings

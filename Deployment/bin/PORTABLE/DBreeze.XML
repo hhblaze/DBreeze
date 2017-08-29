@@ -3435,13 +3435,14 @@
             
             </summary>        
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,System.String,System.Int32)">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,System.String,System.Int32,System.Int32)">
             <summary>
             Returns null in case of notfound anything or what ever
             </summary>
             <param name="containsWords"></param>
             <param name="fullMatchWords"></param>
             <param name="containsMinimalLength"></param>
+            <param name="maxWordSize">Taken from configuration. Default is 50. word separated by spaces</param>
             <returns></returns>
         </member>
         <member name="T:DBreeze.TextSearch.TextSearchTable">
@@ -5183,6 +5184,11 @@
             <summary>
             Search Index setting. Reservation block growth size
             <para>Mobile recommendations year 2015: 1000</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MaximalWordSize">
+            <summary>
+            Maximal word size separated by the space. Default is 50 symbols
             </summary>
         </member>
         <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfig">

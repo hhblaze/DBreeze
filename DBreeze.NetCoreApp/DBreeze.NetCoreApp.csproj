@@ -6,12 +6,14 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.088.2017.0630</Version>
-    <FileVersion>1.088.2017.0630</FileVersion>
+    <Version>1.089.2017.0829</Version>
+    <FileVersion>1.089.2017.0829</FileVersion>
+    <AssemblyVersion>1.89.2017.829</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netcoreapp1.1\DBreeze.xml</DocumentationFile>
+    <DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
