@@ -1,0 +1,4306 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" class="FF" prefix="og: http://ogp.me/ns# profile: http://ogp.me/ns/profile#" lang="en"><head>
+        <meta id="CompatabilityMode" http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link href="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/StyleSheet.css" id="MasterCss" rel="stylesheet" type="text/css">
+        <link rel="SHORTCUT ICON" href="https://www.codeplex.com/favicon.ico">
+        <title>DBreeze - C# ACID NoSql embedded object database management system. - Locking.</title>
+        
+        <!--
+        Third party scripts and code linked to or referenced from this website are licensed to you by the parties that own such code,
+        not by Microsoft.  See ASP.NET Ajax CDN Terms of Use – http://www.asp.net/ajaxlibrary/CDN.ashx.
+        -->
+        <script src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/jquery-1.js" type="text/javascript"></script>
+        
+        <script type="text/javascript">
+            if (typeof jQuery === 'undefined') {
+                document.write(unescape("%3Cscript src='https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js' type='text/javascript'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <script src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/jquery-ui.js" type="text/javascript"></script>
+        
+        <script type="text/javascript">
+            if (typeof jQuery.ui === 'undefined') {
+                document.write(unescape("%3Cscript src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.6/jquery-ui.min.js' type='text/javascript'%3E%3C/script%3E"));
+            }
+        </script>
+
+        
+            <script type="text/javascript">
+                var appInsights=window.appInsights||function(config){
+                    function s(config){t[config]=function(){var i=arguments;t.queue.push(function(){t[config].apply(t,i)})}}var t={config:config},r=document,f=window,e="script",o=r.createElement(e),i,u;for(o.src=config.url||"//az416426.vo.msecnd.net/scripts/a/ai.0.js",r.getElementsByTagName(e)[0].parentNode.appendChild(o),t.cookie=r.cookie,t.queue=[],i=["Event","Exception","Metric","PageView","Trace"];i.length;)s("track"+i.pop());return config.disableExceptionTracking||(i="onerror",s("_"+i),u=f[i],f[i]=function(config,r,f,e,o){var s=u&&u(config,r,f,e,o);return s!==!0&&t["_"+i](config,r,f,e,o),s}),t
+                }({
+                    instrumentationKey:"3a5c29be-06e6-465e-862f-c10a5d93d3a2"
+                });
+    
+                window.appInsights=appInsights;
+                appInsights.trackPageView();
+            </script><script src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/ai.js"></script>
+        
+    <style type="text/css">.SideBar, .SideBarPadding{display:none;}.MainContent{width:auto;}.SiteContentTable{width:100%;}</style>
+    <style id="ProjectStyles" type="text/css">
+        .SiteHeader, .SiteHeaderLeft {
+            height:45px !important;
+            overflow:hidden;
+        }
+        .SiteContent 
+        {
+            padding: 0 0 1em 0;
+            margin-top:0;
+            min-height:225px;
+            border-right: 1px solid lightgrey;
+            border-left: 1px solid lightgrey;
+            border-bottom: 1px solid lightgrey;
+        }
+        .IE table.MinWidthContent
+        {
+	        table-layout: auto !important;	
+        }
+    </style>
+    
+    
+    <meta name="ROBOTS" content="NOINDEX, NOFOLLOW">
+
+    
+    
+    <meta id="WTProjectName" name="WT.pi" content="dbreeze">
+    
+
+    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://dbreeze.codeplex.com/rsd">
+    <link rel="wlwmanifest" type="application/wlwmanifest+xml" title="WLWManifest" href="https://www.codeplex.com/wlwmanifest.xml">
+    
+    
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system." url="https://dbreeze.codeplex.com/project/feeds/rss">
+    
+        
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system. - Discussions" url="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fforum%2fdbreeze">
+        
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system. - Issues" url="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fworkitem%2fdbreeze">
+        
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system. - Downloads" url="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2frelease%2fdbreeze">
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system. - Reviews" url="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2freview%2fdbreeze">
+        
+    
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system. - Source code" url="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fsourcecontrol%2fdbreeze">
+        <link rel="alternate" type="application/rss+xml" title="DBreeze - C# ACID NoSql embedded object database management system. - Wiki" url="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fwiki%2fdbreeze">
+    
+        
+    
+        <meta content="summary" name="twitter:card"><meta content="@CodePlex" name="twitter:site"><meta content="https://dbreeze.codeplex.com/discussions/446373?ProjectName=dbreeze" name="twitter:url"><meta content="DBreeze - C&amp;#35; ACID NoSql embedded object database management system." name="twitter:title"><meta content="Professional, open-source, NoSql &amp;#40;embedded Key&amp;#47;Value storage&amp;#41;, transactional, ACID-compliant, multi-threaded object DBMS for C&amp;#35; .NET 3.5&amp;#62; MONO." name="twitter:description"><meta content="https://www.codeplex.com/Images/codeplex.png" name="twitter:image"><meta content="CodePlex" property="og:site_name"><meta content="https://dbreeze.codeplex.com/discussions/446373?ProjectName=dbreeze" property="og:url"><meta content="object" property="og:type"><meta content="DBreeze - C&amp;#35; ACID NoSql embedded object database management system." property="og:title"><meta content="Professional, open-source, NoSql &amp;#40;embedded Key&amp;#47;Value storage&amp;#41;, transactional, ACID-compliant, multi-threaded object DBMS for C&amp;#35; .NET 3.5&amp;#62; MONO." property="og:description"><meta content="https://www.codeplex.com/Images/codeplex.png" property="og:image">
+        
+
+    <script type="text/javascript" charset="UTF-8" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/ruK_6Gkazg97489XtesIaiApyyt_2n9zHy_XPiWhDYY.js"></script><style type="text/css">.recaptchatable td img{display:block}.recaptchatable .recaptcha_image_cell center img{height:57px}.recaptchatable .recaptcha_image_cell center{height:57px}.recaptchatable .recaptcha_image_cell{background-color:white;height:57px;padding:7px!important}.recaptchatable,#recaptcha_area tr,#recaptcha_area td,#recaptcha_area th{margin:0!important;border:0!important;border-collapse:collapse!important;vertical-align:middle!important}.recaptchatable *{margin:0;padding:0;border:0;color:black;position:static;top:auto;left:auto;right:auto;bottom:auto}.recaptchatable #recaptcha_image{position:relative;margin:auto;border:1px solid #dfdfdf!important}.recaptchatable #recaptcha_image #recaptcha_challenge_image{display:block}.recaptchatable #recaptcha_image #recaptcha_ad_image{display:block;position:absolute;top:0}.recaptchatable a img{border:0}.recaptchatable a,.recaptchatable a:hover{cursor:pointer;outline:none;border:0!important;padding:0!important;text-decoration:none;color:blue;background:none!important;font-weight:normal}.recaptcha_input_area{position:relative!important;background:none!important}.recaptchatable label.recaptcha_input_area_text{border:1px solid #dfdfdf!important;margin:0!important;padding:0!important;position:static!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important}.recaptcha_theme_red label.recaptcha_input_area_text,.recaptcha_theme_white label.recaptcha_input_area_text{color:black!important}.recaptcha_theme_blackglass label.recaptcha_input_area_text{color:white!important}.recaptchatable #recaptcha_response_field{font-size:11pt}.recaptcha_theme_blackglass #recaptcha_response_field,.recaptcha_theme_white #recaptcha_response_field{border:1px solid gray}.recaptcha_theme_red #recaptcha_response_field{border:1px solid #cca940}.recaptcha_audio_cant_hear_link{font-size:7pt;color:black}.recaptchatable{line-height:1em;border:1px solid #dfdfdf!important}.recaptcha_error_text{color:red}.recaptcha_only_if_privacy{float:right;text-align:right;margin-right:7px}#recaptcha-ad-choices{position:absolute;height:15px;top:0;right:0}#recaptcha-ad-choices img{height:15px}.recaptcha-ad-choices-collapsed{width:30px;height:15px;display:block}.recaptcha-ad-choices-expanded{width:75px;height:15px;display:none}#recaptcha-ad-choices:hover .recaptcha-ad-choices-collapsed{display:none}#recaptcha-ad-choices:hover .recaptcha-ad-choices-expanded{display:block}
+
+.recaptcha_is_showing_audio .recaptcha_only_if_image,.recaptcha_isnot_showing_audio .recaptcha_only_if_audio,.recaptcha_had_incorrect_sol .recaptcha_only_if_no_incorrect_sol,.recaptcha_nothad_incorrect_sol .recaptcha_only_if_incorrect_sol{display:none !important}</style><script type="text/javascript" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/reload"></script></head>
+    
+    <body>
+        <script src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/ScriptLoader.ashx" type="text/javascript"></script>
+        <form id="aspnetForm" autocomplete="off" method="POST" enctype="multipart/form-data">
+            <input name="__RequestVerificationToken" value="KgfppPeae8v6nfYf8SDSzae9g8cg-YKCi2G453ZGlQuEulQOL6V9WiR9p1siwDNY3aMlbsUXkR6ppxq4pqrvLDg7WE99jw7YI2ZD9K4rvjBxPF_LpI74OF1wnxSvgsrzjYlASA2" type="hidden">
+            
+            
+            
+            <div style="display:none;">
+                
+                <img id="BlankImage" style="width:0;height:0;" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/blank.png" onload="self.logoImageLoaded=true;">
+
+                <script language="javascript" type="text/javascript">
+                    var date = new Date();
+                    var timezoneOffset = date.getTimezoneOffset() / 60 * -1;
+                    var timezoneOffsetCookie = getCookie("TimezoneOffset");
+                    var firstTimeSetTimezoneCookie = false;
+
+                    if (timezoneOffsetCookie == null || timezoneOffsetCookie != timezoneOffset) {
+                        firstTimeSetTimezoneCookie = true;
+                        document.cookie = "TimezoneOffset=" + timezoneOffset + '; domain=.codeplex.com;expires=Fri, 31 Aug 2018 01:33:19 UTC';
+                    }
+                </script>
+            </div>
+            
+            
+            <div id="banner">
+                <div id="message">
+                    <strong>CodePlex is shutting down.</strong><span>  Read about the shutdown plan, including archive and migration information, on <a href="https://aka.ms/codeplex-announcement">Brian Harry's blog.</a></span>
+                </div>
+            </div>
+            
+
+            <div id="header">
+                <div id="header_wrap" class="row"><p role="alert" style="height: 1px;width: 1px;overflow: hidden;position: absolute;"></p>
+                    <p id="logo"><a href="https://www.codeplex.com/">Code<span class="semi">Plex</span></a><span id="tagline">Project Hosting for Open Source Software</span></p>
+                    
+
+<ul id="nav">
+
+    <li><a href="https://www.codeplex.com/site/register/new" id="registerLink" class="ZoomFix">Register</a></li>
+    <li><a class="SignInLink" href="https://www.codeplex.com/site/login?RedirectUrl=https%3a%2f%2fdbreeze.codeplex.com%2fdiscussions%2f446373" id="signInLink">Sign In</a></li>
+  
+    <li class="last"><a class="rss_site_icon" href="https://www.codeplex.com/site/feeds/rss" type="application/rss+xml" rel="Alternate" title="CodePlex Site Activity"></a></li>
+</ul>
+                    <input id="searchsite" name="searchsite" maxlength="500" autocomplete="off" data-searchtype="searchbox" role="combobox" aria-label="Search Input Box" aria-autocomplete="both" aria-owns="MSDNSearchAutoCompleteList" aria-live="polite" placeholder="Search all projects" title="Search all projects" type="text"><span id="search_mag"><a id="submitSearch" name="submitSearch" class="magnify" title="Search all projects" href="#" data-searchtype="icon"></a></span>
+                    <script>
+	$(document).ready(function() {
+    var searchButton = $('#submitSearch'),
+        searchBar = $('#searchsite');
+
+    // Register our own handler for the search event while we wait for the SearchBox script to load.
+    searchButton.bind('click.backupSearchBox', doProjectSearch);
+    searchBar.bind('keypress.backupSearchBox', function(e) { if ($keyCode(e) === 13) { doProjectSearch(); return false; } });
+
+    function cleanupSearchEvents() {
+        // If the SearchBox was loaded, unregister our handlers.
+        if (epx_loaded) {
+            searchButton.unbind('.backupSearchBox');
+            searchBar.unbind('.backupSearchBox');
+        }
+    }
+
+    $loadScript('https://services.social.microsoft.com/search/Widgets/SearchBox.jss?appid=1000&scopeid=1&boxId=searchsite&btnId=submitSearch&watermark=Search%20all%20projects&overrideWatermark=true&searchLocation=https%3a%2f%2fwww.codeplex.com%2fsite%2fsearch&allowEmptySearch=true&focusOnInit=False&minimumTermLength=3', cleanupSearchEvents);
+})
+function doProjectSearch() {
+    
+    var url = 'https://www.codeplex.com/site/search';
+
+    //If search term is not same as watermark
+    if($('#searchsite').val() != 'Search all projects')    
+    {        
+        url = url + '?query=' + encodeURIComponent($('#searchsite').val());
+    }
+
+    
+    var callback = '';
+    if (callback.length > 0 && eval('typeof ' + callback) != 'undefined')
+        url += eval(callback + '()');
+
+    window.location.href = url;
+    return false;
+}
+</script>
+                <div id="SearchFlyoutContainer" style="display: none; text-align: left; border: 1px solid buttonshadow; position: absolute; z-index: 1000; padding: 2px; background-color: rgb(255, 255, 255); color: rgb(122, 132, 142); font-family: &quot;Segoe UI&quot;,&quot;Microsoft Sans Serif&quot;,Arial,Geneva,sans-serif; font-size: 13px;"><div id="SuggestionContainer"><ul style="list-style: outside none none; padding: 4px 2px 0px 1px; cursor: pointer; margin: 1px; white-space: nowrap;" data-searchtype="search dropdown" id="MSDNSearchAutoCompleteList" role="listbox" aria-controls="searchsite"></ul></div></div></div>
+            </div>
+            
+            <div id="wrap">
+                
+    <div id="sub_heading" class="row">
+        
+        <div id="ProjectHeader">
+            <div id="project_title_row" class="row">
+                <div id="project_logo">
+                    
+    
+    <div id="project_logo_and_text">
+        <div class="logo_left">
+            <a href="https://dbreeze.codeplex.com/"><img src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/Download.png" alt="DBreeze - C# ACID NoSql embedded object database management system."></a>
+        </div>
+        <h1 class="text_right"><div><a href="https://dbreeze.codeplex.com/" id="ProjectTitle4">DBreeze - C# ACID NoSql embedded object database management system.</a></div></h1>
+    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <div id="ProjectDetailsDiv">
+            
+        </div>
+		<div class="clear"></div>
+        
+
+<ul id="page_box_links">
+	<li id="homeTabCell" style="width: 75px;"><a id="homeTab" href="https://dbreeze.codeplex.com/" class="box_home">home</a><div></div></li>
+    
+	<li id="sourceTabCell" style="width: 125px;"><a id="sourceTab" href="https://dbreeze.codeplex.com/SourceControl/latest" class="box_source">source code</a><div></div></li>
+    
+	<li id="releasesTabCell" style="width: 117px;"><a id="releasesTab" href="https://dbreeze.codeplex.com/releases" class="box_downloads">downloads</a><div></div></li>
+    
+    <li id="documentationTabCell" style="width: 155px;"><a id="documentationTab" href="https://dbreeze.codeplex.com/documentation" class="box_documentation">documentation</a><div></div></li>
+    
+	<li id="discussionTabCell" style="width: 124px;"><a id="discussionTab" href="https://dbreeze.codeplex.com/discussions" class="discussions_active">discussions</a><div></div></li>
+    
+	<li id="workItemsTabCell" style="width: 82px;"><a id="workItemsTab" href="https://dbreeze.codeplex.com/workitem/list/basic" class="box_issue">issues</a><div></div></li>
+    
+	<li id="peopleTabCell" style="width: 82px;"><a id="peopleTab" href="https://dbreeze.codeplex.com/team/view" class="box_people">people</a><div></div></li>
+	<li id="licenseTabCell" style="width: 82px;" class="last"><a id="licenseTab" href="https://dbreeze.codeplex.com/license" class="box_license">license</a><div></div></li>
+    
+    <span class="stretch"></span>
+</ul>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#page_box_links').applyLastClassToList();
+    });
+</script>
+		    <div class="clear"></div>
+            
+     
+       
+
+<div>
+    
+    <div id="actionBar" class="action_bar">
+        <ul id="actionBar_ul" class="actionBar_sublinks subtab_right" style="vertical-align: middle;">
+
+            
+
+                <li id="li_actionbar_creatediscussion" data-action-id="actionbar_creatediscussion" data-action-type="Navigate" class="actionBar_sublinks" data-options-id="8d673e1c-a354-487b-bfcd-6a1e43d00032">
+                
+                    <script class="options" defer="defer" id="8d673e1c-a354-487b-bfcd-6a1e43d00032" type="application/json">{"navigate-url":"https://dbreeze.codeplex.com/discussions/create"}</script> 
+                    
+                    <div class="actionBar_custom_content"></div>
+
+                    <a href="#" id="actionbar_creatediscussion" title="Start a New Thread" class="action_bar_item_link">
+                        <img id="img_actionbar_creatediscussion" class="action_bar_item_image" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/actionbar_newitem.png" style="vertical-align: middle">
+                        New Thread
+                    </a>
+
+                </li>
+
+            
+
+                <li id="li_actionbar_subscribe" data-action-id="actionbar_subscribe" data-action-type="PopUp" class="actionBar_sublinks last" data-options-id="46899d25-0148-4e05-81d6-ca2afede36d5">
+                
+                    <script class="options" defer="defer" id="46899d25-0148-4e05-81d6-ca2afede36d5" type="application/json">{}</script> 
+                    
+                    <div class="actionBar_custom_content">
+
+<div id="rssHoverDiv" class="HoverPanel LeftHoverWidth" style="display: none">
+        <ul id="3_FeedsPanel" class="RssFeedsPanel">
+            <li>
+                <a id="ProjectRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss" class="ArrowSmall NoUnderline">All Project Updates</a>
+            </li>
+            
+            <li>
+                <a id="DiscussionRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fforum%2fdbreeze" class="ArrowSmall NoUnderline">Discussions</a>
+            </li>
+            
+            <li>
+                <a id="IssueTrackerRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fworkitem%2fdbreeze" class="ArrowSmall NoUnderline">Issue Tracker</a>
+            </li>
+            
+            <li>
+                <a id="ReleasesRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2frelease%2fdbreeze" class="ArrowSmall NoUnderline">Downloads</a>
+            </li>
+            <li>
+                <a id="ReviewsRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2freview%2fdbreeze" class="ArrowSmall NoUnderline">Reviews</a>
+            </li>
+            
+            <li>
+                <a id="SourceControlRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fsourcecontrol%2fdbreeze" class="ArrowSmall NoUnderline">Source Code</a>
+            </li>
+            <li>
+                <a id="WikiRssLink" href="https://dbreeze.codeplex.com/project/feeds/rss?ProjectRSSFeed=codeplex%3a%2f%2fwiki%2fdbreeze" class="ArrowSmall NoUnderline">Wiki &amp; Documentation</a>
+            </li>
+        </ul>
+</div></div>
+
+                    <a href="#" id="actionbar_subscribe" title="Subscribe to project updates in RSS feeds." class="action_bar_item_link">
+                        <img id="img_actionbar_subscribe" class="action_bar_item_image" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/actionbar_subscribe.png" style="vertical-align: middle">
+                        Subscribe
+                    </a>
+
+                </li>
+
+            
+        </ul>
+    </div>
+</div>
+     
+
+        
+
+    </div>
+    
+    
+<div class="Threads">
+    <div class="ViewThread">
+        
+        
+        
+            <h1 class="page_title WordWrapBreakWord">
+                Locking.
+            </h1>
+
+            <!-- Private Discussion header -->
+            
+
+            <!-- Posts List Header: Topics and Wiki Link -->
+            <table class="PostsListHeader">
+                <tbody><tr>
+                    <td>
+                     
+                    </td>
+                    <td>
+                        <div class="WikiLink">
+                            <span title="Paste this into a wiki page to link to this discussion">
+                                Wiki Link: [discussion:446373]
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <!-- The list of posts -->
+            
+
+<div id="discussionsPostList" data-options-id="61deaa2c-d7a8-4cf2-90a4-c599b6e93e8b">
+    
+
+    <div class="Posts" style="margin-top: 10px;">
+    
+
+<table style="width: 100%; margin-bottom: 0px; table-layout:fixed" cellspacing="0" cellpadding="0">
+    
+
+<tbody><tr id="PostPanel" class="Post" d:forid="1054188">
+    <td id="PostDetailsCell_1054188" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1054188"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/8/2013 12:34:42 AM" localtimeticks="1370676882">Jun 8, 2013 at 12:34 AM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/8/2013 12:36:38 AM" localtimeticks="1370676998">Jun 8, 2013 at 12:36 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1054188" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Hi Blaze, as You already know I will have a lot of tables. From time to time I have to compact them. Now the problem I have is that if I was just to do:
+
+```
+ using (Transaction transaction = db.Transaction)
+   try
+   {
+    transaction.SynchronizeTables (&quot;someTable&quot;);
+    db.Compact (&quot;someTable&quot;);
+    transaction.Commit ();
+    }
+    catch (Exception ex)
+    {
+     LOG.DebugFormat (ex.ToString ());
+    }
+```
+
+Especially when db.Compact will use: engine.Scheme.RenameTable or engine.Scheme.DeleteTable.
+Which will cause exceptions in other threads. I do not want to handle this in every 
+piece of code where I access dbreeze.
+
+So what I thought was to create something like this:
+
+```
+using (Session2 session = new Session2 (Session2.LockType.EXCLUSIVE, &quot;table1&quot;, &quot;table2&quot;,...))
+ using (Transaction transaction = db.Transaction)
+ {
+  ...
+ }
+```
+
+So I've programmed it like this:
+
+
+```
+public class Session2 : IDisposable
+ {
+  #region Declarations
+  #region Enumeration
+  public enum LockType : byte
+  {
+   SHARED = 0,
+   EXCLUSIVE = 1
+  }
+  #endregion
+
+  #region Classes
+  private class LockCookie
+  {
+   private long sharedReferences;
+   private long exclusiveReference;
+   private string name;
+
+   public long SharedReferences
+   {
+    get
+    {
+     return sharedReferences;
+    }
+
+    set
+    {
+     sharedReferences = value;
+    }
+   }
+
+   public long ExclusiveReferences
+   {
+    get
+    {
+     return exclusiveReference;
+    }
+
+    set
+    {
+     exclusiveReference = value;
+    }
+   }
+
+   public string Name
+   {
+    get
+    {
+     return name;
+    }
+   }
+
+   public bool IsFree
+   {
+    get
+    {
+     bool rt;
+
+     rt = (0 == sharedReferences) &amp;&amp; (0 == exclusiveReference);
+     return rt;
+    }
+   }
+
+   public LockCookie (string name)
+   {
+    sharedReferences = 0;
+    exclusiveReference = 0;
+    this.name = name;
+   }
+  }
+
+  private class DbThreadsGator : IDisposable
+  {
+   private ManualResetEvent gate;
+
+   public DbThreadsGator ()
+   {
+    gate = new ManualResetEvent (true);
+   }
+
+   public DbThreadsGator (bool gateIsOpen)
+   {
+    gate = new ManualResetEvent (gateIsOpen);
+   }
+
+   public bool PutGateHere ()
+   {
+    return gate.WaitOne ();
+   }
+
+   public bool OpenGate ()
+   {
+    return gate.Set ();
+   }
+
+   public bool CloseGate ()
+   {
+    return gate.Reset ();
+   }
+
+   public void Dispose ()
+   {
+    gate.Close ();
+   }
+  }
+
+
+  #endregion
+
+  #region Delegates
+  #endregion
+
+  #region Events
+  #endregion
+
+  #region Fields
+  private static readonly ILog LOG;
+  private static readonly object MONITOR;
+  private static readonly DbThreadsGator GATOR;
+  private static Dictionary&lt;string, LockCookie&gt; LOCKS;
+  private List&lt;LockCookie&gt; myLockCookies;
+  private LockType lockType;
+  private bool disposed;
+  #endregion
+  #endregion
+
+  #region Properties
+  #endregion
+
+  #region Construction
+  static Session2 ()
+  {
+   LOG = LogManager.GetLogger (typeof (Session2));
+   LOCKS = new Dictionary&lt;string, LockCookie&gt; ();
+   MONITOR = new object ();
+   GATOR = new DbThreadsGator ();
+  }
+
+  public Session2 (LockType lockType, params string[] names)
+  {
+   LockCookie myLockCookie;
+   bool block;
+
+   this.disposed = false;
+   this.lockType = lockType;
+
+   myLockCookies = new List&lt;LockCookie&gt; ();
+   lock (MONITOR)
+   {
+    foreach (string name in names)
+    {
+     myLockCookie = null;
+     if (LOCKS.ContainsKey (name))
+     {
+      myLockCookie = LOCKS[name];
+     }
+     else
+     {
+      myLockCookie = new LockCookie (name);
+      switch (lockType)
+      {
+       case LockType.SHARED:
+        ++myLockCookie.SharedReferences;
+        break;
+
+       case LockType.EXCLUSIVE:
+        ++myLockCookie.ExclusiveReferences;
+        break;
+      }
+      LOCKS.Add (name, myLockCookie);
+     }
+     myLockCookies.Add (myLockCookie);
+    }
+   }
+   do
+   {
+    lock (MONITOR)
+     block = IsBlocking ();
+    if (block)
+     GATOR.PutGateHere ();
+    else
+    {
+     break;
+    }
+   } while (block);
+  }
+  #endregion
+
+  #region Methods
+  private bool IsBlocking ()
+  {
+   bool rt;
+
+   rt = false;
+   foreach (LockCookie lockCookie in myLockCookies)
+   {
+    switch (lockType)
+    {
+     case LockType.SHARED:
+      rt = (lockCookie.ExclusiveReferences &gt; 0);
+      break;
+
+     case LockType.EXCLUSIVE:
+      if (lockCookie.SharedReferences &gt; 0 || lockCookie.ExclusiveReferences &gt; 1)
+       rt = true;
+      break;
+    }
+    if (rt)
+     break;
+   }
+   return rt;
+  }
+
+  public void Dispose ()
+  {
+   this.Dispose (true);
+   GC.SuppressFinalize (this);
+  }
+
+  protected virtual void Dispose (bool disposing)
+  {
+   if (!disposed)
+   {
+    if (disposing)
+     lock (MONITOR)
+     {
+      foreach (LockCookie lockCookie in myLockCookies)
+      {
+       switch (lockType)
+       {
+        case LockType.SHARED:
+         --lockCookie.SharedReferences;
+         break;
+
+        case LockType.EXCLUSIVE:
+         --lockCookie.ExclusiveReferences;
+         break;
+       }
+       if (lockCookie.IsFree)
+        LOCKS.Remove (lockCookie.Name);
+       GATOR.OpenGate ();
+      }
+      myLockCookies.Clear ();
+     }
+    disposed = true;
+   }
+  }
+  #endregion
+ }
+```
+
+As You can notice I've used part of Your code (DbThreadsGator). But I am not sure that this will work as expected. Could You check it out and give me an advice about it ?
+">
+        <div class="markDownOutput ">Hi Blaze, as You already know I 
+will have a lot of tables. From time to time I have to compact them. Now
+ the problem I have is that if I was just to do:<br>
+<pre><code> using (Transaction transaction = db.Transaction)
+   try
+   {
+    transaction.SynchronizeTables ("someTable");
+    db.Compact ("someTable");
+    transaction.Commit ();
+    }
+    catch (Exception ex)
+    {
+     LOG.DebugFormat (ex.ToString ());
+    }</code></pre>
+Especially when db.Compact will use: engine.Scheme.RenameTable or engine.Scheme.DeleteTable.<br>
+Which will cause exceptions in other threads. I do not want to handle this in every
+<br>
+piece of code where I access dbreeze.<br>
+<br>
+So what I thought was to create something like this:<br>
+<pre><code>using (Session2 session = new Session2 (Session2.LockType.EXCLUSIVE, "table1", "table2",...))
+ using (Transaction transaction = db.Transaction)
+ {
+  ...
+ }</code></pre>
+So I've programmed it like this:<br>
+<pre><code>public class Session2 : IDisposable
+ {
+  #region Declarations
+  #region Enumeration
+  public enum LockType : byte
+  {
+   SHARED = 0,
+   EXCLUSIVE = 1
+  }
+  #endregion
+
+  #region Classes
+  private class LockCookie
+  {
+   private long sharedReferences;
+   private long exclusiveReference;
+   private string name;
+
+   public long SharedReferences
+   {
+    get
+    {
+     return sharedReferences;
+    }
+
+    set
+    {
+     sharedReferences = value;
+    }
+   }
+
+   public long ExclusiveReferences
+   {
+    get
+    {
+     return exclusiveReference;
+    }
+
+    set
+    {
+     exclusiveReference = value;
+    }
+   }
+
+   public string Name
+   {
+    get
+    {
+     return name;
+    }
+   }
+
+   public bool IsFree
+   {
+    get
+    {
+     bool rt;
+
+     rt = (0 == sharedReferences) &amp;&amp; (0 == exclusiveReference);
+     return rt;
+    }
+   }
+
+   public LockCookie (string name)
+   {
+    sharedReferences = 0;
+    exclusiveReference = 0;
+    this.name = name;
+   }
+  }
+
+  private class DbThreadsGator : IDisposable
+  {
+   private ManualResetEvent gate;
+
+   public DbThreadsGator ()
+   {
+    gate = new ManualResetEvent (true);
+   }
+
+   public DbThreadsGator (bool gateIsOpen)
+   {
+    gate = new ManualResetEvent (gateIsOpen);
+   }
+
+   public bool PutGateHere ()
+   {
+    return gate.WaitOne ();
+   }
+
+   public bool OpenGate ()
+   {
+    return gate.Set ();
+   }
+
+   public bool CloseGate ()
+   {
+    return gate.Reset ();
+   }
+
+   public void Dispose ()
+   {
+    gate.Close ();
+   }
+  }
+
+
+  #endregion
+
+  #region Delegates
+  #endregion
+
+  #region Events
+  #endregion
+
+  #region Fields
+  private static readonly ILog LOG;
+  private static readonly object MONITOR;
+  private static readonly DbThreadsGator GATOR;
+  private static Dictionary&lt;string, LockCookie&gt; LOCKS;
+  private List&lt;LockCookie&gt; myLockCookies;
+  private LockType lockType;
+  private bool disposed;
+  #endregion
+  #endregion
+
+  #region Properties
+  #endregion
+
+  #region Construction
+  static Session2 ()
+  {
+   LOG = LogManager.GetLogger (typeof (Session2));
+   LOCKS = new Dictionary&lt;string, LockCookie&gt; ();
+   MONITOR = new object ();
+   GATOR = new DbThreadsGator ();
+  }
+
+  public Session2 (LockType lockType, params string[] names)
+  {
+   LockCookie myLockCookie;
+   bool block;
+
+   this.disposed = false;
+   this.lockType = lockType;
+
+   myLockCookies = new List&lt;LockCookie&gt; ();
+   lock (MONITOR)
+   {
+    foreach (string name in names)
+    {
+     myLockCookie = null;
+     if (LOCKS.ContainsKey (name))
+     {
+      myLockCookie = LOCKS[name];
+     }
+     else
+     {
+      myLockCookie = new LockCookie (name);
+      switch (lockType)
+      {
+       case LockType.SHARED:
+        ++myLockCookie.SharedReferences;
+        break;
+
+       case LockType.EXCLUSIVE:
+        ++myLockCookie.ExclusiveReferences;
+        break;
+      }
+      LOCKS.Add (name, myLockCookie);
+     }
+     myLockCookies.Add (myLockCookie);
+    }
+   }
+   do
+   {
+    lock (MONITOR)
+     block = IsBlocking ();
+    if (block)
+     GATOR.PutGateHere ();
+    else
+    {
+     break;
+    }
+   } while (block);
+  }
+  #endregion
+
+  #region Methods
+  private bool IsBlocking ()
+  {
+   bool rt;
+
+   rt = false;
+   foreach (LockCookie lockCookie in myLockCookies)
+   {
+    switch (lockType)
+    {
+     case LockType.SHARED:
+      rt = (lockCookie.ExclusiveReferences &gt; 0);
+      break;
+
+     case LockType.EXCLUSIVE:
+      if (lockCookie.SharedReferences &gt; 0 || lockCookie.ExclusiveReferences &gt; 1)
+       rt = true;
+      break;
+    }
+    if (rt)
+     break;
+   }
+   return rt;
+  }
+
+  public void Dispose ()
+  {
+   this.Dispose (true);
+   GC.SuppressFinalize (this);
+  }
+
+  protected virtual void Dispose (bool disposing)
+  {
+   if (!disposed)
+   {
+    if (disposing)
+     lock (MONITOR)
+     {
+      foreach (LockCookie lockCookie in myLockCookies)
+      {
+       switch (lockType)
+       {
+        case LockType.SHARED:
+         --lockCookie.SharedReferences;
+         break;
+
+        case LockType.EXCLUSIVE:
+         --lockCookie.ExclusiveReferences;
+         break;
+       }
+       if (lockCookie.IsFree)
+        LOCKS.Remove (lockCookie.Name);
+       GATOR.OpenGate ();
+      }
+      myLockCookies.Clear ();
+     }
+    disposed = true;
+   }
+  }
+  #endregion
+ }</code></pre>
+As You can notice I've used part of Your code (DbThreadsGator). But I am
+ not sure that this will work as expected. Could You check it out and 
+give me an advice about it ?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1054188" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1054439">
+    <td id="PostDetailsCell_1054439" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1054439"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/9/2013 1:40:06 AM" localtimeticks="1370767206">Jun 9, 2013 at 1:40 AM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/9/2013 2:05:36 AM" localtimeticks="1370768736">Jun 9, 2013 at 2:05 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1054439" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="With the new IO layer replacing can be done much easier.
+I have published new sources (a59daececada - Experimental tran.RestoreTableFromTheOtherFile).
+Please take them and test as soon as you can...
+
+So, the tesing code can look like this
+
+```
+ private void TestKrome()
+        {
+//HERE WE JUST CREATE SOME TABLES FOR TEST, NOTE &quot;t2&quot; is filled with the key 1
+            using (var tran = engine.GetTransaction())
+            {
+                tran.Insert&lt;int, byte&gt;(&quot;t1&quot;, 1, 1);
+                tran.Insert&lt;int, byte&gt;(&quot;t2&quot;, 1, 1);
+                tran.Insert&lt;int, byte&gt;(&quot;t3&quot;, 1, 1);
+
+                tran.Commit();
+            }           
+
+//HERE we use LianaTrie directly inside of the OTHER ENGINE and fill table 90000000 with key 2.
+//NOTE, we could fill this new LianaTrie with the compacted data from existing &quot;t2&quot;
+//NOTE, table name must be always digital, so you can use very HIGH digit, if this compacted table is in the same folder with your real engine tables
+
+            LTrieSettings = new TrieSettings();
+            LTrieStorage = new StorageLayer(@&quot;E:\temp\DBreezeTest\DBR1\90000000&quot;, LTrieSettings, new DBreezeConfiguration());           
+
+            LTrie = new LTrie(LTrieStorage);
+//FILLING WITH KEY 2
+            LTrie.Add(((int)2).To_4_bytes_array_BigEndian(),((int)2).To_4_bytes_array_BigEndian());
+            LTrie.Commit();
+            LTrie.Dispose();
+
+//OK, After LTrie.Dispose(); table &quot;90000000&quot; is free for copying...
+
+            using (var tran = engine.GetTransaction())
+            {
+                tran.SynchronizeTables(&quot;t2&quot;);
+
+//!!!!NEW FEATURE
+//AT THE MOMENT WHEN FEATURE WORKS NONE OF THREADS IS ABLE TO READ FROM THE TABLE, SO WHILE IT HAPPENS NO MISTAKES CAN BE OCCURED IN DIFF THREADS
+
+                tran.RestoreTableFromTheOtherFile(&quot;t2&quot;, @&quot;E:\temp\DBreezeTest\DBR1\90000000&quot;);              
+            }
+
+
+
+            using (var tran = engine.GetTransaction())
+            {
+                foreach (var row in tran.SelectBackward&lt;int,int&gt;(&quot;t2&quot;))
+                {
+//GETTING KEY 2
+                    Console.WriteLine(&quot;Key: {0}&quot;, row.Key);
+                }
+            }
+        }
+```
+
+Looks good, but there is an architectural problem.
+If I have a reading thread where I read keys:
+
+```
+foreach(var row in tran.SelectForward(&quot;t2&quot;))
+{
+   //Here I got object row, which already contains key, but it doesn't contain value only physical reference to the value in the file.
+   //If we say
+   byte[] val = row.Value;
+   //only at this moment DBreeze will refer to the DISK to get new value
+
+   //So, if before command row.Value other thread has run RestoreTableFromTheOtherFile  and we have restored other file, this physical link to value
+   //can bring us not to the value, but to somewhere else....what is absolutely not good.
+
+   //So, may be when row object is received it must also hold smth like DateTime of table fixation. Fixation will be changed when table is replaced and 
+   //row.Value will lead in any case to exception.
+
+   //Or just to block reading threads within compaction time, what is not good for APP smoothness.
+
+   //That's a point of discussion - please, participate.
+   //As I understand you want to lock even reading threads, while compaction, using extra decoration around transaction.
+
+
+}
+```
+
+">
+        <div class="markDownOutput ">With the new IO layer replacing can be done much easier.<br>
+I have published new sources (a59daececada - Experimental tran.RestoreTableFromTheOtherFile).<br>
+Please take them and test as soon as you can...<br>
+<br>
+So, the tesing code can look like this<br>
+<pre><code> private void TestKrome()
+        {
+//HERE WE JUST CREATE SOME TABLES FOR TEST, NOTE "t2" is filled with the
+ key 1
+            using (var tran = engine.GetTransaction())
+            {
+                tran.Insert&lt;int, byte&gt;("t1", 1, 1);
+                tran.Insert&lt;int, byte&gt;("t2", 1, 1);
+                tran.Insert&lt;int, byte&gt;("t3", 1, 1);
+
+                tran.Commit();
+            }           
+
+//HERE we use LianaTrie directly inside of the OTHER ENGINE and fill 
+table 90000000 with key 2.
+//NOTE, we could fill this new LianaTrie with the compacted data from 
+existing "t2"
+//NOTE, table name must be always digital, so you can use very HIGH 
+digit, if this compacted table is in the same folder with your real 
+engine tables
+
+            LTrieSettings = new TrieSettings();
+            LTrieStorage = new 
+StorageLayer(@"E:\temp\DBreezeTest\DBR1\90000000", LTrieSettings, new 
+DBreezeConfiguration());           
+
+            LTrie = new LTrie(LTrieStorage);
+//FILLING WITH KEY 2
+            
+LTrie.Add(((int)2).To_4_bytes_array_BigEndian(),((int)2).To_4_bytes_array_BigEndian());
+
+            LTrie.Commit();
+            LTrie.Dispose();
+
+//OK, After LTrie.Dispose(); table "90000000" is free for copying...
+
+            using (var tran = engine.GetTransaction())
+            {
+                tran.SynchronizeTables("t2");
+
+//!!!!NEW FEATURE
+//AT THE MOMENT WHEN FEATURE WORKS NONE OF THREADS IS ABLE TO READ FROM 
+THE TABLE, SO WHILE IT HAPPENS NO MISTAKES CAN BE OCCURED IN DIFF 
+THREADS
+
+                tran.RestoreTableFromTheOtherFile("t2", 
+@"E:\temp\DBreezeTest\DBR1\90000000");              
+            }
+
+
+
+            using (var tran = engine.GetTransaction())
+            {
+                foreach (var row in 
+tran.SelectBackward&lt;int,int&gt;("t2"))
+                {
+//GETTING KEY 2
+                    Console.WriteLine("Key: {0}", row.Key);
+                }
+            }
+        }</code></pre>
+Looks good, but there is an architectural problem.<br>
+If I have a reading thread where I read keys:<br>
+<pre><code>foreach(var row in tran.SelectForward("t2"))
+{
+   //Here I got object row, which already contains key, but it doesn't 
+contain value only physical reference to the value in the file.
+   //If we say
+   byte[] val = row.Value;
+   //only at this moment DBreeze will refer to the DISK to get new value
+
+   //So, if before command row.Value other thread has run 
+RestoreTableFromTheOtherFile  and we have restored other file, this 
+physical link to value
+   //can bring us not to the value, but to somewhere else....what is 
+absolutely not good.
+
+   //So, may be when row object is received it must also hold smth like 
+DateTime of table fixation. Fixation will be changed when table is 
+replaced and 
+   //row.Value will lead in any case to exception.
+
+   //Or just to block reading threads within compaction time, what is 
+not good for APP smoothness.
+
+   //That's a point of discussion - please, participate.
+   //As I understand you want to lock even reading threads, while 
+compaction, using extra decoration around transaction.
+
+
+}</code></pre>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1054439" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1054661">
+    <td id="PostDetailsCell_1054661" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1054661"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/10/2013 2:50:08 AM" localtimeticks="1370857808">Jun 10, 2013 at 2:50 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1054661" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="It's nice what You did. But as You said it yourself it can be a problem for reading threads.
+[Yes I was blocking reading threads as well in my aproach]. But I bet You could do it better than me in the engine itself.
+Biggest problem was that:
+
+using (var tran = engine.GetTransaction())
+{
+ tran.SynchronizeTables(&quot;someTable&quot;);
+ Compact (&quot;someTable&quot;);
+ tran.commit ();
+}
+
+Compact (tableName)
+{
+ Create temporary table.
+ Copy tableName structure to the temporary table.
+ Rename Temporary table to tableName.
+}
+
+Now If i have reading threads there will be a problem, because of rename.
+Is it possible for You to introduce a mechanism, which will entirely lock table for the current transaction ?
+
+for example:
+tran.SynchronizeTables (bool fullLock,, names,...);
+
+So after this lock is gained, no other readers will be able to access it until compacting transaction completes,
+therefore no exceptions in other threads.
+
+I think that would be a much better approach, since it wouldn't be so low-level.
++ Your approach involves using another engine instance. Would be better to avoid such practice IMO.
+
+
+
+
+
+">
+        <div class="markDownOutput ">It's nice what You did. But as You said it yourself it can be a problem for reading threads.
+<br>
+[Yes I was blocking reading threads as well in my aproach]. But I bet You could do it better than me in the engine itself.
+<br>
+Biggest problem was that: <br>
+<br>
+using (var tran = engine.GetTransaction()) <br>
+{ <br>
+tran.SynchronizeTables("someTable"); <br>
+Compact ("someTable"); <br>
+tran.commit (); <br>
+} <br>
+<br>
+Compact (tableName) <br>
+{ <br>
+Create temporary table. <br>
+Copy tableName structure to the temporary table. <br>
+Rename Temporary table to tableName. <br>
+} <br>
+<br>
+Now If i have reading threads there will be a problem, because of rename. <br>
+Is it possible for You to introduce a mechanism, which will entirely lock table for the current transaction ?
+<br>
+<br>
+for example: <br>
+tran.SynchronizeTables (bool fullLock,, names,...); <br>
+<br>
+So after this lock is gained, no other readers will be able to access it until compacting transaction completes,
+<br>
+therefore no exceptions in other threads. <br>
+<br>
+I think that would be a much better approach, since it wouldn't be so low-level.<br>
+<ul>
+<li>Your approach involves using another engine instance. Would be better to avoid such practice IMO.<br>
+</li></ul>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1054661" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1054762">
+    <td id="PostDetailsCell_1054762" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1054762"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/10/2013 11:32:04 AM" localtimeticks="1370889124">Jun 10, 2013 at 11:32 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1054762" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="I am actually not ready right now for such deep changes. There are many caveats.
+That's why let's make so, I start to think on this idea, may be one day I will grow up to it.
+And you use your approach - btw, I like it, because you explicitly setup in the program all bottleneck places for reading and writing threads.
+
+If you really need to compact the data and you can't leave without these lockings?
+
+The scheme of exception is following:
+
+When the time of compaction comes, you lock table(s) for write using tran.SynchronizeTables.
+You start to copy data to other engine table, but main engine table still exists and consuming threads can read data satisfying read-customers.
+Copying will take every time more and more time, because table grows up, but is available for reads at this moment.
+When copy is finished, we need some seconds to execute File.Move, replacing old table file with the new one. At this moment no exceptions.
+And after that in some reading threads could be raised DBreeze TABLE_WAS_CHANGED_LINKS_ARE_NOT_ACTUAL exception.
+
+Google Mail also sometimes says &quot;on the server occurred mistake, please try again&quot;...Actually all systems must be ready to data storage access exception handling.
+
+For the compaction case, if u can handle exceptions your system stays always responsive (only small delay, while File.Move), but if u lock reading threads, system will stay unresponsive during copying time (every time longer and longer) + File.Move time.
+
+">
+        <div class="markDownOutput ">I am actually not ready right now for such deep changes. There are many caveats.
+<br>
+That's why let's make so, I start to think on this idea, may be one day I will grow up to it.
+<br>
+And you use your approach - btw, I like it, because you explicitly setup
+ in the program all bottleneck places for reading and writing threads.
+<br>
+<br>
+If you really need to compact the data and you can't leave without these lockings?
+<br>
+<br>
+The scheme of exception is following: <br>
+<br>
+When the time of compaction comes, you lock table(s) for write using tran.SynchronizeTables.
+<br>
+You start to copy data to other engine table, but main engine table 
+still exists and consuming threads can read data satisfying 
+read-customers.
+<br>
+Copying will take every time more and more time, because table grows up, but is available for reads at this moment.
+<br>
+When copy is finished, we need some seconds to execute File.Move, 
+replacing old table file with the new one. At this moment no exceptions.
+<br>
+And after that in some reading threads could be raised DBreeze TABLE_WAS_CHANGED_LINKS_ARE_NOT_ACTUAL exception.
+<br>
+<br>
+Google Mail also sometimes says "on the server occurred mistake, please 
+try again"...Actually all systems must be ready to data storage access 
+exception handling.
+<br>
+<br>
+For the compaction case, if u can handle exceptions your system stays 
+always responsive (only small delay, while File.Move), but if u lock 
+reading threads, system will stay unresponsive during copying time 
+(every time longer and longer) + File.Move time.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1054762" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055126">
+    <td id="PostDetailsCell_1055126" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1055126"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/11/2013 1:10:08 AM" localtimeticks="1370938208">Jun 11, 2013 at 1:10 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055126" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Ok can you help me review my code atleast ? The one on top of this thread. I would like to be absolutely sure that it works as expected.
+
+">
+        <div class="markDownOutput ">Ok can you help me review my code 
+atleast ? The one on top of this thread. I would like to be absolutely 
+sure that it works as expected.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055126" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055371">
+    <td id="PostDetailsCell_1055371" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1055371"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/11/2013 3:27:51 PM" localtimeticks="1370989671">Jun 11, 2013 at 3:27 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055371" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="As a first draft.
+
+There will be two extra files:
+
+DBSessionLocker.cs
+```
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+using DBreeze.Utils;
+using DBreeze.SchemeInternal;
+
+namespace DBreeze
+{
+    public enum eDBSessionLockTypes
+    {
+        EXCLUSIVE,
+        SHARED
+    }
+
+    //!!!!!!!!!!!!!!!!   IN DBREEZE.ENGINE.DISPOSE, after disposing all elemetns, call DBSessionLocker.Dispose()
+
+    internal static class DBSessionLocker
+    {   
+        static Dictionary&lt;int, internSession&gt; _waitingSessions = new Dictionary&lt;int, internSession&gt;();
+        static Dictionary&lt;int, internSession&gt; _acceptedSessions = new Dictionary&lt;int, internSession&gt;();
+        static List&lt;int&gt; _waitingSessionSequence = new List&lt;int&gt;();
+
+        static DbReaderWriterLock _sync = new DbReaderWriterLock();
+
+        static object lock_disposed = new object();
+        static bool disposed = false;
+
+
+        class internSession
+        {
+            public string[] tables;
+            public eDBSessionLockTypes lockType= eDBSessionLockTypes.EXCLUSIVE;
+            public DbThreadsGator gator = null;          
+        }
+
+        /// &lt;summary&gt;
+        /// 
+        /// &lt;/summary&gt;
+        /// &lt;param name=&quot;lockType&quot;&gt;&lt;/param&gt;
+        /// &lt;param name=&quot;tables&quot;&gt;&lt;/param&gt;
+        /// &lt;returns&gt;false if thread grants access, false if thread is in a queue&lt;/returns&gt;
+        public static bool AddSession(eDBSessionLockTypes lockType, string[] tables)
+        {            
+            lock (lock_disposed)
+            {
+                if (disposed)
+                    return true;
+            }
+
+            internSession iSession = null;
+            bool ret = true;
+
+            _sync.EnterWriteLock();
+            try
+            {
+                foreach (var ses in _acceptedSessions)
+                {
+                    if (DbUserTables.TableNamesIntersect(ses.Value.tables.ToList(), tables.ToList()))
+                    {
+                       if (ses.Value.lockType == eDBSessionLockTypes.EXCLUSIVE || lockType == eDBSessionLockTypes.EXCLUSIVE)
+                        {
+                            //Lock
+                            ret = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!ret)
+                {
+                    internSession xSes = null;
+                    foreach (var ses in _waitingSessionSequence)
+                    {
+
+                        if (ses == System.Threading.Thread.CurrentThread.ManagedThreadId)
+                            break;
+
+                        _waitingSessions.TryGetValue(ses, out xSes);
+
+                        if (DbUserTables.TableNamesIntersect(xSes.tables.ToList(), tables.ToList()))
+                        {
+                            if (xSes.lockType == eDBSessionLockTypes.EXCLUSIVE || lockType == eDBSessionLockTypes.EXCLUSIVE)
+                            {
+                                //Lock
+                                ret = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (_waitingSessions.TryGetValue(System.Threading.Thread.CurrentThread.ManagedThreadId, out iSession))
+                {
+                    //This session was in the waiting list once
+                    if (ret)
+                    {
+                        //We have to take away session from waiting list
+                        iSession.gator.Dispose();
+                        iSession.gator = null;
+                        _waitingSessions.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                        _waitingSessionSequence.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    }
+                    else
+                    {
+                        iSession.gator.CloseGate();
+                    }
+                }
+                else
+                {
+                    //Creating new session
+                    iSession = new internSession()
+                    {
+                        lockType = lockType,
+                        tables = tables
+                    };
+
+                    if (!ret)
+                    {
+                        iSession.gator = new DbThreadsGator(false);
+                        _waitingSessions.Add(System.Threading.Thread.CurrentThread.ManagedThreadId, iSession);
+                        _waitingSessionSequence.Add(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    }
+                }
+
+                if (ret)
+                {
+                    //Adding into accepted sessions                    
+                    _acceptedSessions.Add(System.Threading.Thread.CurrentThread.ManagedThreadId, iSession);
+                }
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+
+            if (!ret)
+            {
+                //putting gate
+                iSession.gator.PutGateHere();
+            }
+
+            return ret;
+
+        }
+
+        /// &lt;summary&gt;
+        /// 
+        /// &lt;/summary&gt;
+        public static void RemoveSession()
+        {
+            lock (lock_disposed)
+            {
+                if (disposed)
+                    return;
+            }
+
+            internSession iSession = null;
+            List&lt;int&gt; ws = null;
+
+            _sync.EnterWriteLock();
+            try
+            {
+                if (!_acceptedSessions.TryGetValue(System.Threading.Thread.CurrentThread.ManagedThreadId, out iSession))
+                    return;
+
+                if (iSession.gator != null)
+                {
+                    iSession.gator.Dispose();
+                }
+
+                _acceptedSessions.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+
+                ws = _waitingSessionSequence.ToList();
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+
+
+            if (ws != null &amp;&amp; ws.Count() &gt; 0)
+            {
+                foreach (int wsId in ws)
+                {
+
+                    _sync.EnterReadLock();
+                    try
+                    {
+
+                        if (!_waitingSessions.TryGetValue(wsId, out iSession))
+                            continue;
+
+                    }
+                    finally
+                    {
+                        _sync.ExitReadLock();
+                    }
+
+                    try
+                    {
+                        if (iSession.gator != null)
+                            iSession.gator.OpenGate();
+                    }
+                    catch
+                    {
+                    }
+
+                }
+            }
+
+
+        }
+
+
+        /// &lt;summary&gt;
+        /// MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
+        /// &lt;/summary&gt;
+        public static void Dispose()
+        { 
+            lock (lock_disposed)
+            {
+                if (disposed)
+                    return;
+                disposed = true;
+            }
+
+            foreach (var ses in _waitingSessions)
+            {
+                if (ses.Value.gator != null)
+                {
+                    ses.Value.gator.OpenGate();
+                    ses.Value.gator.Dispose();
+                }
+            }
+
+             foreach (var ses in _acceptedSessions)
+            {
+                if (ses.Value.gator != null)
+                {
+                    ses.Value.gator.OpenGate();
+                    ses.Value.gator.Dispose();
+                }
+            }
+
+            _acceptedSessions.Clear();
+            _waitingSessions.Clear();
+            _waitingSessionSequence.Clear();
+
+        }
+
+
+    }
+}
+
+```
+
+
+DBSession.cs
+
+```
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+
+
+namespace DBreeze
+{
+    public class DBSession : IDisposable
+    {
+        public DBSession(eDBSessionLockTypes lockType, params string[] tables)
+        {
+            //Console.WriteLine(&quot;I: {0}&quot;, System.Threading.Thread.CurrentThread.ManagedThreadId);
+            while (true)
+            {
+                if (DBSessionLocker.AddSession(lockType, tables))
+                    break;
+            }
+        }
+
+        public void Dispose()
+        {
+            //var x = new DBSession(eDBSessionLockTypes.EXCLUSIVE, &quot;t1&quot;, &quot;t*s&quot;, &quot;t$&quot;);
+
+            DBSessionLocker.RemoveSession();
+        }
+    }
+}
+
+```
+
+
+In DBreezeEngine Dispose function, after all disposed objects we must dispose DBSessionLocker.Dispose();
+">
+        <div class="markDownOutput ">As a first draft. <br>
+<br>
+There will be two extra files: <br>
+<br>
+DBSessionLocker.cs<br>
+<pre><code>using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+using DBreeze.Utils;
+using DBreeze.SchemeInternal;
+
+namespace DBreeze
+{
+    public enum eDBSessionLockTypes
+    {
+        EXCLUSIVE,
+        SHARED
+    }
+
+    //!!!!!!!!!!!!!!!!   IN DBREEZE.ENGINE.DISPOSE, after disposing all elemetns, call DBSessionLocker.Dispose()
+
+    internal static class DBSessionLocker
+    {   
+        static Dictionary&lt;int, internSession&gt; _waitingSessions = new Dictionary&lt;int, internSession&gt;();
+        static Dictionary&lt;int, internSession&gt; _acceptedSessions = new Dictionary&lt;int, internSession&gt;();
+        static List&lt;int&gt; _waitingSessionSequence = new List&lt;int&gt;();
+
+        static DbReaderWriterLock _sync = new DbReaderWriterLock();
+
+        static object lock_disposed = new object();
+        static bool disposed = false;
+
+
+        class internSession
+        {
+            public string[] tables;
+            public eDBSessionLockTypes lockType= eDBSessionLockTypes.EXCLUSIVE;
+            public DbThreadsGator gator = null;          
+        }
+
+        /// &lt;summary&gt;
+        /// 
+        /// &lt;/summary&gt;
+        /// &lt;param name="lockType"&gt;&lt;/param&gt;
+        /// &lt;param name="tables"&gt;&lt;/param&gt;
+        /// &lt;returns&gt;false if thread grants access, false if thread is in a queue&lt;/returns&gt;
+        public static bool AddSession(eDBSessionLockTypes lockType, string[] tables)
+        {            
+            lock (lock_disposed)
+            {
+                if (disposed)
+                    return true;
+            }
+
+            internSession iSession = null;
+            bool ret = true;
+
+            _sync.EnterWriteLock();
+            try
+            {
+                foreach (var ses in _acceptedSessions)
+                {
+                    if (DbUserTables.TableNamesIntersect(ses.Value.tables.ToList(), tables.ToList()))
+                    {
+                       if (ses.Value.lockType == eDBSessionLockTypes.EXCLUSIVE || lockType == eDBSessionLockTypes.EXCLUSIVE)
+                        {
+                            //Lock
+                            ret = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!ret)
+                {
+                    internSession xSes = null;
+                    foreach (var ses in _waitingSessionSequence)
+                    {
+
+                        if (ses == System.Threading.Thread.CurrentThread.ManagedThreadId)
+                            break;
+
+                        _waitingSessions.TryGetValue(ses, out xSes);
+
+                        if (DbUserTables.TableNamesIntersect(xSes.tables.ToList(), tables.ToList()))
+                        {
+                            if (xSes.lockType == eDBSessionLockTypes.EXCLUSIVE || lockType == eDBSessionLockTypes.EXCLUSIVE)
+                            {
+                                //Lock
+                                ret = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (_waitingSessions.TryGetValue(System.Threading.Thread.CurrentThread.ManagedThreadId, out iSession))
+                {
+                    //This session was in the waiting list once
+                    if (ret)
+                    {
+                        //We have to take away session from waiting list
+                        iSession.gator.Dispose();
+                        iSession.gator = null;
+                        _waitingSessions.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                        _waitingSessionSequence.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    }
+                    else
+                    {
+                        iSession.gator.CloseGate();
+                    }
+                }
+                else
+                {
+                    //Creating new session
+                    iSession = new internSession()
+                    {
+                        lockType = lockType,
+                        tables = tables
+                    };
+
+                    if (!ret)
+                    {
+                        iSession.gator = new DbThreadsGator(false);
+                        _waitingSessions.Add(System.Threading.Thread.CurrentThread.ManagedThreadId, iSession);
+                        _waitingSessionSequence.Add(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    }
+                }
+
+                if (ret)
+                {
+                    //Adding into accepted sessions                    
+                    _acceptedSessions.Add(System.Threading.Thread.CurrentThread.ManagedThreadId, iSession);
+                }
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+
+            if (!ret)
+            {
+                //putting gate
+                iSession.gator.PutGateHere();
+            }
+
+            return ret;
+
+        }
+
+        /// &lt;summary&gt;
+        /// 
+        /// &lt;/summary&gt;
+        public static void RemoveSession()
+        {
+            lock (lock_disposed)
+            {
+                if (disposed)
+                    return;
+            }
+
+            internSession iSession = null;
+            List&lt;int&gt; ws = null;
+
+            _sync.EnterWriteLock();
+            try
+            {
+                if (!_acceptedSessions.TryGetValue(System.Threading.Thread.CurrentThread.ManagedThreadId, out iSession))
+                    return;
+
+                if (iSession.gator != null)
+                {
+                    iSession.gator.Dispose();
+                }
+
+                _acceptedSessions.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+
+                ws = _waitingSessionSequence.ToList();
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+
+
+            if (ws != null &amp;&amp; ws.Count() &gt; 0)
+            {
+                foreach (int wsId in ws)
+                {
+
+                    _sync.EnterReadLock();
+                    try
+                    {
+
+                        if (!_waitingSessions.TryGetValue(wsId, out iSession))
+                            continue;
+
+                    }
+                    finally
+                    {
+                        _sync.ExitReadLock();
+                    }
+
+                    try
+                    {
+                        if (iSession.gator != null)
+                            iSession.gator.OpenGate();
+                    }
+                    catch
+                    {
+                    }
+
+                }
+            }
+
+
+        }
+
+
+        /// &lt;summary&gt;
+        /// MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
+        /// &lt;/summary&gt;
+        public static void Dispose()
+        { 
+            lock (lock_disposed)
+            {
+                if (disposed)
+                    return;
+                disposed = true;
+            }
+
+            foreach (var ses in _waitingSessions)
+            {
+                if (ses.Value.gator != null)
+                {
+                    ses.Value.gator.OpenGate();
+                    ses.Value.gator.Dispose();
+                }
+            }
+
+             foreach (var ses in _acceptedSessions)
+            {
+                if (ses.Value.gator != null)
+                {
+                    ses.Value.gator.OpenGate();
+                    ses.Value.gator.Dispose();
+                }
+            }
+
+            _acceptedSessions.Clear();
+            _waitingSessions.Clear();
+            _waitingSessionSequence.Clear();
+
+        }
+
+
+    }
+}
+</code></pre>
+DBSession.cs<br>
+<pre><code>using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+
+
+namespace DBreeze
+{
+    public class DBSession : IDisposable
+    {
+        public DBSession(eDBSessionLockTypes lockType, params string[] tables)
+        {
+            //Console.WriteLine("I: {0}", System.Threading.Thread.CurrentThread.ManagedThreadId);
+            while (true)
+            {
+                if (DBSessionLocker.AddSession(lockType, tables))
+                    break;
+            }
+        }
+
+        public void Dispose()
+        {
+            //var x = new DBSession(eDBSessionLockTypes.EXCLUSIVE, "t1", "t*s", "t$");
+
+            DBSessionLocker.RemoveSession();
+        }
+    }
+}
+</code></pre>
+In DBreezeEngine Dispose function, after all disposed objects we must dispose DBSessionLocker.Dispose();<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055371" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055372">
+    <td id="PostDetailsCell_1055372" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1055372"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/11/2013 3:29:09 PM" localtimeticks="1370989749">Jun 11, 2013 at 3:29 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055372" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Testing code:
+
+```
+using DBreeze.Utils.Async;
+
+private void testF_003()
+        {
+
+            Action t2 = () =&gt;
+            {
+                ExecF_003_2();
+            };
+
+            t2.DoAsync();
+
+
+            Action t1 = () =&gt;
+            {
+                ExecF_003_1();
+            };
+
+            t1.DoAsync();
+
+           
+
+
+            Action t3 = () =&gt;
+            {
+                ExecF_003_3();
+            };
+
+            t3.DoAsync();
+        }
+
+
+  private void ExecF_003_1()
+        {
+            using (DBSession ses = new DBSession(eDBSessionLockTypes.EXCLUSIVE, &quot;t1&quot;))
+            {
+                //Console.WriteLine(&quot;T1 {0}&gt; &quot;, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+                Console.WriteLine(&quot;T1 {0}&gt; {1}; {2}&quot;, DateTime.Now.Ticks, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+                Thread.Sleep(2000);
+            }
+        }
+
+        private void ExecF_003_2()
+        {
+            using (DBSession ses = new DBSession(eDBSessionLockTypes.SHARED, &quot;t1&quot;))
+            {
+                //Console.WriteLine(&quot;T2 {0}&gt; &quot;, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+                //Console.WriteLine(&quot;T2 {0}&gt; &quot;, DateTime.Now.Ticks);
+                Console.WriteLine(&quot;T2 {0}&gt; {1}; {2}&quot;, DateTime.Now.Ticks, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+               Thread.Sleep(400);
+            }
+        }
+
+        private void ExecF_003_3()
+        {
+            using (DBSession ses = new DBSession(eDBSessionLockTypes.SHARED, &quot;t1&quot;))
+            {
+                //Console.WriteLine(&quot;T3 {0}&gt; &quot;, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+                //Console.WriteLine(&quot;T3 {0}&gt; &quot;, DateTime.Now.Ticks);
+                Console.WriteLine(&quot;T3 {0}&gt; {1}; {2}&quot;, DateTime.Now.Ticks, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+                //Thread.Sleep(200);
+                Thread.Sleep(3000);
+            }
+        }
+```">
+        <div class="markDownOutput ">Testing code:<br>
+<pre><code>using DBreeze.Utils.Async;
+
+private void testF_003()
+        {
+
+            Action t2 = () =&gt;
+            {
+                ExecF_003_2();
+            };
+
+            t2.DoAsync();
+
+
+            Action t1 = () =&gt;
+            {
+                ExecF_003_1();
+            };
+
+            t1.DoAsync();
+
+           
+
+
+            Action t3 = () =&gt;
+            {
+                ExecF_003_3();
+            };
+
+            t3.DoAsync();
+        }
+
+
+  private void ExecF_003_1()
+        {
+            using (DBSession ses = new 
+DBSession(eDBSessionLockTypes.EXCLUSIVE, "t1"))
+            {
+                //Console.WriteLine("T1 {0}&gt; ", 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+                Console.WriteLine("T1 {0}&gt; {1}; {2}", 
+DateTime.Now.Ticks, 
+System.Threading.Thread.CurrentThread.ManagedThreadId, 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+                Thread.Sleep(2000);
+            }
+        }
+
+        private void ExecF_003_2()
+        {
+            using (DBSession ses = new 
+DBSession(eDBSessionLockTypes.SHARED, "t1"))
+            {
+                //Console.WriteLine("T2 {0}&gt; ", 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+                //Console.WriteLine("T2 {0}&gt; ", DateTime.Now.Ticks);
+                Console.WriteLine("T2 {0}&gt; {1}; {2}", 
+DateTime.Now.Ticks, 
+System.Threading.Thread.CurrentThread.ManagedThreadId, 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+               Thread.Sleep(400);
+            }
+        }
+
+        private void ExecF_003_3()
+        {
+            using (DBSession ses = new 
+DBSession(eDBSessionLockTypes.SHARED, "t1"))
+            {
+                //Console.WriteLine("T3 {0}&gt; ", 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+                //Console.WriteLine("T3 {0}&gt; ", DateTime.Now.Ticks);
+                Console.WriteLine("T3 {0}&gt; {1}; {2}", 
+DateTime.Now.Ticks, 
+System.Threading.Thread.CurrentThread.ManagedThreadId, 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+                //Thread.Sleep(200);
+                Thread.Sleep(3000);
+            }
+        }</code></pre>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055372" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055382">
+    <td id="PostDetailsCell_1055382" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1055382"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/11/2013 3:55:28 PM" localtimeticks="1370991328">Jun 11, 2013 at 3:55 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/11/2013 4:17:17 PM" localtimeticks="1370992637">Jun 11, 2013 at 4:17 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055382" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="This new code is integrated into DBreeze table names patterns and solves the problem of sequential threads execution.
+Check it.
+
+Theoretically DBSession can return a transaction instance. 
+
+The only con is that you must know in advance table names which you want to lock, before running session.
+With SynchronizeTable you can use reading instructions before locking.
+
+Such session decoration can be combined with SynchronizeTables instruction.
+But SynchronizeTable has no connection to DBsession.
+
+Now in scenarios where it's necessary to put full lock on the tables, we can make smth. like this: 
+
+Proc1 - inserting keys
+```
+ using (var tran = engine.GetTransaction())
+            {
+                using (DBSession ses = new DBSession(eDBSessionLockTypes.SHARED, &quot;t1&quot;,&quot;p*&quot;))
+                {
+                     //can be added if we want to change one of those tables.
+                     tran.SynchronizeTable(&quot;t1&quot;,&quot;p*&quot;);
+
+                    tran.Insert...&quot;t1&quot;
+                    tran.Insert...&quot;p127&quot;
+
+                    tran.Commit();
+                }
+            }
+```
+Proc2 - reading keys
+```
+ using (var tran = engine.GetTransaction())
+            {
+                using (DBSession ses = new DBSession(eDBSessionLockTypes.SHARED, &quot;t1&quot;))
+                {
+                    
+                    foreach(var row in tran.SelectForward(&quot;t1&quot;)
+                      ....
+                }
+            }
+```
+Proc3 - Removing Keys from t1 with the table recreation
+```
+ using (var tran = engine.GetTransaction())
+            {
+                using (DBSession ses = new DBSession(eDBSessionLockTypes.EXCLUSIVE, &quot;t1&quot;))
+                {
+                    
+                    tran.RemoveKeys(&quot;t1&quot;,true);
+                    tran.Commit();
+                }
+            }
+```
+">
+        <div class="markDownOutput ">This new code is integrated into DBreeze table names patterns and solves the problem of sequential threads execution.<br>
+Check it.<br>
+<br>
+Theoretically DBSession can return a transaction instance. <br>
+<br>
+The only con is that you must know in advance table names which you want to lock, before running session.<br>
+With SynchronizeTable you can use reading instructions before locking.<br>
+<br>
+Such session decoration can be combined with SynchronizeTables instruction.<br>
+But SynchronizeTable has no connection to DBsession.<br>
+<br>
+Now in scenarios where it's necessary to put full lock on the tables, we can make smth. like this:
+<br>
+<br>
+Proc1 - inserting keys<br>
+<pre><code> using (var tran = engine.GetTransaction())
+            {
+                using (DBSession ses = new DBSession(eDBSessionLockTypes.SHARED, "t1","p*"))
+                {
+                     //can be added if we want to change one of those tables.
+                     tran.SynchronizeTable("t1","p*");
+
+                    tran.Insert..."t1"
+                    tran.Insert..."p127"
+
+                    tran.Commit();
+                }
+            }</code></pre>
+Proc2 - reading keys<br>
+<pre><code> using (var tran = engine.GetTransaction())
+            {
+                using (DBSession ses = new DBSession(eDBSessionLockTypes.SHARED, "t1"))
+                {
+                    
+                    foreach(var row in tran.SelectForward("t1")
+                      ....
+                }
+            }</code></pre>
+Proc3 - Removing Keys from t1 with the table recreation<br>
+<pre><code> using (var tran = engine.GetTransaction())
+            {
+                using (DBSession ses = new DBSession(eDBSessionLockTypes.EXCLUSIVE, "t1"))
+                {
+                    
+                    tran.RemoveKeys("t1",true);
+                    tran.Commit();
+                }
+            }</code></pre>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055382" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055518">
+    <td id="PostDetailsCell_1055518" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1055518"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/11/2013 8:11:31 PM" localtimeticks="1371006691">Jun 11, 2013 at 8:11 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055518" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Wow nice :) I will try as soon as possible. I didn't have time lately to test stuff, I am on a verge of production code. But will test asap.">
+        <div class="markDownOutput ">Wow nice :) I will try as soon as 
+possible. I didn't have time lately to test stuff, I am on a verge of 
+production code. But will test asap.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055518" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055849">
+    <td id="PostDetailsCell_1055849" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1055849"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/12/2013 4:14:12 PM" localtimeticks="1371078852">Jun 12, 2013 at 4:14 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055849" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Btw when will you integrate these into the source ?">
+        <div class="markDownOutput ">Btw when will you integrate these into the source ?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055849" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055850">
+    <td id="PostDetailsCell_1055850" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1055850"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/12/2013 4:15:52 PM" localtimeticks="1371078952">Jun 12, 2013 at 4:15 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055850" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="I will, did u test it?">
+        <div class="markDownOutput ">I will, did u test it?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055850" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055898">
+    <td id="PostDetailsCell_1055898" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1055898"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/12/2013 5:28:28 PM" localtimeticks="1371083308">Jun 12, 2013 at 5:28 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055898" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Not yet, will test tommorow. I was really busy these days.">
+        <div class="markDownOutput ">Not yet, will test tommorow. I was really busy these days.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055898" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055900">
+    <td id="PostDetailsCell_1055900" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1055900"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/12/2013 5:34:16 PM" localtimeticks="1371083656">Jun 12, 2013 at 5:34 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055900" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Also, Would it be possible to extend something else:
+
+from documentation:
+----------------------------------------------------------------------------------------------------------
+//SETTING UP ALTERNATIVE FOLDER FOR TABLE t11
+conf.AlternativeTablesLocations.Add(&quot;t11&quot;,@&quot;D:\temp\DBreezeTest\DBR1\INT&quot;);
+//SETTING UP THAT ALL TABLES STARTING FROM “mem_” must reside in-memory
+conf.AlternativeTablesLocations.Add(&quot;mem_*&quot;, String.Empty);
+//SETTING UP Table pattern to reside in different folder
+conf.AlternativeTablesLocations.Add(“t#/Items&quot;, @&quot;D:\temp\DBreezeTest\DBR1\EXTRA&quot;);
+----------------------------------------------------------------------------------------------------------
+
+This is all nice and fine, but what if some tables are not known at run time ?
+
+
+Rather than this, use some sort of a resolver ? Like a callback. For example
+Engine.TablePathResolver += Engine.Resolver ();
+
+private string Resolver (object sender, SomeEventArgs e)
+{
+ 
+}
+
+e - Would pass name of the Table.
+and string returned would be a path for the table.
+
+Is this possible at all ? I haven't thought about everything here, just an idea. I know I am gonna have a lot of tables.
+
+
+
+
+">
+        <div class="markDownOutput ">Also, Would it be possible to extend something else:<br>
+<h2>from documentation:</h2>
+//SETTING UP ALTERNATIVE FOLDER FOR TABLE t11 <br>
+conf.AlternativeTablesLocations.Add("t11",@"D:\temp\DBreezeTest\DBR1\INT");
+<br>
+//SETTING UP THAT ALL TABLES STARTING FROM “mem_” must reside in-memory <br>
+conf.AlternativeTablesLocations.Add("mem_*", String.Empty); <br>
+//SETTING UP Table pattern to reside in different folder<br>
+<h2>conf.AlternativeTablesLocations.Add(“t#/Items", @"D:\temp\DBreezeTest\DBR1\EXTRA");</h2>
+This is all nice and fine, but what if some tables are not known at run time ? <br>
+<br>
+<br>
+Rather than this, use some sort of a resolver ? Like a callback. For example <br>
+Engine.TablePathResolver += Engine.Resolver (); <br>
+<br>
+private string Resolver (object sender, SomeEventArgs e) <br>
+{ <br>
+<br>
+} <br>
+<br>
+e - Would pass name of the Table. <br>
+and string returned would be a path for the table. <br>
+<br>
+Is this possible at all ? I haven't thought about everything here, just an idea. I know I am gonna have a lot of tables.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055900" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1055917">
+    <td id="PostDetailsCell_1055917" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1055917"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/12/2013 5:55:35 PM" localtimeticks="1371084935">Jun 12, 2013 at 5:55 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1055917" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Step by step, I have also not so much time for now.
+
+What is not clear.... may be you gonna have many tables like p1,p2,....pN.... and you don't know how many N's u will have, but prefix &quot;p&quot; you know, that's why u use patterns: for &quot;p*&quot; location must be X1, for &quot;t*&quot; - location X2. It must be more then enough. 
+
+">
+        <div class="markDownOutput ">Step by step, I have also not so much time for now. <br>
+<br>
+What is not clear.... may be you gonna have many tables like 
+p1,p2,....pN.... and you don't know how many N's u will have, but prefix
+ "p" you know, that's why u use patterns: for "p*" location must be X1, 
+for "t*" - location X2.
+ It must be more then enough. <br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1055917" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056292">
+    <td id="PostDetailsCell_1056292" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1056292"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/13/2013 12:05:57 PM" localtimeticks="1371150357">Jun 13, 2013 at 12:05 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056292" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="So, new release with locks. We can make following
+
+```
+private void ExecF_003_1()
+
+       {
+
+           using (var tran = engine.GetTransaction(eTransactionTablesLockTypes.EXCLUSIVE, &quot;t1&quot;, &quot;p*&quot;, &quot;c$&quot;))
+
+           {
+
+               Console.WriteLine(&quot;T1 {0}&gt; {1}; {2}&quot;, DateTime.Now.Ticks, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+
+               tran.Insert&lt;int, string&gt;(&quot;t1&quot;, 1, &quot;Kesha is a good parrot&quot;);
+
+               tran.Commit();
+
+               Thread.Sleep(2000);
+
+           }
+
+       }
+
+       private void ExecF_003_2()
+
+       {
+
+           List&lt;string&gt; tbls = new List&lt;string&gt;();
+
+           tbls.Add(&quot;t1&quot;);
+
+           tbls.Add(&quot;v2&quot;);
+
+           using (var tran = engine.GetTransaction(eTransactionTablesLockTypes.SHARED, tbls.ToArray()))
+
+           {
+
+               Console.WriteLine(&quot;T2 {0}&gt; {1}; {2}&quot;, DateTime.Now.Ticks, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+
+               foreach (var r in tran.SelectForward&lt;int, string&gt;(&quot;t1&quot;))
+
+               {
+
+                   Console.WriteLine(r.Value);
+
+               }              
+
+           }
+
+       }
+
+       private void ExecF_003_3()
+
+       {
+
+           using (var tran = engine.GetTransaction(eTransactionTablesLockTypes.SHARED, &quot;t1&quot;))
+
+           {
+
+               Console.WriteLine(&quot;T3 {0}&gt; {1}; {2}&quot;, DateTime.Now.Ticks, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.Now.ToString(&quot;HH:mm:ss.ms&quot;));
+
+               //This must be used in any case, when Shared threads can have parallel writes
+
+               tran.SynchronizeTables(&quot;t1&quot;);
+
+               tran.Insert&lt;int, string&gt;(&quot;t1&quot;, 1, &quot;Kesha is a VERY good parrot&quot;);
+
+               tran.Commit();
+
+               foreach (var r in tran.SelectForward&lt;int, string&gt;(&quot;t1&quot;))
+
+               {
+
+                   Console.WriteLine(r.Value);
+
+               }
+
+           }
+
+       }
+
+
+
+
+
+using DBreeze.Utils.Async;
+
+
+       private void testF_003()
+
+       {
+
+           Action t2 = () =&gt;
+
+           {
+
+               ExecF_003_2();
+
+           };
+
+           t2.DoAsync();
+
+
+           Action t1 = () =&gt;
+
+           {
+
+               ExecF_003_1();
+
+           };
+
+           t1.DoAsync();
+
+
+           Action t3 = () =&gt;
+
+           {
+
+               ExecF_003_3();
+
+           };
+
+           t3.DoAsync();
+
+       }
+```">
+        <div class="markDownOutput ">So, new release with locks. We can make following<br>
+<pre><code>private void ExecF_003_1()
+
+       {
+
+           using (var tran = 
+engine.GetTransaction(eTransactionTablesLockTypes.EXCLUSIVE, "t1", "p*",
+ "c$"))
+
+           {
+
+               Console.WriteLine("T1 {0}&gt; {1}; {2}", 
+DateTime.Now.Ticks, 
+System.Threading.Thread.CurrentThread.ManagedThreadId, 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+
+               tran.Insert&lt;int, string&gt;("t1", 1, "Kesha is a good 
+parrot");
+
+               tran.Commit();
+
+               Thread.Sleep(2000);
+
+           }
+
+       }
+
+       private void ExecF_003_2()
+
+       {
+
+           List&lt;string&gt; tbls = new List&lt;string&gt;();
+
+           tbls.Add("t1");
+
+           tbls.Add("v2");
+
+           using (var tran = 
+engine.GetTransaction(eTransactionTablesLockTypes.SHARED, 
+tbls.ToArray()))
+
+           {
+
+               Console.WriteLine("T2 {0}&gt; {1}; {2}", 
+DateTime.Now.Ticks, 
+System.Threading.Thread.CurrentThread.ManagedThreadId, 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+
+               foreach (var r in tran.SelectForward&lt;int, 
+string&gt;("t1"))
+
+               {
+
+                   Console.WriteLine(r.Value);
+
+               }              
+
+           }
+
+       }
+
+       private void ExecF_003_3()
+
+       {
+
+           using (var tran = 
+engine.GetTransaction(eTransactionTablesLockTypes.SHARED, "t1"))
+
+           {
+
+               Console.WriteLine("T3 {0}&gt; {1}; {2}", 
+DateTime.Now.Ticks, 
+System.Threading.Thread.CurrentThread.ManagedThreadId, 
+DateTime.Now.ToString("HH:mm:ss.ms"));
+
+               //This must be used in any case, when Shared threads can 
+have parallel writes
+
+               tran.SynchronizeTables("t1");
+
+               tran.Insert&lt;int, string&gt;("t1", 1, "Kesha is a VERY 
+good parrot");
+
+               tran.Commit();
+
+               foreach (var r in tran.SelectForward&lt;int, 
+string&gt;("t1"))
+
+               {
+
+                   Console.WriteLine(r.Value);
+
+               }
+
+           }
+
+       }
+
+
+
+
+
+using DBreeze.Utils.Async;
+
+
+       private void testF_003()
+
+       {
+
+           Action t2 = () =&gt;
+
+           {
+
+               ExecF_003_2();
+
+           };
+
+           t2.DoAsync();
+
+
+           Action t1 = () =&gt;
+
+           {
+
+               ExecF_003_1();
+
+           };
+
+           t1.DoAsync();
+
+
+           Action t3 = () =&gt;
+
+           {
+
+               ExecF_003_3();
+
+           };
+
+           t3.DoAsync();
+
+       }</code></pre>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056292" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056456">
+    <td id="PostDetailsCell_1056456" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1056456"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/13/2013 6:19:59 PM" localtimeticks="1371172799">Jun 13, 2013 at 6:19 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056456" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Man that's nice I got to test it ASAP. I will try before end of the weekend.">
+        <div class="markDownOutput ">Man that's nice I got to test it ASAP. I will try before end of the weekend.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056456" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056637">
+    <td id="PostDetailsCell_1056637" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1056637"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 5:20:15 AM" localtimeticks="1371212415">Jun 14, 2013 at 5:20 AM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/14/2013 5:23:46 AM" localtimeticks="1371212626">Jun 14, 2013 at 5:23 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056637" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Ok I've tested it a bit today:
+
+```
+private static void Compact ()
+{
+   int i;
+   Row&lt;int, string&gt; row;
+   string value;
+
+   engine.Scheme.DeleteTable (&quot;tmp&quot;);
+   using (var tran = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, &quot;TestTable&quot;, &quot;tmp&quot;))
+   {
+    for (i = 0; i &lt; 100000; ++i)
+    {
+     if ((i % 1000) == 0)
+      Console.WriteLine (&quot;Working @{0}&quot;, i);
+     row = tran.Select&lt;int, string&gt; (&quot;TestTable&quot;, i);
+     if (row.Exists)
+     {
+      value = row.Value;
+      tran.Insert&lt;int, string&gt; (&quot;tmp&quot;, i, value);
+     }
+    }
+    tran.Commit ();
+    engine.Scheme.RenameTable (&quot;tmp&quot;, &quot;TestTable&quot;);  
+   }
+}
+```
+
+This waits forever. Because of RenameTable.
+
+I've tried it both in single thread as multithread. Same result.">
+        <div class="markDownOutput ">Ok I've tested it a bit today:<br>
+<pre><code>private static void Compact ()
+{
+   int i;
+   Row&lt;int, string&gt; row;
+   string value;
+
+   engine.Scheme.DeleteTable ("tmp");
+   using (var tran = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, "TestTable", "tmp"))
+   {
+    for (i = 0; i &lt; 100000; ++i)
+    {
+     if ((i % 1000) == 0)
+      Console.WriteLine ("Working @{0}", i);
+     row = tran.Select&lt;int, string&gt; ("TestTable", i);
+     if (row.Exists)
+     {
+      value = row.Value;
+      tran.Insert&lt;int, string&gt; ("tmp", i, value);
+     }
+    }
+    tran.Commit ();
+    engine.Scheme.RenameTable ("tmp", "TestTable");  
+   }
+}</code></pre>
+This waits forever. Because of RenameTable.<br>
+<br>
+I've tried it both in single thread as multithread. Same result.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056637" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056640">
+    <td id="PostDetailsCell_1056640" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1056640"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 5:33:52 AM" localtimeticks="1371213232">Jun 14, 2013 at 5:33 AM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/14/2013 5:38:28 AM" localtimeticks="1371213508">Jun 14, 2013 at 5:38 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056640" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Also:
+
+```
+using (var tran = engine.GetTransaction ()) 
+{
+ Access &quot;Table1&quot;.
+ ..
+ ..
+}
+```
+
+Where in other thread:
+
+```
+using (var tran = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, &quot;Table1&quot;))
+{
+ Access &quot;Table1&quot;
+}
+```
+
+The first thread, ignores that we actually have Exclusive lock on that table in second thread. Is this intentional ?
+I mean I am going to use SHARED/EXCLUSIVE variant in my entire code. But shouldn't all tables now by default
+if not specified otherwise be eTransactionTablesLockTypes.SHARED ?
+
+
+
+Also, I've noticed that if you:
+ - Start 50 threads that are accessing db with eTransactionTablesLockTypes.SHARED.
+ - Start one that is accessing with eTransactionTablesLockTypes.EXCLUSIVE
+ - Start another 50 threads that are accessing db with eTransactionTablesLockTypes.SHARED.
+
+The one with exclusive access will ALWAYS be the last one to execute for some reason. so basically if you have a
+busy system, that exclusive one will never get a chance to do it's work ? 
+
+
+
+
+
+
+">
+        <div class="markDownOutput ">Also:<br>
+<pre><code>using (var tran = engine.GetTransaction ()) 
+{
+ Access "Table1".
+ ..
+ ..
+}</code></pre>
+Where in other thread:<br>
+<pre><code>using (var tran = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, "Table1"))
+{
+ Access "Table1"
+}</code></pre>
+The first thread, ignores that we actually have Exclusive lock on that table in second thread. Is this intentional ?<br>
+I mean I am going to use SHARED/EXCLUSIVE variant in my entire code. But shouldn't all tables now by default<br>
+if not specified otherwise be eTransactionTablesLockTypes.SHARED ?<br>
+<br>
+<br>
+<br>
+Also, I've noticed that if you:<br>
+<ul>
+<li>Start 50 threads that are accessing db with eTransactionTablesLockTypes.SHARED.
+</li><li>Start one that is accessing with eTransactionTablesLockTypes.EXCLUSIVE </li><li>Start another 50 threads that are accessing db with eTransactionTablesLockTypes.SHARED.<br>
+</li></ul>
+The one with exclusive access will ALWAYS be the last one to execute for some reason. so basically if you have a<br>
+busy system, that exclusive one will never get a chance to do it's work ? <br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056640" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056693">
+    <td id="PostDetailsCell_1056693" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1056693"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 8:57:06 AM" localtimeticks="1371225426">Jun 14, 2013 at 8:57 AM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/14/2013 9:01:11 AM" localtimeticks="1371225671">Jun 14, 2013 at 9:01 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056693" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="- about rename table issue will look later
+- in docu is written that either you use engine.GetTransaction for specific tables or engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE... WITHIN THE WHOLE PROGRAM.
+- actually implemented algorithm includes sequential thread execution, so if you start 50 threads SHARED, then EXCLUSIVE, then 50 shared.... they must be executed 50-1-50 .. if it's not so, be sure that you didn't start 50-50-1
+- BTW, just for your note, if u use SELECT-INSERT chain (like in your RenameTable issue example), SELECT better to use with AsReadVisibilityScope = true, it will create second trie instance and operation will be much-much faster.">
+        <div class="markDownOutput ">
+<ul>
+<li>about rename table issue will look later </li><li>in docu is written
+ that either you use engine.GetTransaction for specific tables or 
+engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE... WITHIN 
+THE WHOLE PROGRAM.
+</li><li>actually implemented algorithm includes sequential thread 
+execution, so if you start 50 threads SHARED, then EXCLUSIVE, then 50 
+shared.... they must be executed 50-1-50 .. if it's not so, be sure that
+ you didn't start 50-50-1
+</li><li>BTW, just for your note, if u use SELECT-INSERT chain (like in 
+your RenameTable issue example), SELECT better to use with 
+AsReadVisibilityScope = true, it will create second trie instance and 
+operation will be much-much faster.
+</li></ul>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056693" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056916">
+    <td id="PostDetailsCell_1056916" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1056916"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 4:07:23 PM" localtimeticks="1371251243">Jun 14, 2013 at 4:07 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/14/2013 4:14:01 PM" localtimeticks="1371251641">Jun 14, 2013 at 4:14 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056916" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="1. Problem is with opentableholder  which tranasaction holds until it is disposed. 
+    But if i go out of transaction and rename. There is a possibility that another thread
+    already writing the old table where data loss will occur. That's why I previously I blocked
+    things above transaction.
+
+2. Ok.
+
+3. I did start 50-1-50
+
+4. Yup but this was just a simple test.">
+        <div class="markDownOutput ">
+<ol>
+<li>Problem is with opentableholder which tranasaction holds until it is disposed.
+<br>
+But if i go out of transaction and rename. There is a possibility that another thread<br>
+already writing the old table where data loss will occur. That's why I previously I blocked<br>
+things above transaction.<br>
+</li><li>Ok.<br>
+</li><li>I did start 50-1-50<br>
+</li><li>Yup but this was just a simple test.<br>
+</li></ol>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056916" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056932">
+    <td id="PostDetailsCell_1056932" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1056932"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 4:32:31 PM" localtimeticks="1371252751">Jun 14, 2013 at 4:32 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056932" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="about 3
+
+you've run sequentially 3 threads 50 - 1 - 50, but r u sure that they were run in such sequence? when thread starts make Console.Writeline starttime.ticks. ">
+        <div class="markDownOutput ">about 3 <br>
+<br>
+you've run sequentially 3 threads 50 - 1 - 50, but r u sure that they 
+were run in such sequence? when thread starts make Console.Writeline 
+starttime.ticks.
+<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056932" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1056936">
+    <td id="PostDetailsCell_1056936" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1056936"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 4:35:34 PM" localtimeticks="1371252934">Jun 14, 2013 at 4:35 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1056936" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="about 1 - may be try our new RestoreTableFromFile with the second engine.
+
+">
+        <div class="markDownOutput ">about 1 - may be try our new RestoreTableFromFile with the second engine.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1056936" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1057011">
+    <td id="PostDetailsCell_1057011" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1057011"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/14/2013 6:51:02 PM" localtimeticks="1371261062">Jun 14, 2013 at 6:51 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1057011" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="I will attempt it with restoretablefromfile, what's the deal with table PHYSICAL file names btw ? You said to pick some high number ?">
+        <div class="markDownOutput ">I will attempt it with 
+restoretablefromfile, what's the deal with table PHYSICAL file names btw
+ ? You said to pick some high number ?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1057011" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1057268">
+    <td id="PostDetailsCell_1057268" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1057268"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/15/2013 9:06:10 PM" localtimeticks="1371355570">Jun 15, 2013 at 9:06 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/15/2013 9:09:55 PM" localtimeticks="1371355795">Jun 15, 2013 at 9:09 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1057268" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="**krome wrote:**
+&gt; I will attempt it with restoretablefromfile, what's the deal with table PHYSICAL file names btw ? You said to pick some high number ?
+
+When restoretablefromfile, after restoration, procedure tries to delete restoration-source-file, so if you use the same engine this removal can be problematic, due to file lock. Solution, either use other engine instance or remove from the code restoration-source-file deletion instruction (probably this I will make in the neareast release).
+
+About high numbers - forget it, not interesting in current implementation.">
+        <div class="markDownOutput "><strong>krome wrote:</strong><br>
+<blockquote>I will attempt it with restoretablefromfile, what's the deal
+ with table PHYSICAL file names btw ? You said to pick some high number ?<br>
+</blockquote>
+When restoretablefromfile, after restoration, procedure tries to delete 
+restoration-source-file, so if you use the same engine this removal can 
+be problematic, due to file lock. Solution, either use other engine 
+instance or remove from the code restoration-source-file
+ deletion instruction (probably this I will make in the neareast 
+release).<br>
+<br>
+About high numbers - forget it, not interesting in current implementation.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1057268" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1057840">
+    <td id="PostDetailsCell_1057840" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1057840"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/17/2013 6:52:51 PM" localtimeticks="1371520371">Jun 17, 2013 at 6:52 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1057840" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Is this ok ?
+
+```
+private static void Compact ()
+  {
+   int i;
+   Row&lt;int, string&gt; row;
+   string value;
+   ulong count;
+   byte[] btkey;
+   byte[] btval;
+
+   using (var tran = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, &quot;TestTable&quot;, &quot;tmp&quot;))
+   {
+    tran.SynchronizeTables (&quot;TestTable&quot;);
+    count = tran.Count (&quot;TestTable&quot;);
+    Console.WriteLine (&quot;~ Compact thread&quot;);
+
+    TrieSettings settings;
+    StorageLayer storageLayer;
+    LTrie trie;
+
+    settings = new TrieSettings ();
+    storageLayer = new StorageLayer (@&quot;test\90000000&quot;, settings, new DBreezeConfiguration ());
+    trie = new LTrie (storageLayer);
+
+    
+    for (i = 0; i &lt; (int) count; ++i)
+    {
+     if ((i % 100000) == 0)
+      Console.WriteLine (&quot;Working @{0}&quot;, i);
+     row = tran.Select&lt;int, string&gt; (&quot;TestTable&quot;, i, true);
+     if (row.Exists)
+     {
+      btkey = DataTypesConvertor.ConvertKey&lt;int&gt; (row.Key);
+      btval = DataTypesConvertor.ConvertValue&lt;string&gt; (row.Value);
+      trie.Add (btkey, btval);
+     }
+    }
+    trie.Commit ();
+    trie.Dispose ();
+
+    tran.RestoreTableFromTheOtherFile (&quot;TestTable&quot;, @&quot;test\90000000&quot;);
+    tran.Commit ();
+   }
+   Console.WriteLine (&quot;Compact Thread finished&quot;);
+  }
+```">
+        <div class="markDownOutput ">Is this ok ?<br>
+<pre><code>private static void Compact ()
+  {
+   int i;
+   Row&lt;int, string&gt; row;
+   string value;
+   ulong count;
+   byte[] btkey;
+   byte[] btval;
+
+   using (var tran = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, "TestTable", "tmp"))
+   {
+    tran.SynchronizeTables ("TestTable");
+    count = tran.Count ("TestTable");
+    Console.WriteLine ("~ Compact thread");
+
+    TrieSettings settings;
+    StorageLayer storageLayer;
+    LTrie trie;
+
+    settings = new TrieSettings ();
+    storageLayer = new StorageLayer (@"test\90000000", settings, new DBreezeConfiguration ());
+    trie = new LTrie (storageLayer);
+
+    
+    for (i = 0; i &lt; (int) count; ++i)
+    {
+     if ((i % 100000) == 0)
+      Console.WriteLine ("Working @{0}", i);
+     row = tran.Select&lt;int, string&gt; ("TestTable", i, true);
+     if (row.Exists)
+     {
+      btkey = DataTypesConvertor.ConvertKey&lt;int&gt; (row.Key);
+      btval = DataTypesConvertor.ConvertValue&lt;string&gt; (row.Value);
+      trie.Add (btkey, btval);
+     }
+    }
+    trie.Commit ();
+    trie.Dispose ();
+
+    tran.RestoreTableFromTheOtherFile ("TestTable", @"test\90000000");
+    tran.Commit ();
+   }
+   Console.WriteLine ("Compact Thread finished");
+  }</code></pre>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1057840" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1058074">
+    <td id="PostDetailsCell_1058074" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1058074"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/18/2013 10:44:26 AM" localtimeticks="1371577466">Jun 18, 2013 at 10:44 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1058074" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="- if u use eTransactionTablesLockTypes.EXCLUSIVE you don't need tran.SynchronizeTables (&quot;TestTable&quot;);
+- you can use new instance of DBreeze (located in the other folder) with all benefits, instead of low level LTrie.
+
+">
+        <div class="markDownOutput ">
+<ul>
+<li>if u use eTransactionTablesLockTypes.EXCLUSIVE you don't need tran.SynchronizeTables ("TestTable");
+</li><li>you can use new instance of DBreeze (located in the other folder) with all benefits, instead of low level LTrie.<br>
+</li></ul>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1058074" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1058092">
+    <td id="PostDetailsCell_1058092" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1058092"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/18/2013 11:29:13 AM" localtimeticks="1371580153">Jun 18, 2013 at 11:29 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1058092" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Sure but I don't really need it. I only need small operation, that is copy table. Btw what happens, if RestoreTable is interrupted ? before completion ? Like if machine reboots, power fails etc ?">
+        <div class="markDownOutput ">Sure but I don't really need it. I 
+only need small operation, that is copy table. Btw what happens, if 
+RestoreTable is interrupted ? before completion ? Like if machine 
+reboots, power fails etc ?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1058092" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1058101">
+    <td id="PostDetailsCell_1058101" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1058101"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/18/2013 11:44:35 AM" localtimeticks="1371581075">Jun 18, 2013 at 11:44 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1058101" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="**krome wrote:**
+&gt; what happens, if RestoreTable is interrupted ? before completion ? Like if machine reboots, power fails etc ?
+
+That's a good question... for now there is no defense will be a special entry in transaction log with a destination file path for emergency restoration... but this all a bit later. ">
+        <div class="markDownOutput "><strong>krome wrote:</strong><br>
+<blockquote>what happens, if RestoreTable is interrupted ? before completion ? Like if machine reboots, power fails etc ?<br>
+</blockquote>
+That's a good question... for now there is no defense will be a special 
+entry in transaction log with a destination file path for emergency 
+restoration... but this all a bit later.
+<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1058101" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1058130">
+    <td id="PostDetailsCell_1058130" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1058130"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/18/2013 1:12:18 PM" localtimeticks="1371586338">Jun 18, 2013 at 1:12 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1058130" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="If I use low level such as above , for compaction, does it have to have a DIGITAL name or not ? Can I use some temporary name like generated from guids etc ?">
+        <div class="markDownOutput ">If I use low level such as above , 
+for compaction, does it have to have a DIGITAL name or not ? Can I use 
+some temporary name like generated from guids etc ?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1058130" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1058131">
+    <td id="PostDetailsCell_1058131" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1058131"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/18/2013 1:15:01 PM" localtimeticks="1371586501">Jun 18, 2013 at 1:15 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1058131" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="**krome wrote:**
+&gt; If I use low level such as above , for compaction, does it have to have a DIGITAL name or not ? Can I use some temporary name like generated from guids etc ?
+
+must be digital... it's in source code, only TransactionJournal and Scheme can have their own names.">
+        <div class="markDownOutput "><strong>krome wrote:</strong><br>
+<blockquote>If I use low level such as above , for compaction, does it 
+have to have a DIGITAL name or not ? Can I use some temporary name like 
+generated from guids etc ?<br>
+</blockquote>
+must be digital... it's in source code, only TransactionJournal and Scheme can have their own names.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1058131" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1058452">
+    <td id="PostDetailsCell_1058452" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1058452"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/19/2013 3:07:17 AM" localtimeticks="1371636437">Jun 19, 2013 at 3:07 AM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/19/2013 6:09:14 AM" localtimeticks="1371647354">Jun 19, 2013 at 6:09 AM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1058452" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="-">
+        <div class="markDownOutput ">-<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1058452" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059632">
+    <td id="PostDetailsCell_1059632" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1059632"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 3:22:54 PM" localtimeticks="1371853374">Jun 21, 2013 at 3:22 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/21/2013 3:40:16 PM" localtimeticks="1371854416">Jun 21, 2013 at 3:40 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059632" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Something weird is going on blaze.
+
+
+
+
+Simplified version that i tested today:
+
+```
+public void CompactAnalyticalTable (string temporaryDirectory)
+{
+   string tableName;
+   string tmpTableName;
+   string tmpTablePathname;
+   DBreezeConfiguration tmpConfiguration;
+   DBreezeEngine tmpEngine;
+   
+   tableName = &quot;someTable&quot;;
+   using (Transaction transaction = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, tableName))
+    try
+    {
+     temporaryDirectory = Path.GetFullPath (Path.Combine (temporaryDirectory, &quot;engine&quot;, Guid.NewGuid ().ToString ()));
+     tmpConfiguration = new DBreezeConfiguration ()
+     {
+      DBreezeDataFolderName = temporaryDirectory,
+      Storage = DBreezeConfiguration.eStorage.DISK,
+     };
+     tmpEngine = new DBreezeEngine (tmpConfiguration);
+     transaction.SynchronizeTables (tableName);
+
+     tmpTableName = String.Format (&quot;temporary/{0}&quot;, Guid.NewGuid ().ToString ());
+     using (Transaction tmpTransaction = tmpEngine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, tmpTableName))
+     {
+      tmpTransaction.SynchronizeTables (tmpTableName);
+
+      tmpTransaction.Insert&lt;byte, byte[]&gt; (tmpTableName, 1, new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 });
+      tmpTransaction.Insert&lt;byte, byte[]&gt; (tmpTableName, 2, new byte[] { 0x6, 0x7, 0x8, 0x9, 0xa });
+
+      tmpTransaction.Commit ();
+      tmpTablePathname = tmpEngine.Scheme.GetTablePathFromTableName (tmpTableName);
+     }
+     tmpEngine.Dispose ();
+   
+     transaction.RestoreTableFromTheOtherFile (tableName, tmpTablePathname);
+     transaction.Commit ();
+    }
+    catch (Exception ex)
+    {
+     LOG.ErrorFormat (ex.ToString ());
+    }
+  }
+```
+
+The 'someTable' table, contained 7 entries (nested tables). As You can see all I do is insert 2 keys. 
+Table is transferred with RestoreTableFromOtherFile from other engine.
+But there is some weird problem, transaction.Count (&quot;someTable&quot;), will still show that there are 7 entries. 
+
+As far as i understand, after restoretableFromOtherFile &amp; transaction.commit () transaction should now reflect the new table (restored from other egine) ?
+
+Especially I had problems when I inserted nested tables.
+
+Is something else not cleared maybe when restorefromotherfile is used ?
+
+I would really kindly ask You to help me with this, I am at final stages. Where I need to deploy.
+
+
+
+
+">
+        <div class="markDownOutput ">Something weird is going on blaze.<br>
+<br>
+<br>
+<br>
+<br>
+Simplified version that i tested today:<br>
+<pre><code>public void CompactAnalyticalTable (string temporaryDirectory)
+{
+   string tableName;
+   string tmpTableName;
+   string tmpTablePathname;
+   DBreezeConfiguration tmpConfiguration;
+   DBreezeEngine tmpEngine;
+   
+   tableName = "someTable";
+   using (Transaction transaction = engine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, tableName))
+    try
+    {
+     temporaryDirectory = Path.GetFullPath (Path.Combine (temporaryDirectory, "engine", Guid.NewGuid ().ToString ()));
+     tmpConfiguration = new DBreezeConfiguration ()
+     {
+      DBreezeDataFolderName = temporaryDirectory,
+      Storage = DBreezeConfiguration.eStorage.DISK,
+     };
+     tmpEngine = new DBreezeEngine (tmpConfiguration);
+     transaction.SynchronizeTables (tableName);
+
+     tmpTableName = String.Format ("temporary/{0}", Guid.NewGuid ().ToString ());
+     using (Transaction tmpTransaction = tmpEngine.GetTransaction (eTransactionTablesLockTypes.EXCLUSIVE, tmpTableName))
+     {
+      tmpTransaction.SynchronizeTables (tmpTableName);
+
+      tmpTransaction.Insert&lt;byte, byte[]&gt; (tmpTableName, 1, new byte[] { 0x1, 0x2, 0x3, 0x4, 0x5 });
+      tmpTransaction.Insert&lt;byte, byte[]&gt; (tmpTableName, 2, new byte[] { 0x6, 0x7, 0x8, 0x9, 0xa });
+
+      tmpTransaction.Commit ();
+      tmpTablePathname = tmpEngine.Scheme.GetTablePathFromTableName (tmpTableName);
+     }
+     tmpEngine.Dispose ();
+   
+     transaction.RestoreTableFromTheOtherFile (tableName, tmpTablePathname);
+     transaction.Commit ();
+    }
+    catch (Exception ex)
+    {
+     LOG.ErrorFormat (ex.ToString ());
+    }
+  }</code></pre>
+The 'someTable' table, contained 7 entries (nested tables). As You can see all I do is insert 2 keys.
+<br>
+Table is transferred with RestoreTableFromOtherFile from other engine.<br>
+But there is some weird problem, transaction.Count ("someTable"), will still show that there are 7 entries.
+<br>
+<br>
+As far as i understand, after restoretableFromOtherFile &amp; 
+transaction.commit () transaction should now reflect the new table 
+(restored from other egine) ?<br>
+<br>
+Especially I had problems when I inserted nested tables.<br>
+<br>
+Is something else not cleared maybe when restorefromotherfile is used ?<br>
+<br>
+I would really kindly ask You to help me with this, I am at final stages. Where I need to deploy.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059632" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059645">
+    <td id="PostDetailsCell_1059645" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1059645"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 3:49:14 PM" localtimeticks="1371854954">Jun 21, 2013 at 3:49 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/21/2013 3:51:50 PM" localtimeticks="1371855110">Jun 21, 2013 at 3:51 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059645" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="This is especially true if i replace those 2x inserts in above code with:
+
+```
+NestedTable nt1 = transaction.InsertTable&lt;byte&gt; (tableName, (byte) 1, 0)
+NestedTable nt2 = tmpTransaction.InsertTable&lt;byte&gt; (tmpTableName, (byte) 1, 0);
+
+foreach (Row&lt;byte[], byte[]&gt; row in nt1.SelectForward&lt;byte[], byte[]&gt; (true))
+      {
+       if (!row.Exists)
+        continue;
+       nt2.Insert&lt;byte[], byte[]&gt; (row.Key, row.Value);
+      }
+```
+
+I found out that if i leave out: __transaction.Commit ();__ the results are different.
+">
+        <div class="markDownOutput ">This is especially true if i replace those 2x inserts in above code with:<br>
+<pre><code>NestedTable nt1 = transaction.InsertTable&lt;byte&gt; (tableName, (byte) 1, 0)
+NestedTable nt2 = tmpTransaction.InsertTable&lt;byte&gt; (tmpTableName, (byte) 1, 0);
+
+foreach (Row&lt;byte[], byte[]&gt; row in nt1.SelectForward&lt;byte[], byte[]&gt; (true))
+      {
+       if (!row.Exists)
+        continue;
+       nt2.Insert&lt;byte[], byte[]&gt; (row.Key, row.Value);
+      }</code></pre>
+I found out that if i leave out: <strong>transaction.Commit ();</strong> the results are different.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059645" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059652">
+    <td id="PostDetailsCell_1059652" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1059652"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:03:08 PM" localtimeticks="1371855788">Jun 21, 2013 at 4:03 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059652" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Try to get rid of following lines in the &quot;simplified version&quot;:
+
+- transaction.SynchronizeTables (tableName);
+- tmpTransaction.SynchronizeTables (tmpTableName);
+- transaction.Commit ();  - this one we don't need at all, at this place.
+
+">
+        <div class="markDownOutput ">Try to get rid of following lines in the "simplified version":<br>
+<ul>
+<li>transaction.SynchronizeTables (tableName); </li><li>tmpTransaction.SynchronizeTables (tmpTableName); </li><li>transaction.Commit (); - this one we don't need at all, at this place.<br>
+</li></ul>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059652" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059655">
+    <td id="PostDetailsCell_1059655" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1059655"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:08:53 PM" localtimeticks="1371856133">Jun 21, 2013 at 4:08 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059655" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Yup, apperently transaction.commit () is problematic after restorefromotherfile. Could you investigate it plz ?">
+        <div class="markDownOutput ">Yup, apperently transaction.commit () is problematic after restorefromotherfile. Could you investigate it plz ?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059655" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059656">
+    <td id="PostDetailsCell_1059656" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1059656"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:10:50 PM" localtimeticks="1371856250">Jun 21, 2013 at 4:10 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059656" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="also for me is not clear why tmpEngine is open with EXLUSIVE transaction....must be just GetTransaction()">
+        <div class="markDownOutput ">also for me is not clear why tmpEngine is open with EXLUSIVE transaction....must be just GetTransaction()<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059656" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059658">
+    <td id="PostDetailsCell_1059658" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1059658"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:12:39 PM" localtimeticks="1371856359">Jun 21, 2013 at 4:12 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059658" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="**krome wrote:**
+&gt; Yup, apperently transaction.commit () is problematic after restorefromotherfile. Could you investigate it plz ?
+
+transaction.commit () SHOLUD NOT be after restorefromotherfile. 
+Why do you need it there?">
+        <div class="markDownOutput "><strong>krome wrote:</strong><br>
+<blockquote>Yup, apperently transaction.commit () is problematic after restorefromotherfile. Could you investigate it plz ?<br>
+</blockquote>
+transaction.commit () SHOLUD NOT be after restorefromotherfile. <br>
+Why do you need it there?<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059658" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059659">
+    <td id="PostDetailsCell_1059659" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1059659"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:14:03 PM" localtimeticks="1371856443">Jun 21, 2013 at 4:14 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/21/2013 4:14:15 PM" localtimeticks="1371856455">Jun 21, 2013 at 4:14 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059659" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="I didn't know that. After I debugged Your code, I found it weird. Btw why not exclusive on tmpEngine ? Is there any harm ? It's a temporary table. Btw thanks for quick reply as always :)">
+        <div class="markDownOutput ">I didn't know that. After I 
+debugged Your code, I found it weird. Btw why not exclusive on tmpEngine
+ ? Is there any harm ? It's a temporary table. Btw thanks for quick 
+reply as always :)<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059659" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059664">
+    <td id="PostDetailsCell_1059664" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="TeamPost">
+        <div class="Details">
+            <a name="post1059664"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/hhblaze">hhblaze</a></div>
+            <div class="UserRole">Coordinator</div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:28:54 PM" localtimeticks="1371857334">Jun 21, 2013 at 4:28 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059664" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="No extra harm, but there is a sense to open temporary DBreeze engine instance in the beginning of the application together with the working instance. And dispose it in the end of application. Temp engine logical table names could be the same as in working instance. 
+First you copy from working engine (WE) into temporary engine (TE), then execute restorefromotherfile, then execute tran.RemoveKeys(withFIleRecreation = true) on temp engine. You lock exclusively tables only in working engine transaction, and temp engine tables will be &quot;logically&quot; locked.
+
+For now we can assume that restorefromotherfile command is a Commit and we don't need any other commit.
+Problem of the Commit after restorefromotherfile , probably, exists because of 
+
+NestedTable nt1 = transaction.__InsertTable__&lt;byte&gt; (tableName, (byte) 1, 0) 
+insetead of 
+NestedTable nt1 = transaction.__SelectTable__&lt;byte&gt; (tableName, (byte) 1, 0) 
+
+... but it should not happen if commit is not executed after restorefromotherfile, smth. like this for now.">
+        <div class="markDownOutput ">No extra harm, but there is a sense
+ to open temporary DBreeze engine instance in the beginning of the 
+application together with the working instance. And dispose it in the 
+end of application. Temp engine logical table names could be the same as
+ in working
+ instance. <br>
+First you copy from working engine (WE) into temporary engine (TE), then
+ execute restorefromotherfile, then execute 
+tran.RemoveKeys(withFIleRecreation = true) on temp engine. You lock 
+exclusively tables only in working engine transaction, and temp engine 
+tables
+ will be "logically" locked. <br>
+<br>
+For now we can assume that restorefromotherfile command is a Commit and we don't need any other commit.
+<br>
+Problem of the Commit after restorefromotherfile , probably, exists because of <br>
+<br>
+NestedTable nt1 = transaction.<strong>InsertTable</strong>&lt;byte&gt; (tableName, (byte) 1, 0)
+<br>
+insetead of <br>
+NestedTable nt1 = transaction.<strong>SelectTable</strong>&lt;byte&gt; (tableName, (byte) 1, 0)
+<br>
+<br>
+... but it should not happen if commit is not executed after restorefromotherfile, smth. like this for now.<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059664" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+        <tr><td colspan="3"><div class="PostSeparator"></div></td></tr>
+        
+
+<tr id="PostPanel" class="Post" d:forid="1059667">
+    <td id="PostDetailsCell_1059667" style="vertical-align: top; border: solid #BBB 1px; border-bottom: none; border-left: none; border-top: none; width: 114px" class="Post">
+        <div class="Details">
+            <a name="post1059667"></a>
+            <div class="UserName" style="white-space: pre-wrap; word-wrap: break-word;"><a class="UserProfileLink" href="https://www.codeplex.com/site/users/view/krome">krome</a></div>
+            <div class="UserRole"></div>
+            <div style="white-space: normal" class="SubText"><span class="smartDate" title="6/21/2013 4:37:01 PM" localtimeticks="1371857821">Jun 21, 2013 at 4:37 PM</span></div>
+            
+            <div style="white-space: normal" class="SubText" id="UpdatedDiv">Edited <span class="smartDate" title="6/21/2013 4:38:41 PM" localtimeticks="1371857921">Jun 21, 2013 at 4:38 PM</span></div>
+            
+        </div>
+    </td>
+    <td id="PostContent_1059667" style="width: 100%; vertical-align: top;" class=" discussionPost discussionListContent WordWrapBreakWord Post markDownOutput" data-markdown="Good idea, but at the beginning I designed everything around it to use single engine. I don't wanna clutter the code for now. Maybe when I release second version.
+
+About the commit, fine I explored it You helped clarify. But in the future I think You should do something about it. Otherwise other people will have problems. Or at least for now document it ? :)
+
+">
+        <div class="markDownOutput ">Good idea, but at the beginning I 
+designed everything around it to use single engine. I don't wanna 
+clutter the code for now. Maybe when I release second version.<br>
+<br>
+About the commit, fine I explored it You helped clarify. But in the 
+future I think You should do something about it. Otherwise other people 
+will have problems. Or at least for now document it ? :)<br>
+</div>
+        
+    </td>
+    <td style="vertical-align: top; width: 134px;" class="Post ">
+        
+        <div id="Options_1059667" class="Options">
+            
+        </div>
+        
+    </td>
+</tr>
+
+</tbody></table>
+    </div>
+
+    
+        <div class="StandardMarginTop">
+            <a id="SignInToAddCommentLink" href="https://www.codeplex.com/site/login?RedirectUrl=https%3a%2f%2fdbreeze.codeplex.com%2fdiscussions%2f446373">
+                Sign in to post message or set email notifications
+            </a>
+        </div>
+    
+
+
+    <div id="PostEditorContainer">
+        <a name="editor"></a>
+        <div id="Editor" style="display: none;">
+            
+
+<div class="MarkdownEditor" data-options-id="2d0c2d4d-efef-42b8-99c1-67976f155a3f">
+    
+
+    <div class="MarkdownEditorControls">
+        <a href="#" tabindex="-1" class="control md_help" title="Markdown Syntax Guide"></a>
+        <div class="control md_divider"></div>
+        <a href="#" tabindex="-1" class="control md_header" title="Insert Header (CTRL + H)"></a>
+        <a href="#" tabindex="-1" class="control md_code" title="Insert Code (CTRL + K)"></a>
+        <a href="#" tabindex="-1" class="control md_quote" title="Insert Quote (CTRL + Q)"></a>
+        <a href="#" tabindex="-1" class="control md_img" title="Insert Img (CTRL + G)"></a>
+        <a href="#" tabindex="-1" class="control md_link" title="Insert Link (CTRL + L)"></a>
+        <a href="#" tabindex="-1" class="control md_ulist" title="Unordered List (CTRL + U)"></a>
+        <a href="#" tabindex="-1" class="control md_olist" title="Ordered List (CTRL + O)"></a>
+        <a href="#" tabindex="-1" class="control md_italics" title="Italic Text (CTRL + I)"></a>
+        <a href="#" tabindex="-1" class="control md_bold" title="Bold Text (CTRL + B)"></a>
+    </div>
+
+    
+
+<div class="tab_control">
+    <!-- Generate the basic HTML for the tabs. -->
+    
+        <div id="Compose" class="tab selected" data-custom-header-id="" data-tab-contents-id="compose_contents_757c7fb8-385a-4052-89a5-a19633ccf26e">
+            Compose
+        </div>
+    
+        <div id="Preview" class="tab " data-custom-header-id="" data-tab-contents-id="preview_contents_c011d038-37ed-4f8d-a280-1c17535fdae1">
+            Preview
+        </div>
+    
+    <div class="clear"></div>
+</div>
+
+
+    <div id="compose_contents_757c7fb8-385a-4052-89a5-a19633ccf26e" class="compose_tab_content" style="display: block;">
+        <textarea class=" MarkdownEditorDimensions" cols="20" id="MarkdownEditor" name="content" rows="2" style=""></textarea><div style="clear: both; display: none;" class="ErrorMessage"></div>
+        <div class="ClearBoth"></div>
+
+        <div class="markdownGuide" style="display: none">
+            <table>
+                <tbody><tr>
+                    <td class="markdownGuideColumn">
+                        <h1>Text Formatting</h1>
+                        <div># Header 1</div>
+                        <div>## Header 2</div>
+                        <br>
+                        <div>*italics* (or _italics_)</div>
+                        <div>**bold** (or __bold__)</div>
+                    </td>
+                    <td class="markdownGuideColumn">
+                        <h1>Lists</h1>
+                        <div>* Unordered List</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; * SubItem</div>
+                        <br>
+                        <div>1. Ordered List</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. SubItem</div>
+                    </td>
+                    <td class="markdownGuideColumn">
+                        <h1>Quotes</h1>
+                        <div>&gt; Lorem ipsum</div>
+                        <div>dolor sitamet </div>
+                        <div>non. Lectus at</div>
+                        <div>nam nunc...</div>
+                    </td>
+                    <td class="markdownGuideColumn">
+                        <h1>Code</h1>
+                        <div>`Inline Code`</div>
+                        <br>
+                        <div>``` C#</div>
+                        <div>if (foo==bar)</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bar++</div>
+                        <div>```</div>
+                    </td>
+                    <td class="markdownGuideColumn">
+                        <h1>References</h1>
+                        <div>[Link Text](URL)</div>
+                        <br>
+                        <div>![Image](URL)</div>
+                        <br>
+                        <a class="Reference" target="_blank" href="http://codeplex.codeplex.com/wikipage?title=Markdown&amp;referringTitle=Documentation">Markdown Reference</a>
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+    </div>
+    <div id="preview_contents_c011d038-37ed-4f8d-a280-1c17535fdae1" class="preview_tab_content markDownOutput" style="width: 963px; display: none;">
+        
+            <div></div>
+        
+    </div>
+    <div class="clear"></div>
+</div>
+
+            
+            <div class="row" id="recaptcha_row">
+                
+<style type="text/css">
+    .recaptchatable {
+        width: 100%;
+        border: none !important;
+    }
+
+        .recaptchatable #recaptcha_image {
+            border: 1px solid #CECECE !important;
+        }
+
+        .recaptchatable #recaptcha_response_field {
+            border: 1px solid #CECECE !important;
+            font-family: "Segoe UI","Microsoft Sans Serif",Arial,Geneva,Sans-Serif !important;
+            font-size: 1em !important;
+        }
+
+        .recaptchatable #recaptcha_tagline {
+            display: none !important;
+        }
+
+        .recaptchatable .ErrorMessage * {
+            color: #F00 !important;
+        }
+
+    .recaptcha_input_area {
+        padding-left: 1px !important;
+    }
+
+        .recaptcha_input_area .ErrorMessage {
+            float: none !important;
+        }
+
+    #recaptcha_image {
+        margin-left: 1px !important;
+    }
+
+    #recaptcha_response_field {
+        width: 290px !important;
+        float: none !important;
+    }
+</style>
+<script type="text/javascript">
+    var RecaptchaOptions = {
+        theme: 'clean'
+    };
+</script>
+<script type="text/javascript" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/challenge"></script><script type="text/javascript" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/recaptcha.js"></script><div id="recaptcha_widget_div" style="" class=" recaptcha_nothad_incorrect_sol recaptcha_isnot_showing_audio"><div id="recaptcha_area"><table id="recaptcha_table" class="recaptchatable recaptcha_theme_clean"> <tbody><tr height="73"> <td class="recaptcha_image_cell" width="302"><center><div id="recaptcha_image" style="width: 300px; height: 57px;"><img id="recaptcha_challenge_image" alt="reCAPTCHA challenge image" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/image.jpg" width="300" height="57"></div></center></td> <td style="padding: 10px 7px 7px 7px;"> <a id="recaptcha_reload_btn" title="Get a new challenge"><img id="recaptcha_reload" alt="Get a new challenge" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/refresh.png" width="25" height="18"></a> <a id="recaptcha_switch_audio_btn" class="recaptcha_only_if_image" title="Get an audio challenge"><img id="recaptcha_switch_audio" alt="Get an audio challenge" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/audio.png" width="25" height="15"></a><a id="recaptcha_switch_img_btn" class="recaptcha_only_if_audio" title="Get a visual challenge"><img id="recaptcha_switch_img" alt="Get a visual challenge" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/text.png" width="25" height="15"></a> <a id="recaptcha_whatsthis_btn" title="Help"><img id="recaptcha_whatsthis" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/help.png" alt="Help" width="25" height="16"></a> </td> <td style="padding: 18px 7px 18px 7px;"> <img id="recaptcha_logo" alt="" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/logo.png" width="71" height="36"> </td> </tr> <tr> <td style="padding-left: 7px;"> <div class="recaptcha_input_area" style="padding-top: 2px; padding-bottom: 7px;"> <span id="recaptcha_challenge_field_holder" style="display: none;"><input name="recaptcha_challenge_field" id="recaptcha_challenge_field" value="03AOmkcwLRxCiHfk5R4KFPiDM7vKnsVFwwn_Zad1Ycsw_RY1WL8F76SBntwaYwKUQ9JgcO779zTC1QATUK0bZQ8I1AU7kOvvDQKv4XWgNuN8xuRrJUWzXbue678ciIkigROdKWOtv4xMMkXjZqjFkoaDkJt9Z2lS72ox-zeIDd90cDMKD8m5HXiXO4nAY2QHa0qKEScnSRpVrq" type="hidden"></span><input style="border: 1px solid #3c3c3c; width: 302px;" name="recaptcha_response_field" id="recaptcha_response_field" placeholder="Type the text" autocomplete="off" type="text"> </div> </td> <td colspan="2"><span id="recaptcha_privacy" class="recaptcha_only_if_privacy"><a href="http://www.google.com/intl/en/policies/" target="_blank">Privacy &amp; Terms</a></span></td> </tr> </tbody></table> </div></div>
+<noscript>
+    <iframe 
+src="https://www.google.com/recaptcha/api/noscript?k=6LfE3QgAAAAAAI0EEli9aKrwKQf8nVr9xeFOJ1SZ"
+ height="300" width="500" frameborder="0"></iframe>
+    <br />
+    <textarea cols="40" id="recaptcha_challenge_field" 
+name="recaptcha_challenge_field" rows="3">
+</textarea>
+    <input id="recaptcha_response_field" name="recaptcha_response_field"
+ type="hidden" value="manual_challenge" />
+</noscript>
+<span id="CaptchaError" class="Error" style="display: none;"></span>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#recaptcha_reload').attr('src', 'https://download-codeplex.sec.s-msft.com/Images/v21053/recaptcha_refresh.png');
+        $('#recaptcha_switch_audio').attr('src', 'https://download-codeplex.sec.s-msft.com/Images/v21053/recaptcha_audio.png');
+        $('#recaptcha_switch_img').attr('src', 'https://download-codeplex.sec.s-msft.com/Images/v21053/recaptcha_text.png');
+        $('#recaptcha_whatsthis').attr('src', 'https://download-codeplex.sec.s-msft.com/Images/v21053/recaptcha_help.png');
+        $('#recaptcha_area tr:first').attr('height', '35');
+    });
+</script>
+
+                <div class="clear"></div>
+                <span id="ReCaptchaError"></span>
+            </div>
+            <div style="padding-top: 6px;">
+                <input id="SaveButton" value="Save" class="ok" type="button">
+                <input id="CancelButton" value="Cancel" class="cancel" type="button">
+                <div class="clear"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="DeletePostPanel" class="modal" style="display:none">
+    <div class="row">
+        <h2>Delete Post <a href="javascript:return%20false;" class="close">X</a></h2>
+    </div>
+    <div class="modal_info">
+        <p>Are you sure you want to delete this post? You will not be able to recover it later.</p>
+        <p class="modal_buttons">
+            <input id="ClosePostCancel" value="Cancel" class="cancel" type="button">
+            <input id="ClosePostOk" value="Delete" class="ok" type="button">
+        </p>
+        <div class="ClearBoth"></div>
+    </div>
+</div>
+        
+            <!-- Email notification / Subscription details -->
+            
+    </div>
+</div>
+    
+<div id="DeleteThreadPanel" class="modal" style="display:none">
+    <div class="row">
+        <h2>Delete Thread <a href="javascript:return%20false;" class="close">X</a></h2>
+    </div>
+    <div class="modal_info">
+        <p>Are you sure you want to delete this thread? You will not be able to recover it later.</p>
+        <p class="modal_buttons">
+            <input id="CloseThreadCancel" value="Cancel" class="cancel" type="button">
+            <input id="CloseThreadOk" value="Delete" class="ok" type="button">
+        </p>
+        <div class="ClearBoth"></div>
+    </div>
+</div>
+
+<script type="text/javascript" language="javascript">
+    $(function () {
+
+        $('#recaptcha_response_field')
+            .bind('keypress', function (event) { return $submitKeyPressElement(this, event); });
+
+
+        if ($('#DeleteThreadLink')) {
+            $('#DeleteThreadLink').click(function () {
+                OpenDialog('#DeleteThreadPanel', true, '41em');
+            });
+        }
+        
+        $('#DeleteThreadPanel #CloseThreadOk').click(function () {
+            var url = 'https://dbreeze.codeplex.com/discussions/446373';
+            $.ajax({
+                url: url,
+                type: 'DELETE',
+                success: function (x) {
+                    location.href = x.RedirectUrl;
+                }
+            });
+        });
+    });
+
+    workItemMention = new codeplex.ui.WorkItemMention();
+    workItemMention.addLinks(".discussionPost");
+</script>
+
+
+        
+        
+                
+                <div class="clear"></div>
+                
+                <div id="footer">
+                    <div class="row">
+                        <hr>
+                        <ul>
+                            <li>© 2006-2017 Microsoft</li>
+                            <li><a href="https://www.codeplex.com/site/help">Get Help</a></li>
+                            <li><a href="https://dbreeze.codeplex.com/site/legal/privacy">Privacy Statement</a></li>
+                            <li><a href="https://www.codeplex.com/site/legal/terms">Terms of Use</a></li>
+                            <li><a href="https://www.codeplex.com/site/legal/conduct">Code of Conduct</a></li>
+                            <li><a href="http://developermedia.com/" target="_blank">Advertise With Us</a></li>
+                            <li>Version 6.23.2017.21053</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </form>
+    
+
+<div style="display: none; z-index: 1000; outline: 0px none; position: absolute;" class="ui-dialog ui-widget ui-widget-content ui-corner-all  ui-draggable ui-resizable" tabindex="-1" role="dialog" aria-labelledby="ui-dialog-title-UpdateProgressPanel"><div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix"><span class="ui-dialog-title" id="ui-dialog-title-UpdateProgressPanel">&nbsp;</span><a href="#" class="ui-dialog-titlebar-close ui-corner-all" role="button"><span class="ui-icon ui-icon-closethick">close</span></a></div><div id="UpdateProgressPanel" class="loading_animation ui-dialog-content ui-widget-content" style="">
+                <div class="row">
+                    <h2 class="anim_h2">
+                        <span id="UpdateProgressText">Updating...</span>
+                        <span id="animatedLoadingIconContainer">
+                            <img id="animatedLoadingIcon" src="DBreeze%20-%20C%23%20ACID%20NoSql%20embedded%20object%20database%20management%20system.%20-%20Locking_files/loading_animation.gif" class="anim_img">
+                        </span>
+                    </h2>
+                </div>
+            </div><div class="ui-resizable-handle ui-resizable-n"></div><div class="ui-resizable-handle ui-resizable-e"></div><div class="ui-resizable-handle ui-resizable-s"></div><div class="ui-resizable-handle ui-resizable-w"></div><div class="ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se ui-icon-grip-diagonal-se" style="z-index: 1001;"></div><div class="ui-resizable-handle ui-resizable-sw" style="z-index: 1002;"></div><div class="ui-resizable-handle ui-resizable-ne" style="z-index: 1003;"></div><div class="ui-resizable-handle ui-resizable-nw" style="z-index: 1004;"></div></div></body></html>
