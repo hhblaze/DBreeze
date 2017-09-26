@@ -337,7 +337,7 @@ namespace DBreeze.Transactions
         /// <param name="transactionThreadId"></param>
         /// <param name="tablesNames"></param>
         /// <param name="calledBySynchronizer"></param>
-        public void RegisterWriteTablesForTransaction(int transactionThreadId, List<string> tablesNames,bool calledBySynchronizer)
+        public void RegisterWriteTablesForTransaction(int transactionThreadId, List<string> tablesNames, bool calledBySynchronizer)
         {
             //in every transaction unit we got a list of reserved for WRITING tables
 
@@ -466,7 +466,15 @@ namespace DBreeze.Transactions
 
                     //blocking thread which requires busy tables for writing, till they are released
                     //ThreadsGator.PutGateHere(20000);    //every 20 second (or by Gate open we give a chance to re-try, for safety reasons of hanged threads, if programmer didn't dispose DBreeze process after the programm end)
+
+                    //#if ASYNC
+                    //                    await ThreadsGator.PutGateHere().ConfigureAwait(false);
+                    //#else
+                    //                    ThreadsGator.PutGateHere();
+                    //#endif
+
                     ThreadsGator.PutGateHere();
+
                     //mreWriteTransactionLock.WaitOne();
                 }
             }//eo while
@@ -474,7 +482,7 @@ namespace DBreeze.Transactions
            
         }
 
-        #endregion //Eliminating Deadlocks. Registering tables for write before starting transaction operations
+#endregion //Eliminating Deadlocks. Registering tables for write before starting transaction operations
 
 
         /// <summary>

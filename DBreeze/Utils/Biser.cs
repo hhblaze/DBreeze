@@ -561,6 +561,123 @@ namespace DBreeze.Utils
         }
 
         /// <summary>
+        /// null elements equal to new byte[0]
+        /// </summary>
+        /// <param name="d"></param>
+        /// <returns></returns>
+        public static byte[] Encode_PROTO_ListByteArray(IList<byte[]> d)
+        {
+            //null element of the list is not allowed (the same as in protobuf), byte[0]  means String.Empty
+
+            if (d == null || d.Count == 0)
+                return new byte[0];
+
+            byte[] tar1 = null;            
+            using (MemoryStream ms = new MemoryStream())
+            {
+
+                foreach (var el in d)
+                {
+                    //Setting key
+                    ms.Write(new byte[] { 10 }, 0, 1); //complex Type - 10     
+                    if (el == null || el.Length == 0)
+                        ms.Write(new byte[] { 0 }, 0, 1);// 0 length element
+                    else
+                    {
+                        tar1 = DBreeze.Utils.Biser.GetVarintBytes((uint)el.Length);
+                        ms.Write(tar1, 0, tar1.Length);//length of key
+                        ms.Write(el, 0, el.Length);//key self                    
+                    }
+                }
+
+                tar1 = ms.ToArray();
+                ms.Close();
+            }
+
+            return tar1;
+        }
+
+        /// <summary>
+        /// null elements equal to new byte[0]
+        /// </summary>
+        /// <param name="encB"></param>
+        /// <returns></returns>
+        public static List<byte[]> Decode_PROTO_ListByteArray(byte[] encB)
+        {
+
+            //null element of the list is not allowed (the same as in protobuf), byte[0]  means String.Empty
+
+            if (encB == null)
+                return null;
+
+            List<byte[]> ret = new List<byte[]>();
+
+            if (encB.Length == 0)
+                return ret;
+
+            List<byte[]> ar = new List<byte[]>();
+            int i = 0;
+            int mode = 0;
+
+            byte[] sizer = new byte[4];
+            int size = 0;
+            uint valCnt = 0;
+            byte el = 0;
+            byte[] key = new byte[0];
+
+            Action ClearSizer = () =>
+            {
+                sizer[0] = 0;
+                sizer[1] = 0;
+                sizer[2] = 0;
+                sizer[3] = 0;
+
+                size = 0;
+            };
+
+            while (i < encB.Length)
+            {
+                el = encB[i];
+
+                switch (mode)
+                {
+                    case 0:
+                        //Always delimiter 10
+                        mode = 1;
+                        break;
+                    case 1:
+                        //Reading length of the next text
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            mode = 0;
+                            sizer[size] = el;
+                            size++;
+                            valCnt = DBreeze.Utils.Biser.ToUInt32(sizer);
+                            ClearSizer();
+                            if (valCnt > 0)
+                            {
+                                key = encB.Substring(i + 1, (int)valCnt);
+                                i += (int)valCnt;
+                                ret.Add(key);
+                            }
+                            else
+                                ret.Add(new byte[0]);
+                        }
+                        break;
+                }
+                i++;
+            }
+
+            return ret;
+        }
+
+
+        /// <summary>
         /// Uses protobuf concepts
         /// </summary>
         /// <param name="value"></param>

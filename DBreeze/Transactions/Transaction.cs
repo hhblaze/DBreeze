@@ -83,8 +83,9 @@ namespace DBreeze.Transactions
                     {
                         if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine._transactionTablesLocker.AddSession(lockType, tables))
                             break;
+
                     }
-                break;
+                    break;
             }
 
             this.RandomKeySorter._t = this;

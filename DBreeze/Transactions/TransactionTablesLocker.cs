@@ -35,7 +35,7 @@ namespace DBreeze
         {
             public string[] tables;
             public eTransactionTablesLockTypes lockType= eTransactionTablesLockTypes.EXCLUSIVE;
-            public DbThreadsGator gator = null;          
+            public DbThreadsGator gator = null;
         }
 
         /// <summary>
@@ -44,8 +44,9 @@ namespace DBreeze
         /// <param name="lockType"></param>
         /// <param name="tables"></param>
         /// <returns>false if thread grants access, false if thread is in a queue</returns>
+
         public bool AddSession(eTransactionTablesLockTypes lockType, string[] tables)
-        {            
+        {
             lock (lock_disposed)
             {
                 if (disposed)
@@ -140,8 +141,10 @@ namespace DBreeze
 
             if (!ret)
             {
+
                 //putting gate
                 iSession.gator.PutGateHere();
+
             }
 
             return ret;
