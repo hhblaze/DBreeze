@@ -19,7 +19,7 @@ Made with C#
 - DBreeze for .NETCore, .NET Standard / UWP (Universal Windows Platform), .NET 4.5.1 grab via NuGet.
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in <a href = 'http://nosql-database.org'  target='_blank'>nosql-database.org</a>, <a href = 'https://github.com/thangchung/awesome-dotnet-core'  target='_blank'>Awesome .NET Core</a>
-- Read <a href = 'https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o'  target='_blank'>"Changes in versions"</a> document to get latest DBreeze news.
+- Read <a href = 'https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o'  target='_blank'>"Release notes"</a> document to get latest DBreeze news.
 
 
 Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
@@ -29,7 +29,7 @@ Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
 - <a href='https://github.com/hhblaze/DBreeze/raw/master/Documentation/_DBreeze.Documentation.actual.pdf' target="_blank">Documentation (PDF, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1IFkXoX3Tc2zHNAQN9EmGSXZGbQabMrWmpmVxFsLxLsw' target="_blank">Documentation (HTML, actual)</a>
 - <a href='https://docs.google.com/document/pub?id=1VoBpzOENb24vF3ZQ10sxa0j-PAprKBGJ6uiGpEisxdM' target="_blank">Benchmark (HTML, actual)</a>
-- <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Changes in versions </a>
+- <a href='https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o' target="_blank">Release notes</a>
 - <a href='https://docs.google.com/document/pub?id=188hY76go8bB2tSyQYoN0NMIJbMEuCOxYXNKZs_sEcpo' target="_blank">DBreeze tuning advices</a>
 - <a href='https://github.com/hhblaze/DBreeze/issues?utf8=%E2%9C%93&q=label%3Aquestion%20' target="_blank">Discussion on the forum </a>
 
