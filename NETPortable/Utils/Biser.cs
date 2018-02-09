@@ -1,7 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's a free software for those, who think that it should be free.
-
   This class uses parts of code from https://github.com/topas/VarintBitConverter. That is published under BSD license [27.06.2016].
 */
 
@@ -134,7 +133,7 @@ namespace DBreeze.Utils
             int i = 0;
             int hc = 0; //Hashset grabbed count
             List<byte[]> mhs = null;
-            
+
             while (i < encB.Length)
             {
                 el = encB[i];
@@ -154,7 +153,7 @@ namespace DBreeze.Utils
                             mode = 1;
                             sizer[size] = el;
                             size++;
-                            keyLength = ToUInt32(sizer);                            
+                            keyLength = ToUInt32(sizer);
                             key = encB.Substring(i + 1, (int)keyLength).UTF8_GetString();
                             i += (int)keyLength + 1;
                             ClearSizer();
@@ -324,7 +323,7 @@ namespace DBreeze.Utils
             byte el = 0;
             int i = 0;
             int hc = 0; //Hashset grabbed count
-            HashSet<uint> mhs = null;            
+            HashSet<uint> mhs = null;
 
             while (i < encB.Length)
             {
@@ -345,8 +344,8 @@ namespace DBreeze.Utils
                             mode = 1;
                             sizer[size] = el;
                             size++;
-                            keyLength = ToUInt32(sizer);                            
-                            key = encB.Substring(i + 1, (int)keyLength).UTF8_GetString(); 
+                            keyLength = ToUInt32(sizer);
+                            key = encB.Substring(i + 1, (int)keyLength).UTF8_GetString();
                             i += (int)keyLength + 1;
                             ClearSizer();
                             continue;
@@ -560,6 +559,120 @@ namespace DBreeze.Utils
             return;
         }
 
+        /// <summary>
+        /// null elements equal to new byte[0]
+        /// </summary>
+        /// <param name="d"></param>
+        /// <returns></returns>
+        public static byte[] Encode_PROTO_ListByteArray(IList<byte[]> d)
+        {
+            //null element of the list is not allowed (the same as in protobuf), byte[0]  means String.Empty
+
+            if (d == null || d.Count == 0)
+                return new byte[0];
+
+            byte[] tar1 = null;
+            using (MemoryStream ms = new MemoryStream())
+            {
+
+                foreach (var el in d)
+                {
+                    //Setting key
+                    ms.Write(new byte[] { 10 }, 0, 1); //complex Type - 10     
+                    if (el == null || el.Length == 0)
+                        ms.Write(new byte[] { 0 }, 0, 1);// 0 length element
+                    else
+                    {
+                        tar1 = DBreeze.Utils.Biser.GetVarintBytes((uint)el.Length);
+                        ms.Write(tar1, 0, tar1.Length);//length of key
+                        ms.Write(el, 0, el.Length);//key self                    
+                    }
+                }
+
+                tar1 = ms.ToArray();
+            }
+
+            return tar1;
+        }
+
+        /// <summary>
+        /// null elements equal to new byte[0]
+        /// </summary>
+        /// <param name="encB"></param>
+        /// <returns></returns>
+        public static List<byte[]> Decode_PROTO_ListByteArray(byte[] encB)
+        {
+
+            //null element of the list is not allowed (the same as in protobuf), byte[0]  means String.Empty
+
+            if (encB == null)
+                return null;
+
+            List<byte[]> ret = new List<byte[]>();
+
+            if (encB.Length == 0)
+                return ret;
+
+            List<byte[]> ar = new List<byte[]>();
+            int i = 0;
+            int mode = 0;
+
+            byte[] sizer = new byte[4];
+            int size = 0;
+            uint valCnt = 0;
+            byte el = 0;
+            byte[] key = new byte[0];
+
+            Action ClearSizer = () =>
+            {
+                sizer[0] = 0;
+                sizer[1] = 0;
+                sizer[2] = 0;
+                sizer[3] = 0;
+
+                size = 0;
+            };
+
+            while (i < encB.Length)
+            {
+                el = encB[i];
+
+                switch (mode)
+                {
+                    case 0:
+                        //Always delimiter 10
+                        mode = 1;
+                        break;
+                    case 1:
+                        //Reading length of the next text
+                        if ((el & 0x80) > 0)
+                        {
+                            sizer[size] = el;
+                            size++;
+                        }
+                        else
+                        {
+                            mode = 0;
+                            sizer[size] = el;
+                            size++;
+                            valCnt = DBreeze.Utils.Biser.ToUInt32(sizer);
+                            ClearSizer();
+                            if (valCnt > 0)
+                            {
+                                key = encB.Substring(i + 1, (int)valCnt);
+                                i += (int)valCnt;
+                                ret.Add(key);
+                            }
+                            else
+                                ret.Add(new byte[0]);
+                        }
+                        break;
+                }
+                i++;
+            }
+
+            return ret;
+        }
 
         /// <summary>
         /// Uses protobuf concepts
@@ -658,7 +771,6 @@ namespace DBreeze.Utils
         {
             return GetVarintBytes((ulong)value);
         }
-
         /// <summary>
         /// Returns the specified 16-bit signed value as varint encoded array of bytes.   
         /// </summary>
@@ -669,7 +781,6 @@ namespace DBreeze.Utils
             var zigzag = EncodeZigZag(value, 16);
             return GetVarintBytes((ulong)zigzag);
         }
-
         /// <summary>
         /// Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
         /// </summary>
@@ -679,7 +790,6 @@ namespace DBreeze.Utils
         {
             return GetVarintBytes((ulong)value);
         }
-
         /// <summary>
         /// Returns the specified 32-bit signed value as varint encoded array of bytes.   
         /// </summary>
@@ -690,7 +800,6 @@ namespace DBreeze.Utils
             var zigzag = EncodeZigZag(value, 32);
             return GetVarintBytes((ulong)zigzag);
         }
-
         /// <summary>
         /// Returns the specified 32-bit unsigned value as varint encoded array of bytes.   
         /// </summary>
@@ -700,7 +809,6 @@ namespace DBreeze.Utils
         {
             return GetVarintBytes((ulong)value);
         }
-
         /// <summary>
         /// Returns the specified 64-bit signed value as varint encoded array of bytes.   
         /// </summary>
@@ -711,7 +819,6 @@ namespace DBreeze.Utils
             var zigzag = EncodeZigZag(value, 64);
             return GetVarintBytes((ulong)zigzag);
         }
-
         /// <summary>
         /// Returns the specified 64-bit unsigned value as varint encoded array of bytes.   
         /// </summary>
@@ -725,22 +832,16 @@ namespace DBreeze.Utils
             {
                 var byteVal = value & 0x7f;
                 value >>= 7;
-
                 if (value != 0)
                 {
                     byteVal |= 0x80;
                 }
-
                 buffer[pos++] = (byte)byteVal;
-
             } while (value != 0);
-
             var result = new byte[pos];
             Buffer.BlockCopy(buffer, 0, result, 0, pos);
-
             return result;
         }
-
         /// <summary>
         /// Returns byte value from varint encoded array of bytes.
         /// </summary>
@@ -750,7 +851,6 @@ namespace DBreeze.Utils
         {
             return (byte)ToTarget(bytes, 8);
         }
-
         /// <summary>
         /// Returns 16-bit signed value from varint encoded array of bytes.
         /// </summary>
@@ -761,7 +861,6 @@ namespace DBreeze.Utils
             var zigzag = ToTarget(bytes, 16);
             return (short)DecodeZigZag(zigzag);
         }
-
         /// <summary>
         /// Returns 16-bit usigned value from varint encoded array of bytes.
         /// </summary>
@@ -771,7 +870,6 @@ namespace DBreeze.Utils
         {
             return (ushort)ToTarget(bytes, 16);
         }
-
         /// <summary>
         /// Returns 32-bit signed value from varint encoded array of bytes.
         /// </summary>
@@ -782,7 +880,6 @@ namespace DBreeze.Utils
             var zigzag = ToTarget(bytes, 32);
             return (int)DecodeZigZag(zigzag);
         }
-
         /// <summary>
         /// Returns 32-bit unsigned value from varint encoded array of bytes.
         /// </summary>
@@ -792,7 +889,6 @@ namespace DBreeze.Utils
         {
             return (uint)ToTarget(bytes, 32);
         }
-
         /// <summary>
         /// Returns 64-bit signed value from varint encoded array of bytes.
         /// </summary>
@@ -803,7 +899,6 @@ namespace DBreeze.Utils
             var zigzag = ToTarget(bytes, 64);
             return DecodeZigZag(zigzag);
         }
-
         /// <summary>
         /// Returns 64-bit unsigned value from varint encoded array of bytes.
         /// </summary>
@@ -813,19 +908,16 @@ namespace DBreeze.Utils
         {
             return ToTarget(bytes, 64);
         }
-
         private static long EncodeZigZag(long value, int bitLength)
         {
             return (value << 1) ^ (value >> (bitLength - 1));
         }
-
         private static long DecodeZigZag(ulong value)
         {
             if ((value & 0x1) == 0x1)
             {
                 return (-1 * ((long)(value >> 1) + 1));
             }
-
             return (long)(value >> 1);
 }
  */

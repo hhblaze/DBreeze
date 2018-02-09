@@ -7,7 +7,7 @@
   "targets": {
     ".NETStandard,Version=v1.6": {},
     ".NETStandard,Version=v1.6/": {
-      "DBreeze/1.089.2017.0829": {
+      "DBreeze/1.089.2018.0809": {
         "dependencies": {
           "NETStandard.Library": "1.6.1"
         },
@@ -602,6 +602,9 @@
           "System.Security.Cryptography.Primitives": "4.3.0",
           "System.Text.Encoding": "4.3.0",
           "runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0"
+        },
+        "runtime": {
+          "lib/netstandard1.6/System.Security.Cryptography.OpenSsl.dll": {}
         }
       },
       "System.Security.Cryptography.Primitives/4.3.0": {
@@ -752,7 +755,7 @@
     }
   },
   "libraries": {
-    "DBreeze/1.089.2017.0829": {
+    "DBreeze/1.089.2018.0809": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

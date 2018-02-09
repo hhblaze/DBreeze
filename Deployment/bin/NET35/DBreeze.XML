@@ -6687,6 +6687,20 @@
             <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
             <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
         </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_PROTO_ListByteArray(System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            null elements equal to new byte[0]
+            </summary>
+            <param name="d"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_PROTO_ListByteArray(System.Byte[])">
+            <summary>
+            null elements equal to new byte[0]
+            </summary>
+            <param name="encB"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
             <summary>
             Uses protobuf concepts
@@ -6793,7 +6807,6 @@
             <summary>
             If gate is closed then it will be closed timeout time in milliseconds
             </summary>
-            <param name="milliseconds"></param>
             <param name="milliseconds">exitContext</param>
             <returns></returns>
         </member>

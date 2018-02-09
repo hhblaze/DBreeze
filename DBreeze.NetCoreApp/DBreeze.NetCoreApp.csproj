@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.089.2017.0829</Version>
-    <FileVersion>1.089.2017.0829</FileVersion>
-    <AssemblyVersion>1.89.2017.829</AssemblyVersion>
+    <Version>1.089.2018.0809</Version>
+    <FileVersion>1.089.2018.0809</FileVersion>
+    <AssemblyVersion>1.89.2018.809</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+        <Compile Include="..\DBreeze.NetStandard\Utils\Biser.cs" Link="Utils\Biser.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
