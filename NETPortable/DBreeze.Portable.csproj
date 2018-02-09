@@ -36,6 +36,9 @@
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze.NetStandard\Utils\Biser.cs">
+      <Link>Utils\Biser.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
@@ -152,7 +155,6 @@
     <Compile Include="Tries\ITrie.cs" />
     <Compile Include="Tries\ITrieRootNode.cs" />
     <Compile Include="Utils\AsyncOperations.cs" />
-    <Compile Include="Utils\Biser.cs" />
     <Compile Include="Utils\BloomFilter.cs" />
     <Compile Include="Utils\BytesProcessing.cs" />
     <Compile Include="Utils\Compression.cs" />

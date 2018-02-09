@@ -5922,25 +5922,81 @@
             <param name="encB"></param>
             <returns></returns>
         </member>
+        <member name="F:DBreeze.Utils.Biser.dcb">
+            <summary>
+            First function is serializer, second deserializer
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.InitBiser">
+            <summary>
+            Initializes DBreeze. Biser serializer
+            Initializes only when DBreezeEngine is initialised. Also there is a way to init it manually via this function
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.BiserDecode``1(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.BiserEncode(System.Object)">
+            <summary>
+            Serializes / Encodes to byte[] allowed types
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Byte)">
+            <summary>
+            Returns the specified byte value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">Byte value</param>
+            <returns>Varint array of bytes.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int16)">
+            <summary>
+            Returns the specified 16-bit signed value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">16-bit signed value</param>
+            <returns>Varint array of bytes.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt16)">
+            <summary>
+            Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">16-bit unsigned value</param>
+            <returns>Varint array of bytes.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int32)">
+            <summary>
+            Returns the specified 32-bit signed value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">32-bit signed value</param>
+            <returns>Varint array of bytes.</returns>
+        </member>
         <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
             <summary>
+            Returns the specified 32-bit unsigned value as varint encoded array of bytes.
             Uses protobuf concepts
             </summary>
             <param name="value"></param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int64)">
+            <summary>
+            Returns the specified 64-bit signed value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">64-bit signed value</param>
+            <returns>Varint array of bytes.</returns>
         </member>
         <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
             <summary>
             Uses protobuf concepts
             </summary>
             <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
-            <summary>
-            Uses protobuf concepts
-            </summary>
-            <param name="bytes"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.Biser.ToTarget(System.Byte[],System.Int32)">
@@ -5950,6 +6006,55 @@
             <param name="bytes"></param>
             <param name="sizeBites"></param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToByte(System.Byte[])">
+            <summary>
+            Returns byte value from varint encoded array of bytes.
+            </summary>
+            <param name="bytes">Varint encoded array of bytes.</param>
+            <returns>Byte value</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToInt16(System.Byte[])">
+            <summary>
+            Returns 16-bit signed value from varint encoded array of bytes.
+            </summary>
+            <param name="bytes">Varint encoded array of bytes.</param>
+            <returns>16-bit signed value</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToUInt16(System.Byte[])">
+            <summary>
+            Returns 16-bit usigned value from varint encoded array of bytes.
+            </summary>
+            <param name="bytes">Varint encoded array of bytes.</param>
+            <returns>16-bit usigned value</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToInt32(System.Byte[])">
+            <summary>
+            Returns 32-bit signed value from varint encoded array of bytes.
+            </summary>
+            <param name="bytes">Varint encoded array of bytes.</param>
+            <returns>32-bit signed value</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToInt64(System.Byte[])">
+            <summary>
+            Returns 64-bit signed value from varint encoded array of bytes.
+            </summary>
+            <param name="bytes">Varint encoded array of bytes.</param>
+            <returns>64-bit signed value</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToUInt64(System.Byte[])">
+            <summary>
+            Returns 64-bit unsigned value from varint encoded array of bytes.
+            </summary>
+            <param name="bytes">Varint encoded array of bytes.</param>
+            <returns>64-bit unsigned value</returns>
         </member>
         <member name="T:DBreeze.DBreezeResources">
             <summary>
