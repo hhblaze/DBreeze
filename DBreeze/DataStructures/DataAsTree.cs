@@ -277,7 +277,7 @@ namespace DBreeze.DataStructures
                     Protocol:
                         1byte - protocol version (starting from 1)
                         16bytes link to content (or 0)
-                        1byte - lenght of NodeName                
+                        1byte - length of NodeName                
                         Nbytes - Name                                                   
                     */
 
@@ -319,7 +319,7 @@ namespace DBreeze.DataStructures
                         Protocol:
                             1byte - protocol version (starting from 1)
                             16bytes link to content (or 0)
-                            1byte - lenght of NodeName                
+                            1byte - length of NodeName                
                             Nbytes - Name                                                   
                         */
 
