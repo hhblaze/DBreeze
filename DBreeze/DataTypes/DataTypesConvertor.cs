@@ -68,8 +68,6 @@ namespace DBreeze.DataTypes
 
         internal static void InitDict()
         {
-            DBreeze.Utils.Biser.InitBiser();
-
             if (dcb.Count > 0)
                 return;
             //--------------- Convert Back

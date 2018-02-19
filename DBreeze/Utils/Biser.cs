@@ -17,8 +17,95 @@ namespace DBreeze.Utils
     /// <summary>
     /// Custom binary serializer of well known types
     /// </summary>
-    public static class Biser
+    public static partial class Biser
     {
+        public interface IEncoder
+        {
+            Biser.Encoder BiserEncoder(Biser.Encoder existingEncoder = null);            
+        }
+
+        #region "Main: GetVarintBytes, ZigZag "
+
+        /// <summary>
+        /// Uses protobuf concepts
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static byte[] GetVarintBytes(ulong value)
+        {
+            var buffer = new byte[10];
+            var pos = 0;
+            byte byteVal;
+            do
+            {
+                byteVal = (byte)(value & 0x7f);
+                value >>= 7;
+
+                if (value != 0)
+                {
+                    byteVal |= 0x80;
+                }
+
+                buffer[pos++] = byteVal;
+
+            } while (value != 0);
+
+            var result = new byte[pos];
+            Buffer.BlockCopy(buffer, 0, result, 0, pos);
+
+            return result;
+        }
+
+        /// <summary>
+        /// ToTarget
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="sizeBites"></param>
+        /// <returns></returns>
+        public static ulong ToTarget(byte[] bytes, int sizeBites)
+        {
+            int shift = 0;
+            ulong result = 0;
+
+            foreach (ulong byteValue in bytes)
+            {
+                ulong tmp = byteValue & 0x7f;
+                result |= tmp << shift;
+
+                if (shift > sizeBites)
+                {
+                    throw new ArgumentOutOfRangeException("bytes", "Byte array is too large.");
+                }
+
+                if ((byteValue & 0x80) != 0x80)
+                {
+                    return result;
+                }
+
+                shift += 7;
+            }
+
+            throw new ArgumentException("Cannot decode varint from byte array.", "bytes");
+        }
+
+
+        public static long EncodeZigZag(long value, int bitLength)
+        {
+            return (value << 1) ^ (value >> (bitLength - 1));
+        }
+
+        public static long DecodeZigZag(ulong value)
+        {
+            if ((value & 0x1) == 0x1)
+                return (-1 * ((long)(value >> 1) + 1));
+
+            return (long)(value >> 1);
+        }
+
+       
+        #endregion
+
+
         /// <summary>
         /// Proto encoding of Dictionary [string, List[byte[]]].
         /// Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
@@ -676,188 +763,51 @@ namespace DBreeze.Utils
             return ret;
         }
 
-        /// <summary>
-        /// First function is serializer, second deserializer
-        /// </summary>
-        static Dictionary<Type, Tuple<Func<object, byte[]>, Func<byte[], object>>> dcb = new Dictionary<Type,Tuple< Func<object, byte[]>, Func<byte[], object>>>(); //Converting back
-
-        
-        /// <summary>
-        /// Initializes DBreeze. Biser serializer
-        /// Initializes only when DBreezeEngine is initialised. Also there is a way to init it manually via this function
-        /// </summary>
-        public static void InitBiser()
-        {
-            if (dcb.Count > 0)
-                return;            
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_BYTE_ARRAY, 
-                new Tuple<Func<object, byte[]>, Func<byte[], object>>( 
-                (data) => { return ((byte[])((object)data)); },
-                (data) => { return (object)data; }));
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_ULONG,
-                new Tuple<Func<object, byte[]>, Func<byte[], object>>(
-                (data) => { return GetVarintBytes((ulong)data); },
-                (data) => { return (object)ToTarget(data, 64); }));
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_LONG,
-                new Tuple<Func<object, byte[]>, Func<byte[], object>>(
-                (data) => { return GetVarintBytes((ulong)EncodeZigZag((long)data, 64)); },
-                (data) => { return (object)(long)DecodeZigZag(ToTarget(data, 64)); }));
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_UINT,
-                new Tuple<Func<object, byte[]>, Func<byte[], object>>(
-                (data) => { return GetVarintBytes((uint)data); },
-                (data) => { return (object)(uint)ToTarget(data, 32); }));
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_INT,
-               new Tuple<Func<object, byte[]>, Func<byte[], object>>(
-               (data) => { return GetVarintBytes((ulong)EncodeZigZag((int)data, 32)); },
-               (data) => { return (object)(int)DecodeZigZag(ToTarget(data, 32)); }));
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_FLOAT,
-               new Tuple<Func<object, byte[]>, Func<byte[], object>>(
-               (data) => { return BitConverter.GetBytes((float)data); },
-               (data) => { return (object)BitConverter.ToSingle(data,0); }));
-
-            dcb.Add(DataTypes.DataTypesConvertor.TYPE_STRING,
-             new Tuple<Func<object, byte[]>, Func<byte[], object>>(
-             (data) => { return ((string)data).To_UTF8Bytes(); },
-             (data) => { return (object)data.UTF8_GetString(); }));
-        }
-     
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <typeparam name="T"></typeparam>
-        ///// <param name="bt"></param>
-        ///// <returns></returns>
-        //public static T BiserDecode<T>(this byte[] bt)
-        //{   
-        //    Type td = typeof(T);
-        //    Tuple< Func<object, byte[]>,Func<byte[], object>> f = null; //first is serializer second deserializer
-            
-        //    if (dcb.TryGetValue(td, out f))
-        //        return (T)f.Item2(bt);
-
-        //    throw Exceptions.DBreezeException.Throw(Exceptions.DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, dcb.Count + "__" + td.ToString(), null);
-        //}
-
-        ///// <summary>
-        ///// Serializes / Encodes to byte[] allowed types
-        ///// </summary>
-        ///// <typeparam name="T"></typeparam>
-        ///// <param name="bt"></param>
-        ///// <returns></returns>
-        //public static byte[] BiserEncode(this object bt)
-        //{
-            
-        //    Type td = bt.GetType();
-        //    Tuple<Func<object, byte[]>, Func<byte[], object>> f = null; //first is serializer second deserializer
-
-        //    if (dcb.TryGetValue(td, out f))
-        //        return f.Item1(bt);
-
-        //    throw Exceptions.DBreezeException.Throw(Exceptions.DBreezeException.eDBreezeExceptions.UNSUPPORTED_DATATYPE, dcb.Count + "__" + td.ToString(), null);
-        //}
-
-
-
-        /* Possible example to make serializations without external serializers
-        
-            //These 2 functions may be a part of serializing class
-        public byte[] BiserEncode()
-        {
-            List<byte[]> l = new List<byte[]>();
-
-            #region "serialization code"    //!!!
-
-            l.Add(RaftSignalType.BiserEncode());
-            l.Add(Data);
-            l.Add(B1.BiserEncode());
-            l.Add(B2.BiserEncode());
-            l.Add(A1.BiserEncode());
-            
-            #endregion
-
-            return Biser.Encode_PROTO_ListByteArray(l);
-        }
-
-        public static TestSer BiserDecode(byte[] enc) //!!! return type must be changed (on this obj)
-        {
-            if (enc == null || enc.Length == 0)
-                return null;
-
-            TestSer m = new TestSer();     //!!!      
-
-            var l = Biser.Decode_PROTO_ListByteArray(enc);
-            if (l.Count != 0)
-            {
-                #region "deserialization code"  //!!! 
-                int i = 0;
-                m.RaftSignalType = l[i].BiserDecode<uint>();i++;
-                m.Data = l[i].BiserDecode<byte[]>(); i++;
-                m.B1 = l[i].BiserDecode<uint>(); i++;
-                m.B2 = l[i].BiserDecode<uint>(); i++;
-                m.A1 = l[i].BiserDecode<ulong>(); i++;
-               
-                #endregion
-            }
-
-
-            return m;
-        }
-
-             */
-
-
 
         //https://github.com/topas/VarintBitConverter/blob/master/src/VarintBitConverter/VarintBitConverter.cs
 
 
-        /// <summary>
-        /// Returns the specified byte value as varint encoded array of bytes.   
-        /// </summary>
-        /// <param name="value">Byte value</param>
-        /// <returns>Varint array of bytes.</returns>
-        static byte[] GetVarintBytes(byte value)
-        {
-            return GetVarintBytes((ulong)value);
-        }
+        ///// <summary>
+        ///// Returns the specified byte value as varint encoded array of bytes.   
+        ///// </summary>
+        ///// <param name="value">Byte value</param>
+        ///// <returns>Varint array of bytes.</returns>
+        //static byte[] GetVarintBytes(byte value)
+        //{
+        //    return GetVarintBytes((ulong)value);
+        //}
 
-        /// <summary>
-        /// Returns the specified 16-bit signed value as varint encoded array of bytes.   
-        /// </summary>
-        /// <param name="value">16-bit signed value</param>
-        /// <returns>Varint array of bytes.</returns>
-        static byte[] GetVarintBytes(short value)
-        {
-            var zigzag = EncodeZigZag(value, 16);
-            return GetVarintBytes((ulong)zigzag);
-        }
+        ///// <summary>
+        ///// Returns the specified 16-bit signed value as varint encoded array of bytes.   
+        ///// </summary>
+        ///// <param name="value">16-bit signed value</param>
+        ///// <returns>Varint array of bytes.</returns>
+        //static byte[] GetVarintBytes(short value)
+        //{
+        //    var zigzag = EncodeZigZag(value, 16);
+        //    return GetVarintBytes((ulong)zigzag);
+        //}
 
-        /// <summary>
-        /// Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
-        /// </summary>
-        /// <param name="value">16-bit unsigned value</param>
-        /// <returns>Varint array of bytes.</returns>
-        static byte[] GetVarintBytes(ushort value)
-        {
-            return GetVarintBytes((ulong)value);
-        }
+        ///// <summary>
+        ///// Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
+        ///// </summary>
+        ///// <param name="value">16-bit unsigned value</param>
+        ///// <returns>Varint array of bytes.</returns>
+        //static byte[] GetVarintBytes(ushort value)
+        //{
+        //    return GetVarintBytes((ulong)value);
+        //}
 
-        /// <summary>
-        /// Returns the specified 32-bit signed value as varint encoded array of bytes.   
-        /// </summary>
-        /// <param name="value">32-bit signed value</param>
-        /// <returns>Varint array of bytes.</returns>
-        static byte[] GetVarintBytes(int value)
-        {
-            var zigzag = EncodeZigZag(value, 32);
-            return GetVarintBytes((ulong)zigzag);
-        }
+        ///// <summary>
+        ///// Returns the specified 32-bit signed value as varint encoded array of bytes.   
+        ///// </summary>
+        ///// <param name="value">32-bit signed value</param>
+        ///// <returns>Varint array of bytes.</returns>
+        //static byte[] GetVarintBytes(int value)
+        //{
+        //    var zigzag = EncodeZigZag(value, 32);
+        //    return GetVarintBytes((ulong)zigzag);
+        //}
 
         /// <summary>
         /// Returns the specified 32-bit unsigned value as varint encoded array of bytes.
@@ -869,7 +819,6 @@ namespace DBreeze.Utils
         {
             return GetVarintBytes((ulong)value);
         }
-
        
 
         /// <summary>
@@ -883,79 +832,49 @@ namespace DBreeze.Utils
             return GetVarintBytes((ulong)zigzag);
         }
 
-        /// <summary>
-        /// ToTarget
-        /// </summary>
-        /// <param name="bytes"></param>
-        /// <param name="sizeBites"></param>
-        /// <returns></returns>
-        static ulong ToTarget(byte[] bytes, int sizeBites)
-        {
-            int shift = 0;
-            ulong result = 0;
+       
 
-            foreach (ulong byteValue in bytes)
-            {
-                ulong tmp = byteValue & 0x7f;
-                result |= tmp << shift;
+        ///// <summary>
+        ///// Returns byte value from varint encoded array of bytes.
+        ///// </summary>
+        ///// <param name="bytes">Varint encoded array of bytes.</param>
+        ///// <returns>Byte value</returns>
+        //static byte ToByte(byte[] bytes)
+        //{
+        //    return (byte)ToTarget(bytes, 8);
+        //}
 
-                if (shift > sizeBites)
-                {
-                    throw new ArgumentOutOfRangeException("bytes", "Byte array is too large.");
-                }
+        ///// <summary>
+        ///// Returns 16-bit signed value from varint encoded array of bytes.
+        ///// </summary>
+        ///// <param name="bytes">Varint encoded array of bytes.</param>
+        ///// <returns>16-bit signed value</returns>
+        //static short ToInt16(byte[] bytes)
+        //{
+        //    var zigzag = ToTarget(bytes, 16);
+        //    return (short)DecodeZigZag(zigzag);
+        //}
 
-                if ((byteValue & 0x80) != 0x80)
-                {
-                    return result;
-                }
+        ///// <summary>
+        ///// Returns 16-bit usigned value from varint encoded array of bytes.
+        ///// </summary>
+        ///// <param name="bytes">Varint encoded array of bytes.</param>
+        ///// <returns>16-bit usigned value</returns>
+        //static ushort ToUInt16(byte[] bytes)
+        //{
+        //    return (ushort)ToTarget(bytes, 16);
+        //}
 
-                shift += 7;
-            }
-
-            throw new ArgumentException("Cannot decode varint from byte array.", "bytes");
-        }
-
-        /// <summary>
-        /// Returns byte value from varint encoded array of bytes.
-        /// </summary>
-        /// <param name="bytes">Varint encoded array of bytes.</param>
-        /// <returns>Byte value</returns>
-        static byte ToByte(byte[] bytes)
-        {
-            return (byte)ToTarget(bytes, 8);
-        }
-
-        /// <summary>
-        /// Returns 16-bit signed value from varint encoded array of bytes.
-        /// </summary>
-        /// <param name="bytes">Varint encoded array of bytes.</param>
-        /// <returns>16-bit signed value</returns>
-        static short ToInt16(byte[] bytes)
-        {
-            var zigzag = ToTarget(bytes, 16);
-            return (short)DecodeZigZag(zigzag);
-        }
-
-        /// <summary>
-        /// Returns 16-bit usigned value from varint encoded array of bytes.
-        /// </summary>
-        /// <param name="bytes">Varint encoded array of bytes.</param>
-        /// <returns>16-bit usigned value</returns>
-        static ushort ToUInt16(byte[] bytes)
-        {
-            return (ushort)ToTarget(bytes, 16);
-        }
-
-        /// <summary>
-        /// Returns 32-bit signed value from varint encoded array of bytes.
-        /// </summary>
-        /// <param name="bytes">Varint encoded array of bytes.</param>
-        /// <returns>32-bit signed value</returns>
-        public static int ToInt32(byte[] bytes)
-        {
-            var zigzag = ToTarget(bytes, 32);
-            return (int)DecodeZigZag(zigzag);
-        }
+        ///// <summary>
+        ///// Returns 32-bit signed value from varint encoded array of bytes.
+        ///// </summary>
+        ///// <param name="bytes">Varint encoded array of bytes.</param>
+        ///// <returns>32-bit signed value</returns>
+        //public static int ToInt32(byte[] bytes)
+        //{
+        //    var zigzag = ToTarget(bytes, 32);
+        //    return (int)DecodeZigZag(zigzag);
+        //}
 
         /// <summary>
         /// Uses protobuf concepts
@@ -967,507 +886,32 @@ namespace DBreeze.Utils
             return (uint)ToTarget(bytes, 32);
         }
 
-        /// <summary>
-        /// Returns 64-bit signed value from varint encoded array of bytes.
-        /// </summary>
-        /// <param name="bytes">Varint encoded array of bytes.</param>
-        /// <returns>64-bit signed value</returns>
-        public static long ToInt64(byte[] bytes)
-        {
-            var zigzag = ToTarget(bytes, 64);
-            return DecodeZigZag(zigzag);
-        }
-
-        /// <summary>
-        /// Returns 64-bit unsigned value from varint encoded array of bytes.
-        /// </summary>
-        /// <param name="bytes">Varint encoded array of bytes.</param>
-        /// <returns>64-bit unsigned value</returns>
-        static ulong ToUInt64(byte[] bytes)
-        {
-            return ToTarget(bytes, 64);
-        }
-
-
-
-
-
-        #region "Main: GetVarintBytes, ZigZag "
-
-        /// <summary>
-        /// Uses protobuf concepts
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        static byte[] GetVarintBytes(ulong value)
-        {
-            var buffer = new byte[10];
-            var pos = 0;
-            byte byteVal;
-            do
-            {
-                byteVal = (byte)(value & 0x7f);
-                value >>= 7;
-
-                if (value != 0)
-                {
-                    byteVal |= 0x80;
-                }
-
-                buffer[pos++] = byteVal;
-
-            } while (value != 0);
-
-            var result = new byte[pos];
-            Buffer.BlockCopy(buffer, 0, result, 0, pos);
-            
-            return result;
-        }
-
-        public static long EncodeZigZag(long value, int bitLength)
-        {
-            return (value << 1) ^ (value >> (bitLength - 1));
-        }
-
-        public static long DecodeZigZag(ulong value)
-        {
-            if ((value & 0x1) == 0x1)
-                return (-1 * ((long)(value >> 1) + 1));
-
-            return (long)(value >> 1);
-        }
-        #endregion
-
-        #region "Biser. Encoder/Decoder"
-        //public static byte[] EncoderV1(params byte[][] pars)
+        ///// <summary>
+        ///// Returns 64-bit signed value from varint encoded array of bytes.
+        ///// </summary>
+        ///// <param name="bytes">Varint encoded array of bytes.</param>
+        ///// <returns>64-bit signed value</returns>
+        //public static long ToInt64(byte[] bytes)
         //{
-        //    return EncodingInternal(pars);
-
+        //    var zigzag = ToTarget(bytes, 64);
+        //    return DecodeZigZag(zigzag);
         //}
 
-        //static byte[] EncodingInternal(IEnumerable<byte[]> pars)
+        ///// <summary>
+        ///// Returns 64-bit unsigned value from varint encoded array of bytes.
+        ///// </summary>
+        ///// <param name="bytes">Varint encoded array of bytes.</param>
+        ///// <returns>64-bit unsigned value</returns>
+        //static ulong ToUInt64(byte[] bytes)
         //{
-        //    byte[] res = null;
-
-        //    using (MemoryStream ms = new MemoryStream())
-        //    {
-        //        foreach (var el in pars)
-        //        {
-        //            //Should not happen, must raise an exception, because this byte[] can be born only by BiserEncode functions.
-        //            //Protocol:
-        //            //non-nullable functions of fixed length are stored as varints
-        //            //nullable functions with fixed length are stored varints + 1 byte (first one, if 1 indicates that value is null)
-        //            //nullable of variable length - byte[] (strings and other types, classes/dictionaries etc., are transformed into byte[]) - 1 byte + varInt length + payload 
-        //            //      where first byte can be 0/1/2 (0= has laength and payload, 1=null and there is no other protocol params, 2 - byte[] {0} and there is no other protocol params)
-        //            if (el == null)
-        //                ms.Write(new byte[] { 1 }, 0, 1);
-        //            //throw new Exception("DBreeze.Utils.Biser.Encoder: supplied byte[] parameters can't be null, because should be born only by BiserEncode functions. p1");
-
-        //            ms.Write(el, 0, el.Length);
-        //        }
-
-        //        res = ms.ToArray();
-        //        ms.Close();
-        //    }
-        //    return res;
+        //    return ToTarget(bytes, 64);
         //}
 
 
-        #region "Simple Encoders"
-
-        public static byte[] Encode(this int value)
-        {
-            return GetVarintBytes((ulong)EncodeZigZag(value, 32));
-        }
-
-        public static byte[] Encode(this long value)
-        {
-            return GetVarintBytes((ulong)EncodeZigZag(value, 64));
-        }
-        public static byte[] Encode(this float value)
-        {
-            //Little and BigEndian compliant
-            var subV = BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
-            var zigzag = EncodeZigZag(subV, 32);
-            return GetVarintBytes((ulong)zigzag);
-        }
-
-        public static byte[] Encode(this ulong value)
-        {
-            return GetVarintBytes(value);
-        }
-
-
-        public static byte[] Encode(this string value)
-        {
-            if (value == null)
-                return new byte[] { 1 }; //1
-            else if (value.Length == 0)
-                return new byte[] { 2 }; //2
-            var bt = value.To_UTF8Bytes();
-            return new byte[] { 0 }.ConcatMany(GetVarintBytes((ulong)(uint)bt.Length), bt);
-        }
-
-        public static byte[] Encode(this byte[] value)
-        {
-            if (value == null)
-                return new byte[] { 1 }; //1
-            else if (value.Length == 0)
-                return new byte[] { 2 }; //2            
-            return new byte[] { 0 }.ConcatMany(GetVarintBytes((ulong)(uint)value.Length), value);
-        }
-
-        //public static byte[] BiserEncode(this IEnumerable<byte[]> items) //because this byte[] is already encoded by one of BiserEncode functions
-        //{
-        //    byte[] value = null;
-        //    using (MemoryStream ms = new MemoryStream())
-        //    {
-        //        foreach (var item in items)
-        //        {
-        //            if (item == null || item.Length == 0)
-        //                throw new Exception("DBreeze.Utils.Biser.Encoder: supplied byte[] parameters can't be null, becuase should be born only by BiserEncode functions. p2.");
-
-        //            ms.Write(item, 0, item.Length);
-        //        }
-        //        value = ms.ToArray();
-        //        ms.Close();
-        //    }
-
-        //    if (value == null)
-        //        return new byte[] { 1 }; //1
-        //    else if (value.Length == 0)
-        //        return new byte[] { 2 }; //2
-
-        //    return new byte[] { 0 }.ConcatMany(GetVarintBytes((ulong)(uint)value.Length), value);
-        //}
-
-        #endregion
-
-
-        /// <summary>
-        /// Biser.Encoder
-        /// </summary>
-        public class Encoder
-        {
-            MemoryStream ms = new MemoryStream();
-
-            public Encoder()
-            {
-
-            }
-
-            public byte[] Encode()
-            {
-                byte[] res = null;
-                res = ms.ToArray();
-                ms.Close();
-                ms.Dispose();
-                return res;
-            }
-
-            public Encoder Add(long value)
-            {
-                var bt = GetVarintBytes((ulong)EncodeZigZag(value, 64));
-                ms.Write(bt, 0, bt.Length);
-                return this;
-            }
-
-            public Encoder Add(ulong value)
-            {
-                var bt = GetVarintBytes(value);
-                ms.Write(bt, 0, bt.Length);
-                return this;
-            }
-
-            public Encoder Add(int value)
-            {
-                var bt = GetVarintBytes((ulong)EncodeZigZag(value, 32));
-                ms.Write(bt, 0, bt.Length);
-                return this;
-            }
-          
-
-            public Encoder Add(float value)
-            {
-                //Little and BigEndian compliant
-                //var subV = BitConverter.ToInt32(BitConverter.GetBytes(value), 0);               
-                //return GetVarintBytes((ulong)EncodeZigZag(subV, 32));
-                
-                var bt = GetVarintBytes((ulong)EncodeZigZag(
-                    BitConverter.ToInt32(BitConverter.GetBytes(value), 0)       
-                    , 32));
-
-                ms.Write(bt, 0, bt.Length);
-                return this;
-            }
-                        
-
-
-            public Encoder Add(string value)
-            {
-                if (value == null)
-                {
-                    ms.Write(new byte[] { 1 }, 0, 1);
-                    return this;
-                }
-                else if (value.Length == 0)
-                {
-                    ms.Write(new byte[] { 2 }, 0, 1);
-                    return this;
-                }
-
-                ms.Write(new byte[] { 0 }, 0, 1);
-                var str = value.To_UTF8Bytes();
-                var bt = GetVarintBytes((ulong)(uint)str.Length);
-                ms.Write(bt, 0, bt.Length);
-                ms.Write(str, 0, str.Length);
-                return this;
-            }
-
-            public Encoder Add(byte[] value)
-            {
-                //if (value == null)
-                //    return new byte[] { 1 }; //1
-                //else if (value.Length == 0)
-                //    return new byte[] { 2 }; //2
-                //return new byte[] { 0 }.ConcatMany(GetVarintBytes((ulong)(uint)value.Length), value);
-
-                if (value == null)
-                {
-                    ms.Write(new byte[] { 1 }, 0, 1);
-                    return this;
-                }
-                else if (value.Length == 0)
-                {
-                    ms.Write(new byte[] { 2 }, 0, 1);
-                    return this;
-                }
-
-                ms.Write(new byte[] { 0 }, 0, 1);                
-                var bt = GetVarintBytes((ulong)(uint)value.Length);
-                ms.Write(bt, 0, bt.Length);
-                ms.Write(value, 0, value.Length);
-                return this;
-            }
-
-            public Encoder Add(IEnumerable<byte[]> items) //because this byte[] is already encoded by one of BiserEncode functions
-            {   
-                bool first = true;
-                long ip = 0;
-                long len = 0;
-                if(items == null)
-                {
-                    ms.Write(new byte[] { 1 }, 0, 1);
-                    return this;
-                }
-                foreach (var item in items)
-                {
-                    if (item == null || item.Length == 0)
-                        throw new Exception("DBreeze.Utils.Biser.Encoder: supplied byte[] parameters can't be null, becuase should be born only by BiserEncode functions. p2.");
-                    if(first)
-                    {
-                        ms.Write(new byte[] { 0,0,0,0,0 }, 0, 5);
-                        ip = ms.Position - 4;
-                        first = false;
-                    }
-                    len += item.Length;
-                    ms.Write(item, 0, item.Length);                    
-                }
-                
-                if (first)
-                {
-                    ms.Write(new byte[] { 2 }, 0, 1);
-                    return this;
-                }
-                else
-                {
-                    var cp = ms.Position;
-                    ms.Position = ip;
-                    ms.Write(((int)len).To_4_bytes_array_BigEndian(), 0, 4); 
-                    //Writing len
-                    ms.Position = cp;      //Restoring position                
-                }                
-
-                return this;
-            }
-
-           
-        }
-
-
-       
 
 
 
 
-        /// <summary>
-        /// Biser.Decoder
-        /// </summary>
-        public class Decoder
-        {
-            IEnumerator<ulong> decoder;
-            byte[] encoded = null;
-            int pos = 0;
-            int richpos = 0;                        
-            bool iterFinished = false;
-
-            public Decoder(byte[] encoded)
-            {
-                this.encoded = encoded;
-                decoder = ToTarget(this.encoded).GetEnumerator();
-                iterFinished = !decoder.MoveNext();               
-            }
-
-            IEnumerable<ulong> ToTarget(byte[] bytes)
-            {
-                int shift = 0;
-                ulong result = 0;
-                ulong tmp = 0;
-
-                foreach (ulong byteValue in bytes)
-                {
-                    if (richpos > 0)
-                    {
-                        richpos--;
-                        pos++;
-                        continue;
-                    }
-                    tmp = byteValue & 0x7f;
-                    result |= tmp << shift;
-
-                    if ((byteValue & 0x80) != 0x80)
-                    {
-                        yield return result;
-                        shift = 0;
-                        result = 0;
-                        pos++;
-                        continue;
-                    }
-
-                    shift += 7;
-                    pos++;
-                }
-
-                iterFinished = true;
-            }
-            
-
-            public long GetLong()
-            {
-                var ret = Biser.DecodeZigZag(decoder.Current);
-                decoder.MoveNext();
-                return ret;
-            }
-
-            public ulong GetULong()
-            {
-                var ret = decoder.Current;
-                decoder.MoveNext();
-                return ret;
-            }
-
-            public int GetInt()
-            {
-                var ret = (int)Biser.DecodeZigZag(decoder.Current);
-                decoder.MoveNext();
-                return ret;
-            }
-
-            public float GetFloat()
-            {   
-                //Little and BigEndian compliant    
-                var subRet = (int)Biser.DecodeZigZag(decoder.Current);                    
-                var ret = BitConverter.ToSingle(BitConverter.GetBytes(subRet), 0);                
-                decoder.MoveNext();
-                return ret;
-            }
-            
-
-            public string GetString()
-            {
-                //0 - with length, 1 - null, 2 - zero length
-                string ret = null;
-                var prot = decoder.Current;
-                decoder.MoveNext();
-                switch (prot)
-                {
-                    case 2:
-                        ret = "";                        
-                        break;
-                    case 0:
-                        richpos = (int)((uint)decoder.Current);
-                        ret = this.encoded.Substring(pos+1, richpos).UTF8_GetString();
-                        decoder.MoveNext();
-                        break;
-                }                           
-                
-                return ret;
-            }
-
-            
-            public byte[] GetByteArray()
-            {
-                //0 - with length, 1 - null, 2 - zero length
-                byte[] ret = null;
-                var prot = decoder.Current;
-                decoder.MoveNext();
-                switch (prot)
-                {
-                    case 2:
-                        ret = new byte[0];                        
-                        break;
-                    case 0:
-                        richpos = (int)((uint)decoder.Current);
-                        ret = this.encoded.Substring(pos+1, richpos);
-                        decoder.MoveNext();
-                        break;
-                }
-                
-                return ret;
-            }
-
-            /// <summary>
-            /// Protocol differs from GetByteArray. Compliant to memory stream (first 4 bytes are reserved then payload, then length is written)
-            /// </summary>
-            /// <returns></returns>
-            byte[] GetCollectionByteArray()
-            {
-                //0 - with length, 1 - null, 2 - zero length
-                byte[] ret = null;
-                var prot = decoder.Current;                
-                switch (prot)
-                {
-                    case 2:
-                        ret = new byte[0];                 
-                        break;
-                    case 0:
-                        var size = this.encoded.Substring(pos + 1, 4).To_Int32_BigEndian();                        
-                        richpos = 4 + size;
-                        ret = this.encoded.Substring(pos + 1 + 4, size);                        
-                        break;
-                }
-                decoder.MoveNext();
-                return ret;
-            }
-
-
-            public IEnumerable<Decoder> GetCollection()
-            {                
-                var iEncoded = GetCollectionByteArray();
-                if (iEncoded != null && iEncoded.Length > 0)
-                {
-                    Decoder id = new Decoder(iEncoded);
-                    while (!id.iterFinished)
-                        yield return id;
-                }               
-            }
-
-        }//eoc Decoder
-
-
-
-
-        #endregion
 
 
     }//EO Class

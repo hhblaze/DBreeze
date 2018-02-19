@@ -122,6 +122,8 @@
     <Compile Include="Transactions\TransactionUnit.cs" />
     <Compile Include="Tries\ITrie.cs" />
     <Compile Include="Utils\AsyncOperations.cs" />
+    <Compile Include="Utils\BiserDecoder.cs" />
+    <Compile Include="Utils\BiserEncoder.cs" />
     <Compile Include="Utils\BloomFilter.cs" />
     <Compile Include="Utils\BytesProcessing.cs" />
     <Compile Include="Utils\Biser.cs" />
