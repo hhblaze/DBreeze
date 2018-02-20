@@ -21,7 +21,7 @@ namespace DBreeze.Utils
     {
         public interface IEncoder
         {
-            Biser.Encoder BiserEncoder(Biser.Encoder existingEncoder = null);            
+            Biser.Encoder BiserEncoder(Biser.Encoder existingEncoder = null);
         }
 
         #region "Main: GetVarintBytes, ZigZag "
@@ -242,7 +242,8 @@ namespace DBreeze.Utils
                             sizer[size] = el;
                             size++;
                             keyLength = ToUInt32(sizer);
-                            key = System.Text.Encoding.UTF8.GetString(encB.Substring(i + 1, (int)keyLength));
+                            //key = System.Text.Encoding.UTF8.GetString(encB.Substring(i + 1, (int)keyLength));
+                            key = encB.Substring(i + 1, (int)keyLength).UTF8_GetString();
                             i += (int)keyLength + 1;
                             ClearSizer();
                             continue;
@@ -433,7 +434,8 @@ namespace DBreeze.Utils
                             sizer[size] = el;
                             size++;
                             keyLength = ToUInt32(sizer);
-                            key = System.Text.Encoding.UTF8.GetString(encB.Substring(i + 1, (int)keyLength));
+                            //key = System.Text.Encoding.UTF8.GetString(encB.Substring(i + 1, (int)keyLength));
+                            key = encB.Substring(i + 1, (int)keyLength).UTF8_GetString();
                             i += (int)keyLength+1;
                             ClearSizer();
                             continue;
@@ -678,7 +680,9 @@ namespace DBreeze.Utils
                 }
 
                 tar1 = ms.ToArray();
-                ms.Close();
+#if !NETPORTABLE
+                    ms.Close();
+#endif
             }
 
             return tar1;

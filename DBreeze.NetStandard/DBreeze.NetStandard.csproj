@@ -9,14 +9,14 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.089.2018.0809</Version>
-    <AssemblyVersion>1.089.2018.0809</AssemblyVersion>
-    <FileVersion>1.089.2018.0809</FileVersion>
+    <Version>1.090.2018.0220</Version>
+    <AssemblyVersion>1.090.2018.0220</AssemblyVersion>
+    <FileVersion>1.090.2018.0220</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>
-    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40</DefineConstants>    
+    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;RELEASE;NETSTANDARD1_6;NETPORTABLE</DefineConstants>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -41,6 +41,7 @@
     <Compile Remove="Storage\1TrieSettings.cs" />
     <Compile Remove="TextSearch\1TextDeferredIndexer.cs" />
     <Compile Remove="Transactions\1Transaction.cs" />
+    <Compile Remove="Utils\Biser2.cs" />
   </ItemGroup>
  
   <ItemGroup>
@@ -70,6 +71,9 @@
     <Compile Include="..\DBreeze\TextSearch\WABI.cs" Link="TextSearch\WABI.cs" />
     <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs" Link="Transactions\RandomKeySorter.cs" />
     <Compile Include="..\DBreeze\Transactions\Transaction.cs" Link="Transactions\Transaction.cs" />
+    <Compile Include="..\DBreeze\Utils\Biser.cs" Link="Utils\Biser.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserDecoder.cs" Link="Utils\BiserDecoder.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserEncoder.cs" Link="Utils\BiserEncoder.cs" />
   </ItemGroup>
 
   <ItemGroup>

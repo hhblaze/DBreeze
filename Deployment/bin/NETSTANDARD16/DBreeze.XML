@@ -4580,214 +4580,6 @@
             <param name="arg"></param>
             <param name="callback"></param>
         </member>
-        <member name="T:DBreeze.Utils.Biser">
-            <summary>
-            Custom binary serializer of well known types
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Proto encoding of Dictionary [string, List[byte[]]].
-            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
-            </summary>
-            <param name="d"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Decodes byte[] into  Dictionary [string, List[byte[]]]
-            </summary>
-            <param name="encB"></param>
-            <param name="retD"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Proto encoding of Dictionary [string, HashSet[uint]].
-            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
-            </summary>
-            <param name="d"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Decodes byte[] into  Dictionary [string, HashSet[uint]]
-            </summary>
-            <param name="encB"></param>
-            <param name="retD"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_UINT_BYTEARRAY(System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Proto encoding of Dictionary [uint, byte[]].
-            Use when key is less then 4 bytes (less then 268mln).
-            Value byte[0] will be presented as null after decoding
-            </summary>
-            <param name="d"></param>
-            <param name="compression">compression method extra applied to the outgoing byte array</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(System.Byte[],System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Used when parameter is encoded with Encode_DICT_PROTO_UINT_BYTEARRAY.
-            Returns Dictionary [uint, byte[]]
-            </summary>
-            <param name="encB"></param>
-            <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
-            <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_PROTO_ListByteArray(System.Collections.Generic.IList{System.Byte[]})">
-            <summary>
-            null elements equal to new byte[0]
-            </summary>
-            <param name="d"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_PROTO_ListByteArray(System.Byte[])">
-            <summary>
-            null elements equal to new byte[0]
-            </summary>
-            <param name="encB"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.Utils.Biser.dcb">
-            <summary>
-            First function is serializer, second deserializer
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.InitBiser">
-            <summary>
-            Initializes DBreeze. Biser serializer
-            Initializes only when DBreezeEngine is initialised. Also there is a way to init it manually via this function
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.BiserDecode``1(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.BiserEncode(System.Object)">
-            <summary>
-            Serializes / Encodes to byte[] allowed types
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Byte)">
-            <summary>
-            Returns the specified byte value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">Byte value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int16)">
-            <summary>
-            Returns the specified 16-bit signed value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">16-bit signed value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt16)">
-            <summary>
-            Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">16-bit unsigned value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int32)">
-            <summary>
-            Returns the specified 32-bit signed value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">32-bit signed value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
-            <summary>
-            Returns the specified 32-bit unsigned value as varint encoded array of bytes.
-            Uses protobuf concepts
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int64)">
-            <summary>
-            Returns the specified 64-bit signed value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">64-bit signed value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
-            <summary>
-            Uses protobuf concepts
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToTarget(System.Byte[],System.Int32)">
-            <summary>
-            ToTarget
-            </summary>
-            <param name="bytes"></param>
-            <param name="sizeBites"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToByte(System.Byte[])">
-            <summary>
-            Returns byte value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>Byte value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToInt16(System.Byte[])">
-            <summary>
-            Returns 16-bit signed value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>16-bit signed value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt16(System.Byte[])">
-            <summary>
-            Returns 16-bit usigned value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>16-bit usigned value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToInt32(System.Byte[])">
-            <summary>
-            Returns 32-bit signed value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>32-bit signed value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
-            <summary>
-            Uses protobuf concepts
-            </summary>
-            <param name="bytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToInt64(System.Byte[])">
-            <summary>
-            Returns 64-bit signed value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>64-bit signed value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt64(System.Byte[])">
-            <summary>
-            Returns 64-bit unsigned value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>64-bit unsigned value</returns>
-        </member>
         <member name="T:DBreeze.Utils.BloomFilter.Filter`1.HashFunction">
             <summary>
             A function that can be used to hash input.
@@ -6063,6 +5855,183 @@
             <typeparam name="T"></typeparam>
             <param name="str"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.Biser">
+            <summary>
+            Custom binary serializer of well known types
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToTarget(System.Byte[],System.Int32)">
+            <summary>
+            ToTarget
+            </summary>
+            <param name="bytes"></param>
+            <param name="sizeBites"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [string, List[byte[]]].
+            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+            </summary>
+            <param name="d"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Decodes byte[] into  Dictionary [string, List[byte[]]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [string, HashSet[uint]].
+            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+            </summary>
+            <param name="d"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Decodes byte[] into  Dictionary [string, HashSet[uint]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_UINT_BYTEARRAY(System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [uint, byte[]].
+            Use when key is less then 4 bytes (less then 268mln).
+            Value byte[0] will be presented as null after decoding
+            </summary>
+            <param name="d"></param>
+            <param name="compression">compression method extra applied to the outgoing byte array</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(System.Byte[],System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Used when parameter is encoded with Encode_DICT_PROTO_UINT_BYTEARRAY.
+            Returns Dictionary [uint, byte[]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
+            <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_PROTO_ListByteArray(System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            null elements equal to new byte[0]
+            </summary>
+            <param name="d"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_PROTO_ListByteArray(System.Byte[])">
+            <summary>
+            null elements equal to new byte[0]
+            </summary>
+            <param name="encB"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
+            <summary>
+            Returns the specified 32-bit unsigned value as varint encoded array of bytes.
+            Uses protobuf concepts
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int64)">
+            <summary>
+            Returns the specified 64-bit signed value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">64-bit signed value</param>
+            <returns>Varint array of bytes.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.Biser.Decoder">
+            <summary>
+            Biser.Decoder
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.Decoder.qb">
+            <summary>
+            Quantity of bytes needed to form latest varint
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.Decoder.IsNull">
+            <summary>
+            true in case if object is null
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.#ctor(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="encoded"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.#ctor(DBreeze.Utils.Biser.Decoder,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="decoder"></param>
+            <param name="isCollection"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.CheckNull">
+            <summary>
+            Is used for checking next collection on null, before getting one of the itterators.
+            </summary>
+            <returns>true if null</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.GetCollection(System.Boolean)">
+            <summary>
+            Universal, but a bit slower (because of the yield returns) than those ones with IDictionary or IList
+            </summary>
+            <param name="isNullChecked"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.GetCollection``1(System.Func{``0},System.Collections.Generic.IList{``0},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="K"></typeparam>
+            <param name="fk"></param>
+            <param name="lst"></param>
+            <param name="isNullChecked"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.GetCollection``2(System.Func{``0},System.Func{``1},System.Collections.Generic.IDictionary{``0,``1},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="K"></typeparam>
+            <typeparam name="V"></typeparam>
+            <param name="fk"></param>
+            <param name="fv"></param>
+            <param name="dict"></param>
+            <param name="isNullChecked"></param>
+        </member>
+        <member name="T:DBreeze.Utils.Biser.Encoder">
+            <summary>
+            Biser.Encoder
+            </summary>
         </member>
         <member name="T:DBreeze.DBreezeResources">
             <summary>

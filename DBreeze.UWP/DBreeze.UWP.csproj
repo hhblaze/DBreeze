@@ -33,7 +33,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;NET40</DefineConstants>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;NET40;NETPORTABLE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
@@ -110,9 +110,6 @@
     <None Include="signature.snk" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\DBreeze.NetStandard\Utils\Biser.cs">
-      <Link>Utils\Biser.cs</Link>
-    </Compile>
     <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
@@ -187,6 +184,15 @@
     </Compile>
     <Compile Include="..\DBreeze\Transactions\Transaction.cs">
       <Link>Transactions\Transaction.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\Biser.cs">
+      <Link>Utils\Biser.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\BiserDecoder.cs">
+      <Link>Utils\BiserDecoder.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\BiserEncoder.cs">
+      <Link>Utils\BiserEncoder.cs</Link>
     </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+
 
 namespace DBreeze.Utils
 {
@@ -46,10 +46,11 @@ namespace DBreeze.Utils
                 this.activeDecoder = this;
             }
 
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="decoder"></param>
+           /// <summary>
+           /// 
+           /// </summary>
+           /// <param name="decoder"></param>
+           /// <param name="isCollection"></param>
             public Decoder(Decoder decoder, bool isCollection = false)
             {
                 this.rootDecoder = decoder.rootDecoder;

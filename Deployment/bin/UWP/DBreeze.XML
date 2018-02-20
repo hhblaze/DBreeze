@@ -4,1484 +4,6 @@
         <name>DBreeze</name>
     </assembly>
     <members>
-        <member name="T:DBreeze.Utils.Biser">
-            <summary>
-            Custom binary serializer of well known types
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Proto encoding of Dictionary [string, List[byte[]]].
-            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
-            </summary>
-            <param name="d"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Decodes byte[] into  Dictionary [string, List[byte[]]]
-            </summary>
-            <param name="encB"></param>
-            <param name="retD"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Proto encoding of Dictionary [string, HashSet[uint]].
-            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
-            </summary>
-            <param name="d"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Decodes byte[] into  Dictionary [string, HashSet[uint]]
-            </summary>
-            <param name="encB"></param>
-            <param name="retD"></param>
-            <param name="compression"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_UINT_BYTEARRAY(System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Proto encoding of Dictionary [uint, byte[]].
-            Use when key is less then 4 bytes (less then 268mln).
-            Value byte[0] will be presented as null after decoding
-            </summary>
-            <param name="d"></param>
-            <param name="compression">compression method extra applied to the outgoing byte array</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(System.Byte[],System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
-            <summary>
-            Used when parameter is encoded with Encode_DICT_PROTO_UINT_BYTEARRAY.
-            Returns Dictionary [uint, byte[]]
-            </summary>
-            <param name="encB"></param>
-            <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
-            <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Encode_PROTO_ListByteArray(System.Collections.Generic.IList{System.Byte[]})">
-            <summary>
-            null elements equal to new byte[0]
-            </summary>
-            <param name="d"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decode_PROTO_ListByteArray(System.Byte[])">
-            <summary>
-            null elements equal to new byte[0]
-            </summary>
-            <param name="encB"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.Utils.Biser.dcb">
-            <summary>
-            First function is serializer, second deserializer
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.InitBiser">
-            <summary>
-            Initializes DBreeze. Biser serializer
-            Initializes only when DBreezeEngine is initialised. Also there is a way to init it manually via this function
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.BiserDecode``1(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.BiserEncode(System.Object)">
-            <summary>
-            Serializes / Encodes to byte[] allowed types
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Byte)">
-            <summary>
-            Returns the specified byte value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">Byte value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int16)">
-            <summary>
-            Returns the specified 16-bit signed value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">16-bit signed value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt16)">
-            <summary>
-            Returns the specified 16-bit unsigned value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">16-bit unsigned value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int32)">
-            <summary>
-            Returns the specified 32-bit signed value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">32-bit signed value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
-            <summary>
-            Returns the specified 32-bit unsigned value as varint encoded array of bytes.
-            Uses protobuf concepts
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int64)">
-            <summary>
-            Returns the specified 64-bit signed value as varint encoded array of bytes.   
-            </summary>
-            <param name="value">64-bit signed value</param>
-            <returns>Varint array of bytes.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
-            <summary>
-            Uses protobuf concepts
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToTarget(System.Byte[],System.Int32)">
-            <summary>
-            ToTarget
-            </summary>
-            <param name="bytes"></param>
-            <param name="sizeBites"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToByte(System.Byte[])">
-            <summary>
-            Returns byte value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>Byte value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToInt16(System.Byte[])">
-            <summary>
-            Returns 16-bit signed value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>16-bit signed value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt16(System.Byte[])">
-            <summary>
-            Returns 16-bit usigned value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>16-bit usigned value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToInt32(System.Byte[])">
-            <summary>
-            Returns 32-bit signed value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>32-bit signed value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
-            <summary>
-            Uses protobuf concepts
-            </summary>
-            <param name="bytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToInt64(System.Byte[])">
-            <summary>
-            Returns 64-bit signed value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>64-bit signed value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.ToUInt64(System.Byte[])">
-            <summary>
-            Returns 64-bit unsigned value from varint encoded array of bytes.
-            </summary>
-            <param name="bytes">Varint encoded array of bytes.</param>
-            <returns>64-bit unsigned value</returns>
-        </member>
-        <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
-            <summary>
-            Executes async, then calls Callback function
-            </summary>
-            <typeparam name="TInput"></typeparam>
-            <param name="f"></param>
-            <param name="arg"></param>
-            <param name="callback"></param>
-        </member>
-        <member name="T:DBreeze.Utils.BloomFilter.Filter`1.HashFunction">
-            <summary>
-            A function that can be used to hash input.
-            </summary>
-            <param name="input">The values to be hashed.</param>
-            <returns>The resulting hash code.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32)">
-            <summary>
-            Creates a new Bloom filter, specifying an error rate of 1/capacity, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
-            A secondary hash function will be provided for you if your type T is either string or int. Otherwise an exception will be thrown. If you are not using these types please use the overload that supports custom hash functions.
-            </summary>
-            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,System.Int32)">
-            <summary>
-            Creates a new Bloom filter, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
-            A secondary hash function will be provided for you if your type T is either string or int. Otherwise an exception will be thrown. If you are not using these types please use the overload that supports custom hash functions.
-            </summary>
-            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
-            <param name="errorRate">The accepable false-positive rate (e.g., 0.01F = 1%)</param>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,DBreeze.Utils.BloomFilter.Filter{`0}.HashFunction)">
-            <summary>
-            Creates a new Bloom filter, specifying an error rate of 1/capacity, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
-            </summary>
-            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
-            <param name="hashFunction">The function to hash the input values. Do not use GetHashCode(). If it is null, and T is string or int a hash function will be provided for you.</param>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,System.Single,DBreeze.Utils.BloomFilter.Filter{`0}.HashFunction)">
-            <summary>
-            Creates a new Bloom filter, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
-            </summary>
-            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
-            <param name="errorRate">The accepable false-positive rate (e.g., 0.01F = 1%)</param>
-            <param name="hashFunction">The function to hash the input values. Do not use GetHashCode(). If it is null, and T is string or int a hash function will be provided for you.</param>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,System.Single,DBreeze.Utils.BloomFilter.Filter{`0}.HashFunction,System.Int32,System.Int32)">
-            <summary>
-            Creates a new Bloom filter.
-            </summary>
-            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
-            <param name="errorRate">The accepable false-positive rate (e.g., 0.01F = 1%)</param>
-            <param name="hashFunction">The function to hash the input values. Do not use GetHashCode(). If it is null, and T is string or int a hash function will be provided for you.</param>
-            <param name="m">The number of elements in the BitArray.</param>
-            <param name="k">The number of hash functions to use.</param>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.Add(`0)">
-            <summary>
-            Adds a new item to the filter. It cannot be removed.
-            </summary>
-            <param name="item"></param>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.Contains(`0)">
-            <summary>
-            Checks for the existance of the item in the filter for a given probability.
-            </summary>
-            <param name="item"></param>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.Utils.BloomFilter.Filter`1.Truthiness">
-            <summary>
-            The ratio of false to true bits in the filter. E.g., 1 true bit in a 10 bit filter means a truthiness of 0.1.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.computeHash(System.Int32,System.Int32,System.Int32)">
-            <summary>
-            Performs Dillinger and Manolios double hashing. 
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.hashInt32(`0)">
-            <summary>
-            Hashes a 32-bit signed int using Thomas Wang's method v3.1 (http://www.concentric.net/~Ttwang/tech/inthash.htm).
-            Runtime is suggested to be 11 cycles. 
-            </summary>
-            <param name="input">The integer to hash.</param>
-            <returns>The hashed result.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.hashString(`0)">
-            <summary>
-            Hashes a string using Bob Jenkin's "One At A Time" method from Dr. Dobbs (http://burtleburtle.net/bob/hash/doobs.html).
-            Runtime is suggested to be 9x+9, where x = input.Length. 
-            </summary>
-            <param name="input">The string to hash.</param>
-            <returns>The hashed result.</returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.EnlargeByteArray_BigEndian(System.Byte[],System.Int32)">
-            <summary>
-            Enlarges byte array till given size filling with 0 from start the rest of the length.
-            Ex: byte[] a = new byte[] {1,2,3}; a.EnlargeByteArray_BigEndian(6) = new byte[] {0,0,0,1,2,3};
-            If array for enlargement equals null new byte[size] will be returned, if array for enlargement length more or equal size then the same array will be returned.
-            </summary>
-            <param name="ar"></param>
-            <param name="size"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.EnlargeByteArray_LittleEndian(System.Byte[],System.Int32)">
-            <summary>
-            Enlarges byte array till given size filling with 0 after values of the supplied array.
-            Ex: byte[] a = new byte[] {1,2,3}; a.EnlargeByteArray_LittleEndian(6) = new byte[] {1,2,3,0,0,0};
-            If array for enlargement equals null new byte[size] will be returned, if array for enlargement length more or equal size then the same array will be returned.
-            </summary>
-            <param name="ar"></param>
-            <param name="size"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Substring(System.Byte[],System.Int32,System.Int32)">
-            <summary>
-            Substring int-dimensional byte arrays
-            </summary>
-            <param name="ar"></param>
-            <param name="startIndex"></param>
-            <param name="length"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Substring(System.Byte[],System.Int32)">
-            <summary>
-            Substring int-dimensional byte arrays from and till the end
-            </summary>
-            <param name="ar"></param>
-            <param name="startIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.CloneArray(System.Byte[])">
-            <summary>
-            Works only for int-dimesional arrays only
-            </summary>
-            <param name="ar"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.CopyInside(System.Byte[],System.Int32,System.Byte[],System.Int32,System.Int32)">
-            <summary>
-            Copies one array (source) into another (destination extension).
-            <para>Destination array is taken as this</para>
-            </summary>
-            <param name="destArray"></param>
-            <param name="destOffset"></param>
-            <param name="srcArray"></param>
-            <param name="srcOffset"></param>
-            <param name="quantity"></param>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.CopyInside(System.Byte[],System.Int32,System.Byte[])">
-            <summary>
-            Copies fully one array (source) into another (destination extension). Extra parameter destination offset.
-            <para>Doesn't return anything, but changes destination array by reference.</para>
-            <para>Can Throw exception if destArray.Length less then (destOffset + srcArray.Length)</para>
-            <para>, for this use CopyInsideArrayCanGrow</para>
-            </summary>
-            <param name="destArray"></param>
-            <param name="destOffset"></param>
-            <param name="srcArray"></param>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.CopyInsideArrayCanGrow(System.Byte[],System.Int32,System.Byte[])">
-            <summary>
-            Will return finally created array 
-            <para>byte[] b = new byte[] { 1, 2, 3 };</para>
-            <para>byte[] v = b.CopyInsideArrayCanGrow(1, new byte[] { 5, 6, 7 });</para>
-            <para>will return v = byte[] { 1, 5, 6, 7 }</para>
-            </summary>
-            <param name="destArray"></param>
-            <param name="destOffset"></param>
-            <param name="srcArray"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.RemoveLeadingElement(System.Byte[],System.Byte)">
-            <summary>
-            Removes leading element from the array.
-            Never returns null, but can return new byte[] {} (Length=0)
-            </summary>
-            <param name="array"></param>
-            <param name="elementToRemove"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Reverse(System.Byte[])">
-            <summary>
-            Array.Reverse is the same fast, but reverses by reference the parameter-array, what is not acceptable
-            </summary>
-            <param name="ar"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Byte[],System.Byte[])">
-            <summary>
-            Fastest Method. Works only for int-dimesional arrays only. 
-            When necessary to concat many arrays use ConcatMany
-            </summary>
-            <param name="ar1"></param>
-            <param name="ar2"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Byte,System.Byte)">
-            <summary>
-            FOR OPTIMITATION LIKE Concat(this byte[] ar1, byte ar2)
-            </summary>
-            <param name="ar1"></param>
-            <param name="ar2"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Byte,System.Byte[])">
-            <summary>
-            FOR OPTIMITATION LIKE Concat(this byte[] ar1, byte ar2)
-            </summary>
-            <param name="ar1"></param>
-            <param name="ar2"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ConcatMany(System.Byte[],System.Byte[][])">
-            <summary>
-            Fast when necessary to concat many arrays
-            Example: byte[] s = new byte[] { 1, 2, 3 }; s.ConcatMany(new byte[] { 2, 3, 4 }, new byte[] { 3, 7, 8 }, new byte[] { 9, 10, 11 });
-            Also: ((byte[])null).ConcatMany(new byte[] { 2, 3, 4 }, new byte[] { 3, 7, 8 }, new byte[] { 9, 10, 11 });
-            </summary>
-            <param name="ar1"></param>
-            <param name="ar2"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ConcatMany(System.Byte[],System.Collections.Generic.IList{System.Byte[]})">
-            <summary>
-            Concats many byte arrays
-            </summary>
-            <param name="ar1"></param>
-            <param name="arrays"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Collections.Generic.IList{System.Byte[]})">
-            <summary>
-            Concats all arrays into one byte[]
-            </summary>
-            <param name="arrays"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToIndex(System.Int32,System.Object[])">
-            <summary>
-            Concept of the objects storage (read docu from 20170321)
-            Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
-            </summary>
-            <param name="indexNumber">Index number (one byte from 1-255)</param>
-            <param name="pars">Parts of the index to be converted to byte[]</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToIndex(System.Byte,System.Object[])">
-            <summary>
-            Concept of the objects storage (read docu from 20170321)
-            Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
-            </summary>
-            <param name="indexNumber">Index number (one byte from 1-255)</param>
-            <param name="pars">Parts of the index to be converted to byte[]</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBytes(System.Object[])">
-            <summary>
-            Concatenates converted to byte[] elements sequentially. 
-            DBreeze converters are used.
-            </summary>
-            <param name="pars"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBytes(System.Object,System.Object[])">
-            <summary>
-            Concatenates converted to byte[] elements sequentially. 
-            DBreeze converters are used.
-            </summary>
-            <param name="par1"></param>
-            <param name="pars"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.indexOfStringInByteArray(System.Byte[],System.String,System.Text.Encoding)">
-            <summary>
-            If not found returns -1
-            </summary>
-            <param name="ar"></param>
-            <param name="search"></param>
-            <param name="en"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.IndexOfByteArray(System.Byte[],System.Byte[])">
-            <summary>
-            Searches Start index of the byte[] pattern inside of the byte array
-            If not found returns -1
-            </summary>
-            <param name="ar"></param>
-            <param name="search"></param>
-            <param name="en"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Byte(System.Byte[])">
-            <summary>
-            From 1 byte array returns byte
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Byte_NULL(System.Byte[])">
-            <summary>
-            From 2 bytes array returns byte?
-            If array length is not equal to 2 bytes returns null
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime(System.Byte[])">
-            <summary>
-            8-byte array tries to convert to DateTime
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime_zCompatibility(System.Byte[])">
-            <summary>
-            DON't use it (only for compatibility reasons described in docu from [20120922])
-            BigEndian 8 bytes tries to convert to Ticks
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime_NULL(System.Byte[])">
-            <summary>
-            Returns DateTime? from 9-byte array
-            If array is not equal 9 bytes returns null
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Bool_NULL(System.Byte[])">
-            <summary>
-            Returns bool? from 1-byte array
-            if value length != 1 returns null.
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Char(System.Byte[])">
-            <summary>
-            Converts 2 bytes byte[] into Unicode char
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Char_NULL(System.Byte[])">
-            <summary>
-            Converts 3 bytes byte[] into Unicode char?
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_SByte(System.Byte[])">
-            <summary>
-            Converts 1 byte array into sbyte
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_SByte_NULL(System.Byte[])">
-            <summary>
-            Converts 2 bytes array into sbyte?
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_BigEndian(System.Byte[])">
-            <summary>
-            From 2 bytes array which is in BigEndian order (highest byte first, lowest last) makes short.
-            If array not equal 2 bytes throws exception. (-32,768 to 32,767)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_LittleEndian(System.Byte[])">
-            <summary>
-            From 2 bytes array which is in LittleEndian order (lowest byte first, highest last) makes short.
-            If array not equal 2 bytes throws exception. (-32,768 to 32,767)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_BigEndian_NULL(System.Byte[])">
-            <summary>
-            From 3 bytes array which is in BigEndian order (highest byte first, lowest last) makes short?.
-            If array not equal 3 bytes returns null. (-32,768 to 32,767)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_LittleEndian_NULL(System.Byte[])">
-            <summary>
-            From 3 bytes array which is in LittleEndian order (lowest byte first, highest last) makes short.
-            If array not equal 3 bytes returns null. (-32,768 to 32,767)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_BigEndian(System.Byte[])">
-            <summary>
-            From 2 bytes array which is in BigEndian order (highest byte first, lowest last) makes ushort.
-            If array not equal 2 bytes throws exception. (0 to 65,535)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_LittleEndian(System.Byte[])">
-            <summary>
-            From 2 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ushort.
-            If array not equal 2 bytes throws exception. (0 to 65,535)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_BigEndian_NULL(System.Byte[])">
-            <summary>
-            From 3 bytes array which is in BigEndian order (highest byte first, lowest last) makes ushort?.
-            If array not equal 3 bytes returns null. (0 to 65,535)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_LittleEndian_NULL(System.Byte[])">
-            <summary>
-            From 3 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ushort?.
-            If array not equal 3 bytes returns null. (0 to 65,535)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_BigEndian(System.Byte[])">
-            <summary>
-            From 4 bytes array which is in BigEndian order (highest byte first, lowest last) makes int.
-            If array not equal 4 bytes throws exception. (-2,147,483,648 to 2,147,483,647)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_LittleEndian(System.Byte[])">
-            <summary>
-            From 4 bytes array which is in LittleEndian order (lowest byte first, highest last) makes int.
-            If array not equal 4 bytes throws exception. (-2,147,483,648 to 2,147,483,647)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_BigEndian_NULL(System.Byte[])">
-            <summary>
-            From 5 bytes array which is in BigEndian order (highest byte first, lowest last) makes int.
-            If array is not equal 5 bytes returns null. Range is (-2,147,483,648 to 2,147,483,647)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_LittleEndian_NULL(System.Byte[])">
-            <summary>
-            From 5 bytes array which is in LittleEndian order (lowest byte first, highest last) makes int.
-            If array not equal 5 bytes returns null. (-2,147,483,648 to 2,147,483,647)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_BigEndian(System.Byte[])">
-            <summary>
-            From 4 bytes array which is in BigEndian order (highest byte first, lowest last) makes uint.
-            If array not equal 4 bytes throws exception. (0 to 4.294.967.295)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_LittleEndian(System.Byte[])">
-            <summary>
-            From 4 bytes array which is in LittleEndian order (lowest byte first, highest last) makes uint.
-            If array not equal 4 bytes throws exception. (0 to 4.294.967.295)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_BigEndian_NULL(System.Byte[])">
-            <summary>
-            From 5 bytes array which is in BigEndian order (highest byte first, lowest last) makes uint?.
-            If array not equal 5 bytes returns null. (0 to 4.294.967.295)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_LittleEndian_NULL(System.Byte[])">
-            <summary>
-            From 5 bytes array which is in LittleEndian order (lowest byte first, highest last) makes uint?.
-            If array not equal 5 bytes returns null. (0 to 4.294.967.295)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_BigEndian(System.Byte[])">
-            <summary>
-            From 8 bytes array which is in BigEndian order (highest byte first, lowest last) makes long.
-            If array not equal 8 bytes throws exception. (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_LittleEndian(System.Byte[])">
-            <summary>
-            From 8 bytes array which is in LittleEndian order (lowest byte first, highest last) makes long.
-            If array not equal 8 bytes throws exception. (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_BigEndian_NULL(System.Byte[])">
-            <summary>
-            From 9 bytes array which is in BigEndian order (highest byte first, lowest last) makes long.
-            If array not equal 9 bytes return null. Range (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_LittleEndian_NULL(System.Byte[])">
-            <summary>
-            From 9 bytes array which is in LittleEndian order (lowest byte first, highest last) makes long.
-            If array not equal 9 bytes returns null. Range (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.DynamicLength_To_UInt64_BigEndian(System.Byte[])">
-            <summary>
-            From dynamic byte array (up to 8 bytes) stored in BigEndian format creates ulong value, 
-            note if given byte array bigger then 8 bytes - then calcualtion will start from 0
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_BigEndian(System.Byte[])">
-            <summary>
-            From 8 bytes array which is in BigEndian order (highest byte first, lowest last) makes ulong.
-            If array not equal 8 bytes throws exception. (0 to 18,446,744,073,709,551,615)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_LittleEndian(System.Byte[])">
-            <summary>
-            From 8 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ulong.
-            If array not equal 8 bytes throws exception. (0 to 18,446,744,073,709,551,615)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_BigEndian_NULL(System.Byte[])">
-            <summary>
-            From 9 bytes array which is in BigEndian order (highest byte first, lowest last) makes ulong?.
-            If array is not equal 9 bytes returns null. (0 to 18,446,744,073,709,551,615)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_LittleEndian_NULL(System.Byte[])">
-            <summary>
-            From 9 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ulong?.
-            If array is not equal 9 bytes returns null. (0 to 18,446,744,073,709,551,615)
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian(System.Byte[])">
-            <summary>
-            Converts sortable byte[15] to decimal
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian_NULL(System.Byte[])">
-            <summary>
-            Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian(System.Byte[])">
-            <summary>
-            Converts sortable byte[9] to double
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian_NULL(System.Byte[])">
-            <summary>
-            Converts sortable byte[10] to double?
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian(System.Byte[])">
-            <summary>
-            Converts sortable byte[4] to float
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian_NULL(System.Byte[])">
-            <summary>
-            Converts sortable byte[5] to float?
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.Byte})">
-            <summary>
-            Returns 2 byte array which represents byte?
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array(System.DateTime)">
-            <summary>
-            DateTime to byte[8] big-endian.
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_zCompatibility(System.DateTime)">
-            <summary>
-            DON't use it (only for compatibility resasons described in docu from [20120922])
-            DateTime to byte[8] big-endian.
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array(System.Nullable{System.DateTime})">
-            <summary>
-            DateTime? to byte[9] big-endian.
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_1_byte_array(System.Nullable{System.Boolean})">
-            <summary>
-            Returns 1 byte which represents bool?
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Char)">
-            <summary>
-            Converts char into byte[2] Unicode representation
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_3_byte_array(System.Nullable{System.Char})">
-            <summary>
-            Converts char? into byte[3] Unicode representation
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.SByte})">
-            <summary>
-            Converts sbyte? into 2 byte array
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_BigEndian(System.Int16)">
-            <summary>
-            From Int16 to 2 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_LittleEndian(System.Int16)">
-            <summary>
-            From Int16 to 2 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_BigEndian(System.Nullable{System.Int16})">
-            <summary>
-            From Int16? to 3 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_LittleEndian(System.Nullable{System.Int16})">
-            <summary>
-            From Int16? to 3 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_BigEndian(System.UInt16)">
-            <summary>
-            From UInt16 to 2 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_LittleEndian(System.UInt16)">
-            <summary>
-            From UInt16 to 2 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_BigEndian(System.Nullable{System.UInt16})">
-            <summary>
-            From UInt16? to 3 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_LittleEndian(System.Nullable{System.UInt16})">
-            <summary>
-            From UInt16? to 3 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_BigEndian(System.Int32)">
-            <summary>
-            From Int32 to 4 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_LittleEndian(System.Int32)">
-            <summary>
-            From Int32 to 4 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_BigEndian(System.Nullable{System.Int32})">
-            <summary>
-            From Int32? to 5 bytes array with BigEndian order (highest byte first, lowest last).   
-            When first byte is 0 then the whole value is NULL
-            When first byte is 1 then value can be converted
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_LittleEndian(System.Nullable{System.Int32})">
-            <summary>
-            From Int32 to 4 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_BigEndian(System.UInt32)">
-            <summary>
-            From UInt32 to 4 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_LittleEndian(System.UInt32)">
-            <summary>
-            From UInt32 to 4 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_BigEndian(System.Nullable{System.UInt32})">
-            <summary>
-            From UInt32? to 5 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_LittleEndian(System.Nullable{System.UInt32})">
-            <summary>
-            From UInt32? to 5 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_BigEndian(System.Int64)">
-            <summary>
-            From Int64 to 8 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_LittleEndian(System.Int64)">
-            <summary>
-            From Int64 to 8 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_BigEndian(System.Nullable{System.Int64})">
-            <summary>
-            From Int64? to 9 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_LittleEndian(System.Nullable{System.Int64})">
-            <summary>
-            From Int64? to 9 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_BigEndian(System.UInt64)">
-            <summary>
-            From UInt64 to 8 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_LittleEndian(System.UInt64)">
-            <summary>
-            From UInt64 to 8 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_BigEndian(System.Nullable{System.UInt64})">
-            <summary>
-            From UInt64? to 9 bytes array with BigEndian order (highest byte first, lowest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_LittleEndian(System.Nullable{System.UInt64})">
-            <summary>
-            From UInt64? to 9 bytes array with LittleEndian order (lowest byte first, highest last).        
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_15_bytes_array_BigEndian(System.Decimal)">
-            <summary>
-            Converts  decimal to sortable byte[15] 
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_16_bytes_array_BigEndian(System.Nullable{System.Decimal})">
-            <summary>
-            Converts  decimal? to sortable byte[16] 
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_BigEndian(System.Double)">
-            <summary>
-            Converts  double to sortable byte[9]
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_10_bytes_array_BigEndian(System.Nullable{System.Double})">
-            <summary>
-            Converts double to sortable byte[10]
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_BigEndian(System.Single)">
-            <summary>
-             Converts float to sortable byte[4]
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_BigEndian(System.Nullable{System.Single})">
-            <summary>
-             Converts float? to sortable byte[5]
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.TruncateUTF8(System.String,System.Int32)">
-            <summary>
-            Truncates UTF-8 strign up to special maxSizeInBytes due to UTF-8 specification. 
-            </summary>
-            <param name="text"></param>
-            <param name="maxSizeInBytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.To_FixedSizeColumn(System.String,System.Int16,System.Boolean)">
-            <summary>
-            Converts your text into byte[], which can be used as column of fixedSize+2. 
-            <para>(2 bytes are always added to your fixedSize value, determination of actual text size and NULL flag)</para>
-            <para>String can be null</para>
-            Will return byte[] with the length fixedSize+2 which can be stored as column.
-            <para>If text.Length after convertion (using ASCII or UTF8) overexceeds fixedSize, text will be truncated</para>
-            </summary>
-            <param name="value">any string, can be NULL</param>
-            <param name="fixedSize">reservation space(returned byte[] will be of fixedSize+2)</param>
-            <param name="isASCII">if true, text will be presented as ASCII, otherwise as UTF-8</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.From_FixedSizeColumn(System.Byte[],System.Boolean)">
-            <summary>
-            takes byte[] created by To_FixedSizeColumn and restores string value from it.
-            <para>byte[] must be of length fixedSize(which you gave in To_FixedSizeColumn) + 2</para>
-            </summary>
-            <param name="value"></param>
-            <param name="isASCII">if true, text was presented as ASCII, otherwise as UTF-8</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBase64String(System.Byte[])">
-            <summary>
-            Creates a Base64string from byte array. Good for hashes.
-            </summary>
-            <param name="dBytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBytesString(System.Byte[],System.String)">
-            <summary>
-            Converts BytesArray to String Representation: 00-00-00-00-1F-00-00-00-00-20.
-            If array is null or 0 length - returns String.Empty.
-            If replaceWith is String.Empty returns such view 00-00-00-00-1F-00-00-00-00-20.
-            Otherwise takes such view (-00-00-00-00-1F-00-00-00-00-20) and replaces "-" with replaceWith also calls Trim().      
-            </summary>
-            <param name="dBytes"></param>
-            <param name="replaceWith"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.Utils.BytesProcessing._hexDigits">
-            <summary>
-            Used by ToBytesString
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToByteArrayFromHex(System.String)">
-            <summary>
-            Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
-            </summary>
-            <param name="str"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToHexFromByteArray(System.Byte[])">
-            <summary>
-            Generates Hex 1F0000000020 from byte[]. Backward function is ToByteArrayFromHex/ToByteArrayFromHex
-            </summary>
-            <param name="dBytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBytesString(System.Byte[])">
-            <summary>
-            To pure HEX string without delimiters
-            </summary>
-            <param name="dBytes"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToHex(System.Byte)">
-            <summary>
-            Convert Byte To Hex string
-            </summary>
-            <param name="dByte"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBytesStringDec(System.Byte[],System.String)">
-            <summary>
-            Converts BytesArray to String Representation: 00-00-00-00-128-12-214-00-00-20.
-            Where replaceWith = "-"
-            </summary>
-            <param name="dBytes"></param>
-            <param name="replaceWith"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.ToBitArray(System.Byte)">
-            <summary>
-            BigEndian
-            </summary>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.Get_CRC16_AsByteArray(System.Byte[])">
-            <summary>
-            Returns byte representation of Crc16
-            </summary>
-            <param name="ar"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoOneBitUp_NoArrayGrow_BigEndian(System.Byte[])">
-            <summary>
-            Adds byte[] + 1 bit.
-            Returns: had {255}    -> null
-            Returns: had {15,255} -> {16,0} 
-            Returns: had {15,248} -> {15,249} 
-            Returns: bt=null || bt.Length == 0 -> null
-            </summary>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoOneBitUp_ArrayGrows_BigEndian(System.Byte[])">
-            <summary>
-            Adds + 1 bit
-            The same as BytesAction_GoOneBitUp_NoArrayGrow_BigEndian but array grows
-            </summary>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoOneBitDown_NoArrayGrow_BigEndian(System.Byte[])">
-            <summary>
-            Extracts 1 bit
-            Returns: {0} -> null
-            Returns: {0,0,0,0} -> null
-            Returns: {254} -> {253}
-            Returns: {1} -> {0}
-            Returns: {121,456} -> {121,455}
-            Returns: {121,0} -> {120,255}
-            </summary>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoUpNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)">
-            <summary>
-            <para>BytesAction_GoUpNextByteStart_NoArrayGrow_BigEndian</para>
-            <para>Returns: had {255}    -> null</para>
-            <para>Returns: had {255, 0} -> null</para>
-            <para>Returns: bt=null || bt.Length less then 2  -> null</para>
-            <para>Returns: had {254, 0} -> {255, 0}</para>
-            <para>Returns: had {120, 115, 147} -> {120, 116, 0}</para>
-            </summary>
-            <param name="bt"></param>
-            <returns></returns>
-        </member>
-        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
-        <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
-            <summary>
-            <para>USE _ByteArrayEquals</para>
-            If both arrays are null, returns true. Checks nulls also. Uses SequenceEqual
-            </summary>
-            <param name="ar"></param>
-            <param name="compareArray"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing._ByteArrayEquals(System.Byte[],System.Byte[])">
-            <summary>
-            Managed way compares 2 bytes array. Uses for loop and extra checks like null, length before
-            </summary>
-            <param name="b1"></param>
-            <param name="b2"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing._ByteArrayEquals_EqualityBrokenIndex(System.Byte[],System.Byte[])">
-            <summary>
-            Returns index where equality is broken.
-            -2 if equal
-            -1 if not comparable (null or so)
-            </summary>
-            <param name="b1"></param>
-            <param name="b2"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArraySmallerThen(System.Byte[],System.Byte[])">
-            <summary>
-            String Comparation Point of view:
-            "AAA" less then "AAAA"
-            "AB" more then "AAAA"
-            </summary>
-            <param name="array"></param>
-            <param name="arrayToCompare"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArraySmallerOrEqualThen(System.Byte[],System.Byte[])">
-            <summary>
-            String Comparation Point of view:
-            "AAA" less then "AAAA"
-            "AB" more then "AAAA"
-            </summary>
-            <param name="array"></param>
-            <param name="arrayToCompare"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArrayBiggerThen(System.Byte[],System.Byte[])">
-            <summary>
-            String Comparation Point of view:
-            "AAA" less then "AAAA"
-            "AB" more then "AAAA"
-            </summary>
-            <param name="array"></param>
-            <param name="arrayToCompare"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArrayBiggerOrEqualThen(System.Byte[],System.Byte[])">
-            <summary>
-            String Comparation Point of view:
-            "AAA" less then "AAAA"
-            "AB" more then "AAAA"
-            </summary>
-            <param name="array"></param>
-            <param name="arrayToCompare"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.Utils.ByteListComparer">
-            <summary>
-            Sorting of byte[]
-             foreach (var r1 in input.OrderBy(x => x, new ByteListComparer())) Debug.WriteLine(r1.ToBytesString());
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.Compression.GZip_Compress(System.Byte[])">
-            <summary>
-            In Memory Compression with Gzip
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Compression.GZip_Decompress(System.Byte[])">
-            <summary>
-            In Memory GZip Decompressor 
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.Utils.CustomSerializator.Serializator">
-            <summary>
-            Must be setup to be used together with DbCustomSerializer
-            </summary>
-        </member>
-        <member name="F:DBreeze.Utils.CustomSerializator.Deserializator">
-            <summary>
-            Must be setup to be used together with DbCustomSerializer
-            </summary>
-        </member>
-        <member name="F:DBreeze.Utils.CustomSerializator.ByteArraySerializator">
-            <summary>
-            Into byte array serializator can be supplied (Usually Protobuf.NET)
-            </summary>
-        </member>
-        <member name="F:DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator">
-            <summary>
-            From byte[] deserializator can be used (Usually Protobuf.NET)
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.CustomSerializator.SerializeCustom(System.Object)">
-            <summary>
-            Serializes object to JSON from Microsoft
-            </summary>
-            <param name="objectForSerialization"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.CustomSerializator.DeserializeCustom``1(System.String)">
-            <summary>
-            Deserializes object from Microsoft JSON string
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="str"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.Utils.DbReaderWriterLock">
-            <summary>
-            Wrapper For System.Threading.ReaderWriterLockSlim
-            In case if better algorithm will be found
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.#ctor">
-            <summary>
-            Creates open Gate
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.PutGateHere">
-            <summary>
-            Sets Gate in the code
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.DbThreadsGator.PutGateHere(System.Int32)">
-            <summary>
-            If gate is closed then it will be closed timeout time in milliseconds
-            </summary>
-            <param name="milliseconds"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128(System.Byte[])">
-            <summary>
-            128 bit mixed MurMurhash3
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_64(System.Byte[])">
-            <summary>
-            64 bit mixed MurMurhash3
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.Hash.MurMurHash.MurmurHash3(System.Byte[],System.UInt32)">
-            <summary>
-            32 bit
-            </summary>
-            <param name="data"></param>
-            <param name="seed"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.Utils.StringProcessing">
-            <summary>
-            Set of string processing extensions
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.To_AsciiBytes(System.String)">
-            <summary>
-            Encoding.ASCII.GetBytes
-            </summary>
-            <param name="text"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.To_UTF8Bytes(System.String)">
-            <summary>
-            Encoding.UTF8.GetBytes
-            </summary>
-            <param name="text"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.To_UnicodeBytes(System.String)">
-            <summary>
-            Encoding.Unicode.GetBytes
-            </summary>
-            <param name="text"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.UTF8_GetString(System.Byte[])">
-            <summary>
-            UTF8.GetString
-            </summary>
-            <param name="btText"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.Unicode_GetString(System.Byte[])">
-            <summary>
-            Unicode.GetString
-            </summary>
-            <param name="btText"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.Ascii_GetString(System.Byte[])">
-            <summary>
-            ASCII.GetString
-            </summary>
-            <param name="btText"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.StringProcessing.ReplaceMultiple(System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
-            <summary>
-            <para>Will efficiently replace multiple string by supplied templates.</para>
-            var replacements = new Dictionary&lt;string, string&gt;()
-            {
-              {"big","hot"},
-              {"mac","dog"}
-            };       
-            </summary>
-            <param name="input"></param>
-            <param name="replaceWith"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
-            <summary>
-            Serializes object to XML string
-            </summary>
-            <param name="objectForSerialization"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.XmlSerializator.DeserializeXml``1(System.String)">
-            <summary>
-            Deserializes object from XML string
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="str"></param>
-            <returns></returns>
-        </member>
         <member name="T:DBreeze.DataTypes.Row`2">
             <summary>
             Row
@@ -6478,6 +5000,1453 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="T:DBreeze.Utils.Biser">
+            <summary>
+            Custom binary serializer of well known types
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToTarget(System.Byte[],System.Int32)">
+            <summary>
+            ToTarget
+            </summary>
+            <param name="bytes"></param>
+            <param name="sizeBites"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [string, List[byte[]]].
+            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+            </summary>
+            <param name="d"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_BYTEARRAYHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.List{System.Byte[]}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Decodes byte[] into  Dictionary [string, List[byte[]]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_STRING_UINTHASHSET(System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [string, HashSet[uint]].
+            Hashset can be null, after decoding istantiated, zero-length hashset will be returned in this case.
+            </summary>
+            <param name="d"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(System.Byte[],System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Decodes byte[] into  Dictionary [string, HashSet[uint]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD"></param>
+            <param name="compression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_DICT_PROTO_UINT_BYTEARRAY(System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Proto encoding of Dictionary [uint, byte[]].
+            Use when key is less then 4 bytes (less then 268mln).
+            Value byte[0] will be presented as null after decoding
+            </summary>
+            <param name="d"></param>
+            <param name="compression">compression method extra applied to the outgoing byte array</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(System.Byte[],System.Collections.Generic.IDictionary{System.UInt32,System.Byte[]},DBreeze.Utils.Compression.eCompressionMethod)">
+            <summary>
+            Used when parameter is encoded with Encode_DICT_PROTO_UINT_BYTEARRAY.
+            Returns Dictionary [uint, byte[]]
+            </summary>
+            <param name="encB"></param>
+            <param name="retD">Instantiated Dictionary must be supplied and will be returned filled</param>        
+            <param name="compression">compression method supplied by Encode_DICT_PROTO_UINT_BYTEARRAY</param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Encode_PROTO_ListByteArray(System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            null elements equal to new byte[0]
+            </summary>
+            <param name="d"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decode_PROTO_ListByteArray(System.Byte[])">
+            <summary>
+            null elements equal to new byte[0]
+            </summary>
+            <param name="encB"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt32)">
+            <summary>
+            Returns the specified 32-bit unsigned value as varint encoded array of bytes.
+            Uses protobuf concepts
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.Int64)">
+            <summary>
+            Returns the specified 64-bit signed value as varint encoded array of bytes.   
+            </summary>
+            <param name="value">64-bit signed value</param>
+            <returns>Varint array of bytes.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.ToUInt32(System.Byte[])">
+            <summary>
+            Uses protobuf concepts
+            </summary>
+            <param name="bytes"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.Biser.Decoder">
+            <summary>
+            Biser.Decoder
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.Decoder.qb">
+            <summary>
+            Quantity of bytes needed to form latest varint
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.Decoder.IsNull">
+            <summary>
+            true in case if object is null
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.#ctor(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="encoded"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.#ctor(DBreeze.Utils.Biser.Decoder,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="decoder"></param>
+            <param name="isCollection"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.CheckNull">
+            <summary>
+            Is used for checking next collection on null, before getting one of the itterators.
+            </summary>
+            <returns>true if null</returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.GetCollection(System.Boolean)">
+            <summary>
+            Universal, but a bit slower (because of the yield returns) than those ones with IDictionary or IList
+            </summary>
+            <param name="isNullChecked"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.GetCollection``1(System.Func{``0},System.Collections.Generic.IList{``0},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="K"></typeparam>
+            <param name="fk"></param>
+            <param name="lst"></param>
+            <param name="isNullChecked"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.GetCollection``2(System.Func{``0},System.Func{``1},System.Collections.Generic.IDictionary{``0,``1},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="K"></typeparam>
+            <typeparam name="V"></typeparam>
+            <param name="fk"></param>
+            <param name="fv"></param>
+            <param name="dict"></param>
+            <param name="isNullChecked"></param>
+        </member>
+        <member name="T:DBreeze.Utils.Biser.Encoder">
+            <summary>
+            Biser.Encoder
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
+            <summary>
+            Executes async, then calls Callback function
+            </summary>
+            <typeparam name="TInput"></typeparam>
+            <param name="f"></param>
+            <param name="arg"></param>
+            <param name="callback"></param>
+        </member>
+        <member name="T:DBreeze.Utils.BloomFilter.Filter`1.HashFunction">
+            <summary>
+            A function that can be used to hash input.
+            </summary>
+            <param name="input">The values to be hashed.</param>
+            <returns>The resulting hash code.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32)">
+            <summary>
+            Creates a new Bloom filter, specifying an error rate of 1/capacity, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
+            A secondary hash function will be provided for you if your type T is either string or int. Otherwise an exception will be thrown. If you are not using these types please use the overload that supports custom hash functions.
+            </summary>
+            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Creates a new Bloom filter, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
+            A secondary hash function will be provided for you if your type T is either string or int. Otherwise an exception will be thrown. If you are not using these types please use the overload that supports custom hash functions.
+            </summary>
+            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
+            <param name="errorRate">The accepable false-positive rate (e.g., 0.01F = 1%)</param>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,DBreeze.Utils.BloomFilter.Filter{`0}.HashFunction)">
+            <summary>
+            Creates a new Bloom filter, specifying an error rate of 1/capacity, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
+            </summary>
+            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
+            <param name="hashFunction">The function to hash the input values. Do not use GetHashCode(). If it is null, and T is string or int a hash function will be provided for you.</param>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,System.Single,DBreeze.Utils.BloomFilter.Filter{`0}.HashFunction)">
+            <summary>
+            Creates a new Bloom filter, using the optimal size for the underlying data structure based on the desired capacity and error rate, as well as the optimal number of hash functions.
+            </summary>
+            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
+            <param name="errorRate">The accepable false-positive rate (e.g., 0.01F = 1%)</param>
+            <param name="hashFunction">The function to hash the input values. Do not use GetHashCode(). If it is null, and T is string or int a hash function will be provided for you.</param>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.#ctor(System.Int32,System.Single,DBreeze.Utils.BloomFilter.Filter{`0}.HashFunction,System.Int32,System.Int32)">
+            <summary>
+            Creates a new Bloom filter.
+            </summary>
+            <param name="capacity">The anticipated number of items to be added to the filter. More than this number of items can be added, but the error rate will exceed what is expected.</param>
+            <param name="errorRate">The accepable false-positive rate (e.g., 0.01F = 1%)</param>
+            <param name="hashFunction">The function to hash the input values. Do not use GetHashCode(). If it is null, and T is string or int a hash function will be provided for you.</param>
+            <param name="m">The number of elements in the BitArray.</param>
+            <param name="k">The number of hash functions to use.</param>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.Add(`0)">
+            <summary>
+            Adds a new item to the filter. It cannot be removed.
+            </summary>
+            <param name="item"></param>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.Contains(`0)">
+            <summary>
+            Checks for the existance of the item in the filter for a given probability.
+            </summary>
+            <param name="item"></param>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.Utils.BloomFilter.Filter`1.Truthiness">
+            <summary>
+            The ratio of false to true bits in the filter. E.g., 1 true bit in a 10 bit filter means a truthiness of 0.1.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.computeHash(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Performs Dillinger and Manolios double hashing. 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.hashInt32(`0)">
+            <summary>
+            Hashes a 32-bit signed int using Thomas Wang's method v3.1 (http://www.concentric.net/~Ttwang/tech/inthash.htm).
+            Runtime is suggested to be 11 cycles. 
+            </summary>
+            <param name="input">The integer to hash.</param>
+            <returns>The hashed result.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.BloomFilter.Filter`1.hashString(`0)">
+            <summary>
+            Hashes a string using Bob Jenkin's "One At A Time" method from Dr. Dobbs (http://burtleburtle.net/bob/hash/doobs.html).
+            Runtime is suggested to be 9x+9, where x = input.Length. 
+            </summary>
+            <param name="input">The string to hash.</param>
+            <returns>The hashed result.</returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.EnlargeByteArray_BigEndian(System.Byte[],System.Int32)">
+            <summary>
+            Enlarges byte array till given size filling with 0 from start the rest of the length.
+            Ex: byte[] a = new byte[] {1,2,3}; a.EnlargeByteArray_BigEndian(6) = new byte[] {0,0,0,1,2,3};
+            If array for enlargement equals null new byte[size] will be returned, if array for enlargement length more or equal size then the same array will be returned.
+            </summary>
+            <param name="ar"></param>
+            <param name="size"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.EnlargeByteArray_LittleEndian(System.Byte[],System.Int32)">
+            <summary>
+            Enlarges byte array till given size filling with 0 after values of the supplied array.
+            Ex: byte[] a = new byte[] {1,2,3}; a.EnlargeByteArray_LittleEndian(6) = new byte[] {1,2,3,0,0,0};
+            If array for enlargement equals null new byte[size] will be returned, if array for enlargement length more or equal size then the same array will be returned.
+            </summary>
+            <param name="ar"></param>
+            <param name="size"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Substring(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Substring int-dimensional byte arrays
+            </summary>
+            <param name="ar"></param>
+            <param name="startIndex"></param>
+            <param name="length"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Substring(System.Byte[],System.Int32)">
+            <summary>
+            Substring int-dimensional byte arrays from and till the end
+            </summary>
+            <param name="ar"></param>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.CloneArray(System.Byte[])">
+            <summary>
+            Works only for int-dimesional arrays only
+            </summary>
+            <param name="ar"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.CopyInside(System.Byte[],System.Int32,System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Copies one array (source) into another (destination extension).
+            <para>Destination array is taken as this</para>
+            </summary>
+            <param name="destArray"></param>
+            <param name="destOffset"></param>
+            <param name="srcArray"></param>
+            <param name="srcOffset"></param>
+            <param name="quantity"></param>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.CopyInside(System.Byte[],System.Int32,System.Byte[])">
+            <summary>
+            Copies fully one array (source) into another (destination extension). Extra parameter destination offset.
+            <para>Doesn't return anything, but changes destination array by reference.</para>
+            <para>Can Throw exception if destArray.Length less then (destOffset + srcArray.Length)</para>
+            <para>, for this use CopyInsideArrayCanGrow</para>
+            </summary>
+            <param name="destArray"></param>
+            <param name="destOffset"></param>
+            <param name="srcArray"></param>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.CopyInsideArrayCanGrow(System.Byte[],System.Int32,System.Byte[])">
+            <summary>
+            Will return finally created array 
+            <para>byte[] b = new byte[] { 1, 2, 3 };</para>
+            <para>byte[] v = b.CopyInsideArrayCanGrow(1, new byte[] { 5, 6, 7 });</para>
+            <para>will return v = byte[] { 1, 5, 6, 7 }</para>
+            </summary>
+            <param name="destArray"></param>
+            <param name="destOffset"></param>
+            <param name="srcArray"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.RemoveLeadingElement(System.Byte[],System.Byte)">
+            <summary>
+            Removes leading element from the array.
+            Never returns null, but can return new byte[] {} (Length=0)
+            </summary>
+            <param name="array"></param>
+            <param name="elementToRemove"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Reverse(System.Byte[])">
+            <summary>
+            Array.Reverse is the same fast, but reverses by reference the parameter-array, what is not acceptable
+            </summary>
+            <param name="ar"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Byte[],System.Byte[])">
+            <summary>
+            Fastest Method. Works only for int-dimesional arrays only. 
+            When necessary to concat many arrays use ConcatMany
+            </summary>
+            <param name="ar1"></param>
+            <param name="ar2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Byte,System.Byte)">
+            <summary>
+            FOR OPTIMITATION LIKE Concat(this byte[] ar1, byte ar2)
+            </summary>
+            <param name="ar1"></param>
+            <param name="ar2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Byte,System.Byte[])">
+            <summary>
+            FOR OPTIMITATION LIKE Concat(this byte[] ar1, byte ar2)
+            </summary>
+            <param name="ar1"></param>
+            <param name="ar2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ConcatMany(System.Byte[],System.Byte[][])">
+            <summary>
+            Fast when necessary to concat many arrays
+            Example: byte[] s = new byte[] { 1, 2, 3 }; s.ConcatMany(new byte[] { 2, 3, 4 }, new byte[] { 3, 7, 8 }, new byte[] { 9, 10, 11 });
+            Also: ((byte[])null).ConcatMany(new byte[] { 2, 3, 4 }, new byte[] { 3, 7, 8 }, new byte[] { 9, 10, 11 });
+            </summary>
+            <param name="ar1"></param>
+            <param name="ar2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ConcatMany(System.Byte[],System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            Concats many byte arrays
+            </summary>
+            <param name="ar1"></param>
+            <param name="arrays"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Concat(System.Collections.Generic.IList{System.Byte[]})">
+            <summary>
+            Concats all arrays into one byte[]
+            </summary>
+            <param name="arrays"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToIndex(System.Int32,System.Object[])">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
+            </summary>
+            <param name="indexNumber">Index number (one byte from 1-255)</param>
+            <param name="pars">Parts of the index to be converted to byte[]</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToIndex(System.Byte,System.Object[])">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Concatenates byte representing index and other elements, converted to byte[] using DBreeze converters, sequentially.
+            </summary>
+            <param name="indexNumber">Index number (one byte from 1-255)</param>
+            <param name="pars">Parts of the index to be converted to byte[]</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytes(System.Object[])">
+            <summary>
+            Concatenates converted to byte[] elements sequentially. 
+            DBreeze converters are used.
+            </summary>
+            <param name="pars"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytes(System.Object,System.Object[])">
+            <summary>
+            Concatenates converted to byte[] elements sequentially. 
+            DBreeze converters are used.
+            </summary>
+            <param name="par1"></param>
+            <param name="pars"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.indexOfStringInByteArray(System.Byte[],System.String,System.Text.Encoding)">
+            <summary>
+            If not found returns -1
+            </summary>
+            <param name="ar"></param>
+            <param name="search"></param>
+            <param name="en"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IndexOfByteArray(System.Byte[],System.Byte[])">
+            <summary>
+            Searches Start index of the byte[] pattern inside of the byte array
+            If not found returns -1
+            </summary>
+            <param name="ar"></param>
+            <param name="search"></param>
+            <param name="en"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Byte(System.Byte[])">
+            <summary>
+            From 1 byte array returns byte
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Byte_NULL(System.Byte[])">
+            <summary>
+            From 2 bytes array returns byte?
+            If array length is not equal to 2 bytes returns null
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime(System.Byte[])">
+            <summary>
+            8-byte array tries to convert to DateTime
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime_zCompatibility(System.Byte[])">
+            <summary>
+            DON't use it (only for compatibility reasons described in docu from [20120922])
+            BigEndian 8 bytes tries to convert to Ticks
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime_NULL(System.Byte[])">
+            <summary>
+            Returns DateTime? from 9-byte array
+            If array is not equal 9 bytes returns null
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Bool_NULL(System.Byte[])">
+            <summary>
+            Returns bool? from 1-byte array
+            if value length != 1 returns null.
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Char(System.Byte[])">
+            <summary>
+            Converts 2 bytes byte[] into Unicode char
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Char_NULL(System.Byte[])">
+            <summary>
+            Converts 3 bytes byte[] into Unicode char?
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_SByte(System.Byte[])">
+            <summary>
+            Converts 1 byte array into sbyte
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_SByte_NULL(System.Byte[])">
+            <summary>
+            Converts 2 bytes array into sbyte?
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_BigEndian(System.Byte[])">
+            <summary>
+            From 2 bytes array which is in BigEndian order (highest byte first, lowest last) makes short.
+            If array not equal 2 bytes throws exception. (-32,768 to 32,767)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_LittleEndian(System.Byte[])">
+            <summary>
+            From 2 bytes array which is in LittleEndian order (lowest byte first, highest last) makes short.
+            If array not equal 2 bytes throws exception. (-32,768 to 32,767)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_BigEndian_NULL(System.Byte[])">
+            <summary>
+            From 3 bytes array which is in BigEndian order (highest byte first, lowest last) makes short?.
+            If array not equal 3 bytes returns null. (-32,768 to 32,767)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_LittleEndian_NULL(System.Byte[])">
+            <summary>
+            From 3 bytes array which is in LittleEndian order (lowest byte first, highest last) makes short.
+            If array not equal 3 bytes returns null. (-32,768 to 32,767)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_BigEndian(System.Byte[])">
+            <summary>
+            From 2 bytes array which is in BigEndian order (highest byte first, lowest last) makes ushort.
+            If array not equal 2 bytes throws exception. (0 to 65,535)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_LittleEndian(System.Byte[])">
+            <summary>
+            From 2 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ushort.
+            If array not equal 2 bytes throws exception. (0 to 65,535)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_BigEndian_NULL(System.Byte[])">
+            <summary>
+            From 3 bytes array which is in BigEndian order (highest byte first, lowest last) makes ushort?.
+            If array not equal 3 bytes returns null. (0 to 65,535)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_LittleEndian_NULL(System.Byte[])">
+            <summary>
+            From 3 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ushort?.
+            If array not equal 3 bytes returns null. (0 to 65,535)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_BigEndian(System.Byte[])">
+            <summary>
+            From 4 bytes array which is in BigEndian order (highest byte first, lowest last) makes int.
+            If array not equal 4 bytes throws exception. (-2,147,483,648 to 2,147,483,647)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_LittleEndian(System.Byte[])">
+            <summary>
+            From 4 bytes array which is in LittleEndian order (lowest byte first, highest last) makes int.
+            If array not equal 4 bytes throws exception. (-2,147,483,648 to 2,147,483,647)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_BigEndian_NULL(System.Byte[])">
+            <summary>
+            From 5 bytes array which is in BigEndian order (highest byte first, lowest last) makes int.
+            If array is not equal 5 bytes returns null. Range is (-2,147,483,648 to 2,147,483,647)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_LittleEndian_NULL(System.Byte[])">
+            <summary>
+            From 5 bytes array which is in LittleEndian order (lowest byte first, highest last) makes int.
+            If array not equal 5 bytes returns null. (-2,147,483,648 to 2,147,483,647)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_BigEndian(System.Byte[])">
+            <summary>
+            From 4 bytes array which is in BigEndian order (highest byte first, lowest last) makes uint.
+            If array not equal 4 bytes throws exception. (0 to 4.294.967.295)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_LittleEndian(System.Byte[])">
+            <summary>
+            From 4 bytes array which is in LittleEndian order (lowest byte first, highest last) makes uint.
+            If array not equal 4 bytes throws exception. (0 to 4.294.967.295)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_BigEndian_NULL(System.Byte[])">
+            <summary>
+            From 5 bytes array which is in BigEndian order (highest byte first, lowest last) makes uint?.
+            If array not equal 5 bytes returns null. (0 to 4.294.967.295)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_LittleEndian_NULL(System.Byte[])">
+            <summary>
+            From 5 bytes array which is in LittleEndian order (lowest byte first, highest last) makes uint?.
+            If array not equal 5 bytes returns null. (0 to 4.294.967.295)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_BigEndian(System.Byte[])">
+            <summary>
+            From 8 bytes array which is in BigEndian order (highest byte first, lowest last) makes long.
+            If array not equal 8 bytes throws exception. (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_LittleEndian(System.Byte[])">
+            <summary>
+            From 8 bytes array which is in LittleEndian order (lowest byte first, highest last) makes long.
+            If array not equal 8 bytes throws exception. (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_BigEndian_NULL(System.Byte[])">
+            <summary>
+            From 9 bytes array which is in BigEndian order (highest byte first, lowest last) makes long.
+            If array not equal 9 bytes return null. Range (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_LittleEndian_NULL(System.Byte[])">
+            <summary>
+            From 9 bytes array which is in LittleEndian order (lowest byte first, highest last) makes long.
+            If array not equal 9 bytes returns null. Range (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.DynamicLength_To_UInt64_BigEndian(System.Byte[])">
+            <summary>
+            From dynamic byte array (up to 8 bytes) stored in BigEndian format creates ulong value, 
+            note if given byte array bigger then 8 bytes - then calcualtion will start from 0
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_BigEndian(System.Byte[])">
+            <summary>
+            From 8 bytes array which is in BigEndian order (highest byte first, lowest last) makes ulong.
+            If array not equal 8 bytes throws exception. (0 to 18,446,744,073,709,551,615)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_LittleEndian(System.Byte[])">
+            <summary>
+            From 8 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ulong.
+            If array not equal 8 bytes throws exception. (0 to 18,446,744,073,709,551,615)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_BigEndian_NULL(System.Byte[])">
+            <summary>
+            From 9 bytes array which is in BigEndian order (highest byte first, lowest last) makes ulong?.
+            If array is not equal 9 bytes returns null. (0 to 18,446,744,073,709,551,615)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_LittleEndian_NULL(System.Byte[])">
+            <summary>
+            From 9 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ulong?.
+            If array is not equal 9 bytes returns null. (0 to 18,446,744,073,709,551,615)
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian(System.Byte[])">
+            <summary>
+            Converts sortable byte[15] to decimal
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian_NULL(System.Byte[])">
+            <summary>
+            Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian(System.Byte[])">
+            <summary>
+            Converts sortable byte[9] to double
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian_NULL(System.Byte[])">
+            <summary>
+            Converts sortable byte[10] to double?
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian(System.Byte[])">
+            <summary>
+            Converts sortable byte[4] to float
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian_NULL(System.Byte[])">
+            <summary>
+            Converts sortable byte[5] to float?
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.Byte})">
+            <summary>
+            Returns 2 byte array which represents byte?
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array(System.DateTime)">
+            <summary>
+            DateTime to byte[8] big-endian.
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_zCompatibility(System.DateTime)">
+            <summary>
+            DON't use it (only for compatibility resasons described in docu from [20120922])
+            DateTime to byte[8] big-endian.
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array(System.Nullable{System.DateTime})">
+            <summary>
+            DateTime? to byte[9] big-endian.
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_1_byte_array(System.Nullable{System.Boolean})">
+            <summary>
+            Returns 1 byte which represents bool?
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Char)">
+            <summary>
+            Converts char into byte[2] Unicode representation
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_3_byte_array(System.Nullable{System.Char})">
+            <summary>
+            Converts char? into byte[3] Unicode representation
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.SByte})">
+            <summary>
+            Converts sbyte? into 2 byte array
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_BigEndian(System.Int16)">
+            <summary>
+            From Int16 to 2 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_LittleEndian(System.Int16)">
+            <summary>
+            From Int16 to 2 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_BigEndian(System.Nullable{System.Int16})">
+            <summary>
+            From Int16? to 3 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_LittleEndian(System.Nullable{System.Int16})">
+            <summary>
+            From Int16? to 3 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_BigEndian(System.UInt16)">
+            <summary>
+            From UInt16 to 2 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_2_bytes_array_LittleEndian(System.UInt16)">
+            <summary>
+            From UInt16 to 2 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_BigEndian(System.Nullable{System.UInt16})">
+            <summary>
+            From UInt16? to 3 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_3_bytes_array_LittleEndian(System.Nullable{System.UInt16})">
+            <summary>
+            From UInt16? to 3 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_BigEndian(System.Int32)">
+            <summary>
+            From Int32 to 4 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_LittleEndian(System.Int32)">
+            <summary>
+            From Int32 to 4 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_BigEndian(System.Nullable{System.Int32})">
+            <summary>
+            From Int32? to 5 bytes array with BigEndian order (highest byte first, lowest last).   
+            When first byte is 0 then the whole value is NULL
+            When first byte is 1 then value can be converted
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_LittleEndian(System.Nullable{System.Int32})">
+            <summary>
+            From Int32 to 4 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_BigEndian(System.UInt32)">
+            <summary>
+            From UInt32 to 4 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_LittleEndian(System.UInt32)">
+            <summary>
+            From UInt32 to 4 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_BigEndian(System.Nullable{System.UInt32})">
+            <summary>
+            From UInt32? to 5 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_LittleEndian(System.Nullable{System.UInt32})">
+            <summary>
+            From UInt32? to 5 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_BigEndian(System.Int64)">
+            <summary>
+            From Int64 to 8 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_LittleEndian(System.Int64)">
+            <summary>
+            From Int64 to 8 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_BigEndian(System.Nullable{System.Int64})">
+            <summary>
+            From Int64? to 9 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_LittleEndian(System.Nullable{System.Int64})">
+            <summary>
+            From Int64? to 9 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_BigEndian(System.UInt64)">
+            <summary>
+            From UInt64 to 8 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array_LittleEndian(System.UInt64)">
+            <summary>
+            From UInt64 to 8 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_BigEndian(System.Nullable{System.UInt64})">
+            <summary>
+            From UInt64? to 9 bytes array with BigEndian order (highest byte first, lowest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_LittleEndian(System.Nullable{System.UInt64})">
+            <summary>
+            From UInt64? to 9 bytes array with LittleEndian order (lowest byte first, highest last).        
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_15_bytes_array_BigEndian(System.Decimal)">
+            <summary>
+            Converts  decimal to sortable byte[15] 
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_16_bytes_array_BigEndian(System.Nullable{System.Decimal})">
+            <summary>
+            Converts  decimal? to sortable byte[16] 
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_9_bytes_array_BigEndian(System.Double)">
+            <summary>
+            Converts  double to sortable byte[9]
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_10_bytes_array_BigEndian(System.Nullable{System.Double})">
+            <summary>
+            Converts double to sortable byte[10]
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_4_bytes_array_BigEndian(System.Single)">
+            <summary>
+             Converts float to sortable byte[4]
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_5_bytes_array_BigEndian(System.Nullable{System.Single})">
+            <summary>
+             Converts float? to sortable byte[5]
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.TruncateUTF8(System.String,System.Int32)">
+            <summary>
+            Truncates UTF-8 strign up to special maxSizeInBytes due to UTF-8 specification. 
+            </summary>
+            <param name="text"></param>
+            <param name="maxSizeInBytes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_FixedSizeColumn(System.String,System.Int16,System.Boolean)">
+            <summary>
+            Converts your text into byte[], which can be used as column of fixedSize+2. 
+            <para>(2 bytes are always added to your fixedSize value, determination of actual text size and NULL flag)</para>
+            <para>String can be null</para>
+            Will return byte[] with the length fixedSize+2 which can be stored as column.
+            <para>If text.Length after convertion (using ASCII or UTF8) overexceeds fixedSize, text will be truncated</para>
+            </summary>
+            <param name="value">any string, can be NULL</param>
+            <param name="fixedSize">reservation space(returned byte[] will be of fixedSize+2)</param>
+            <param name="isASCII">if true, text will be presented as ASCII, otherwise as UTF-8</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.From_FixedSizeColumn(System.Byte[],System.Boolean)">
+            <summary>
+            takes byte[] created by To_FixedSizeColumn and restores string value from it.
+            <para>byte[] must be of length fixedSize(which you gave in To_FixedSizeColumn) + 2</para>
+            </summary>
+            <param name="value"></param>
+            <param name="isASCII">if true, text was presented as ASCII, otherwise as UTF-8</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBase64String(System.Byte[])">
+            <summary>
+            Creates a Base64string from byte array. Good for hashes.
+            </summary>
+            <param name="dBytes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytesString(System.Byte[],System.String)">
+            <summary>
+            Converts BytesArray to String Representation: 00-00-00-00-1F-00-00-00-00-20.
+            If array is null or 0 length - returns String.Empty.
+            If replaceWith is String.Empty returns such view 00-00-00-00-1F-00-00-00-00-20.
+            Otherwise takes such view (-00-00-00-00-1F-00-00-00-00-20) and replaces "-" with replaceWith also calls Trim().      
+            </summary>
+            <param name="dBytes"></param>
+            <param name="replaceWith"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.Utils.BytesProcessing._hexDigits">
+            <summary>
+            Used by ToBytesString
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToByteArrayFromHex(System.String)">
+            <summary>
+            Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
+            </summary>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToHexFromByteArray(System.Byte[])">
+            <summary>
+            Generates Hex 1F0000000020 from byte[]. Backward function is ToByteArrayFromHex/ToByteArrayFromHex
+            </summary>
+            <param name="dBytes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytesString(System.Byte[])">
+            <summary>
+            To pure HEX string without delimiters
+            </summary>
+            <param name="dBytes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToHex(System.Byte)">
+            <summary>
+            Convert Byte To Hex string
+            </summary>
+            <param name="dByte"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBytesStringDec(System.Byte[],System.String)">
+            <summary>
+            Converts BytesArray to String Representation: 00-00-00-00-128-12-214-00-00-20.
+            Where replaceWith = "-"
+            </summary>
+            <param name="dBytes"></param>
+            <param name="replaceWith"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ToBitArray(System.Byte)">
+            <summary>
+            BigEndian
+            </summary>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.Get_CRC16_AsByteArray(System.Byte[])">
+            <summary>
+            Returns byte representation of Crc16
+            </summary>
+            <param name="ar"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoOneBitUp_NoArrayGrow_BigEndian(System.Byte[])">
+            <summary>
+            Adds byte[] + 1 bit.
+            Returns: had {255}    -> null
+            Returns: had {15,255} -> {16,0} 
+            Returns: had {15,248} -> {15,249} 
+            Returns: bt=null || bt.Length == 0 -> null
+            </summary>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoOneBitUp_ArrayGrows_BigEndian(System.Byte[])">
+            <summary>
+            Adds + 1 bit
+            The same as BytesAction_GoOneBitUp_NoArrayGrow_BigEndian but array grows
+            </summary>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoOneBitDown_NoArrayGrow_BigEndian(System.Byte[])">
+            <summary>
+            Extracts 1 bit
+            Returns: {0} -> null
+            Returns: {0,0,0,0} -> null
+            Returns: {254} -> {253}
+            Returns: {1} -> {0}
+            Returns: {121,456} -> {121,455}
+            Returns: {121,0} -> {120,255}
+            </summary>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.BytesAction_GoUpNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)">
+            <summary>
+            <para>BytesAction_GoUpNextByteStart_NoArrayGrow_BigEndian</para>
+            <para>Returns: had {255}    -> null</para>
+            <para>Returns: had {255, 0} -> null</para>
+            <para>Returns: bt=null || bt.Length less then 2  -> null</para>
+            <para>Returns: had {254, 0} -> {255, 0}</para>
+            <para>Returns: had {120, 115, 147} -> {120, 116, 0}</para>
+            </summary>
+            <param name="bt"></param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
+        <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
+            <summary>
+            <para>USE _ByteArrayEquals</para>
+            If both arrays are null, returns true. Checks nulls also. Uses SequenceEqual
+            </summary>
+            <param name="ar"></param>
+            <param name="compareArray"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing._ByteArrayEquals(System.Byte[],System.Byte[])">
+            <summary>
+            Managed way compares 2 bytes array. Uses for loop and extra checks like null, length before
+            </summary>
+            <param name="b1"></param>
+            <param name="b2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing._ByteArrayEquals_EqualityBrokenIndex(System.Byte[],System.Byte[])">
+            <summary>
+            Returns index where equality is broken.
+            -2 if equal
+            -1 if not comparable (null or so)
+            </summary>
+            <param name="b1"></param>
+            <param name="b2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArraySmallerThen(System.Byte[],System.Byte[])">
+            <summary>
+            String Comparation Point of view:
+            "AAA" less then "AAAA"
+            "AB" more then "AAAA"
+            </summary>
+            <param name="array"></param>
+            <param name="arrayToCompare"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArraySmallerOrEqualThen(System.Byte[],System.Byte[])">
+            <summary>
+            String Comparation Point of view:
+            "AAA" less then "AAAA"
+            "AB" more then "AAAA"
+            </summary>
+            <param name="array"></param>
+            <param name="arrayToCompare"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArrayBiggerThen(System.Byte[],System.Byte[])">
+            <summary>
+            String Comparation Point of view:
+            "AAA" less then "AAAA"
+            "AB" more then "AAAA"
+            </summary>
+            <param name="array"></param>
+            <param name="arrayToCompare"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IfStringArrayBiggerOrEqualThen(System.Byte[],System.Byte[])">
+            <summary>
+            String Comparation Point of view:
+            "AAA" less then "AAAA"
+            "AB" more then "AAAA"
+            </summary>
+            <param name="array"></param>
+            <param name="arrayToCompare"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.ByteListComparer">
+            <summary>
+            Sorting of byte[]
+             foreach (var r1 in input.OrderBy(x => x, new ByteListComparer())) Debug.WriteLine(r1.ToBytesString());
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Compression.GZip_Compress(System.Byte[])">
+            <summary>
+            In Memory Compression with Gzip
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Compression.GZip_Decompress(System.Byte[])">
+            <summary>
+            In Memory GZip Decompressor 
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.Utils.CustomSerializator.Serializator">
+            <summary>
+            Must be setup to be used together with DbCustomSerializer
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.CustomSerializator.Deserializator">
+            <summary>
+            Must be setup to be used together with DbCustomSerializer
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.CustomSerializator.ByteArraySerializator">
+            <summary>
+            Into byte array serializator can be supplied (Usually Protobuf.NET)
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator">
+            <summary>
+            From byte[] deserializator can be used (Usually Protobuf.NET)
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.CustomSerializator.SerializeCustom(System.Object)">
+            <summary>
+            Serializes object to JSON from Microsoft
+            </summary>
+            <param name="objectForSerialization"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.CustomSerializator.DeserializeCustom``1(System.String)">
+            <summary>
+            Deserializes object from Microsoft JSON string
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="str"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.DbReaderWriterLock">
+            <summary>
+            Wrapper For System.Threading.ReaderWriterLockSlim
+            In case if better algorithm will be found
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.DbThreadsGator.#ctor">
+            <summary>
+            Creates open Gate
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.DbThreadsGator.PutGateHere">
+            <summary>
+            Sets Gate in the code
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.DbThreadsGator.PutGateHere(System.Int32)">
+            <summary>
+            If gate is closed then it will be closed timeout time in milliseconds
+            </summary>
+            <param name="milliseconds"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128(System.Byte[])">
+            <summary>
+            128 bit mixed MurMurhash3
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_64(System.Byte[])">
+            <summary>
+            64 bit mixed MurMurhash3
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Hash.MurMurHash.MurmurHash3(System.Byte[],System.UInt32)">
+            <summary>
+            32 bit
+            </summary>
+            <param name="data"></param>
+            <param name="seed"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.StringProcessing">
+            <summary>
+            Set of string processing extensions
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.To_AsciiBytes(System.String)">
+            <summary>
+            Encoding.ASCII.GetBytes
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.To_UTF8Bytes(System.String)">
+            <summary>
+            Encoding.UTF8.GetBytes
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.To_UnicodeBytes(System.String)">
+            <summary>
+            Encoding.Unicode.GetBytes
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.UTF8_GetString(System.Byte[])">
+            <summary>
+            UTF8.GetString
+            </summary>
+            <param name="btText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.Unicode_GetString(System.Byte[])">
+            <summary>
+            Unicode.GetString
+            </summary>
+            <param name="btText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.Ascii_GetString(System.Byte[])">
+            <summary>
+            ASCII.GetString
+            </summary>
+            <param name="btText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.StringProcessing.ReplaceMultiple(System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            <para>Will efficiently replace multiple string by supplied templates.</para>
+            var replacements = new Dictionary&lt;string, string&gt;()
+            {
+              {"big","hot"},
+              {"mac","dog"}
+            };       
+            </summary>
+            <param name="input"></param>
+            <param name="replaceWith"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
+            <summary>
+            Serializes object to XML string
+            </summary>
+            <param name="objectForSerialization"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.XmlSerializator.DeserializeXml``1(System.String)">
+            <summary>
+            Deserializes object from XML string
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="str"></param>
+            <returns></returns>
         </member>
         <member name="T:DBreeze.DataStructures.DataAsTree">
             <summary>

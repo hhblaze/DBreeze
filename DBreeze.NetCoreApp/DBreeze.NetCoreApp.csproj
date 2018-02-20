@@ -6,14 +6,14 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.089.2018.0809</Version>
-    <FileVersion>1.089.2018.0809</FileVersion>
-    <AssemblyVersion>1.89.2018.809</AssemblyVersion>
+    <Version>1.090.2018.0220</Version>
+    <FileVersion>1.090.2018.0220</FileVersion>
+    <AssemblyVersion>1.090.2018.0220</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netcoreapp1.1\DBreeze.xml</DocumentationFile>
-    <DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40</DefineConstants>
+    <DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;RELEASE;NETCOREAPP1_0;NETPORTABLE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-        <Compile Include="..\DBreeze.NetStandard\Utils\Biser.cs" Link="Utils\Biser.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
@@ -97,6 +96,9 @@
     <Compile Include="..\DBreeze\Transactions\Transaction.cs">
       <Link>Transactions\Transaction.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Utils\Biser.cs" Link="Utils\Biser.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserDecoder.cs" Link="Utils\BiserDecoder.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserEncoder.cs" Link="Utils\BiserEncoder.cs" />
 	
   </ItemGroup>
 

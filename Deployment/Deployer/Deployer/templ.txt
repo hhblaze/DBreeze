@@ -16,6 +16,7 @@
 <TargetFramework>netcoreapp2.0</TargetFramework>
 <TargetFramework>netstandard1.6</TargetFramework>
 <TargetFramework>netstandard2.0</TargetFramework>
+<TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
 
 
 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 using System.IO;
 
@@ -48,7 +47,9 @@ namespace DBreeze.Utils
                 {
                     byte[] res = null;
                     res = ms.ToArray();
+#if !NETPORTABLE
                     ms.Close();
+#endif
                     ms.Dispose();
                     return res;
                 }

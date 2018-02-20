@@ -118,6 +118,24 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET462\DBreeze.dll", true);
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET462\DBreeze.XML", true);
 
+            //.NET Framework 4.7
+            if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+            tpr = prj;
+            Console.WriteLine("Creating .NET4.6.2");
+            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+            tpr = tpr.Replace(rpl[2], rpl[18]); //4.5 on 4.7            
+
+            File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET47\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET47\DBreeze.XML", true);
+
 
             //.NET Framework Xamarin
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
@@ -435,6 +453,11 @@ namespace Deployer
                 archive.GetEntry("lib/net462/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NET462" + @"\DBreeze.dll", "lib/net462/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NET462" + @"\DBreeze.xml", "lib/net462/DBreeze.XML", CompressionLevel.Optimal);
+
+                archive.GetEntry("lib/net47/DBreeze.dll").Delete();
+                archive.GetEntry("lib/net47/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NET47" + @"\DBreeze.dll", "lib/net47/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET47" + @"\DBreeze.xml", "lib/net47/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/net45/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net45/DBreeze.XML").Delete();
