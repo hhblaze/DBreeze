@@ -54,6 +54,7 @@ Key features:
 - Integrated text-search subsystem (full-text/partial).
 - Integrated object database layer.
 - Fast multi-parameter search subsystem with powerful query possibilities.
+- Integrated binary serializer [Biser.NET](https://github.com/hhblaze/Biser)
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 hhblaze@gmail.com
