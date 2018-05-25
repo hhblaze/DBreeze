@@ -91,7 +91,7 @@ namespace DBreeze.Objects
         public bool EntityWasInserted { get; set; }
 
         /// <summary>
-        /// Pointer to entity datablock
+        /// Pointer to DBreezeObject, ObjectGetByFixedAddress should help to retrieve it.
         /// </summary>
         public byte[] PtrToEntity { get; set; }
     }
