@@ -69,7 +69,7 @@ namespace DBreeze.Objects
         /// </summary>
         public DBreezeObjectInsertResult()
         {          
-            EntityWasInserted = false;
+           // EntityWasInserted = false;
             OldEntityWasFound = false;
             EntityWasInserted = true;
         }
@@ -89,5 +89,10 @@ namespace DBreeze.Objects
         /// In case if entity was inserted is set to true
         /// </summary>
         public bool EntityWasInserted { get; set; }
+
+        /// <summary>
+        /// Pointer to entity datablock
+        /// </summary>
+        public byte[] PtrToEntity { get; set; }
     }
 }

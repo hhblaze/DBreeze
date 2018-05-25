@@ -9,8 +9,8 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.090.2018.0220</Version>
-    <AssemblyVersion>1.090.2018.0220</AssemblyVersion>
+    <Version>1.091.2018.0525</Version>
+    <AssemblyVersion>1.091.2018.0525</AssemblyVersion>
     <FileVersion>1.090.2018.0220</FileVersion>
   </PropertyGroup>
 
