@@ -6364,9 +6364,9 @@
             In case if entity was inserted is set to true
             </summary>
         </member>
-        <member name="P:DBreeze.Objects.DBreezeObjectInsertResult`1.PtrToEntity">
+        <member name="P:DBreeze.Objects.DBreezeObjectInsertResult`1.PtrToObject">
             <summary>
-            Pointer to entity datablock
+            Pointer to DBreezeObject, ObjectGetByFixedAddress should help to retrieve it.
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.BlockAnd">

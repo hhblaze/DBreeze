@@ -93,6 +93,6 @@ namespace DBreeze.Objects
         /// <summary>
         /// Pointer to DBreezeObject, ObjectGetByFixedAddress should help to retrieve it.
         /// </summary>
-        public byte[] PtrToEntity { get; set; }
+        public byte[] PtrToObject { get; set; }
     }
 }

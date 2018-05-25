@@ -1117,7 +1117,7 @@ namespace DBreeze.Transactions
        
             //Inserting enhanced object with current indexes                       
             ptr = this.InsertDataBlockWithFixedAddress(tableName, ptr, encodedVal);
-            res.PtrToEntity = ptr;
+            res.PtrToObject = ptr;
 
             //Updating real primary/secondary keys references. Via RandomKeySorter
             if (speedUpdate || newptr)
