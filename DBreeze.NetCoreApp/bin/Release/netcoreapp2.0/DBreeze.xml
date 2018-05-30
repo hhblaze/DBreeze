@@ -5985,7 +5985,6 @@
             
             </summary>
             <param name="decoder"></param>
-            <param name="isCollection"></param>
         </member>
         <member name="M:DBreeze.Utils.Biser.Decoder.CheckNull">
             <summary>
@@ -6019,6 +6018,24 @@
             <param name="fv"></param>
             <param name="dict"></param>
             <param name="isNullChecked"></param>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.JSGetLong">
+            <summary>
+             Javascript Biser decoder
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.JSGetString">
+            <summary>
+            Javascript Biser decoder
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.Decoder.JSGetDouble">
+            <summary>
+             Javascript Biser decoder
+            </summary>
+            <returns></returns>
         </member>
         <member name="T:DBreeze.Utils.Biser.Encoder">
             <summary>

@@ -28,7 +28,7 @@ namespace DBreeze.Utils
                     ms = existingEncoder.ms;
 
                     ms.WriteByte(0); //when adding within another decoder , indicating that it's not null
-                    //addedLength++;
+                                     //addedLength++;
                 }
                 else
                 {
@@ -49,7 +49,7 @@ namespace DBreeze.Utils
                     res = ms.ToArray();
 #if !NETPORTABLE
                     ms.Close();
-#endif
+#endif                  
                     ms.Dispose();
                     return res;
                 }
@@ -101,9 +101,93 @@ namespace DBreeze.Utils
                 return Add(((DateTime)value).Ticks);
             }
 
+            #region "JS add"
+            public Encoder JSAdd(IJSEncoder item)
+            {
+                if (item == null)
+                {
+                    ms.WriteByte(1);
+                    return this;
+                }
+
+                item.BiserJSEncoder(this);
+                return this;
+            }
+
+            public Encoder JSAdd(long value)
+            {
+                if (value > 999999999999999 || value < -999999999999999)
+                    throw new Exception("Biser.Encoder.JSAdd(long) value is out of range -999999999999999...999999999999999 ");
+
+                Add(value);
+                return this;
+            }
+            public Encoder JSAdd(ulong value)
+            {
+                return JSAdd((long)value);
+            }
+            public Encoder JSAdd(int value)
+            {
+                return JSAdd((long)value);
+            }
+            public Encoder JSAdd(uint value)
+            {
+                return JSAdd((long)value);
+            }
+            public Encoder JSAdd(DateTime value)
+            {
+                if (value.Kind != DateTimeKind.Utc)
+                    return JSAdd(Convert.ToInt64(value.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds));
+                return JSAdd(Convert.ToInt64(value
+                    .Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds));
+            }
+            public Encoder JSAdd(float value)
+            {
+                return JSAdd((double)value);
+            }
+            public Encoder JSAdd(decimal value)
+            {
+                return JSAdd((double)value);
+            }
+            public Encoder JSAdd(double value)
+            {
+                //BitConverter.IsLittleEndian
+                ms.Write(new byte[] { (byte)(BitConverter.IsLittleEndian ? 0 : 1) }, 0, 1);
+                ms.Write(BitConverter.GetBytes(value), 0, 8);
+                return this;
+            }
+            public Encoder JSAdd(string value)
+            {
+                List<long> lst = new List<long>();
+                foreach (var c in value)
+                    lst.Add((long)c);
+                this.Add(lst, r => { this.JSAdd(r); });
+
+                return this;
+            }
+            public Encoder JSAdd(bool value)
+            {
+                ms.Write(new byte[] { (byte)(value ? 1 : 0) }, 0, 1);
+
+                return this;
+            }
+            public Encoder JSAdd(byte[] value)
+            {
+                if (value == null || value.Length < 1)
+                    JSAdd((long)0);
+                else
+                {
+                    JSAdd((long)value.Length);
+                    ms.Write(value, 0, value.Length);
+                }
+
+                return this;
+            }
+            #endregion
+
             public Encoder Add(long value)
             {
-                GetVarintBytes((ulong)EncodeZigZag(value, 64));
+                GetVarintBytes((ulong)Biser.EncodeZigZag(value, 64));
                 return this;
             }
 
@@ -141,7 +225,7 @@ namespace DBreeze.Utils
 
             public Encoder Add(int value)
             {
-                GetVarintBytes((ulong)EncodeZigZag(value, 32));
+                GetVarintBytes((ulong)Biser.EncodeZigZag(value, 32));
                 return this;
             }
 
@@ -160,7 +244,7 @@ namespace DBreeze.Utils
 
             public Encoder Add(short value)
             {
-                GetVarintBytes((ulong)EncodeZigZag(value, 16));
+                GetVarintBytes((ulong)Biser.EncodeZigZag(value, 16));
                 return this;
             }
 
@@ -318,8 +402,7 @@ namespace DBreeze.Utils
 
             public Encoder Add(double value)
             {
-                //Little and BigEndian compliant
-
+                //Little and BigEndian compliant            
                 GetVarintBytes(BitConverter.ToUInt64(BitConverter.GetBytes(value), 0));
                 return this;
             }
@@ -381,6 +464,22 @@ namespace DBreeze.Utils
                 return Add(value.To_UTF8Bytes());
             }
 
+            public Encoder Add(Guid guid)
+            {
+                return Add(guid.ToByteArray());
+            }
+
+            public Encoder Add(Guid? guid)
+            {
+                if (guid == null)
+                {
+                    ms.Write(new byte[] { 1 }, 0, 1);
+                    return this;
+                }
+
+                return Add(((Guid)guid).ToByteArray());
+            }
+
             public Encoder Add(byte[] value)
             {
                 if (value == null)
@@ -417,6 +516,8 @@ namespace DBreeze.Utils
                 return this;
             }
 
+
+
             public Encoder Add<T>(IEnumerable<T> items, Action<T> f)   //either well-known type or IEncoder
             {
                 if (items == null)
@@ -426,7 +527,7 @@ namespace DBreeze.Utils
                     return this;
                 }
                 ms.Write(new byte[] { 0, 0 }, 0, 2); //first byte means not null, second - reservation for minimal length representation
-                //addedLength += 2;
+                                                     //addedLength += 2;
                 long ip = ms.Position - 1; //from current position will be written elements
                 long len = 0;
 
@@ -471,6 +572,6 @@ namespace DBreeze.Utils
                 return this;
             }
 
-        }
+        }//eoc
     }
 }

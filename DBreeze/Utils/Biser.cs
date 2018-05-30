@@ -24,6 +24,11 @@ namespace DBreeze.Utils
             Biser.Encoder BiserEncoder(Biser.Encoder existingEncoder = null);
         }
 
+        public interface IJSEncoder
+        {
+            Biser.Encoder BiserJSEncoder(Encoder existingEncoder = null);
+        }
+
         #region "Main: GetVarintBytes, ZigZag "
 
         /// <summary>

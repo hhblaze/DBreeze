@@ -26,6 +26,7 @@ namespace DBreeze.Utils
             Decoder rootDecoder = null;
             bool externalDecoderExists = false;
             Decoder activeDecoder = null; //the one who fills up collection
+
             /// <summary>
             /// true in case if object is null
             /// </summary>
@@ -42,15 +43,16 @@ namespace DBreeze.Utils
                 if (encoded == null || encoded.Length == 0)
                     return;
 
+
                 this.rootDecoder = this;
                 this.activeDecoder = this;
+
             }
 
-           /// <summary>
-           /// 
-           /// </summary>
-           /// <param name="decoder"></param>
-           /// <param name="isCollection"></param>
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="decoder"></param>
             public Decoder(Decoder decoder, bool isCollection = false)
             {
                 this.rootDecoder = decoder.rootDecoder;
@@ -184,8 +186,20 @@ namespace DBreeze.Utils
             /// <param name="isNullChecked"></param>
             public void GetCollection<K>(Func<K> fk, IList<K> lst, bool isNullChecked = false)
             {
-                GetCollection(fk, fk, null, lst, isNullChecked);
+                GetCollection(fk, fk, null, lst, null, isNullChecked);
             }
+
+            public void GetCollection<K>(Func<K> fk, ISet<K> set, bool isNullChecked = false)
+            {                
+                GetCollection(fk, fk, null, null, set, isNullChecked);
+            }
+
+#if NET35
+            public interface ISet<T> : IEnumerable<T>
+            {               
+                bool Add(T item);
+            }
+#endif
 
             /// <summary>
             /// 
@@ -198,10 +212,11 @@ namespace DBreeze.Utils
             /// <param name="isNullChecked"></param>
             public void GetCollection<K, V>(Func<K> fk, Func<V> fv, IDictionary<K, V> dict, bool isNullChecked = false)
             {
-                GetCollection(fk, fv, dict, null, isNullChecked);
+                GetCollection(fk, fv, dict, null, null, isNullChecked);
             }
 
-            void GetCollection<K, V>(Func<K> fk, Func<V> fv, IDictionary<K, V> dict, IList<K> lst, bool isNullChecked = false)
+
+            void GetCollection<K, V>(Func<K> fk, Func<V> fv, IDictionary<K, V> dict, IList<K> lst, ISet<K> set, bool isNullChecked = false)
             {
                 ulong prot = 0;
                 if (!isNullChecked)
@@ -212,11 +227,16 @@ namespace DBreeze.Utils
                     if (!collectionIsFinished)
                     {
                         Decoder nDecoder = new Decoder(this, true);
-                        nDecoder.GetCollection(fk, fv, dict, lst, isNullChecked);
+                        nDecoder.GetCollection(fk, fv, dict, lst, set, isNullChecked);
                         return;
                     }
 
                     collectionLength = (int)((uint)this.rootDecoder.GetDigit());
+                    if (collectionLength == 0)
+                    {
+                        collectionIsFinished = true;
+                        return;
+                    }
                     collectionPos = 0;
                     collectionShift = 0;
                     collectionShiftToPass = 0;
@@ -244,10 +264,16 @@ namespace DBreeze.Utils
 
                     while (true)
                     {
-                        if (lst == null)
-                            dict.Add(fk(), fv());
+                        if (dict == null)
+                        {
+                            if (lst == null)
+                                set.Add(fk());
+                            else
+                                lst.Add(fk());
+                        }
                         else
-                            lst.Add(fk());
+                            dict.Add(fk(), fv());
+
 
                         if ((this.rootDecoder.encPos - (cp - collectionShift)) == collectionLength)
                         {
@@ -457,6 +483,76 @@ namespace DBreeze.Utils
                 return bt.UTF8_GetString();
             }
 
+#region "Javascript Biser decoder"
+            /// <summary>
+            ///  Javascript Biser decoder
+            /// </summary>
+            /// <returns></returns>
+            public long JSGetLong()
+            {
+                return Biser.DecodeZigZag(this.rootDecoder.GetDigit());
+            }
+
+            /// <summary>
+            /// Javascript Biser decoder
+            /// </summary>
+            /// <returns></returns>
+            public string JSGetString()
+            {
+                List<long> lst = this.CheckNull() ? null : new List<long>();
+                if (lst != null)
+                {
+                    this.GetCollection(() => { return this.JSGetLong(); }, lst, true);
+                    if (lst.Count == 0)
+                        return string.Empty;
+
+                    StringBuilder sb = new StringBuilder();
+
+                    foreach (var item in lst)
+                        sb.Append((char)item);
+
+                    return sb.ToString();
+                }
+
+                return null;
+            }
+
+            /// <summary>
+            ///  Javascript Biser decoder
+            /// </summary>
+            /// <returns></returns>
+            public double JSGetDouble()
+            {
+                var bt = this.Read(9);
+                if (BitConverter.IsLittleEndian ^ (bt[0] == 0))
+                    Array.Reverse(bt, 1, 8);
+
+                return BitConverter.ToDouble(bt, 1);
+            }
+
+            public DateTime JSGetDate()
+            {
+                return (new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).AddMilliseconds(this.JSGetLong());
+            }
+
+            public bool JSGetBool()
+            {
+                return this.Read(1)[0] == 1;
+            }
+
+            public byte[] JSGetByteArray()
+            {
+                byte[] ret = null;
+
+                var prot = this.JSGetLong();
+                if (prot > 0)
+                    ret = Read((int)prot);
+
+                return ret;
+            }
+
+#endregion
+
 
             public byte[] GetByteArray()
             {
@@ -475,6 +571,20 @@ namespace DBreeze.Utils
                 }
 
                 return ret;
+            }
+
+            public Guid GetGuid()
+            {
+                var res = GetByteArray();
+                return new Guid(res);
+            }
+
+            public Guid? GetGuid_NULL()
+            {
+                var res = GetByteArray();
+                if (res == null)
+                    return null;
+                return new Guid(res);
             }
 
         }//eoc Decoder
