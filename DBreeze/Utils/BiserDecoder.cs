@@ -247,7 +247,8 @@ namespace DBreeze.Utils
                     {
                         collectionShift = this.rootDecoder.qb - 1;
                         collectionShiftToPass = 0;
-                        this.rootDecoder.encPos = cp + collectionLength - 1;
+                        //this.rootDecoder.encPos = cp + collectionLength - 1;
+                        this.rootDecoder.encPos = cp + collectionLength - collectionShift;
                         collectionBuffer = Read(collectionShift);
                         this.rootDecoder.encPos = cp;
                         collectionPos += collectionShift;
