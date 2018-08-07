@@ -55,6 +55,7 @@ Key features:
 - Integrated object database layer.
 - Fast multi-parameter search subsystem with powerful query possibilities.
 - Integrated binary serializer [Biser.NET](https://github.com/hhblaze/Biser)
+- High Availability, Redundancy and Fault Tolerance via [Raft.NET](https://github.com/hhblaze/Raft.Net)
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 hhblaze@gmail.com
