@@ -23,7 +23,7 @@ multi-threaded, transactional and ACID-compliant database management system for
 - Read <a href = 'https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o'  target='_blank'>"Release notes"</a> document to get latest DBreeze news.
 
 
-Its homepage is http://dbreeze.tiesky.com or http://dbreeze.codeplex.com
+Its homepage is http://dbreeze.tiesky.com or https://github.com/hhblaze/DBreeze
 
 - <a href = 'https://github.com/hhblaze/DBreeze/wiki/Quick-start-guides'  target='_blank'>Quick start guides</a> 
 - <a href = 'https://github.com/hhblaze/DBreeze/releases'  target='_blank'>Assemblies location</a> 
