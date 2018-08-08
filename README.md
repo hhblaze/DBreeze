@@ -10,6 +10,7 @@ DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Va
 multi-threaded, transactional and ACID-compliant database management system for
 .NET 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform / .NET Portable 
 / [CoreRT](https://github.com/dotnet/corert) 
+
 ...for servers, mobiles and internet-of-things... Made with C# 
 
 - It's a free software for those who think that it should be free.
