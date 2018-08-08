@@ -9,7 +9,7 @@ DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Docum
 DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql etc), 
 multi-threaded, transactional and ACID-compliant database management system for
 .NET 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform / .NET Portable 
-/ [CoreRT](https://github.com/dotnet/corert) ...for servers and internet-of-things...
+/ [CoreRT](https://github.com/dotnet/corert) ...for servers, mobiles and internet-of-things...
 Made with C# 
 
 - It's a free software for those who think that it should be free.
@@ -40,11 +40,11 @@ Key features:
 - No fixed scheme for table names (construction and access on the fly).
 - Tables can reside in mixed locations: different folders, hard drives, memory, in-memory with disk persistence.
 - Liana-Trie indexing technology. Database indexes (keys) never need to be defragmented. Speed of insert/update/remove operations doesn't change during the time.
-- Ability to access Key/Value pair of a table by physical link, what can economize time for joining necessary data structures.
+- Ability to access Key/Value pair of a table by physical link, that can economize time for joining necessary data structures.
 - No limits for database size (except "long" size for each table and physical resources constraints).
 - Low memory and physical space consumption, also while random inserts and updates. Updates reside the same physical space, when possible or configured.
 - High performance of CRUD operations. When you need, unleash DBreeze power and get 500000 key/value pairs insert or 260K updates per second per core into sorted table on the hard drive of standard PC (benchmark in year 2012).
-- High speed of random keys batch insert and updates (update mode is selectable).
+- High speed of random keys batch inserts and updates (update mode is selectable).
 - Range selects / Traversing (Forward, Backward, From/To, Skip, StartsWith etc). Remove keys, change keys.
 - Keys and values, on the low level, are always byte arrays. 
 - Max. key size is 65KB, max. value size is 2GB. Value can be represented as a set of columns, where can be stored data types of fixed or dynamic length. Every dynamic datablock can be of size 2GB. 
