@@ -17,7 +17,7 @@ multi-threaded, transactional and ACID-compliant database management system for
 - It has been used in our own production environment since June 2012.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since January 2014. 
-- DBreeze for .NETCore, [CoreRT](https://github.com/dotnet/corert), .NET Standard / UWP (Universal Windows Platform), .NET 4.5.1 grab via NuGet.
+- DBreeze for .NETCore, [CoreRT](https://github.com/dotnet/corert), .NET Standard / UWP (Universal Windows Platform), .NET Framework grab via NuGet.
 - Works on Linux, Windows, OS X. Via Xamarin on Android, iOS.
 - DBreeze is listed in <a href = 'http://nosql-database.org'  target='_blank'>nosql-database.org</a>, <a href = 'https://github.com/thangchung/awesome-dotnet-core'  target='_blank'>Awesome .NET Core</a>
 - Read <a href = 'https://docs.google.com/document/pub?id=1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o'  target='_blank'>"Release notes"</a> document to get latest DBreeze news.
