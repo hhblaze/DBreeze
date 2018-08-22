@@ -117,6 +117,15 @@
     <Compile Include="..\DBreeze\Utils\BiserEncoder.cs">
       <Link>Utils\BiserEncoder.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Utils\BiserJsonDecoder.cs">
+      <Link>Utils\BiserJsonDecoder.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\BiserJsonEncoder.cs">
+      <Link>Utils\BiserJsonEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\BiserJsonSettings.cs">
+      <Link>Utils\BiserJsonSettings.cs</Link>
+    </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />

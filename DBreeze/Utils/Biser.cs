@@ -29,6 +29,11 @@ namespace DBreeze.Utils
             Biser.Encoder BiserJSEncoder(Encoder existingEncoder = null);
         }
 
+        public interface IJsonEncoder
+        {
+            void BiserJsonEncode(JsonEncoder encoder);
+        }
+
         #region "Main: GetVarintBytes, ZigZag "
 
         /// <summary>

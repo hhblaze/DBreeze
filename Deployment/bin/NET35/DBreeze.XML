@@ -5629,6 +5629,137 @@
             Biser.Encoder
             </summary>
         </member>
+        <member name="T:DBreeze.Utils.Biser.JsonDecoder">
+            <summary>
+            Biser JSON decoder
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonDecoder.SkipValue">
+            <summary>
+            Must be used as a default call, while analyzing Dictionary key or the Class property
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonDecoder.SkipDelimiter">
+            <summary>
+            Skips :
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonDecoder.GetDictionary``1(System.Boolean)">
+            <summary>
+            Returns Key, Value must be retrieved extra
+            </summary>
+            <typeparam name="K">Dictionary Key type</typeparam>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.Biser.JsonEncoder">
+            <summary>
+            Biser JSON Encoder
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add(System.String,System.Collections.Generic.Dictionary{System.String,System.Action})">
+            <summary>
+            To supply heterogen values inside of Dictionary
+            </summary>
+            <typeparam name="V"></typeparam>
+            <param name="propertyName"></param>
+            <param name="val"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add(System.Collections.Generic.Dictionary{System.String,System.Action})">
+            <summary>
+            To supply heterogen values inside of Dictionary
+            </summary>
+            <param name="val"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add(System.String,System.Collections.Generic.List{System.Action})">
+            <summary>
+            Supplies heterogonenous array elements
+            </summary>
+            <param name="propertyName"></param>
+            <param name="val"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add(System.Collections.Generic.List{System.Action})">
+            <summary>
+             Supplies heterogonenous array elements
+            </summary>
+            <param name="val"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add``2(System.String,System.Collections.Generic.IDictionary{``0,``1},System.Action{``1})">
+            <summary>
+            Adds Dictionary each Key will be transformed into String
+            </summary>
+            <typeparam name="K"></typeparam>
+            <typeparam name="V"></typeparam>
+            <param name="propertyName"></param>
+            <param name="val"></param>
+            <param name="f"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add``2(System.Collections.Generic.IDictionary{``0,``1},System.Action{``1})">
+            <summary>
+             Adds Dictionary each Key will be transformed into String
+            </summary>
+            <typeparam name="K"></typeparam>
+            <typeparam name="V"></typeparam>
+            <param name="val"></param>
+            <param name="f"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add(System.String,DBreeze.Utils.Biser.IJsonEncoder)">
+            <summary>
+            Adds class implementing IJsonEncoder
+            </summary>
+            <param name="propertyName"></param>
+            <param name="val"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add``1(System.String,System.Collections.Generic.IEnumerable{``0},System.Action{``0})">
+            <summary>
+            Supply array and transformation function, one for each array element
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="propertyName"></param>
+            <param name="val"></param>
+            <param name="f"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.Biser.JsonEncoder.Add``1(System.Collections.Generic.IEnumerable{``0},System.Action{``0})">
+            <summary>
+             Supply array and transformation function, one for each array element
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="val"></param>
+            <param name="f"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.Biser.JsonSettings">
+            <summary>
+            JsonSettings
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.JsonSettings.DateTimeStyle.Default">
+            <summary>
+            Default /Date(...)/
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.JsonSettings.DateTimeStyle.ISO">
+            <summary>
+            ISO Format: "2018-06-05T17:44:15.4430000Z" or "2018-06-05T17:44:15.4430000+02:00"
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.JsonSettings.DateTimeStyle.EpochTime">
+            <summary>
+            Unix Epoch Milliseconds. Fastest for both operations
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.Biser.JsonSettings.DateTimeStyle.Javascript">
+            <summary>
+            Each local time must be converted into UTC and then represented as ISO
+            </summary>
+        </member>
         <member name="M:DBreeze.Utils.Biser.GetVarintBytes(System.UInt64)">
             <summary>
             Uses protobuf concepts

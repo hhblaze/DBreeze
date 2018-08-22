@@ -7,8 +7,8 @@
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
     <Version>1.091.2018.0525</Version>
-    <FileVersion>1.091.2018.0525</FileVersion>
-    <AssemblyVersion>1.091.2018.0525</AssemblyVersion>
+    <FileVersion>1.091.2018.0822</FileVersion>
+    <AssemblyVersion>1.091.2018.0822</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -99,6 +99,9 @@
     <Compile Include="..\DBreeze\Utils\Biser.cs" Link="Utils\Biser.cs" />
     <Compile Include="..\DBreeze\Utils\BiserDecoder.cs" Link="Utils\BiserDecoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserEncoder.cs" Link="Utils\BiserEncoder.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserJsonDecoder.cs" Link="Utils\BiserJsonDecoder.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserJsonEncoder.cs" Link="Utils\BiserJsonEncoder.cs" />
+    <Compile Include="..\DBreeze\Utils\BiserJsonSettings.cs" Link="Utils\BiserJsonSettings.cs" />
 	
   </ItemGroup>
 
