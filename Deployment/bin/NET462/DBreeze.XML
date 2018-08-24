@@ -5556,22 +5556,11 @@
             Quantity of bytes needed to form latest varint
             </summary>
         </member>
-        <member name="F:DBreeze.Utils.Biser.Decoder.IsNull">
-            <summary>
-            true in case if object is null
-            </summary>
-        </member>
         <member name="M:DBreeze.Utils.Biser.Decoder.#ctor(System.Byte[])">
             <summary>
             
             </summary>
             <param name="encoded"></param>
-        </member>
-        <member name="M:DBreeze.Utils.Biser.Decoder.#ctor(DBreeze.Utils.Biser.Decoder,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="decoder"></param>
         </member>
         <member name="M:DBreeze.Utils.Biser.Decoder.CheckNull">
             <summary>
