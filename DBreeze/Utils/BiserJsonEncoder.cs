@@ -45,23 +45,30 @@ namespace DBreeze.Utils
             void AddProp(string str)
             {
                 if (lastchar != '{' && lastchar != '[' && lastchar != ',')
-                    sb.Append(",");
+                    sb.Append(",\"");
+                else
+                    sb.Append("\"");
 
-                AddStr(str);
-                sb.Append(":");
+                sb.Append(str.Replace("\"", "\\\""));
+                sb.Append("\":");
+                //AddStr(str);
+                //sb.Append(":");
                 lastchar = ':';
             }
 
+
             void AddStr(string str)
             {
-                sb.Append("\"");
-                foreach (var ch in str)
-                {
-                    if (ch == '\"')
-                        sb.Append('\\');
-                    sb.Append(ch);
-                }
 
+                sb.Append("\"");
+                sb.Append(str.Replace("\"", "\\\""));
+
+                //foreach (var ch in str)
+                //{
+                //    if (ch == '\"')
+                //        sb.Append('\\');
+                //    sb.Append(ch);
+                //}            
                 sb.Append("\"");
             }
 
