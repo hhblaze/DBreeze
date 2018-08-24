@@ -7,3 +7,10 @@
 
 Extra:
 deployer.exe must be compiled in DEBUG mode
+
+
+
+---
+to use via nuspec
+files and reference should be conditionaly removed via 
+https://stackoverflow.com/questions/533554/how-to-use-different-files-in-a-project-for-different-build-configurations-vis
