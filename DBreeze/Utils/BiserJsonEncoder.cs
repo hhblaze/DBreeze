@@ -49,7 +49,15 @@ namespace DBreeze.Utils
                 else
                     sb.Append("\"");
 
-                sb.Append(str.Replace("\"", "\\\""));
+                //sb.Append(str.Replace("\"", "\\\""));
+                foreach (var ch in str)
+                {
+                    if (ch == '\"')
+                        sb.Append('\\');
+                    else if (ch == '\\')
+                        sb.Append('\\');
+                    sb.Append(ch);
+                }
                 sb.Append("\":");
                 //AddStr(str);
                 //sb.Append(":");
@@ -61,14 +69,16 @@ namespace DBreeze.Utils
             {
 
                 sb.Append("\"");
-                sb.Append(str.Replace("\"", "\\\""));
+                // sb.Append(str.Replace("\"", "\\\""));
 
-                //foreach (var ch in str)
-                //{
-                //    if (ch == '\"')
-                //        sb.Append('\\');
-                //    sb.Append(ch);
-                //}            
+                foreach (var ch in str)
+                {
+                    if (ch == '\"')
+                        sb.Append('\\');
+                    else if (ch == '\\')
+                        sb.Append('\\');
+                    sb.Append(ch);
+                }
                 sb.Append("\"");
             }
 
