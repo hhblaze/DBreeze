@@ -92,6 +92,8 @@ namespace DBreeze.Utils
             if (input == null || replaceWith == null || replaceWith.Count < 1)
                 return input;
 
+            replaceWith = replaceWith.OrderByDescending(r => r.Key.Length).ToDictionary(r => r.Key, r => r.Value);
+
             var regex = new System.Text.RegularExpressions.Regex(String.Join("|", replaceWith.Keys.Select(k => System.Text.RegularExpressions.Regex.Escape(k))));
             return regex.Replace(input, m => replaceWith[m.Value]);
         }

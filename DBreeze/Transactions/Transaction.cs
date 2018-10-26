@@ -864,6 +864,8 @@ namespace DBreeze.Transactions
             if (seed < 1)
                 seed = 1;
 
+            LTrie table = GetWriteTableFromBuffer(tableName); //Reserving table for write
+
             addressOfIdentity = addressOfIdentity ?? new byte[] { 0 };
 
             Type td = typeof(TIdentity);

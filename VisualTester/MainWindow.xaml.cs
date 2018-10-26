@@ -19,6 +19,8 @@ using System.IO;
 using DBreeze;
 using DBreeze.Diagnostic;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace VisualTester
 {
@@ -76,7 +78,7 @@ namespace VisualTester
             }
         }
 
-        
+
 
         //public class ByteListComparer : IComparer<IList<byte>>
         //{           
@@ -94,16 +96,98 @@ namespace VisualTester
         //    }
         //}
 
+        private void btTest10_Click(object sender, RoutedEventArgs e)
+        {
+            Task.Run(() =>
+            {
+                using (var t = xfre.GetTransaction())
+                {
+                    t.RemoveAllKeys("t1", true);
+                }
+            });
+        }
 
 
         DBreezeEngine xfre = null;
         private void btTest3_Click(object sender, RoutedEventArgs e)
         {
-            return;
             DBreeze.Diagnostic.SpeedStatistic.ToConsole = false;
             if (xfre == null)
                 xfre = new DBreezeEngine(@"D:\temp\DBR1");
 
+            //using (var t = xfre.GetTransaction())
+            //{
+            //    for (int i = 0; i < 20; i++)
+            //    {
+            //        t.Insert<int, int>("t1", i, i);
+            //    }
+
+            //    t.Commit();
+            //}
+
+            Task.Run(() =>
+            {
+                using (var t = xfre.GetTransaction())
+                {
+                   foreach(var row in t.SelectForward<int,int>("t1"))
+                    {
+                        Console.WriteLine("Key: " + row.Key);
+                        Thread.Sleep(500);
+                    }
+                }
+            });
+
+
+
+            return;
+            using (var t = xfre.GetTransaction())
+            {
+                for(int i=0;i<20;i++)
+                {
+                    t.Insert<int, int>("t1", i, i);
+                }
+                
+                t.Commit();
+            }
+
+
+
+
+
+            return;
+          
+
+            using (var t = xfre.GetTransaction())
+            {               
+
+                t.Insert<int, string>("t1", 1, "test1");
+                t.Insert<int, string>("t1", 2, "test2");
+                t.Insert<int, string>("t1", 3, "test3");
+                
+
+                t.Commit();
+            }
+
+            using (var t = xfre.GetTransaction())
+            {
+               
+                //t.RemoveAllKeys("t1", true, () =>
+                //{
+                //    t.Insert<int, string>("t1", 2, "test2");
+                //    t.Insert<int, string>("t1", 3, "test3");
+                //});
+
+                t.Commit();
+            }
+
+            using (var t = xfre.GetTransaction())
+            {
+                foreach(var r in t.SelectBackward<int,string>("t1"))
+                {
+                    Console.WriteLine(r.Key);
+                }
+            }
+            return;
 
             using (var t = xfre.GetTransaction())
             {
@@ -928,10 +1012,7 @@ namespace VisualTester
             //a.DoAsync();
         }
 
-        private void btTest10_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
+     
 
         private void btTest11_Click(object sender, RoutedEventArgs e)
         {

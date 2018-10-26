@@ -475,8 +475,11 @@ namespace DBreeze.LianaTrie
                         //dDynamicDataBlocks = null;
                         //dDynamicDataBlocks = new Dictionary<ulong, DataIdentifier>();
 
-                        if(!IsNestedTable)
+                        if (!IsNestedTable)
+                        {
                             Trie.Storage.RecreateFiles();
+                          
+                        }
                     //}
                     //catch (System.Exception ex)
                     //{

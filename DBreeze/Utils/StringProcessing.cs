@@ -92,6 +92,8 @@ namespace DBreeze.Utils
             if (input == null || replaceWith == null || replaceWith.Count < 1)
                 return input;
 
+            replaceWith = replaceWith.OrderByDescending(r => r.Key.Length).ToDictionary(r => r.Key, r => r.Value);
+
             System.Text.RegularExpressions.Regex regex = null;
 #if NET35
             //|| NETr40   //The same must be use for .NET 4.0
