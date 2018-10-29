@@ -7,7 +7,7 @@
   "targets": {
     ".NETStandard,Version=v2.0": {},
     ".NETStandard,Version=v2.0/": {
-      "DBreeze/1.091.2018.0525": {
+      "DBreeze/1.092.2018.1029": {
         "dependencies": {
           "NETStandard.Library": "2.0.3"
         },
@@ -24,7 +24,7 @@
     }
   },
   "libraries": {
-    "DBreeze/1.091.2018.0525": {
+    "DBreeze/1.092.2018.1029": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

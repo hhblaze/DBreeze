@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.091.2018.0525</Version>
-    <FileVersion>1.091.2018.0822</FileVersion>
-    <AssemblyVersion>1.091.2018.0822</AssemblyVersion>
+    <Version>1.092.2018.1029</Version>
+    <FileVersion>1.092.2018.0822</FileVersion>
+    <AssemblyVersion>1.092.2018.1029</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
