@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v1.0": {
-      "DBreeze/1.092.2018.1029": {
+      "DBreeze/1.093.2019.0215": {
         "runtime": {
           "DBreeze.dll": {}
         }
@@ -14,7 +14,7 @@
     }
   },
   "libraries": {
-    "DBreeze/1.092.2018.1029": {
+    "DBreeze/1.093.2019.0215": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

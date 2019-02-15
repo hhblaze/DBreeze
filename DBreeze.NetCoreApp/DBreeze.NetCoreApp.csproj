@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.092.2018.1029</Version>
-    <FileVersion>1.092.2018.0822</FileVersion>
-    <AssemblyVersion>1.092.2018.1029</AssemblyVersion>
+    <Version>1.093.2019.0215</Version>
+    <FileVersion>1.093.2019.0215</FileVersion>
+    <AssemblyVersion>1.093.2019.0215</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -18,9 +18,11 @@
 
   <ItemGroup>
     <Compile Remove="DataTypes\DbXML.cs" />
+    <Compile Remove="Storage\_FSR.cs" />
   </ItemGroup>
 
   <ItemGroup>
+        <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>

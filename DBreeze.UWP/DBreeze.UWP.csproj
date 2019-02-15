@@ -110,6 +110,9 @@
     <None Include="signature.snk" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs">
+      <Link>Storage\FSR.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
@@ -231,7 +234,6 @@
     <Compile Include="SchemeInternal\Sheme.UserTable.cs" />
     <Compile Include="Storage\Backup\Backup.cs" />
     <Compile Include="Storage\Backup\BackupRestorer.cs" />
-    <Compile Include="Storage\FSR.cs" />
     <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommander.cs" />
     <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommunicator.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteInstanceCommander.cs" />

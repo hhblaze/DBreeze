@@ -122,7 +122,7 @@ namespace Deployer
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
             tpr = prj;
-            Console.WriteLine("Creating .NET4.6.2");
+            Console.WriteLine("Creating .NET4.7");
             tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
             tpr = tpr.Replace(rpl[2], rpl[18]); //4.5 on 4.7            
 

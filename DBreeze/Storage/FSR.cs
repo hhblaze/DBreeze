@@ -22,7 +22,7 @@ namespace DBreeze.Storage
     internal class FSR : IStorage
     {
         //!!try catches can be taken away from reads and writes, when procs are fully balanced
-        //!!fsLength instead of this._fsData.Length was added on 23.03.2017 for now only in DBreeze .NET4.5, later integrate everywhere
+        //!!15.02.2019 was implemented everywhere: fsLength instead of this._fsData.Length was added on 23.03.2017 for now only in DBreeze .NET4.5, later integrate everywhere
 
         #region "Variables"
 
