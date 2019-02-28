@@ -6,12 +6,12 @@ DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Docum
 [![NuGet Badge](https://buildstats.info/nuget/DBreeze)](https://www.nuget.org/packages/DBreeze/)
 [![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)](https://tiesky.com)
 
-DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql etc), 
-multi-threaded, transactional and ACID-compliant database management system for
+DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search etc.), 
+multi-threaded, transactional and ACID-compliant data management system for
 .NET 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform / .NET Portable 
 / [CoreRT](https://github.com/dotnet/corert) 
 
-...for servers, mobiles and internet-of-things... Made with C# 
+...for servers, desktops, mobiles and internet-of-things... Made with C# 
 
 - It's a free software for those who think that it should be free.
 - It has been used in our own production environment since June 2012.
