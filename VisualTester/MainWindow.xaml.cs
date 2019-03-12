@@ -36,7 +36,7 @@ namespace VisualTester
 
 
         FastTests _ft = new FastTests();
-                
+
 
 
         private void btTest1_Click(object sender, RoutedEventArgs e)
@@ -50,7 +50,7 @@ namespace VisualTester
         }
 
         Dictionary<long, double> _dC = new Dictionary<long, double>();
-        Dictionary<double,byte[]> _d1C = new Dictionary<double,byte[]>();
+        Dictionary<double, byte[]> _d1C = new Dictionary<double, byte[]>();
 
         Dictionary<float, byte[]> _fC = new Dictionary<float, byte[]>();
 
@@ -72,7 +72,7 @@ namespace VisualTester
 
         private void PrintOutDoubles(Dictionary<double, byte[]> xd)
         {
-            foreach(var el in xd.OrderBy(r=>r.Key))
+            foreach (var el in xd.OrderBy(r => r.Key))
             {
                 Console.WriteLine("D: {0}; B: {1}", el.Key, el.Value.ToBytesString(""));
             }
@@ -107,14 +107,97 @@ namespace VisualTester
             });
         }
 
-
-        DBreezeEngine xfre = null;
-        private void btTest3_Click(object sender, RoutedEventArgs e)
+        public void TEST_RestoreTable()
         {
             DBreeze.Diagnostic.SpeedStatistic.ToConsole = false;
             if (xfre == null)
                 xfre = new DBreezeEngine(@"D:\temp\DBR1");
 
+            using (var tran = xfre.GetTransaction())
+            {
+                tran.RemoveAllKeys("testv001", true);
+            }
+
+            using (var tran = xfre.GetTransaction())
+            {
+                tran.Insert<int, int>("testv001", 1, 1);
+                tran.Insert<int, int>("testv001", 2, 1);
+                tran.Insert<int, int>("testv001", 3, 1);
+                tran.Commit();
+            }
+
+            using (var tran = xfre.GetTransaction())
+            {
+                tran.RemoveKey<int>("testv001", 2);
+                tran.RemoveKey<int>("testv001", 3);
+                tran.Commit();
+            }
+
+            //Checking size of "testv001"
+            var p1 = xfre.Scheme.GetTablePathFromTableName("testv001");
+            FileInfo fi1 = new FileInfo(p1);
+            Console.WriteLine(fi1.Length); //186 bytes
+
+            //It is a bit weird to run table defragmentation procedure for each delete command, 
+            //so let's e.g. once per day, start a purge table procedure:
+            using (var tran = xfre.GetTransaction())
+            {
+                tran.SynchronizeTables("testv001");
+
+                //Removing temporary table
+                tran.RemoveAllKeys("tmp_testv001", true);
+
+                //Copying into temporary table all necessary data.
+                //Note this process is hard to automate due to the heterogeneous nature of the data (datablocks, nested tables etc...)
+                foreach (var row in tran.SelectForward<int, int>("testv001"))
+                {
+                    tran.Insert<int, int>("tmp_testv001", row.Key, row.Value); //Copy all what you need
+                }
+                //Commiting temp table
+                tran.Commit();
+
+                //Experimenting run, starting from version 1.094 
+                //(Reading threads will wait, though some of them will fail with errors, cause some read-out links to the previous table have changed)                
+                //We have solution for read-write table locking (search in documentation "Full tables locking inside of transaction.")
+                tran.RestoreTableFromTheOtherFile("testv001", "tmp_testv001", true);
+                //At this moment tmp_testv001 files will be cleared
+            }
+
+            //Checking content of "testv001"
+            using (var tran = xfre.GetTransaction())
+            {
+                foreach (var row in tran.SelectForward<int, int>("testv001"))
+                {
+                    Console.WriteLine(row.Key);
+                }
+
+            }
+
+            //Checking size of "testv001"
+            FileInfo fi2 = new FileInfo(xfre.Scheme.GetTablePathFromTableName("testv001"));
+
+            Console.WriteLine(fi2.Length); //93 bytes
+
+
+            return;
+        }
+
+
+        DBreezeEngine xfre = null;
+        private void btTest3_Click(object sender, RoutedEventArgs e)
+        {
+            return;
+            TEST_RestoreTable();
+            return;
+
+            DBreeze.Diagnostic.SpeedStatistic.ToConsole = false;
+            if (xfre == null)
+                xfre = new DBreezeEngine(@"D:\temp\DBR1");
+
+
+
+
+            return;
             //using (var t = xfre.GetTransaction())
             //{
             //    for (int i = 0; i < 20; i++)

@@ -2620,15 +2620,28 @@ namespace DBreeze.Transactions
         #endregion
 
         /// <summary>
-        /// Experimental. Replaces existing table with the other table, created out of this engine.
-        /// Reading threads will wait till this operation occurs.
-        /// Note that prototype table will be deleted.
+        /// <para>Experimenting. Replaces existing table with the other table, created out of this engine or from the table that belongs to the engine.</para>
+        /// <para>Reading threads of tableName will wait till this operation occurs.</para>
+        /// <para>Note that source table files will be deleted. </para>
+        /// <para>Use when source table is a temporary table.</para>
         /// </summary>
         /// <param name="tableName"></param>
-        /// <param name="newTableFullPath"></param>
-        public void RestoreTableFromTheOtherFile(string tableName, string newTableFullPath)
+        /// <param name="newTableFullPath">Depends on thisEngineTable argument, if thisEngineTable == true then full path to the file is supplied, otherwise only source-tableName</param>
+        /// <param name="thisEngineTable">default false, indicates that table belongs to the engine and all open file pointers on it will be closed, use with temporary tables.</param>
+        public void RestoreTableFromTheOtherFile(string tableName, string newTableFullPath, bool sourceTableBelongsToEngine = false)
         {
+            //LTrie table = GetWriteTableFromBuffer(tableName);
+            //table.Storage.RestoreTableFromTheOtherTable(newTableFullPath);
+
             LTrie table = GetWriteTableFromBuffer(tableName);
+            LTrie tableSource = null;
+
+            if (sourceTableBelongsToEngine)
+            {
+                tableSource = GetWriteTableFromBuffer(newTableFullPath);
+                tableSource.Storage.Table_Dispose();
+                newTableFullPath = _transactionUnit.TransactionsCoordinator.GetSchema.GetTablePathFromTableName(newTableFullPath);
+            }
             table.Storage.RestoreTableFromTheOtherTable(newTableFullPath);
         }
     }
