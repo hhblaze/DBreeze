@@ -573,6 +573,7 @@ namespace DBreeze.Utils
                     encB = encB.GZip_Decompress();                    
                     break;
             }
+            
 
             byte mode = 0;
             byte[] sizer = new byte[4];

@@ -113,6 +113,9 @@
     <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs">
       <Link>Storage\FSR.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs">
+      <Link>Utils\Compression.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
@@ -249,7 +252,6 @@
     <Compile Include="Utils\AsyncOperations.cs" />
     <Compile Include="Utils\BloomFilter.cs" />
     <Compile Include="Utils\BytesProcessing.cs" />
-    <Compile Include="Utils\Compression.cs" />
     <Compile Include="Utils\CustomSerializator.cs" />
     <Compile Include="Utils\DbReaderWriterLock.cs" />
     <Compile Include="Utils\DbThreadsGator.cs" />
