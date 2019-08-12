@@ -37,10 +37,40 @@ namespace DBreeze.Utils
             }
 
 
-            ulong GetDigit() //Gets next digit from the byte[] stream, this function works only from root decoder
+            //ulong GetDigit() //Gets next digit from the byte[] stream, this function works only from root decoder
+            //{
+            //    int shift = 0;
+            //    ulong result = 0;
+            //    ulong byteValue = 0;
+            //    qb = 0;
+
+            //    while (true)
+            //    {
+
+            //        if (coldeepcnt > 0 && !coldeep[coldeepcnt-1].collectionIsFinished && coldeep[coldeepcnt-1].collectionShiftToPass < coldeep[coldeepcnt-1].collectionShift)
+            //        {                  
+            //            byteValue = coldeep[coldeepcnt-1].collectionBuffer[coldeep[coldeepcnt-1].collectionShiftToPass++];
+            //        }
+            //        else
+            //        {
+            //            encPos++;
+            //            byteValue = (ulong)encoded[encPos]; //Automatically will throw exception in case if index is out of range   
+            //        }
+
+            //        result |= (byteValue & 0x7f) << shift;
+            //        qb++;
+            //        if ((byteValue & 0x80) != 0x80)
+            //            return result;
+
+            //        shift += 7;
+            //    }
+            //}
+
+            bool GetDigit(out ulong result) //Gets next digit from the byte[] stream, this function works only from root decoder
             {
                 int shift = 0;
-                ulong result = 0;
+                //ulong result = 0;
+                result = 0;
                 ulong byteValue = 0;
                 qb = 0;
 
@@ -54,13 +84,20 @@ namespace DBreeze.Utils
                     else
                     {
                         encPos++;
+
+                        if (encPos >= encoded.Length) //enhancing property
+                            return false;
+
                         byteValue = (ulong)encoded[encPos]; //Automatically will throw exception in case if index is out of range   
                     }
 
                     result |= (byteValue & 0x7f) << shift;
                     qb++;
                     if ((byteValue & 0x80) != 0x80)
-                        return result;
+                    {
+                        return true;
+                        //return result;
+                    }
 
                     shift += 7;
                 }
@@ -71,6 +108,10 @@ namespace DBreeze.Utils
             byte[] Read(int length)
             {
                 this.encPos++;
+
+                if (encPos >= this.encoded.Length)
+                    return null;
+
                 byte[] bt = new byte[length];
                 Buffer.BlockCopy(this.encoded, this.encPos, bt, 0, length);
                 this.encPos += length - 1;
@@ -83,7 +124,10 @@ namespace DBreeze.Utils
             /// <returns>true if null</returns>
             public bool CheckNull()
             {
-                return !(this.GetDigit() == 0);
+                if (!this.GetDigit(out var dig))
+                    return true;
+                return !(dig == 0);
+                //return !(this.GetDigit() == 0);
             }
 
             /// <summary>
@@ -96,62 +140,69 @@ namespace DBreeze.Utils
 
                 ulong prot = 0;
                 if (!isNullChecked)
-                    prot = this.GetDigit();
+                {
+                    if (!this.GetDigit(out prot))
+                        prot = 1;
+
+                    //prot = this.GetDigit();
+                }
 
                 if (prot == 0)
                 {
-
-                    int collectionLength = (int)this.GetDigit();
-
-                    if (collectionLength > 0) //JS not noted change
+                    if (this.GetDigit(out prot))
                     {
-                        coldeepcnt++;
+                        int collectionLength = (int)prot;
+                        //int collectionLength = (int)this.GetDigit();
 
-                        int cp = this.encPos;
-
-                        ch cdi = null;
-                        if (coldeep.Count < coldeepcnt)
+                        if (collectionLength > 0) //JS not noted change
                         {
-                            cdi = new ch();
-                            coldeep.Add(cdi);
-                        }
-                        else
-                            cdi = coldeep[coldeepcnt - 1];
+                            coldeepcnt++;
 
-                        if (this.qb > 1)
-                        {
-                            cdi.collectionShiftToPass = 0;
-                            cdi.collectionShift = this.qb - 1;
-                            this.encPos = cp + collectionLength - cdi.collectionShift; //JS not noted change
-                            cdi.collectionBuffer = Read(cdi.collectionShift);
-                            this.encPos = cp;
-                        }
-                        else
-                        {
-                            cdi.collectionShift = 0;
-                            cdi.collectionShiftToPass = 0;
-                        }
+                            int cp = this.encPos;
 
-
-                        cdi.collectionIsFinished = false;
-
-                        while (!cdi.collectionIsFinished)
-                        {
-
-                            yield return this;
-
-                            if ((this.encPos - (cp - cdi.collectionShift)) == collectionLength)
+                            ch cdi = null;
+                            if (coldeep.Count < coldeepcnt)
                             {
-                                cdi.collectionIsFinished = true;
-                                if (cdi.collectionShift > 0)
-                                    this.encPos += cdi.collectionShift;
+                                cdi = new ch();
+                                coldeep.Add(cdi);
+                            }
+                            else
+                                cdi = coldeep[coldeepcnt - 1];
 
-                                coldeepcnt--;
-                                break;
+                            if (this.qb > 1)
+                            {
+                                cdi.collectionShiftToPass = 0;
+                                cdi.collectionShift = this.qb - 1;
+                                this.encPos = cp + collectionLength - cdi.collectionShift; //JS not noted change
+                                cdi.collectionBuffer = Read(cdi.collectionShift);
+                                this.encPos = cp;
+                            }
+                            else
+                            {
+                                cdi.collectionShift = 0;
+                                cdi.collectionShiftToPass = 0;
+                            }
+
+
+                            cdi.collectionIsFinished = false;
+
+                            while (!cdi.collectionIsFinished)
+                            {
+
+                                yield return this;
+
+                                if ((this.encPos - (cp - cdi.collectionShift)) == collectionLength)
+                                {
+                                    cdi.collectionIsFinished = true;
+                                    if (cdi.collectionShift > 0)
+                                        this.encPos += cdi.collectionShift;
+
+                                    coldeepcnt--;
+                                    break;
+                                }
                             }
                         }
                     }
-
 
                 }
 
@@ -212,72 +263,84 @@ namespace DBreeze.Utils
 
                 ulong prot = 0;
                 if (!isNullChecked)
-                    prot = this.GetDigit();
+                {
+                    if (!this.GetDigit(out prot))
+                        prot = 1;
+
+                    //prot = this.GetDigit();
+                }
 
                 if (prot == 0)
                 {
 
-                    int collectionLength = (int)this.GetDigit();
-                    if (collectionLength == 0) //JS not noted change
+                    if (this.GetDigit(out prot))
                     {
-                        return;
-                    }
+                        int collectionLength = (int)prot;
+                        //int collectionLength = (int)this.GetDigit();
 
-                    coldeepcnt++;
-
-                    int cp = this.encPos;
-
-                    ch cdi = null;
-                    if (coldeep.Count < coldeepcnt)
-                    {
-                        cdi = new ch();
-                        coldeep.Add(cdi);
-                    }
-                    else
-                        cdi = coldeep[coldeepcnt - 1];
-
-                    if (this.qb > 1)
-                    {
-                        cdi.collectionShiftToPass = 0;
-                        cdi.collectionShift = this.qb - 1;
-                        this.encPos = cp + collectionLength - cdi.collectionShift; //JS not noted change
-                        cdi.collectionBuffer = Read(cdi.collectionShift);
-                        this.encPos = cp;
-                        //collectionPos += collectionShift;
-                    }
-                    else
-                    {
-                        cdi.collectionShift = 0;
-                        cdi.collectionShiftToPass = 0;
-                    }
-
-
-                    cdi.collectionIsFinished = false;
-
-                    while (true)
-                    {
-                        if (dict == null)
+                        if (collectionLength == 0) //JS not noted change
                         {
-                            if (lst == null)
-                                set.Add(fk());
-                            else
-                                lst.Add(fk());
+                            return;
+                        }
+
+                        coldeepcnt++;
+
+                        int cp = this.encPos;
+
+                        ch cdi = null;
+                        if (coldeep.Count < coldeepcnt)
+                        {
+                            cdi = new ch();
+                            coldeep.Add(cdi);
                         }
                         else
-                            dict.Add(fk(), fv());
+                            cdi = coldeep[coldeepcnt - 1];
 
-
-                        if ((this.encPos - (cp - cdi.collectionShift)) == collectionLength)
+                        if (this.qb > 1)
                         {
-                            cdi.collectionIsFinished = true;
-                            if (cdi.collectionShift > 0)
-                                this.encPos += cdi.collectionShift;
+                            cdi.collectionShiftToPass = 0;
+                            cdi.collectionShift = this.qb - 1;
+                            this.encPos = cp + collectionLength - cdi.collectionShift; //JS not noted change
+                            cdi.collectionBuffer = Read(cdi.collectionShift);
+                            this.encPos = cp;
+                            //collectionPos += collectionShift;
+                        }
+                        else
+                        {
+                            cdi.collectionShift = 0;
+                            cdi.collectionShiftToPass = 0;
+                        }
 
-                            coldeepcnt--;
 
-                            break;
+                        cdi.collectionIsFinished = false;
+
+                        while (true)
+                        {
+                            if (dict == null)
+                            {
+                                if (lst == null)
+                                    set.Add(fk());
+                                else
+                                    lst.Add(fk());
+                            }
+                            else
+                                dict.Add(fk(), fv());
+
+
+                            if ((this.encPos - (cp - cdi.collectionShift)) == collectionLength)
+                            {
+                                cdi.collectionIsFinished = true;
+                                if (cdi.collectionShift > 0)
+                                    this.encPos += cdi.collectionShift;
+
+                                coldeepcnt--;
+
+                                break;
+                            }
                         }
                     }
+
+
                 }
 
 
@@ -286,12 +349,18 @@ namespace DBreeze.Utils
 
             public DateTime GetDateTime()
             {
-                return new DateTime(Biser.DecodeZigZag(this.GetDigit()));
+                if (!this.GetDigit(out var dgt))
+                    return default(DateTime);
+
+                return new DateTime(Biser.DecodeZigZag(dgt));
             }
 
             public DateTime? GetDateTime_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetDateTime();
             }
@@ -299,12 +368,18 @@ namespace DBreeze.Utils
 
             public long GetLong()
             {
-                return Biser.DecodeZigZag(this.GetDigit());
+                if (!this.GetDigit(out var dgt))
+                    return default(long);
+
+                return Biser.DecodeZigZag(dgt);
             }
 
             public long? GetLong_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetLong();
 
@@ -312,72 +387,109 @@ namespace DBreeze.Utils
 
             public ulong GetULong()
             {
-                return this.GetDigit();
+                if (!this.GetDigit(out var dgt))
+                    return default(ulong);
+
+                return dgt;
             }
 
             public ulong? GetULong_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetULong();
             }
 
             public int GetInt()
             {
-                return (int)Biser.DecodeZigZag(this.GetDigit());
+                if (!this.GetDigit(out var dgt))
+                    return default(int);
+
+                return (int)Biser.DecodeZigZag(dgt);
             }
 
             public int? GetInt_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetInt();
             }
 
             public uint GetUInt()
             {
-                return (uint)this.GetDigit();
+                if (!this.GetDigit(out var dgt))
+                    return default(uint);
+
+                return (uint)dgt;
             }
 
             public uint? GetUInt_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetUInt();
             }
 
             public short GetShort()
             {
-                return (short)Biser.DecodeZigZag(this.GetDigit());
+                if (!this.GetDigit(out var dgt))
+                    return default(short);
+
+                return (short)Biser.DecodeZigZag(dgt);
             }
 
             public short? GetShort_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetShort();
             }
 
             public ushort GetUShort()
             {
-                return (ushort)Biser.DecodeZigZag(this.GetDigit());
+                if (!this.GetDigit(out var dgt))
+                    return default(ushort);
+
+                return (ushort)Biser.DecodeZigZag(dgt);
             }
 
             public ushort? GetUShort_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetUShort();
             }
 
             public bool GetBool()
             {
-                return Read(1)[0] == 1;
+                var bt = Read(1);
+                if (bt == null)
+                    return default(bool);
+                return bt[0] == 1;
+                //return Read(1)[0] == 1;
             }
 
             public bool? GetBool_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
 
                 return GetBool();
@@ -385,52 +497,80 @@ namespace DBreeze.Utils
 
             public sbyte GetSByte()
             {
-                return (sbyte)Read(1)[0];
+                var bt = Read(1);
+                if (bt == null)
+                    return default(sbyte);
+                return (sbyte)bt[0];
+
+                //return (sbyte)Read(1)[0];
             }
 
             public sbyte? GetSByte_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetSByte();
             }
 
             public byte GetByte()
             {
-                return Read(1)[0];
+                var bt = Read(1);
+                if (bt == null)
+                    return default(byte);
+                return bt[0];
+
+                //return Read(1)[0];
             }
 
             public byte? GetByte_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetByte();
             }
 
             public float GetFloat()
             {
-                var subRet = this.GetDigit();
+                if (!this.GetDigit(out var dgt))
+                    return default(float);
+
+                var subRet = dgt;
                 var ret = BitConverter.ToSingle(BitConverter.GetBytes(subRet), 0);
                 return ret;
             }
 
             public float? GetFloat_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetFloat();
             }
 
             public double GetDouble()
             {
-                var subRet = this.GetDigit();
+                if (!this.GetDigit(out var dgt))
+                    return default(double);
+
+                var subRet = dgt;
                 var ret = BitConverter.ToDouble(BitConverter.GetBytes(subRet), 0);
                 return ret;
             }
 
             public double? GetDouble_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetDouble();
 
@@ -438,17 +578,26 @@ namespace DBreeze.Utils
 
             public decimal GetDecimal()
             {
+                if (!this.GetDigit(out var dgt))
+                    return default(decimal);
+
                 int[] bits = new int[4];
-                bits[0] = (int)Biser.DecodeZigZag(this.GetDigit());
-                bits[1] = (int)Biser.DecodeZigZag(this.GetDigit());
-                bits[2] = (int)Biser.DecodeZigZag(this.GetDigit());
-                bits[3] = (int)Biser.DecodeZigZag(this.GetDigit());
+                bits[0] = (int)Biser.DecodeZigZag(dgt);
+                this.GetDigit(out dgt);
+                bits[1] = (int)Biser.DecodeZigZag(dgt);
+                this.GetDigit(out dgt);
+                bits[2] = (int)Biser.DecodeZigZag(dgt);
+                this.GetDigit(out dgt);
+                bits[3] = (int)Biser.DecodeZigZag(dgt);
                 return new decimal(bits);
             }
 
             public decimal? GetDecimal_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetDecimal();
             }
@@ -460,7 +609,10 @@ namespace DBreeze.Utils
 
             public char? GetChar_NULL()
             {
-                if (this.GetDigit() == 1)
+                if (!this.GetDigit(out var dgt))
+                    return null;
+
+                if (dgt == 1)
                     return null;
                 return GetChar();
 
@@ -483,7 +635,10 @@ namespace DBreeze.Utils
             /// <returns></returns>
             public long JSGetLong()
             {
-                return Biser.DecodeZigZag(this.GetDigit());
+                if (!this.GetDigit(out var dgt))
+                    return default(long);
+
+                return Biser.DecodeZigZag(dgt);
             }
 
             /// <summary>
@@ -517,6 +672,8 @@ namespace DBreeze.Utils
             public double JSGetDouble()
             {
                 var bt = this.Read(9);
+                if (bt == null)
+                    return default(double);
                 if (BitConverter.IsLittleEndian ^ (bt[0] == 0))
                     Array.Reverse(bt, 1, 8);
 
@@ -530,7 +687,10 @@ namespace DBreeze.Utils
 
             public bool JSGetBool()
             {
-                return this.Read(1)[0] == 1;
+                var bt = Read(1);
+                if (bt == null)
+                    return true;
+                return bt[0] == 1;
             }
 
             public byte[] JSGetByteArray()
@@ -552,14 +712,19 @@ namespace DBreeze.Utils
                 //0 - with length, 1 - null, 2 - zero length
                 byte[] ret = null;
 
-                var prot = this.GetDigit();
+                if (!this.GetDigit(out var prot))
+                    return null;
+
+                //var prot = this.GetDigit();
                 switch (prot)
                 {
                     case 2:
                         ret = new byte[0];
                         break;
                     case 0:
-                        ret = Read((int)((uint)this.GetDigit()));
+                        this.GetDigit(out prot);
+                        ret = Read((int)((uint)prot));
+                        //ret = Read((int)((uint)this.GetDigit()));
                         break;
                 }
 
