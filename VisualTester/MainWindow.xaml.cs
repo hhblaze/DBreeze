@@ -1259,22 +1259,25 @@ namespace VisualTester
             //Biser.Decode_DICT_PROTO_STRING_UINTHASHSET(btx, d1, Compression.eCompressionType.NoCompression);
 
             //return;
-            //if (textsearchengine == null)
-            //{              
-            //    textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");
-            //}            
-            //MyTask tsk = null;
+            if (textsearchengine == null)
+            {
+                textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");
+            }
+           
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                tran.TextInsert("transtext", new byte[] { 1 }, "Apple Banana Сегодня день 周杰伦", "#LG1 #LG2");
+                tran.TextInsert("transtext", new byte[] { 2 }, "Banana MANGO", "#LG2 #LG3");
+                tran.Commit();
 
+            }
 
-            //using (var tran = textsearchengine.GetTransaction())
-            //{
-            //    var resp = tran.TextSearch("TaskText", new DBreeze.TextSearch.TextSearchRequest()
-            //    {
-            //        // SearchLogicType = DBreeze.TextSearch.TextSearchRequest.eSearchLogicType.OR,
-            //        SearchWords = "Xamarin"
-            //    });
-
-            //}
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                //var block = tran.TextSearch("transtext").Block("Apple");
+                var block = tran.TextSearch("transtext").Block("周杰伦");
+                Console.WriteLine($"---- {block.GetDocumentIDs().Count()} ---");//returns 1
+            }
 
             return;
 
