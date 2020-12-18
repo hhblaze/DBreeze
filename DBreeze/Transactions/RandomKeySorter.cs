@@ -115,14 +115,32 @@ namespace DBreeze.Transactions
             var keyH = btKey.ToBytesString();
 
             isUsed = true;
-            
+
             if (!_cnt.ContainsKey(tableName))
                 _cnt[tableName] = 0;
+
+            Dictionary<string, KeyValuePair<byte[], byte[]>> dInsertTable = null;
+            if (_dInsert.TryGetValue(tableName, out dInsertTable))
+            {
+                //Trying already to remove these values
+                //NOTE
+                if (dInsertTable.ContainsKey(keyH))
+                {
+                    dInsertTable.Remove(keyH);
+                    _cnt[tableName]--;
+
+                    if(!WasAutomaticallyFlushed)
+                        return; //we can go out and don't put this to _remove list if in this session we entites were not flushed due to AutomaticFlushLimitQuantityPerTable, unless we must leave them in _dRemove table, so they are deleted when using Flush()
+                }
+            }
+
 
             if (!_dRemove.ContainsKey(tableName))
                 _dRemove[tableName] = new Dictionary<string, byte[]>();
 
             _dRemove[tableName][keyH] = btKey;
+
+           
 
             _cnt[tableName]++;
 
@@ -136,7 +154,8 @@ namespace DBreeze.Transactions
         /// Contains writing LTrie tables
         /// </summary>
         Dictionary<string, LTrie> tbls = new Dictionary<string, LTrie>();
-
+        bool WasAutomaticallyFlushed = false;
+        
         public void Flush(string tableName)
         {
             LTrie table = null;
@@ -184,6 +203,7 @@ namespace DBreeze.Transactions
             }
 
             _cnt[tableName] = 0;
+            WasAutomaticallyFlushed = true;
         }
 
       
@@ -240,6 +260,8 @@ namespace DBreeze.Transactions
 
             _dInsert.Clear();
             _cnt.Clear();
+
+            WasAutomaticallyFlushed = false;
 
             isUsed = false;
         }

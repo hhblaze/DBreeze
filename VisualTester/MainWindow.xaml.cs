@@ -186,13 +186,68 @@ namespace VisualTester
         DBreezeEngine xfre = null;
         private void btTest3_Click(object sender, RoutedEventArgs e)
         {
-            return;
-            TEST_RestoreTable();
-            return;
+        //    return;
+        //    TEST_RestoreTable();
+        //    return;
 
             DBreeze.Diagnostic.SpeedStatistic.ToConsole = false;
             if (xfre == null)
                 xfre = new DBreezeEngine(@"D:\temp\DBR1");
+
+
+            xfre.Scheme.DeleteTable("tb");
+
+            using (var tran = xfre.GetTransaction())
+            {
+                tran.SynchronizeTables("tb");
+                var res1 = tran.ObjectInsert("tb", new DBreeze.Objects.DBreezeObject<byte[]>
+                {
+                    NewEntity = true,
+                    Entity = new byte[] { 1,2,3},
+                    Indexes = new List<DBreeze.Objects.DBreezeIndex>
+                        {
+                            new DBreeze.Objects.DBreezeIndex(1, 1) { PrimaryIndex = true },
+                            new DBreeze.Objects.DBreezeIndex(2, 100) { AddPrimaryToTheEnd = true},
+                        }
+                });
+                // tran.ObjectRemove("tb", 1.ToIndex(1));   // Test with ObjectRemove
+                //tran.Rollback();                          // Test with Rollback
+                //tran.Commit();                            // Test with Commit
+                //}                                         // If use Commit and split transactions
+                //using (var tran = dbe.GetTransaction())   // If use Commit and split transactions
+                //{                                         // If use Commit and split transactions
+                //tran.SynchronizeTables("tb");             // If use Commit and split transactions
+                //c1.Value = 250;
+                var res2 = tran.ObjectInsert("tb", new DBreeze.Objects.DBreezeObject<byte[]>
+                {
+                    NewEntity = true,
+                    Entity = new byte[] { 1, 2, 3, 4 },
+                    Indexes = new List<DBreeze.Objects.DBreezeIndex>
+                        {
+                            new DBreeze.Objects.DBreezeIndex(1, 1) { PrimaryIndex = true },
+                            new DBreeze.Objects.DBreezeIndex(2, 150) { AddPrimaryToTheEnd = true},
+                        }
+                });
+                tran.Commit();
+            }
+            var ba = 1.ToIndex(0);
+            using (var tran = xfre.GetTransaction())
+            {
+                foreach (var row in tran.SelectForwardFromTo<byte[], byte[]>("tb", 1.ToIndex(0), true, 1.ToIndex(1000), true))
+                {
+                    var obj = row.ObjectGet<byte[]>().Entity;
+                    if (obj == null) continue;
+                    //Console.WriteLine($"By PK; id: {obj.Id}, value: {obj.Value}, idx: {row.Key.ToBytesStringDec("-")}");
+                    Console.WriteLine($"idx: {row.Key.ToBytesStringDec("-")}");
+                }
+                foreach (var row in tran.SelectForwardFromTo<byte[], byte[]>("tb", 2.ToIndex(0), true, 2.ToIndex(1000), true))
+                {
+                    var obj = row.ObjectGet<byte[]>().Entity;
+                    if (obj == null) continue;
+                    //Console.WriteLine($"By second index; id: {obj.Id}, value: {obj.Value}, idx: {row.Key.ToBytesStringDec("-")}");
+                    Console.WriteLine($"idx: {row.Key.ToBytesStringDec("-")}");
+                }
+            }
 
 
 

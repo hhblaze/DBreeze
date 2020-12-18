@@ -983,15 +983,43 @@ namespace DBreeze.Transactions
             byte[] encodedVal = null;
             byte[] val = null;
 
+            ITrieRootNode readRoot = null;
+            LTrie table = null;
+
+            //In case when in one transaction one primary index was inserted several times, we need to clear up RandomKeySorter
+            var ptrExistingInRandom = this.RandomKeySorter.TryGetValueByKey(tableName, primary.IndexFull.ToBytesString());
+
+            if(ptrExistingInRandom != null)
+            {
+                if (table == null)
+                    table = GetReadTableFromBuffer(tableName, out readRoot, true);
+
+                val = this.SelectDataBlockWithFixedAddress<byte[]>(tableName, ptrExistingInRandom);
+
+                Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(val, d);
+
+                if(d != null)
+                {
+                    foreach(var el in d.Skip(1))
+                    {
+                        this.RandomKeySorter.Remove(tableName, el.Value);
+                    }
+
+                    d.Clear();
+                }
+             }
+
+
+
             if (!toInsert.NewEntity)
             {
-                ITrieRootNode readRoot = null;
-                LTrie table = null;
+                //ITrieRootNode readRoot = null;
+                //LTrie table = null;
 
                 if (toInsert.ptrToExisingEntity == null)
-                {                   
-                    table = GetReadTableFromBuffer(tableName, out readRoot, true);
-                   
+                {     
+                    if(table == null)
+                        table = GetReadTableFromBuffer(tableName, out readRoot, true);                   
 
                     if (table != null)
                     {                        
