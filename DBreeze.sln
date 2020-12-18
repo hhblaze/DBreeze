@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze", "DBreeze\DBreeze.csproj", "{5C425A2A-5717-4D1B-9949-9C90785B6C57}"
 EndProject
@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze.Portable", "NETPort
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBreeze.NetStandard", "DBreeze.NetStandard\DBreeze.NetStandard.csproj", "{C2164D2B-D4DA-4792-A0D7-EB34162A685A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze.NetCoreApp", "DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBreeze.NetCoreApp", "DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -145,5 +145,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D3BBF523-6808-416B-8956-B50FA8745659}
 	EndGlobalSection
 EndGlobal

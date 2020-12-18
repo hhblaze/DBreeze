@@ -986,7 +986,7 @@ namespace DBreeze.Transactions
             ITrieRootNode readRoot = null;
             LTrie table = null;
 
-            //In case when in one transaction one primary index was inserted several times, we need to clear up RandomKeySorter
+            //In case when in one transaction one primary index was inserted several times, we need to clear up RandomKeySorter existing value
             var ptrExistingInRandom = this.RandomKeySorter.TryGetValueByKey(tableName, primary.IndexFull.ToBytesString());
 
             if(ptrExistingInRandom != null)
@@ -1008,6 +1008,7 @@ namespace DBreeze.Transactions
                     d.Clear();
                 }
              }
+            ///////////////////////////////////////////////
 
 
 
@@ -1189,8 +1190,32 @@ namespace DBreeze.Transactions
             ITrieRootNode readRoot = null;
 
             LTrie table = GetReadTableFromBuffer(tableName, out readRoot, true);
+            byte[] val = null;
 
-            
+            //In case when in one transaction one primary index was inserted several times, we need to clear up RandomKeySorter existing value
+            var ptrExistingInRandom = this.RandomKeySorter.TryGetValueByKey(tableName, index.ToBytesString());
+
+            if (ptrExistingInRandom != null)
+            {
+                Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
+
+                val = this.SelectDataBlockWithFixedAddress<byte[]>(tableName, ptrExistingInRandom);
+
+                Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(val, d);
+
+                if (d != null)
+                {
+                    foreach (var el in d.Skip(1))
+                    {
+                        this.RandomKeySorter.Remove(tableName, el.Value);
+                    }
+
+                    d.Clear();
+                }
+            }
+            ///////////////////////////////////////////////
+
+
             byte[] ptr = null;
 
             if (table != null)
@@ -1205,7 +1230,7 @@ namespace DBreeze.Transactions
                 Dictionary<uint, byte[]> d = new Dictionary<uint, byte[]>();
 
                 //Getting existing value
-                byte[] val = this.SelectDataBlock(tableName, ptr);
+                val = this.SelectDataBlock(tableName, ptr);
                 val = table.SelectDataBlock(ref val, !(readRoot == null));
                 Biser.Decode_DICT_PROTO_UINT_BYTEARRAY(val, d);
 
