@@ -5385,7 +5385,9 @@
         </member>
         <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
             <summary>
+            <para>NOT USED ANYMORE</para>
             Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
+            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">

@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who think that it should be free.
+  It's free software for those who think that it should be free.
 */
 
 using System;
@@ -1083,8 +1083,8 @@ namespace DBreeze.Transactions
                     }
                     else
                     {
-                        //In first element we got value itself
-                        //In other - stored indexes
+                        //In the first element we got value itself
+                        //In the other - stored indexes
                         foreach (var idx in nidx)
                         {
                             if (d.ContainsKey(idx.Key))

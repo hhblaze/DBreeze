@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who think that it should be free.
+  It's free software for those who think that it should be free.
 */
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,9 @@ namespace DBreeze.Transactions
         
         bool isUsed = false;
         /// <summary>
+        /// <para>NOT USED ANYMORE</para>
         /// Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
+        /// <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
         /// </summary>
         public int AutomaticFlushLimitQuantityPerTable = 1000000;
                
@@ -95,8 +97,9 @@ namespace DBreeze.Transactions
 
             _cnt[tableName]++;
 
-            if (_cnt[tableName] >= AutomaticFlushLimitQuantityPerTable)
-                Flush(tableName);
+            //Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter) 
+            //if (_cnt[tableName] >= AutomaticFlushLimitQuantityPerTable)
+            //    Flush(tableName);
         }
 
         /// <summary>
@@ -144,8 +147,9 @@ namespace DBreeze.Transactions
 
             _cnt[tableName]++;
 
-            if (_cnt[tableName] >= AutomaticFlushLimitQuantityPerTable)
-                Flush(tableName);
+            //Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter) 
+            //if (_cnt[tableName] >= AutomaticFlushLimitQuantityPerTable)
+            //    Flush(tableName);
         }
 
 

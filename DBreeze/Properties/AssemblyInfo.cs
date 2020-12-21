@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who think that it should be free.
+  It's free software for those who think that it should be free.
 */
 
 using System.Reflection;
@@ -39,5 +39,5 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 //[assembly: AssemblyVersion("1.061.2013.1120")]
 //[assembly: AssemblyFileVersion("1.061.2013.1120")]
-[assembly: AssemblyVersion("1.096.2020.1218")]
-[assembly: AssemblyFileVersion("1.096.2020.1218")]
+[assembly: AssemblyVersion("1.097.2020.1221")]
+[assembly: AssemblyFileVersion("1.097.2020.1221")]

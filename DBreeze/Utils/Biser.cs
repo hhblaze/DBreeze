@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
-  It's a free software for those, who think that it should be free.
+  It's free software for those who think that it should be free.
 
   This class uses parts of code from https://github.com/topas/VarintBitConverter. That is published under BSD license [27.06.2016].
 */
