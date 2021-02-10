@@ -48,7 +48,7 @@ Key features:
 - High speed of random keys batch inserts and updates (update mode is selectable).
 - Range selects / Traversing (Forward, Backward, From/To, Skip, StartsWith etc). Remove keys, change keys.
 - Keys and values, on the low level, are always byte arrays. 
-- Max. key size is 65KB, max. value size is 2GB. Value can be represented as a set of columns, where can be stored data types of fixed or dynamic length. Every dynamic datablock can be of size 2GB. 
+- Max. key size is 65KB, max. value size is 2GB. Value can be represented as a set of columns, where can be stored data types of fixed or dynamic length. Every dynamic datablock (BLOB) can be of size 2GB. 
 - Rich set of conversion functions from/to between byte[] and other data types.
 - Nested / Fractal tables which can reside inside of master tables values.
 - Incremental backup/restore option.
