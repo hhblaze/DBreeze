@@ -129,6 +129,12 @@
     <Compile Include="..\DBreeze\Utils\BiserJsonSettings.cs">
       <Link>Utils\BiserJsonSettings.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs">
+      <Link>Utils\MultiKeyDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionary.cs">
+      <Link>Utils\MultiKeySortedDictionary.cs</Link>
+    </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />
     <Compile Include="DataTypes\DbAscii.cs" />

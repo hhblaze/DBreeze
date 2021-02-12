@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.097.2020.1221</Version>
-    <AssemblyVersion>1.097.2020.1221</AssemblyVersion>
-    <FileVersion>1.097.2020.1221</FileVersion>
+    <Version>1.098.2021.0212</Version>
+    <AssemblyVersion>1.098.2021.0212</AssemblyVersion>
+    <FileVersion>1.098.2021.0212</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -77,6 +77,8 @@
     <Compile Include="..\DBreeze\Utils\BiserJsonDecoder.cs" Link="Utils\BiserJsonDecoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserJsonEncoder.cs" Link="Utils\BiserJsonEncoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserJsonSettings.cs" Link="Utils\BiserJsonSettings.cs" />
+    <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs" Link="Utils\MultiKeyDictionary.cs" />
+    <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionary.cs" Link="Utils\MultiKeySortedDictionary.cs" />
   </ItemGroup>
 
   <ItemGroup>
