@@ -56,6 +56,14 @@ namespace DBreeze
             internSession iSession = null;
             bool ret = true;
 
+            
+#if NET35 || NETr40
+            int ManagedThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+#else
+            int ManagedThreadId = Environment.CurrentManagedThreadId;
+
+#endif
+
             _sync.EnterWriteLock();
             try
             {
@@ -78,7 +86,7 @@ namespace DBreeze
                     foreach (var ses in _waitingSessionSequence)
                     {
 
-                        if (ses == System.Threading.Thread.CurrentThread.ManagedThreadId)
+                        if (ses == ManagedThreadId)
                             break;
 
                         _waitingSessions.TryGetValue(ses, out xSes);
@@ -95,7 +103,7 @@ namespace DBreeze
                     }
                 }
 
-                if (_waitingSessions.TryGetValue(System.Threading.Thread.CurrentThread.ManagedThreadId, out iSession))
+                if (_waitingSessions.TryGetValue(ManagedThreadId, out iSession))
                 {
                     //This session was in the waiting list once
                     if (ret)
@@ -103,8 +111,8 @@ namespace DBreeze
                         //We have to take away session from waiting list
                         iSession.gator.Dispose();
                         iSession.gator = null;
-                        _waitingSessions.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
-                        _waitingSessionSequence.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                        _waitingSessions.Remove(ManagedThreadId);
+                        _waitingSessionSequence.Remove(ManagedThreadId);
                     }
                     else
                     {
@@ -123,15 +131,15 @@ namespace DBreeze
                     if (!ret)
                     {
                         iSession.gator = new DbThreadsGator(false);
-                        _waitingSessions.Add(System.Threading.Thread.CurrentThread.ManagedThreadId, iSession);
-                        _waitingSessionSequence.Add(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                        _waitingSessions.Add(ManagedThreadId, iSession);
+                        _waitingSessionSequence.Add(ManagedThreadId);
                     }
                 }
 
                 if (ret)
                 {
                     //Adding into accepted sessions                    
-                    _acceptedSessions.Add(System.Threading.Thread.CurrentThread.ManagedThreadId, iSession);
+                    _acceptedSessions.Add(ManagedThreadId, iSession);
                 }
             }
             finally
@@ -165,10 +173,18 @@ namespace DBreeze
             internSession iSession = null;
             List<int> ws = null;
 
+
+#if NET35 || NETr40
+            int ManagedThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+#else
+            int ManagedThreadId = Environment.CurrentManagedThreadId;
+
+#endif
+
             _sync.EnterWriteLock();
             try
             {
-                if (!_acceptedSessions.TryGetValue(System.Threading.Thread.CurrentThread.ManagedThreadId, out iSession))
+                if (!_acceptedSessions.TryGetValue(ManagedThreadId, out iSession))
                     return; //Should not happen
 
                 if (iSession.gator != null)
@@ -177,7 +193,7 @@ namespace DBreeze
                     iSession.gator = null;
                 }
 
-                _acceptedSessions.Remove(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                _acceptedSessions.Remove(ManagedThreadId);
 
                 ws = _waitingSessionSequence.ToList();
             }

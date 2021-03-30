@@ -500,7 +500,11 @@ namespace DBreeze.Transactions
 
             if (transactionUnit != null)
             {
+#if NET35 || NETr40
                 if (System.Threading.Thread.CurrentThread.ManagedThreadId != transactionThreadId)
+#else           
+                if (Environment.CurrentManagedThreadId != transactionThreadId)
+#endif     
                 {
                     this.UnregisterTransaction(transactionThreadId);
 
@@ -565,7 +569,11 @@ namespace DBreeze.Transactions
 
             if (transactionUnit != null)
             {
-                if (!ignoreThreadIdCheck && System.Threading.Thread.CurrentThread.ManagedThreadId != transactionThreadId)
+#if NET35 || NETr40
+            if (!ignoreThreadIdCheck && System.Threading.Thread.CurrentThread.ManagedThreadId != transactionThreadId)
+#else                
+                if (!ignoreThreadIdCheck && Environment.CurrentManagedThreadId != transactionThreadId)
+#endif                    
                 {
                     this.UnregisterTransaction(transactionThreadId);
                     throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_CANBEUSED_FROM_ONE_THREAD);
