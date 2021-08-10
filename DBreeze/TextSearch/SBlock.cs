@@ -351,12 +351,58 @@ namespace DBreeze.TextSearch
 
             //New Logical block is always a result of operation between 2 blocks
             //Usual block is added via TextSearchManager
-                        
-            if (this._tsm.ExternalDocumentIdStart != null)
-                this._tsm.DocIdA = this._tsm.e2i.Select<byte[], int>(this._tsm.ExternalDocumentIdStart).Value;
 
-            if (this._tsm.ExternalDocumentIdStop != null)
-                this._tsm.DocIdZ = this._tsm.e2i.Select<byte[], int>(this._tsm.ExternalDocumentIdStop).Value;
+            if(this._tsm.Descending)
+            {
+                if (this._tsm.ExternalDocumentIdStart != null && this._tsm.ExternalDocumentIdStop != null)
+                {
+                    {
+                        var v1 = this._tsm.e2i.SelectBackwardFromTo<byte[], int>(this._tsm.ExternalDocumentIdStart, true, this._tsm.ExternalDocumentIdStop, true).FirstOrDefault();
+                        if (v1 != null && v1.Exists)
+                        {
+                            this._tsm.DocIdA = v1.Value;
+                        }
+                    }
+
+                    {
+                        var v1 = this._tsm.e2i.SelectForwardFromTo<byte[], int>(this._tsm.ExternalDocumentIdStop, true, this._tsm.ExternalDocumentIdStart, true).FirstOrDefault();
+                        if (v1 != null && v1.Exists)
+                        {
+                            this._tsm.DocIdZ = v1.Value;
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                if (this._tsm.ExternalDocumentIdStart != null && this._tsm.ExternalDocumentIdStop != null)
+                {
+                    {
+                        var v1 = this._tsm.e2i.SelectForwardFromTo<byte[], int>(this._tsm.ExternalDocumentIdStart, true, this._tsm.ExternalDocumentIdStop, true).FirstOrDefault();
+                        if (v1 != null && v1.Exists)
+                        {
+                            this._tsm.DocIdA = v1.Value;
+                        }
+                    }
+
+                    {
+                        var v1 = this._tsm.e2i.SelectBackwardFromTo<byte[], int>(this._tsm.ExternalDocumentIdStop, true, this._tsm.ExternalDocumentIdStart, true).FirstOrDefault();
+                        if (v1 != null && v1.Exists)
+                        {
+                            this._tsm.DocIdZ = v1.Value;
+                        }
+                    }
+                }
+
+            }
+
+
+            //if (this._tsm.ExternalDocumentIdStart != null)
+            //    this._tsm.DocIdA = this._tsm.e2i.Select<byte[], int>(this._tsm.ExternalDocumentIdStart).Value;
+
+            //if (this._tsm.ExternalDocumentIdStop != null)
+            //    this._tsm.DocIdZ = this._tsm.e2i.Select<byte[], int>(this._tsm.ExternalDocumentIdStop).Value;
 
 
 

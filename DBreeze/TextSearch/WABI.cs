@@ -446,7 +446,12 @@ namespace DBreeze.TextSearch
                                         mask = (byte)(1 << j);
 
                                         if ((res & mask) != 0)
+                                        {
+                                            if (docId < docStop)
+                                                break;
+
                                             yield return (uint)docId;
+                                        }
 
                                         docId--;
                                     }
@@ -523,7 +528,11 @@ namespace DBreeze.TextSearch
                                         mask = (byte)(1 << j);
 
                                         if ((res & mask) != 0)
+                                        {
+                                            if (docId > docStop)
+                                                break;
                                             yield return (uint)docId;
+                                        }
 
                                         docId++;
                                     }

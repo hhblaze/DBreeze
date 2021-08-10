@@ -98,6 +98,71 @@ namespace VisualTester
 
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
+            this.btTest3_Click(null, null);
+
+            using (var tran = xfre.GetTransaction())
+            {
+                var tsm = tran.TextSearch("tblText");
+
+                tsm.ExternalDocumentIdStart = ((long)14).ToBytes();
+                tsm.ExternalDocumentIdStop = ((long)9).ToBytes();
+
+                //tsm.ExternalDocumentIdStart = ((long)993).ToBytes();
+                //tsm.ExternalDocumentIdStop = ((long)990).ToBytes();
+
+                //tsm.ExternalDocumentIdStart = ((long)990).ToBytes();
+                //tsm.ExternalDocumentIdStop = ((long)993).ToBytes();
+
+                //tsm.ExternalDocumentIdStart = ((long)1990).ToBytes();
+                //tsm.ExternalDocumentIdStop = ((long)1993).ToBytes();
+                //tsm.Descending = false;
+
+                //tsm.ExternalDocumentIdStart = new byte[] { 1, 2, 5 };
+                //tsm.ExternalDocumentIdStop = new byte[] { 1, 2, 4 };
+
+                //tsm.Descending = false;
+
+                foreach (var w in
+                  tsm.BlockAnd("boy", "UIO")
+                  .GetDocumentIDs())
+                {
+                    Console.WriteLine(w.To_Int64_BigEndian());
+                }
+
+                //var lst = new List<string> { "#PK_3", "#PK_6" };
+                //foreach (var item in tsm.Block(null, string.Join(" ", lst), false).GetDocumentIDs())
+                //{
+                //    cl($"{item.Substring(0, 4).To_Int32_BigEndian()}-{item.Substring(4, 4).To_Int32_BigEndian()}");
+                //}
+            }
+            return;
+
+            using (var tran = xfre.GetTransaction())
+            {
+                //tran.TextInsert("tblText", new byte[] { 1, 2, 3 }, "boy", "UIO");
+                //tran.TextInsert("tblText", new byte[] { 1, 2, 4 }, "boy", "UIO");
+                //tran.TextInsert("tblText", new byte[] { 1, 2, 5 }, "boy", "UIO");
+                //tran.TextInsert("tblText", new byte[] { 1, 2, 6 }, "boy", "UIO");
+
+
+                for (int i = 8; i < 994; i++)
+                {
+                    tran.TextInsert("tblText", ((long)i).ToBytes(), "boy", "UIO");
+                }
+
+                tran.Commit();
+
+                //for (int i = 0; i < 10; i++)
+                //{
+                //    var pk = i.To_4_bytes_array_BigEndian().Concat((i * 10).To_4_bytes_array_BigEndian());
+                //    tran.TextInsert(tableNameTs, pk, "", $"#PK_{i}");
+                //tran.Insert<byte[], int>(tableName, pk, i,);
+                //}
+                //tran.Commit();
+            }
+
+
+                return;
             Task.Run(() =>
             {
                 using (var t = xfre.GetTransaction())
@@ -194,6 +259,7 @@ namespace VisualTester
             if (xfre == null)
                 xfre = new DBreezeEngine(@"D:\temp\DBR1");
 
+            return;
 
             xfre.Scheme.DeleteTable("tb");
 
