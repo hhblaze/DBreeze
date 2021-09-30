@@ -70,8 +70,9 @@ namespace DBreeze.Transactions
             ManagedThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
 #else
             ManagedThreadId = Environment.CurrentManagedThreadId;
-            
-#endif            
+            //ManagedThreadId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this); 
+
+#endif
             _transactionUnit = transactionUnit;
 
             switch(transactionType)
