@@ -24,8 +24,9 @@ namespace Deployer
             MyPath += @"..\..\..\..\bin\";
 #endif
 
-            di = new DirectoryInfo(MyPath);           
-            string msbldpath = MyPath + "run_msbuild.bat";
+            di = new DirectoryInfo(MyPath);
+            //string msbldpath = MyPath + "run_msbuild.bat";
+            string msbldpath = MyPath + "run_msbuild19.bat";
 
             string fileVersion = "";
             string productVersion = "";
@@ -41,14 +42,24 @@ namespace Deployer
             
             string prj = File.ReadAllText(MyPath + @"..\..\DBreeze\DBreeze.csproj");
 
+            /*
+             
+                                Currently on .NET Frameworks, initial DBREEZE is .NET 4.7.2, so its constants are 
+                                <DefineConstants>TRACE;NET40;NET472</DefineConstants> [21]
+                                When constant is used it means that code-block can be used starting from this framework and higher
+                                <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion> [19]
+             */
+
             //.NET Framework 3.5
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
             tpr = prj;
             Console.WriteLine("Creating .NET35");
             tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-            tpr = tpr.Replace(rpl[2], rpl[3]); //4.5 on 3.5
-            tpr = tpr.Replace(rpl[5], rpl[6]); //NET40 on //NET35
+            //tpr = tpr.Replace(rpl[2], rpl[3]); //4.5 on 3.5
+            tpr = tpr.Replace(rpl[19], rpl[3]); //4.7.2 on 3.5 //<TargetFrameworkVersion>v3.5</TargetFrameworkVersion> [3]
+            //tpr = tpr.Replace(rpl[5], rpl[6]); //NET40 on //NET35
+            tpr = tpr.Replace(rpl[21], rpl[6]); //NET472 on //NET35
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -67,8 +78,8 @@ namespace Deployer
             tpr = prj;
             Console.WriteLine("Creating .NET40");
             tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-            tpr = tpr.Replace(rpl[2], rpl[4]); //4.5 on 4.0
-            tpr = tpr.Replace(rpl[5], rpl[7]); //NET40 on //NET40;NETr40
+            tpr = tpr.Replace(rpl[19], rpl[4]); //4.7.2 on 4.0
+            tpr = tpr.Replace(rpl[21], rpl[7]); //NET472 on //NET40;NETr40
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -87,7 +98,8 @@ namespace Deployer
             tpr = prj;
             Console.WriteLine("Creating .NET4.6.1");
             tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-            tpr = tpr.Replace(rpl[2], rpl[11]); //4.5 on 4.6.1            
+            tpr = tpr.Replace(rpl[19], rpl[11]); //4.7.2 on 4.6.1            
+            tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -106,7 +118,8 @@ namespace Deployer
             tpr = prj;
             Console.WriteLine("Creating .NET4.6.2");
             tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-            tpr = tpr.Replace(rpl[2], rpl[12]); //4.5 on 4.6.1            
+            tpr = tpr.Replace(rpl[19], rpl[12]); //4.7.2 on 4.6.2
+            tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -124,7 +137,8 @@ namespace Deployer
             tpr = prj;
             Console.WriteLine("Creating .NET4.7");
             tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-            tpr = tpr.Replace(rpl[2], rpl[18]); //4.5 on 4.7            
+            tpr = tpr.Replace(rpl[19], rpl[18]); //4.7.2 on 4.7
+            tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -136,16 +150,15 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET47\DBreeze.dll", true);
             File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET47\DBreeze.XML", true);
 
-
-            //.NET Framework Xamarin
+            //.NET Framework 4.72
             if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
             tpr = prj;
-            Console.WriteLine("Creating Xamarin");
-            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release            
-            tpr = tpr.Replace(rpl[8], ""); //System.Web.Extensions
-            tpr = tpr.Replace(rpl[9], ""); //DbMJSON
-            tpr = tpr.Replace(rpl[10], ""); //MJsonSerializator
+            Console.WriteLine("Creating .NET4.72");
+            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+            tpr = tpr.Replace(rpl[2], rpl[19]); //4.5 on 4.7.2            
+            //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET472
+
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -154,8 +167,30 @@ namespace Deployer
             Console.WriteLine("done " + noerror);
             if (!noerror)
                 return;
-            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"XAMARIN\DBreeze.dll", true);
-            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"XAMARIN\DBreeze.XML", true);
+            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET472\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET472\DBreeze.XML", true);
+
+
+            ////.NET Framework Xamarin
+            ////                      (removing, it must support one of .NET Standard versions https://github.com/dotnet/standard/blob/master/docs/versions.md)
+            //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+            //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+            //tpr = prj;
+            //Console.WriteLine("Creating Xamarin");
+            //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release            
+            //tpr = tpr.Replace(rpl[8], ""); //System.Web.Extensions
+            //tpr = tpr.Replace(rpl[9], ""); //DbMJSON
+            //tpr = tpr.Replace(rpl[10], ""); //MJsonSerializator
+
+            //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+            //Compile(msbldpath, "DBreeze");
+
+            //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+            //Console.WriteLine("done " + noerror);
+            //if (!noerror)
+            //    return;
+            //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"XAMARIN\DBreeze.dll", true);
+            //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"XAMARIN\DBreeze.XML", true);
 
 
             //.NET 4.5
@@ -163,7 +198,9 @@ namespace Deployer
                 Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
             tpr = prj;
             Console.WriteLine("Creating .NET4.5");
-            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+            tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
+            tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
 
             File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze");
@@ -203,26 +240,26 @@ namespace Deployer
             File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
 
 
-            //.NET UWP            
-            if (Directory.Exists(MyPath + @"..\..\DBreeze.UWP\bin\Release"))
-                Directory.Delete(MyPath + @"..\..\DBreeze.UWP\bin\Release", true);
-            //msbldpath = MyPath + "run_msbuild_uwp.bat";
-            prj = File.ReadAllText(MyPath + @"..\..\DBreeze.UWP\DBreeze.UWP.csproj");
-            tpr = prj;
-            Console.WriteLine("Creating .NET UWP");
-            tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+            ////.NET UWP            
+            //if (Directory.Exists(MyPath + @"..\..\DBreeze.UWP\bin\Release"))
+            //    Directory.Delete(MyPath + @"..\..\DBreeze.UWP\bin\Release", true);
+            ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+            //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.UWP\DBreeze.UWP.csproj");
+            //tpr = prj;
+            //Console.WriteLine("Creating .NET UWP");
+            //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
 
-            File.WriteAllText(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj", tpr);
-            Compile(msbldpath, "DBreeze.UWP");
+            //File.WriteAllText(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj", tpr);
+            //Compile(msbldpath, "DBreeze.UWP");
 
-            noerror = File.Exists(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.dll");
-            Console.WriteLine("done " + noerror);
-            if (!noerror)
-                return;
-            File.Copy(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.dll", MyPath + @"UWP\DBreeze.dll", true);
-            File.Copy(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.XML", MyPath + @"UWP\DBreeze.XML", true);
+            //noerror = File.Exists(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.dll");
+            //Console.WriteLine("done " + noerror);
+            //if (!noerror)
+            //    return;
+            //File.Copy(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.dll", MyPath + @"UWP\DBreeze.dll", true);
+            //File.Copy(MyPath + @"..\..\DBreeze.UWP\bin\Release\DBreeze.XML", MyPath + @"UWP\DBreeze.XML", true);
 
-            File.Delete(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj");
+            //File.Delete(MyPath + @"..\..\DBreeze.UWP\DBreezeTMP.csproj");
 
 
             //.NET Core App 1.0 (default)           
@@ -279,6 +316,8 @@ namespace Deployer
             Console.WriteLine("Creating netcoreapp2.0");
             //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
             tpr = tpr.Replace(rpl[13], rpl[15]);
+            tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>");
+           // tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
 
             File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze.NetCoreApp");
@@ -323,7 +362,7 @@ namespace Deployer
             prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
             tpr = prj;
             Console.WriteLine("Creating .NET Standard 2.0");
-            tpr = tpr.Replace(rpl[16], rpl[17]);    //Debug on Release           
+            tpr = tpr.Replace(rpl[16], rpl[17]);    //Debug on Release        //<TargetFramework>netstandard1.6</TargetFramework> 16 , <TargetFramework>netstandard2.0</TargetFramework> 17    
 
             File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
             Compile(msbldpath, "DBreeze.NetStandard");
@@ -336,6 +375,32 @@ namespace Deployer
             File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.XML", MyPath + @"NETSTANDARD2_0\DBreeze.XML", true);
 
             File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+
+
+            //.NET STANDARD 2.1           
+            if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
+                Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);
+            //msbldpath = MyPath + "run_msbuild_uwp.bat";
+            prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+            tpr = prj;
+            Console.WriteLine("Creating .NET Standard 2.1");
+            tpr = tpr.Replace(rpl[16], rpl[20]);    //<TargetFramework>netstandard1.6</TargetFramework> 16 , <TargetFramework>netstandard2.1</TargetFramework> 20 
+            tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>",
+                "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;</DefineConstants>");   
+            
+            File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
+            Compile(msbldpath, "DBreeze.NetStandard");
+
+            noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.dll");
+            Console.WriteLine("done " + noerror);
+            if (!noerror)
+                return;
+            File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.dll", MyPath + @"NETSTANDARD2_1\DBreeze.dll", true);
+            File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.XML", MyPath + @"NETSTANDARD2_1\DBreeze.XML", true);
+
+            File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+
+
 
 
             Console.WriteLine("Packing DLLs and ULTIMATE ZIP");
@@ -366,6 +431,7 @@ namespace Deployer
                     productVersion = FileVersionInfo.GetVersionInfo(f.FullName).ProductVersion;
                 }
 
+                //Initial zip files must be copied manually, because we must give them name in the end, like _NET472
                 foreach (var f in d.GetFiles("DBreeze_*.zip"))
                 {
                     using (ZipArchive archive = ZipFile.Open(f.FullName, ZipArchiveMode.Update))
@@ -373,7 +439,7 @@ namespace Deployer
                         archive.GetEntry("DBreeze.dll").Delete();
                         archive.GetEntry("DBreeze.XML").Delete();
                         archive.CreateEntryFromFile(f.Directory + @"\DBreeze.dll", "DBreeze.dll");
-                        archive.CreateEntryFromFile(f.Directory + @"\DBreeze.XML", "DBreeze.XML");                                                
+                        archive.CreateEntryFromFile(f.Directory + @"\DBreeze.XML", "DBreeze.XML");
                     }
                     File.Move(f.FullName, f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24));
 
@@ -384,6 +450,7 @@ namespace Deployer
 
                     break;
                 }
+
             }
 
             //Copying documentation
@@ -429,10 +496,11 @@ namespace Deployer
 
                 File.Delete(MyPath + @"..\Nuget\Actual\DBreeze.nuspec");
 
-                archive.GetEntry("lib/MonoAndroid/DBreeze.dll").Delete();
-                archive.GetEntry("lib/MonoAndroid/DBreeze.XML").Delete();
-                archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.dll", "lib/MonoAndroid/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.xml", "lib/MonoAndroid/DBreeze.XML", CompressionLevel.Optimal);
+                ////REMARKED CHECKED, XAMARIN MOVING TO .NET STANDARD
+                //archive.GetEntry("lib/MonoAndroid/DBreeze.dll").Delete();
+                //archive.GetEntry("lib/MonoAndroid/DBreeze.XML").Delete();
+                //archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.dll", "lib/MonoAndroid/DBreeze.dll", CompressionLevel.Optimal);
+                //archive.CreateEntryFromFile(MyPath + "XAMARIN" + @"\DBreeze.xml", "lib/MonoAndroid/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/net35/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net35/DBreeze.XML").Delete();
@@ -459,15 +527,20 @@ namespace Deployer
                 archive.CreateEntryFromFile(MyPath + "NET47" + @"\DBreeze.dll", "lib/net47/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NET47" + @"\DBreeze.xml", "lib/net47/DBreeze.XML", CompressionLevel.Optimal);
 
+                archive.GetEntry("lib/net472/DBreeze.dll").Delete();
+                archive.GetEntry("lib/net472/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NET472" + @"\DBreeze.dll", "lib/net472/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET472" + @"\DBreeze.xml", "lib/net472/DBreeze.XML", CompressionLevel.Optimal);
+
                 archive.GetEntry("lib/net45/DBreeze.dll").Delete();
                 archive.GetEntry("lib/net45/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NET45" + @"\DBreeze.dll", "lib/net45/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NET45" + @"\DBreeze.xml", "lib/net45/DBreeze.XML", CompressionLevel.Optimal);
 
-                archive.GetEntry("lib/netcore451/DBreeze.dll").Delete();
-                archive.GetEntry("lib/netcore451/DBreeze.XML").Delete();
-                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcore451/DBreeze.dll", CompressionLevel.Optimal);
-                archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.xml", "lib/netcore451/DBreeze.XML", CompressionLevel.Optimal);
+                //archive.GetEntry("lib/netcore451/DBreeze.dll").Delete();
+                //archive.GetEntry("lib/netcore451/DBreeze.XML").Delete();
+                //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netcore451/DBreeze.dll", CompressionLevel.Optimal);
+                //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.xml", "lib/netcore451/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/netcoreapp1.0/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netcoreapp1.0/DBreeze.XML").Delete();
@@ -497,6 +570,11 @@ namespace Deployer
                 archive.GetEntry("lib/netstandard2.0/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.dll", "lib/netstandard2.0/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.xml", "lib/netstandard2.0/DBreeze.XML", CompressionLevel.Optimal);
+
+                archive.GetEntry("lib/netstandard2.1/DBreeze.dll").Delete();
+                archive.GetEntry("lib/netstandard2.1/DBreeze.XML").Delete();
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.dll", "lib/netstandard2.1/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.xml", "lib/netstandard2.1/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.dll").Delete();
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.XML").Delete();

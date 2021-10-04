@@ -130,6 +130,11 @@ namespace DBreeze.Utils
         int dimension = -1;
 
         /// <summary>
+        /// Total count of elements in MKD
+        /// </summary>
+        public long Count = 0;
+
+        /// <summary>
         /// 
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -163,6 +168,7 @@ namespace DBreeze.Utils
                     if (p == tp - 1)
                     {//last
                         cd[skt] = value;
+                        Count++;
                     }
                     else
                     {
@@ -364,6 +370,7 @@ namespace DBreeze.Utils
             d.Clear();
 
             dimension = -1;
+            Count = 0;
         }
 
         /// <summary>
@@ -426,6 +433,8 @@ namespace DBreeze.Utils
             int p = 0;
             int tp = keys.Length;
             object skt = null;
+            int cdLen = 0;
+            int removedQuantity = 1;
 
             foreach (var kt in keys)
             {
@@ -435,7 +444,22 @@ namespace DBreeze.Utils
                 skt = kt;
 
                 if (p == tp - 1)
+                {
+
+                    if (dimension != keys.Length)
+                    {//Iterating deep to find out how many in deep elements we delete
+                        removedQuantity = 0;
+                        foreach (var el in this.GetByKeyStart(keys))
+                        {
+                            removedQuantity++;
+                        }
+                    }
+
+                    cdLen = cd.Count;
                     cd.Remove(skt);
+                    if (cdLen != cd.Count)
+                        Count -= removedQuantity;
+                }
 
                 if (!cd.TryGetValue(skt, out var obj))
                     return;

@@ -341,9 +341,24 @@
             var mkdResBool1 = mkd.TryGetValue&lt;List&lt;string&gt;&gt;(out var dder1, 11L, "key22");
             </summary>
         </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary.ByteArraySerializator">
+            <summary>
+            External Serializer for MultiKeyDictionary
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary.ByteArrayDeSerializator">
+            <summary>
+            External deserializer for MultiKeyDictionary
+            </summary>
+        </member>
         <member name="F:DBreeze.Utils.MultiKeyDictionary.Sync">
             <summary>
             Sync object. Not instantiated
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary.Count">
+            <summary>
+            Total count of elements in MKD
             </summary>
         </member>
         <member name="M:DBreeze.Utils.MultiKeyDictionary.Add``1(``0,System.Object[])">
@@ -425,6 +440,11 @@
         <member name="F:DBreeze.Utils.MultiKeySortedDictionary.Sync">
             <summary>
             Sync object. Not instantiated
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeySortedDictionary.Count">
+            <summary>
+            Total count of elements in MKD
             </summary>
         </member>
         <member name="M:DBreeze.Utils.MultiKeySortedDictionary.Add``1(``0,System.Object[])">

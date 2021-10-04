@@ -96,8 +96,71 @@ namespace VisualTester
         //    }
         //}
 
+      
+
+
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
+
+            MultiKeyDictionary omkd = new MultiKeyDictionary();
+            omkd.Add("fdf", 1, 2, 3);
+            omkd.Add("fdf", 1, 2, 4);
+            omkd.Add("fdf", 1, 3, 4);
+            omkd.Add("fdf", 1, 3, 4);
+            omkd.Add("fdf", 1, 3, 5);
+            Console.WriteLine(omkd.Count);
+            omkd.Remove(1, 3, 4);
+            Console.WriteLine(omkd.Count);
+            omkd.Remove(1, 3);
+            Console.WriteLine(omkd.Count);
+
+            return;
+            MultiKeyDictionary.ByteArraySerializator = ProtobufHelper.SerializeProtobuf;
+            MultiKeyDictionary.ByteArrayDeSerializator = ProtobufHelper.DeserializeProtobuf;
+
+            //return;
+            MultiKeyDictionary<(int cid, int wid, int aid), string> mkd = new MultiKeyDictionary<(int, int, int), string>();
+
+            mkd.Add((1, 1, 1),"a1");
+            mkd.Add((1, 2, 3),"a3");
+            mkd.Add((1, 2, 4),"a4");
+            mkd.Add((1, 2, 5),"a4");
+            mkd.Add((1, 3, 9),"a9");
+            mkd.Add((1, 3, 10),"a10");
+            mkd.Add((2, 1, 7),"a7");
+            mkd.Add((2, 2, 8), "a8");
+
+            //var rr = mkd.TryGetValue((1, 16, 2), out var valll);
+            //var rr1 = mkd.TryGetValue((1, 3, 9), out var valll1);
+
+            //Console.WriteLine(mkd.Count);
+            ////mkd.Remove((1,2,3));
+            //mkd.Remove(1);
+            //Console.WriteLine(mkd.Count);
+            ////foreach (var el in mkd.GetByKeyStart((1,2)))
+            ////{
+            ////    Console.WriteLine(el.Item2);
+            ////}
+
+
+
+            foreach (var el in mkd.GetAll())
+            {
+                Console.WriteLine(el.Item2);
+            }
+
+            var newmkd = mkd.CloneMultiKeyDictionary();
+
+
+            //var tr = mkd.SerializeProtobuf();
+
+            var bt = mkd.Serialize();
+
+            MultiKeyDictionary<(int cid, int wid, int aid), string> mkd1 = new MultiKeyDictionary<(int, int, int), string>();
+            mkd1.Deserialize(bt);
+
+
+            return;
             this.btTest3_Click(null, null);
 
             using (var tran = xfre.GetTransaction())

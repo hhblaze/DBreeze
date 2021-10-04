@@ -1,13 +1,13 @@
 {
   "runtimeTarget": {
     "name": ".NETStandard,Version=v1.6/",
-    "signature": "97f2a35a1e5ee3a4908f68052fd14904e4ef328d"
+    "signature": ""
   },
   "compilationOptions": {},
   "targets": {
     ".NETStandard,Version=v1.6": {},
     ".NETStandard,Version=v1.6/": {
-      "DBreeze/1.099.2021.0810": {
+      "DBreeze/1.100.2021.0904": {
         "dependencies": {
           "NETStandard.Library": "1.6.1"
         },
@@ -821,7 +821,7 @@
     }
   },
   "libraries": {
-    "DBreeze/1.099.2021.0810": {
+    "DBreeze/1.100.2021.0904": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

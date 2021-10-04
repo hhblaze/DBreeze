@@ -7133,6 +7133,15 @@
             <param name="replaceWith"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Utils.StringProcessing.StringCompare(System.String,System.String,System.Boolean)">
+            <summary>
+            Compares two strings, when applyStr2ToStr1 is true and strings are differnt then str1 = str2 assignment.
+            </summary>
+            <param name="str1"></param>
+            <param name="str2"></param>
+            <param name="applyStr2ToStr1">Default false. str2 will be assigned to str1 when there is a difference in comparation</param>
+            <returns>Returns result of comparation of two strings</returns>
+        </member>
         <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
             <summary>
             Serializes object to XML string

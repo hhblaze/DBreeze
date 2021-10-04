@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Documentation/Dbreeze.Logo.png) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.099%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.100%20production-9933FF.svg) 
 [![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg)](https://github.com/hhblaze/DBreeze/blob/master/LICENSE)
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 [![NuGet Badge](https://buildstats.info/nuget/DBreeze)](https://www.nuget.org/packages/DBreeze/)
@@ -13,7 +13,7 @@ multi-threaded, transactional and ACID-compliant data management system for
 
 ...for servers, desktops, mobiles and internet-of-things... Made with C# 
 
-- It's free software for those who think that it should be free.
+- It's a free software for those who think that it should be free.
 - It has been used in our own production environment since June 2012.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since January 2014. 

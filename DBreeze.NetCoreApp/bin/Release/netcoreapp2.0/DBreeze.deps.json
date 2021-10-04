@@ -1,12 +1,12 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.0",
-    "signature": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    "signature": ""
   },
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v2.0": {
-      "DBreeze/1.099.2021.0810": {
+      "DBreeze/1.100.2021.0904": {
         "runtime": {
           "DBreeze.dll": {}
         }
@@ -14,7 +14,7 @@
     }
   },
   "libraries": {
-    "DBreeze/1.099.2021.0810": {
+    "DBreeze/1.100.2021.0904": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

@@ -9,14 +9,14 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.099.2021.0810</Version>
-    <AssemblyVersion>1.099.2021.0810</AssemblyVersion>
-    <FileVersion>1.099.2021.0810</FileVersion>
+    <Version>1.100.2021.0904</Version>
+    <AssemblyVersion>1.100.2021.0904</AssemblyVersion>
+    <FileVersion>1.100.2021.0904</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>
-    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;RELEASE;NETSTANDARD1_6;NETPORTABLE</DefineConstants>    
+    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -77,8 +77,12 @@
     <Compile Include="..\DBreeze\Utils\BiserJsonDecoder.cs" Link="Utils\BiserJsonDecoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserJsonEncoder.cs" Link="Utils\BiserJsonEncoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserJsonSettings.cs" Link="Utils\BiserJsonSettings.cs" />
+    <Compile Include="..\DBreeze\Utils\DeepCloneExpressionTree.cs" Link="Utils\DeepCloneExpressionTree.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs" Link="Utils\MultiKeyDictionary.cs" />
+    <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs" Link="Utils\MultiKeyDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionary.cs" Link="Utils\MultiKeySortedDictionary.cs" />
+    <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
+    <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
   </ItemGroup>
 
   <ItemGroup>

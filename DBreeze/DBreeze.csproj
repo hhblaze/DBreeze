@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DBreeze</RootNamespace>
     <AssemblyName>DBreeze</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NET40</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET40;NET472</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -32,7 +32,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;NET40</DefineConstants>
+    <DefineConstants>TRACE;NET40;NET472</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
@@ -136,10 +136,14 @@
     <Compile Include="Utils\DbThreadsGator.cs" />
     <Compile Include="Utils\MJsonSerializator.cs" />
     <Compile Include="Utils\MultiKeyDictionary.cs" />
+    <Compile Include="Utils\MultiKeySortedDictionaryTyped.cs" />
+    <Compile Include="Utils\MultiKeyDictionaryTyped.cs" />
     <Compile Include="Utils\MultiKeySortedDictionary.cs" />
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\Net35support.cs" />
+    <Compile Include="Utils\DeepCloneExpressionTree.cs" />
     <Compile Include="Utils\StringProcessing.cs" />
+    <Compile Include="Utils\ValueTupleDeconstructor.cs" />
     <Compile Include="Utils\XmlSerializator.cs" />
   </ItemGroup>
   <ItemGroup>

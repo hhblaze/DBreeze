@@ -107,5 +107,20 @@ namespace DBreeze.Utils
             return regex.Replace(input, m => replaceWith[m.Value]);
 
         }
+
+        /// <summary>
+        /// Compares two strings, when applyStr2ToStr1 is true and strings are differnt then str1 = str2 assignment.
+        /// </summary>
+        /// <param name="str1"></param>
+        /// <param name="str2"></param>
+        /// <param name="applyStr2ToStr1">Default false. str2 will be assigned to str1 when there is a difference in comparation</param>
+        /// <returns>Returns result of comparation of two strings</returns>
+        public static bool StringCompare(this string str1, string str2, bool applyStr2ToStr1 = false)
+        {
+            var cmp = (str1 ?? string.Empty) != (str2 ?? string.Empty);
+            if (applyStr2ToStr1 && !cmp)
+                str1 = str2;
+            return cmp;
+        }
     }
 }

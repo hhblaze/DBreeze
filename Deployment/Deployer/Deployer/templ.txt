@@ -17,6 +17,12 @@
 <TargetFramework>netstandard1.6</TargetFramework>
 <TargetFramework>netstandard2.0</TargetFramework>
 <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+<TargetFramework>netstandard2.1</TargetFramework>
+<DefineConstants>TRACE;NET40;NET472</DefineConstants>
+<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE/DefineConstants>
+<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
+
 
 
 
