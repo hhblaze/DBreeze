@@ -146,7 +146,8 @@ namespace VisualTester
 
             foreach (var el in mkd.GetAll())
             {
-                Console.WriteLine(el.Item2);
+                
+                Console.WriteLine(el.Item1.aid);
             }
 
             var newmkd = mkd.CloneMultiKeyDictionary();
