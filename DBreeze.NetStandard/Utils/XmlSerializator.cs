@@ -32,7 +32,7 @@ namespace DBreeze.Utils
                 sb.Append("<string>" + el + "</string>\n");
             }
             return sb.ToString();
-
+                        
             //System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
 
             //string r = String.Empty;

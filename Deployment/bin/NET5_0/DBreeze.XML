@@ -6166,6 +6166,29 @@
             Each local time must be converted into UTC and then represented as ISO
             </summary>
         </member>
+        <member name="T:DBreeze.Utils.DeepCopyByExpressionTrees">
+            <summary>
+            Superfast deep copier class, which uses Expression trees.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.DeepCopyByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
+            <summary>
+            Creates a deep copy of an object.
+            </summary>
+            <typeparam name="T">Object type.</typeparam>
+            <param name="original">Object to copy.</param>
+            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.CloneByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
+            <summary>
+            Creates a deep copy of an object (Works 3 times faster than ProtobufClone).
+            </summary>
+            <typeparam name="T">Object type.</typeparam>
+            <param name="original">Object to copy.</param>
+            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
+            <returns></returns>
+        </member>
         <member name="T:DBreeze.Utils.MultiKeyDictionary">
             <summary>
             Once added dimension must stay. 
@@ -6262,6 +6285,129 @@
             <param name="keys"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.Utils.MultiKeyDictionary`2">
+            <summary>
+            MultiKeyDictionary where key is a Tuple with more than one key.
+            Second generation of the non-generic MKD, supporting cloning, serialization, count and named returns due to the ValueTuple behaviour.
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary`2.Sync">
+            <summary>
+            Sync object. Not instantiated
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary`2.Count">
+            <summary>
+            Total count of elements in MKD
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Serialize">
+            <summary>
+            MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Deserialize(System.Byte[])">
+            <summary>
+            MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
+            </summary>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.CloneMultiKeyDictionary">
+            <summary>
+            Clones this multi-key dictionary into another instance
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Add(`0,`1)">
+            <summary>
+            Adds elements
+            </summary>
+            <param name="keys"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetAll">
+            <summary>
+            Iterate over all elements of the dictionary
+            </summary>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.MultiKeyDictionary`2.GetByKeyStart(System.Object[])" -->
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetRecursByKeyStart(System.Collections.Generic.Dictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object},System.Object[])">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetRecurs(System.Collections.Generic.Dictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object})">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Clear">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Contains(`0)">
+            <summary>
+            
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Remove(`0)">
+            <summary>
+            Removes key completely
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Remove(System.Object[])">
+            <summary>
+            Remove support deleting starting from key (if dimension is 3 then 3, 2 or 1 key can be supplied). To remove all use Clear()
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Get(`0)">
+            <summary>
+            Gets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.TryGetValue(`0,`1@)">
+            <summary>
+            Tries to get the value by the complete key
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.TryGetValue``1(``0@,System.Object[])">
+            <summary>
+            Internal dimensions are checked level up
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
         <member name="T:DBreeze.Utils.MultiKeySortedDictionary">
             <summary>
             Once added dimension must stay. 
@@ -6342,6 +6488,129 @@
         <member name="M:DBreeze.Utils.MultiKeySortedDictionary.TryGetValue``1(``0@,System.Object[])">
             <summary>
             
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MultiKeySortedDictionary`2">
+            <summary>
+            MultiKeySortedDictionary where key is a Tuple with more than one key
+            Second generation of the non-generic MKD, supporting cloning, serialization, count and named returns due to the ValueTuple behaviour.
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.#ctor">
+            <summary>
+            MultiKeySortedDictionary
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeySortedDictionary`2.Sync">
+            <summary>
+            Sync object. Not instantiated
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeySortedDictionary`2.Count">
+            <summary>
+            Total count of elements in MKD
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Serialize">
+            <summary>
+            MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Deserialize(System.Byte[])">
+            <summary>
+            MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
+            </summary>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.CloneMultiKeySortedDictionary">
+            <summary>
+            Clones this multi-key dictionary into another instance
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Add(`0,`1)">
+            <summary>
+            Adds elements
+            </summary>
+            <param name="keys"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetAll">
+            <summary>
+            Iterate over all elements of the dictionary
+            </summary>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.MultiKeySortedDictionary`2.GetByKeyStart(System.Object[])" -->
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetRecursByKeyStart(System.Collections.Generic.SortedDictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object},System.Object[])">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetRecurs(System.Collections.Generic.SortedDictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object})">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Clear">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Contains(`0)">
+            <summary>
+            
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Remove(`0)">
+            <summary>
+            Removes key completely
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Remove(System.Object[])">
+            <summary>
+            Remove support deleting starting from key (if dimension is 3 then 3, 2 or 1 key can be supplied). To remove all use Clear()
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Get(`0)">
+            <summary>
+            Gets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.TryGetValue(`0,`1@)">
+            <summary>
+            Tries to get the value by the complete key
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.TryGetValue``1(``0@,System.Object[])">
+            <summary>
+            Internal dimensions are checked level up
             </summary>
             <typeparam name="T"></typeparam>
             <param name="result"></param>

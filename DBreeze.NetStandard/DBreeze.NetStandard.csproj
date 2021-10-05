@@ -21,6 +21,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard1.6\DBreeze.xml</DocumentationFile>
+    <DefineConstants>TRACE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

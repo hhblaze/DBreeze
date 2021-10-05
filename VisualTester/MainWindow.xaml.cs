@@ -102,21 +102,29 @@ namespace VisualTester
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
 
-            MultiKeyDictionary omkd = new MultiKeyDictionary();
-            omkd.Add("fdf", 1, 2, 3);
-            omkd.Add("fdf", 1, 2, 4);
-            omkd.Add("fdf", 1, 3, 4);
-            omkd.Add("fdf", 1, 3, 4);
-            omkd.Add("fdf", 1, 3, 5);
-            Console.WriteLine(omkd.Count);
-            omkd.Remove(1, 3, 4);
-            Console.WriteLine(omkd.Count);
-            omkd.Remove(1, 3);
-            Console.WriteLine(omkd.Count);
+            //MultiKeyDictionary omkd = new MultiKeyDictionary();
+            //omkd.Add("fdf", 1, 2, 3);
+            //omkd.Add("fdf", 1, 2, 4);
+            //omkd.Add("fdf", 1, 3, 4);
+            //omkd.Add("fdf", 1, 3, 4);
+            //omkd.Add("fdf", 1, 3, 5);
+            //Console.WriteLine(omkd.Count);
+            //omkd.Remove(1, 3, 4);
+            //Console.WriteLine(omkd.Count);
+            //omkd.Remove(1, 3);
+            //Console.WriteLine(omkd.Count);
 
-            return;
+            //return;
             MultiKeyDictionary.ByteArraySerializator = ProtobufHelper.SerializeProtobuf;
             MultiKeyDictionary.ByteArrayDeSerializator = ProtobufHelper.DeserializeProtobuf;
+
+            MultiKeyDictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string> bmkd = new MultiKeyDictionary<(int, decimal, int, float, int, int, string, uint, double, int), string>();
+
+            bmkd.Add((1, 1m, 1, 45.6f, 34, 54, "fdf", 45, 34.7, 23), "a1");
+            bmkd.Add((2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 34.7, 23), "a1");
+
+            var bttr = bmkd.SerializeProtobuf();
+          
 
             //return;
             MultiKeyDictionary<(int cid, int wid, int aid), string> mkd = new MultiKeyDictionary<(int, int, int), string>();
@@ -1301,8 +1309,9 @@ namespace VisualTester
         
         private void btTest13_Click(object sender, RoutedEventArgs e)
         {
-            Benchmark bm=new Benchmark(@"D:\temp\DBreezeBenchmark");
-            //Benchmark bm = new Benchmark(@"S:\temp\DBreezeBenchmark");
+            //Benchmark bm=new Benchmark(@"D:\temp\DBreezeBenchmark");
+            //Benchmark bm = new Benchmark(@"H:\c\tmp\dbtest");//C:\temp\Testers\dbTest
+            Benchmark bm = new Benchmark(@"C:\temp\Testers\dbTest");//C:\temp\Testers\dbTest
             bm.Start();
     
         }

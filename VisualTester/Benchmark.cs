@@ -36,7 +36,7 @@ namespace VisualTester
 
             //CHECK FS
 
-            TEST_IN_MEMORY();
+            //TEST_IN_MEMORY();
 
             //TEST_10_1();
             //TEST_12();
@@ -66,7 +66,7 @@ namespace VisualTester
             //TEST_3_2();
             //TEST_3();
             //TEST_2();
-            //TEST_1_9();
+            TEST_1_9();
             //TEST_1();
 
             DBreeze.Diagnostic.SpeedStatistic.PrintOut();
@@ -893,7 +893,7 @@ namespace VisualTester
                     SpeedStatistic.StartCounter("INSERT RANDOM");
                     int vl = 0;
                     Random rnd = new Random();
-                    for (int i = 0; i < 100000; i++)
+                    for (int i = 0; i < 200000; i++)
                     {
                         vl = rnd.Next(1000000);
 

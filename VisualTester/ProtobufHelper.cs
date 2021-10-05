@@ -15,7 +15,7 @@ namespace VisualTester
             {
 
                 ret = ProtoBuf.Serializer.NonGeneric.Deserialize(T, ms);
-                //ms.Close();
+                ms.Close();
             }
 
             return ret;
@@ -33,7 +33,7 @@ namespace VisualTester
             {
                 ProtoBuf.Serializer.NonGeneric.Serialize(ms, data);
                 bt = ms.ToArray();
-                //ms.Close();
+                ms.Close();
             }
 
             return bt;
