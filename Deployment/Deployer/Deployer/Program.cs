@@ -678,8 +678,8 @@ namespace Deployer
                 archive.GetEntry("lib/netcoreapp2.0/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.dll", "lib/netcoreapp2.0/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.xml", "lib/netcoreapp2.0/DBreeze.XML", CompressionLevel.Optimal);
-
-                CreateLibEntry(archive, "lib/net5.0", MyPath + "NET5_0"); //<-------------------------------------------------------------------------------------- USE THAT FOR NEW ENTRIES
+                
+                CreateLibEntry(archive, "lib/net5.0", MyPath + "NET5_0"); //<--------------------------------------------------------------------------------- USE THAT FOR NEW ENTRIES
                 //archive.GetEntry("lib/net5.0/DBreeze.dll").Delete();
                 //archive.GetEntry("lib/net5.0/DBreeze.XML").Delete();
                 //archive.CreateEntryFromFile(MyPath + "NET5_0" + @"\DBreeze.dll", "lib/net5.0/DBreeze.dll", CompressionLevel.Optimal);
@@ -698,7 +698,7 @@ namespace Deployer
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.dll", "lib/netstandard2.0/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.xml", "lib/netstandard2.0/DBreeze.XML", CompressionLevel.Optimal);
 
-                CreateLibEntry(archive, "lib/netstandard2.1", MyPath + "NETSTANDARD2_1"); //<-------------------------------------------------------------------------------------- USE THAT FOR NEW ENTRIES
+                CreateLibEntry(archive, "lib/netstandard2.1", MyPath + "NETSTANDARD2_1"); //<------------------------------------------------------------------------------------ USE THAT FOR NEW ENTRIES
                 //archive.GetEntry("lib/netstandard2.1/DBreeze.dll").Delete();
                 //archive.GetEntry("lib/netstandard2.1/DBreeze.XML").Delete();
                 //archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.dll", "lib/netstandard2.1/DBreeze.dll", CompressionLevel.Optimal);
@@ -721,7 +721,7 @@ namespace Deployer
 
         static void CreateLibEntry(ZipArchive archive, string folderInArchive, string pathOrigin)        
         {
-            string wentry = folderInArchive;
+            string wentry = String.Empty;// folderInArchive;
             ZipArchiveEntry entry = null;
 
             Action<string> a = (fileName) =>
@@ -733,10 +733,9 @@ namespace Deployer
                 archive.CreateEntryFromFile(pathOrigin + @"\" + fileName, wentry, CompressionLevel.Optimal);
             };
 
-
-            if (archive.GetEntry(wentry) == null)
-                archive.CreateEntry(wentry, CompressionLevel.Optimal);
-
+            //if(archive.Entries.Where(r=>r.FullName.StartsWith(folderInArchive)).FirstOrDefault() == null)
+            //    archive.CreateEntry(wentry, CompressionLevel.Optimal);
+         
             a("DBreeze.dll");
             a("DBreeze.XML");
 
