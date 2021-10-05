@@ -90,7 +90,9 @@ namespace DBreeze.Utils
         public MultiKeySortedDictionary()
         {
             _key = default(TKey);
-            CreateDeconstructDelegate();
+
+            MKDHelper.CreateDeconstructDelegate(_key.Length, _key.GetType(), ref this.Impl);
+            MKDHelper.CreateSerializeDelegate(_key.Length, _key.GetType(), this.serSeq);
         }
 
 
@@ -110,6 +112,8 @@ namespace DBreeze.Utils
         /// Total count of elements in MKD
         /// </summary>
         public long Count = 0;
+        List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)> serSeq = new List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)>();
+
 
         /// <summary>
         /// MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
@@ -119,7 +123,25 @@ namespace DBreeze.Utils
         {
             if (MultiKeyDictionary.ByteArraySerializator == null)
                 return null;
-            return MultiKeyDictionary.ByteArraySerializator(this.GetAll());
+
+            Biser.Encoder enc = new Biser.Encoder();
+
+            enc.Add(this.Count);
+
+            foreach (var el in GetAllObj())
+            {
+
+                var cnt = el.Count - 1;
+                for (int ij = 0; ij < cnt; ij++)
+                {
+                    serSeq[ij].Item1(enc, el[ij]);
+                }
+
+                enc.Add(MultiKeyDictionary.ByteArraySerializator((TValue)el[el.Count - 1]));
+            }
+
+            return enc.Encode();
+
         }
 
         /// <summary>
@@ -128,16 +150,35 @@ namespace DBreeze.Utils
         /// <param name="data"></param>
         public void Deserialize(byte[] data)
         {
-            d.Clear();
-            Count = 0;
+            this.Clear();
+
 
             if (MultiKeyDictionary.ByteArrayDeSerializator == null)
                 return;
-            
-            foreach(var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey,TValue)>)))
+
+            //foreach (var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey, TValue)>)))
+            //{
+            //    d.Add(el.Item1, el.Item2);
+            //}
+
+            Biser.Decoder dec = new Biser.Decoder(data);
+
+            List<object> decres = new List<object>();
+
+            var totalElements = dec.GetLong();
+            for (int i = 0; i < totalElements; i++)
             {
-                d.Add(el.Item1, el.Item2);
+                for (int ij = 0; ij < _key.Length; ij++)
+                {
+                    decres.Add(serSeq[ij].Item2(dec));
+                }
+
+                this.Add((TKey)Impl(decres), (TValue)MultiKeyDictionary.ByteArrayDeSerializator(dec.GetByteArray(), typeof(TValue)));
+
+                decres.Clear();
             }
+
+
         }
 
         /// <summary>
@@ -218,48 +259,6 @@ namespace DBreeze.Utils
                 dimension = p;
         }
 
-        void CreateDeconstructDelegate()
-        {
-            int q = 8;
-
-            if (_key.Length <= 8)
-                q = _key.Length;
-
-            // MethodInfo[] methodInfos = this.GetType()
-            //.GetMethods(BindingFlags.NonPublic | BindingFlags.Static); // | BindingFlags..Instance
-            
-            var method = typeof(ValueTupleDeconstructor)//this.GetType()
-                      .GetMethods(BindingFlags.NonPublic | BindingFlags.Static).Where(r => r.Name == "Deconstruct" + _key.Length && r.ReturnParameter.ParameterType.Name == "ValueTuple`" + q + "").FirstOrDefault();
-
-            Type[] tps = new Type[_key.Length];           
-            int i = 0;            
-
-            foreach (var el in get_type_flds(_key.GetType()))
-            {
-                tps[i] = el;
-                i++;
-            }
-
-            method = method.MakeGenericMethod(tps);
-            var keyValues = Expression.Parameter(typeof(List<object>));
-            var call = Expression.Call(null, method, keyValues);
-            Impl = Expression.Lambda<Func<List<object>, TKey>>(call, keyValues).Compile();
-        }
-
-        IEnumerable<Type> get_type_flds(Type t)
-        {
-            foreach (var it in t.GetFields())
-            {
-                if (it.FieldType.AssemblyQualifiedName.StartsWith("System.ValueTuple`"))
-                {
-                    foreach (var el in get_type_flds(it.FieldType))
-                        yield return el;
-
-                }
-                else
-                    yield return it.FieldType;
-            }
-        }
 
        
         /// <summary>
@@ -284,7 +283,28 @@ namespace DBreeze.Utils
             }
         }
 
-            
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<List<object>> GetAllObj()
+        {
+            List<object> l = null;
+
+            if (dimension > -1)
+            {
+                l = new List<object>();
+
+                foreach (var el in GetRecurs(d, 1, l))
+                {
+                    l.Add(el);
+                    yield return l;
+                    l.RemoveAt(l.Count - 1);
+                }
+
+            }
+        }
+
 
         /// <summary>
         ///// Returns subdictionary content starting from key (also checked border values, null keys, key that equals to dimension etc...)

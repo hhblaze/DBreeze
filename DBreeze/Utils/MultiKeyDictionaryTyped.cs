@@ -1,4 +1,5 @@
 ﻿#if NET472 || NETSTANDARD2_1 || NETCOREAPP2_0
+using DBreeze.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,9 +92,9 @@ namespace DBreeze.Utils
         public MultiKeyDictionary()
         {
             _key = default(TKey);
-            CreateDeconstructDelegate();
+            MKDHelper.CreateDeconstructDelegate(_key.Length, _key.GetType(),ref this.Impl);
+            MKDHelper.CreateSerializeDelegate(_key.Length, _key.GetType(), this.serSeq);
         }
-
 
 
         Dictionary<object, object> d = new Dictionary<object, object>();
@@ -112,34 +113,9 @@ namespace DBreeze.Utils
         /// </summary>
         public long Count = 0;
 
-        /// <summary>
-        /// MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
-        /// </summary>
-        /// <returns></returns>
-        public byte[] Serialize()
-        {
-            if (MultiKeyDictionary.ByteArraySerializator == null)
-                return null;
-            return MultiKeyDictionary.ByteArraySerializator(this.GetAll());
-        }
+        //Serializer and Deserializer sequence
+        List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)> serSeq = new List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)>();
 
-        /// <summary>
-        /// MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
-        /// </summary>
-        /// <param name="data"></param>
-        public void Deserialize(byte[] data)
-        {
-            d.Clear();
-            Count = 0;
-
-            if (MultiKeyDictionary.ByteArrayDeSerializator == null)
-                return;
-            
-            foreach(var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey,TValue)>)))
-            {
-                d.Add(el.Item1, el.Item2);
-            }
-        }
 
         /// <summary>
         /// Clones this multi-key dictionary into another instance
@@ -218,51 +194,99 @@ namespace DBreeze.Utils
             if (dimension == -1)
                 dimension = p;
         }
+               
 
-        void CreateDeconstructDelegate()
+
+        /// <summary>
+        /// MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
+        /// </summary>
+        /// <returns></returns>
+        public byte[] Serialize()
         {
-            int q = 8;
+            if (MultiKeyDictionary.ByteArraySerializator == null)
+                return null;
 
-            if (_key.Length <= 8)
-                q = _key.Length;
+            Biser.Encoder enc = new Biser.Encoder();
 
-            // MethodInfo[] methodInfos = this.GetType()
-            //.GetMethods(BindingFlags.NonPublic | BindingFlags.Static); // | BindingFlags..Instance
-            
-            var method = typeof(ValueTupleDeconstructor)//this.GetType()
-                      .GetMethods(BindingFlags.NonPublic | BindingFlags.Static).Where(r => r.Name == "Deconstruct" + _key.Length && r.ReturnParameter.ParameterType.Name == "ValueTuple`" + q + "").FirstOrDefault();
+            enc.Add(this.Count);
 
-            Type[] tps = new Type[_key.Length];           
-            int i = 0;            
-
-            foreach (var el in get_type_flds(_key.GetType()))
+            foreach (var el in GetAllObj())
             {
-                tps[i] = el;
-                i++;
-            }
 
-            method = method.MakeGenericMethod(tps);
-            var keyValues = Expression.Parameter(typeof(List<object>));
-            var call = Expression.Call(null, method, keyValues);
-            Impl = Expression.Lambda<Func<List<object>, TKey>>(call, keyValues).Compile();
-        }
-
-        IEnumerable<Type> get_type_flds(Type t)
-        {
-            foreach (var it in t.GetFields())
-            {
-                if (it.FieldType.AssemblyQualifiedName.StartsWith("System.ValueTuple`"))
+                var cnt = el.Count - 1;
+                for (int ij = 0; ij < cnt; ij++)
                 {
-                    foreach (var el in get_type_flds(it.FieldType))
-                        yield return el;
-
+                    serSeq[ij].Item1(enc, el[ij]);
                 }
-                else
-                    yield return it.FieldType;
+              
+                enc.Add(MultiKeyDictionary.ByteArraySerializator((TValue)el[el.Count - 1]));            
             }
+
+            return enc.Encode();
+
         }
+
+        /// <summary>
+        /// MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
+        /// </summary>
+        /// <param name="data"></param>
+        public void Deserialize(byte[] data)
+        {
+            this.Clear();
+           
+
+            if (MultiKeyDictionary.ByteArrayDeSerializator == null)
+                return;
+
+            //foreach (var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey, TValue)>)))
+            //{
+            //    d.Add(el.Item1, el.Item2);
+            //}
+
+            Biser.Decoder dec = new Biser.Decoder(data);
+           
+            List<object> decres = new List<object>();
+
+            var totalElements = dec.GetLong();
+            for(int i = 0; i < totalElements; i++)
+            {
+                for (int ij = 0; ij < _key.Length; ij++)
+                {
+                    decres.Add(serSeq[ij].Item2(dec));
+                }
+                
+                this.Add((TKey)Impl(decres), (TValue)MultiKeyDictionary.ByteArrayDeSerializator(dec.GetByteArray(), typeof(TValue)));
+
+                decres.Clear();
+            }
+
+
+        }
+
 
        
+
+
+        IEnumerable<List<object>> GetAllObj()
+        {
+            List<object> l = null;
+
+            if (dimension > -1)
+            {
+                l = new List<object>();
+
+                foreach (var el in GetRecurs(d, 1, l))
+                {
+                    l.Add(el);
+                    yield return l;
+                    l.RemoveAt(l.Count - 1);
+                }
+
+            }
+        }
+
+
+
         /// <summary>
         /// Iterate over all elements of the dictionary
         /// </summary>
@@ -732,6 +756,220 @@ namespace DBreeze.Utils
 
     }//eoc
 
+    /// <summary>
+    /// 
+    /// </summary>
+    internal static class MKDHelper
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        internal static void CreateDeconstructDelegate<TKey>(int keyLength, Type keyType, ref Func<List<object>, TKey> Impl)
+        {
+            int q = 8;
 
+            if (keyLength <= 8)
+                q = keyLength;
+
+            // MethodInfo[] methodInfos = this.GetType()
+            //.GetMethods(BindingFlags.NonPublic | BindingFlags.Static); // | BindingFlags..Instance
+
+            var method = typeof(ValueTupleDeconstructor)//this.GetType()
+                      .GetMethods(BindingFlags.NonPublic | BindingFlags.Static).Where(r => r.Name == "Deconstruct" + keyLength && r.ReturnParameter.ParameterType.Name == "ValueTuple`" + q + "").FirstOrDefault();
+
+            Type[] tps = new Type[keyLength];
+            int i = 0;
+
+            foreach (var el in MKDHelper.get_type_flds(keyType))
+            {
+                tps[i] = el;
+                i++;
+            }
+
+            method = method.MakeGenericMethod(tps);
+            var keyValues = Expression.Parameter(typeof(List<object>));
+            var call = Expression.Call(null, method, keyValues);
+            Impl = Expression.Lambda<Func<List<object>, TKey>>(call, keyValues).Compile();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="keyLength"></param>
+        /// <param name="keyType"></param>
+        /// <param name="dlg"></param>
+        internal static void CreateSerializeDelegate(int keyLength, Type keyType, List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)> dlg)
+        {
+
+            Type[] tps = new Type[keyLength];
+            int i = 0;
+
+
+            UnaryExpression parInt = null;
+            MethodInfo ExecuteMethodInt = null;
+            MethodInfo ExecuteDecodeMethodInt = null;
+
+
+            var parObj = Expression.Parameter(typeof(object));
+            var instance = Expression.Parameter(typeof(Biser.Encoder));
+            var instanceDecoder = Expression.Parameter(typeof(Biser.Decoder));
+
+            foreach (var el in get_type_flds(keyType))
+            {
+                tps[i] = el;
+                i++;
+
+
+
+                if (el == DataTypesConvertor.TYPE_INT)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_INT);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_INT });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetInt");
+                }
+                else if (el == DataTypesConvertor.TYPE_LONG)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_LONG);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_LONG });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetLong");
+                }
+                else if (el == DataTypesConvertor.TYPE_UINT)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_UINT);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_UINT });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetUInt");
+                }
+                else if (el == DataTypesConvertor.TYPE_ULONG)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_ULONG);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_ULONG });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetULong");
+                }
+                else if (el == DataTypesConvertor.TYPE_SHORT)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_SHORT);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_SHORT });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetShort");
+                }
+                else if (el == DataTypesConvertor.TYPE_USHORT)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_USHORT);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_USHORT });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetUShort");
+                }
+                else if (el == DataTypesConvertor.TYPE_BYTE)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_BYTE);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_BYTE });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetByte");
+                }
+                else if (el == DataTypesConvertor.TYPE_SBYTE)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_SBYTE);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_SBYTE });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetSByte");
+                }
+                else if (el == DataTypesConvertor.TYPE_DATETIME)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_DATETIME);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_DATETIME });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetDateTime");
+                }
+                else if (el == DataTypesConvertor.TYPE_DOUBLE)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_DOUBLE);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_DOUBLE });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetDouble");
+                }
+                else if (el == DataTypesConvertor.TYPE_FLOAT)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_FLOAT);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_FLOAT });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetFloat");
+                }
+                else if (el == DataTypesConvertor.TYPE_DECIMAL)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_DECIMAL);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_DECIMAL });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetDecimal");
+                }
+                else if (el == DataTypesConvertor.TYPE_STRING)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_STRING);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_STRING });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetString");
+                }
+                else if (el == DataTypesConvertor.TYPE_BOOL)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_BOOL);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_BOOL });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetBool");
+                }
+                else if (el == DataTypesConvertor.TYPE_CHAR)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_CHAR);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_CHAR });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetChar");
+                }
+                else if (el == DataTypesConvertor.TYPE_GUID)
+                {
+                    parInt = Expression.Convert(parObj, DataTypesConvertor.TYPE_GUID);
+                    ExecuteMethodInt = typeof(Biser.Encoder).GetMethod("Add", new Type[] { DataTypesConvertor.TYPE_GUID });
+
+                    ExecuteDecodeMethodInt = typeof(Biser.Decoder).GetMethod("GetGuid");
+                }
+                else
+                    throw new Exception("Unsupported data type. Allowed non-nullable simple types: int, uint, long, ulong, short, ushort, byte, sbyte, DateTime, double, float, decimal, string, bool, char, GUID");
+
+                var callEncode = Expression.Call(instance, ExecuteMethodInt, parInt);
+
+                var callDecode = Expression.Call(instanceDecoder, ExecuteDecodeMethodInt);
+                var callDecode1 = Expression.Convert(callDecode, typeof(object));
+
+                dlg.Add(
+                    (Expression.Lambda<Action<Biser.Encoder, object>>(callEncode, instance, parObj).Compile(),
+                    Expression.Lambda<Func<Biser.Decoder, object>>(callDecode1, instanceDecoder).Compile())
+                );
+
+            }
+
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        internal static IEnumerable<Type> get_type_flds(Type t)
+        {
+            foreach (var it in t.GetFields())
+            {
+                if (it.FieldType.AssemblyQualifiedName.StartsWith("System.ValueTuple`"))
+                {
+                    foreach (var el in get_type_flds(it.FieldType))
+                        yield return el;
+
+                }
+                else
+                    yield return it.FieldType;
+            }
+        }
+    }//eof MKD helper
 }
 #endif

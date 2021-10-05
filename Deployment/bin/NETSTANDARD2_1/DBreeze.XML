@@ -6316,18 +6316,6 @@
             Total count of elements in MKD
             </summary>
         </member>
-        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Serialize">
-            <summary>
-            MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Deserialize(System.Byte[])">
-            <summary>
-            MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
-            </summary>
-            <param name="data"></param>
-        </member>
         <member name="M:DBreeze.Utils.MultiKeyDictionary`2.CloneMultiKeyDictionary">
             <summary>
             Clones this multi-key dictionary into another instance
@@ -6340,6 +6328,18 @@
             </summary>
             <param name="keys"></param>
             <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Serialize">
+            <summary>
+            MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Deserialize(System.Byte[])">
+            <summary>
+            MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
+            </summary>
+            <param name="data"></param>
         </member>
         <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetAll">
             <summary>
@@ -6414,6 +6414,31 @@
             <typeparam name="T"></typeparam>
             <param name="result"></param>
             <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MKDHelper">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MKDHelper.CreateDeconstructDelegate``1(System.Int32,System.Type,System.Func{System.Collections.Generic.List{System.Object},``0}@)">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MKDHelper.CreateSerializeDelegate(System.Int32,System.Type,System.Collections.Generic.List{System.ValueTuple{System.Action{DBreeze.Utils.Biser.Encoder,System.Object},System.Func{DBreeze.Utils.Biser.Decoder,System.Object}}})">
+            <summary>
+            
+            </summary>
+            <param name="keyLength"></param>
+            <param name="keyType"></param>
+            <param name="dlg"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MKDHelper.get_type_flds(System.Type)">
+            <summary>
+            
+            </summary>
+            <param name="t"></param>
             <returns></returns>
         </member>
         <member name="T:DBreeze.Utils.MultiKeySortedDictionary">
@@ -6553,6 +6578,12 @@
         <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetAll">
             <summary>
             Iterate over all elements of the dictionary
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetAllObj">
+            <summary>
+            
             </summary>
             <returns></returns>
         </member>

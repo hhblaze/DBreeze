@@ -118,15 +118,45 @@ namespace VisualTester
             MultiKeyDictionary.ByteArraySerializator = ProtobufHelper.SerializeProtobuf;
             MultiKeyDictionary.ByteArrayDeSerializator = ProtobufHelper.DeserializeProtobuf;
 
+            //MultiKeyDictionary<(int cid, long wid,int,int,int,int,int,int,int,int), string> tmkd = new MultiKeyDictionary<(int, long, int, int, int, int, int, int, int, int), string>();
+            //tmkd.Add((1, 1,2,3,4,5,6,7,8,9), "a1");
+            //tmkd.Add((1, 2,2,3,4,5,6,7,8,9), "a3");
+            //tmkd.Add((2, 1,2,3,4,5,6,7,8,9), "a4");
+            //tmkd.Add((4, 1,2,3,4,5,6,7,8,9), null);
+            //tmkd.Add((5, 1,2,3,4,5,6,7,8,9), "a5");
+
+            //var bt54 = tmkd.Serialize();
+
+            //MultiKeyDictionary<(int cid, long wid, int, int, int, int, int, int, int, int), string> tmkd1 = new MultiKeyDictionary<(int, long, int, int, int, int, int, int, int, int), string>();
+            //tmkd1.Deserialize(bt54);
+
+            //foreach (var el in tmkd1.GetAll())
+            //{
+            //   // Console.WriteLine(el.Item2);
+            //}
+
+            ////return;
+
+
             MultiKeyDictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string> bmkd = new MultiKeyDictionary<(int, decimal, int, float, int, int, string, uint, double, int), string>();
 
             bmkd.Add((1, 1m, 1, 45.6f, 34, 54, "fdf", 45, 34.7, 23), "a1");
-            bmkd.Add((2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 34.7, 23), "a1");
+            bmkd.Add((2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 34.7, 23), "a15");
 
-            var bttr = bmkd.SerializeProtobuf();
-          
 
-            //return;
+
+
+            var bttr = bmkd.Serialize();
+
+            MultiKeyDictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string> bmkd1 = new MultiKeyDictionary<(int, decimal, int, float, int, int, string, uint, double, int), string>();
+            bmkd1.Deserialize(bttr);
+
+            foreach (var el in bmkd1.GetAll())
+            {
+                Console.WriteLine(el.Item2);
+            }
+
+            return;
             MultiKeyDictionary<(int cid, int wid, int aid), string> mkd = new MultiKeyDictionary<(int, int, int), string>();
 
             mkd.Add((1, 1, 1),"a1");

@@ -3,9 +3,12 @@
   It's free software for those who think that it should be free.
 */
 #if !NET35
+using DBreeze.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -139,6 +142,11 @@ namespace DBreeze.Utils
         /// Total count of elements in MKD
         /// </summary>
         public long Count = 0;
+
+
+
+
+
 
         /// <summary>
         /// 
