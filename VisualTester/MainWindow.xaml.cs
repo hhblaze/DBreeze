@@ -96,25 +96,164 @@ namespace VisualTester
         //    }
         //}
 
-      
+
+
+
+        //ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
+        //MultiKeyDictionary<(int cid, int wid, float aid), string> mkd41 = new MultiKeyDictionary<(int, int, float), string>();
+
+        //private void ReadFrom_MKD((int cid, int wid, float aid) newKey, string newValue)
+        //{
+        //    _sync.EnterReadLock();
+        //    try
+        //    {
+        //        if (!mkd41.Contains(newKey)) //recheck
+        //        {
+        //            mkd41.Add(newKey, newValue);
+        //        }
+
+        //    }
+        //    finally
+        //    {
+        //        _sync.ExitReadLock();
+        //    }
+        //}
+
+        //private void WriteInto_MKD((int cid, int wid, float aid) newKey, string newValue)
+        //{
+        //    _sync.EnterWriteLock();
+        //    try
+        //    {
+        //        if (!mkd41.Contains(newKey)) //recheck
+        //        {
+        //            mkd41.Add(newKey, newValue);
+        //        }
+
+        //    }
+        //    finally
+        //    {
+        //        _sync.ExitWriteLock();
+        //    }
+        //}
+
+        //private void WriteInto_MKD_IfKeyNotFound((int cid, int wid, float aid) newKey, string newValue)
+        //{
+        //    _sync.EnterUpgradeableReadLock();
+        //    try
+        //    {
+        //        if (!mkd41.Contains(newKey)) //emulating write ONLY in case when key was not found
+        //        {
+        //            _sync.EnterWriteLock();
+        //            try
+        //            {
+        //                if (!mkd41.Contains(newKey)) //recheck
+        //                {
+        //                    mkd41.Add(newKey, newValue);
+        //                }
+
+        //            }
+        //            finally
+        //            {
+        //                _sync.ExitWriteLock();
+        //            }
+        //        }
+        //    }            
+        //    finally
+        //    {
+        //        _sync.ExitUpgradeableReadLock();
+        //    }
+        //}
+
+
+
+        [ProtoBuf.ProtoContract]
+        public class Human
+        {
+
+            public Human()
+            {
+
+            }
+
+            [ProtoBuf.ProtoMember(1, IsRequired = true)]
+            public int Age { get; set; } = 0;
+
+        }
+
 
 
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
+            //Dictionary<Tuple<int,int>, string> fd9 = new Dictionary<Tuple<int, int>, string>();
+            //fd9.Add(new Tuple<int, int>(15,15), "12");
+            //fd9.Add(new Tuple<int, int>(16,17), "14");
 
-            //MultiKeyDictionary omkd = new MultiKeyDictionary();
-            //omkd.Add("fdf", 1, 2, 3);
-            //omkd.Add("fdf", 1, 2, 4);
-            //omkd.Add("fdf", 1, 3, 4);
-            //omkd.Add("fdf", 1, 3, 4);
-            //omkd.Add("fdf", 1, 3, 5);
-            //Console.WriteLine(omkd.Count);
-            //omkd.Remove(1, 3, 4);
-            //Console.WriteLine(omkd.Count);
-            //omkd.Remove(1, 3);
-            //Console.WriteLine(omkd.Count);
+            //fd9.TryGetValue(new Tuple<int, int>(16, 17), out var tzz91);
+
+            //var trzuz1 = fd9.SerializeProtobuf();
+            //var trzfd = (Dictionary<Tuple<int, int>, string>)ProtobufHelper.DeserializeProtobuf(trzuz1, fd9.GetType());
+
+            //Dictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string> fd7 = new Dictionary<(int, decimal, int, float, int, int, string, uint, double, int), string>();
+
+            //fd7.Add((2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 34.7, 23), "a15");
+            //fd7.Add((2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 35.7, 23), "a16");
+
+            //fd7.TryGetValue((2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 34.7, 23), out var tzz71);
+
+            //var trzuz= fd7.SerializeProtobuf();
+
+            //Dictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string> fd8 = new Dictionary<(int, decimal, int, float, int, int, string, uint, double, int), string>();
+            //fd8=(Dictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string>)ProtobufHelper.DeserializeProtobuf(trzuz, fd8.GetType());
+            //fd8[(2, 1m, 3, 45.6f, 34, 54, "dsf", 45, 34.7, 23)] = "a17";
+
+            ////Dictionary< (int cid, long wid, int, int, int, int, int, int, int, int), int> fd6 = new Dictionary<(int cid, long wid, int, int, int, int, int, int, int, int), int>();
+            ////fd6.Add((1, (12,12)), 1);
+            ////fd6.Add((1, (12, 14)), 2);
+
+            ////fd6.TryGetValue((1, (12, 14)), out var tzz61);
+
+
+            //Dictionary<(int was,int las), int> fd5 = new Dictionary<(int,int), int>();
+            //fd5.Add((1,1), 1);
+            //fd5.Add((1,2), 2);
+
+            //fd5.TryGetValue((1, 1), out var tzz51);
+            //fd5.TryGetValue((1, 2), out var tzz52);
 
             //return;
+            //Dictionary<byte[], int> fd = new Dictionary<byte[], int>();
+            //var btKey = new byte[] { 1, 2, 3 };
+            //fd.Add(btKey, 1);
+            //fd.Add(new byte[] { 1, 2, 3, 4 }, 2);
+
+            //fd.TryGetValue(btKey, out var tzz);
+
+            //Dictionary<Human, int> fd1 = new Dictionary<Human, int>();
+            //var hm = new Human { Age = 12 };
+            //fd1.Add(hm, 1);
+            //fd1.Add(new Human { Age=15 }, 2);
+
+            //fd1.TryGetValue(hm, out var tzz1);
+            //fd1.TryGetValue(new Human { Age = 15 }, out var tzz2);
+
+            ////DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128()
+
+            //MultiKeyDictionary<(int? cid, int wid, byte[] aid), string> mkd31 = new MultiKeyDictionary<(int?, int, byte[]), string>();
+            //return;
+
+            ////MultiKeyDictionary omkd = new MultiKeyDictionary();
+            ////omkd.Add("fdf", 1, 2, 3);
+            ////omkd.Add("fdf", 1, 2, 4);
+            ////omkd.Add("fdf", 1, 3, 4);
+            ////omkd.Add("fdf", 1, 3, 4);
+            ////omkd.Add("fdf", 1, 3, 5);
+            ////Console.WriteLine(omkd.Count);
+            ////omkd.Remove(1, 3, 4);
+            ////Console.WriteLine(omkd.Count);
+            ////omkd.Remove(1, 3);
+            ////Console.WriteLine(omkd.Count);
+
+            ////return;
             MultiKeyDictionary.ByteArraySerializator = ProtobufHelper.SerializeProtobuf;
             MultiKeyDictionary.ByteArrayDeSerializator = ProtobufHelper.DeserializeProtobuf;
 
@@ -136,6 +275,27 @@ namespace VisualTester
             //}
 
             ////return;
+
+            MultiKeyDictionary<(int was, (int, int), decimal), string> hzu = new MultiKeyDictionary<(int, (int, int), decimal), string>();
+            hzu.Add((1, (2, 2),65m), "dfs1");
+            hzu.Add((1, (2, 3),65m), "dfs2");
+            hzu.Add((1, (2, 4),65m), "dfs3");
+            hzu.Add((2, (2, 2),65m), "dfs4");
+            hzu.Add((2, (2, 3),65m), "dfs5");
+            hzu.Add((2, (2, 4),65m), "dfs6");
+            hzu.Add((3, (2, 2),65m), "dfs7");
+            hzu.Add((3, (2, 3),65m), "dfs8");
+            hzu.Add((3, (2, 4),65m), "dfs9");
+            var tr243254 = hzu.Serialize();
+            MultiKeyDictionary<(int was, (int, int), decimal), string> hzu1 = new MultiKeyDictionary<(int, (int, int), decimal), string>();
+            hzu1.Deserialize(tr243254);
+
+            hzu1.Remove(2);
+
+            foreach (var el in hzu1.GetByKeyStart(3))
+            {
+                Console.WriteLine(el.Item1.was + "__" + el.Item2);
+            }
 
 
             MultiKeyDictionary<(int cid, decimal wid, int aid, float, int, int, string, uint, double, int), string> bmkd = new MultiKeyDictionary<(int, decimal, int, float, int, int, string, uint, double, int), string>();

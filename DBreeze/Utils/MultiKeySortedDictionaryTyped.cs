@@ -91,8 +91,8 @@ namespace DBreeze.Utils
         {
             _key = default(TKey);
 
-            MKDHelper.CreateDeconstructDelegate(_key.Length, _key.GetType(), ref this.Impl);
-            MKDHelper.CreateSerializeDelegate(_key.Length, _key.GetType(), this.serSeq);
+            MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(), ref this.Impl);
+            //MKDHelper.CreateSerializeDelegate(_key.Length, _key.GetType(), this.serSeq);
         }
 
 
@@ -112,7 +112,7 @@ namespace DBreeze.Utils
         /// Total count of elements in MKD
         /// </summary>
         public long Count = 0;
-        List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)> serSeq = new List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)>();
+        //List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)> serSeq = new List<(Action<Biser.Encoder, object>, Func<Biser.Decoder, object>)>();
 
 
         /// <summary>
@@ -124,23 +124,25 @@ namespace DBreeze.Utils
             if (MultiKeyDictionary.ByteArraySerializator == null)
                 return null;
 
-            Biser.Encoder enc = new Biser.Encoder();
+            return MultiKeyDictionary.ByteArraySerializator(GetAllObj().Select(r => (((TKey)Impl(r), (TValue)r[r.Count - 1]))));
 
-            enc.Add(this.Count);
+            //Biser.Encoder enc = new Biser.Encoder();
 
-            foreach (var el in GetAllObj())
-            {
+            //enc.Add(this.Count);
 
-                var cnt = el.Count - 1;
-                for (int ij = 0; ij < cnt; ij++)
-                {
-                    serSeq[ij].Item1(enc, el[ij]);
-                }
+            //foreach (var el in GetAllObj())
+            //{
 
-                enc.Add(MultiKeyDictionary.ByteArraySerializator((TValue)el[el.Count - 1]));
-            }
+            //    var cnt = el.Count - 1;
+            //    for (int ij = 0; ij < cnt; ij++)
+            //    {
+            //        serSeq[ij].Item1(enc, el[ij]);
+            //    }
 
-            return enc.Encode();
+            //    enc.Add(MultiKeyDictionary.ByteArraySerializator((TValue)el[el.Count - 1]));
+            //}
+
+            //return enc.Encode();
 
         }
 
@@ -156,27 +158,32 @@ namespace DBreeze.Utils
             if (MultiKeyDictionary.ByteArrayDeSerializator == null)
                 return;
 
-            //foreach (var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey, TValue)>)))
-            //{
-            //    d.Add(el.Item1, el.Item2);
-            //}
-
-            Biser.Decoder dec = new Biser.Decoder(data);
-
-            List<object> decres = new List<object>();
-
-            var totalElements = dec.GetLong();
-            for (int i = 0; i < totalElements; i++)
+            foreach (var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey, TValue)>)))
             {
-                for (int ij = 0; ij < _key.Length; ij++)
-                {
-                    decres.Add(serSeq[ij].Item2(dec));
-                }
-
-                this.Add((TKey)Impl(decres), (TValue)MultiKeyDictionary.ByteArrayDeSerializator(dec.GetByteArray(), typeof(TValue)));
-
-                decres.Clear();
+                this.Add(el.Item1, el.Item2);
             }
+
+            ////foreach (var el in (IEnumerable<(TKey, TValue)>)MultiKeyDictionary.ByteArrayDeSerializator(data, typeof(IEnumerable<(TKey, TValue)>)))
+            ////{
+            ////    d.Add(el.Item1, el.Item2);
+            ////}
+
+            //Biser.Decoder dec = new Biser.Decoder(data);
+
+            //List<object> decres = new List<object>();
+
+            //var totalElements = dec.GetLong();
+            //for (int i = 0; i < totalElements; i++)
+            //{
+            //    for (int ij = 0; ij < _key.Length; ij++)
+            //    {
+            //        decres.Add(serSeq[ij].Item2(dec));
+            //    }
+
+            //    this.Add((TKey)Impl(decres), (TValue)MultiKeyDictionary.ByteArrayDeSerializator(dec.GetByteArray(), typeof(TValue)));
+
+            //    decres.Clear();
+            //}
 
 
         }

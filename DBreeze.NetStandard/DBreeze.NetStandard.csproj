@@ -81,7 +81,6 @@
     <Compile Include="..\DBreeze\Utils\DeepCloneExpressionTree.cs" Link="Utils\DeepCloneExpressionTree.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs" Link="Utils\MultiKeyDictionary.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs" Link="Utils\MultiKeyDictionaryTyped.cs" />
-    <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionary.cs" Link="Utils\MultiKeySortedDictionary.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
   </ItemGroup>

@@ -13,6 +13,15 @@ namespace DBreeze.Utils
          * Deconstruction generator
          * 
          * var fl = File.ReadAllText(@"D:\Temp\1\deconstruct.txt");
+         * 
+         deconstruct.txt:
+
+         static (@ALLXX) Deconstruct@DECN<@ALLXX>(List<object> p)
+        {
+             return (@ALLXP);
+        }
+
+
             
             int q = 64;
             StringBuilder final = new StringBuilder();

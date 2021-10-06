@@ -1,12 +1,4 @@
 ﻿Compiling for different .NET Frameworks and MONO
 
-- to make DBreeze running on XAMARIN for Android or even lightweight (without JSON) .NET 4.5> and MONO add global #define: NET40, change project Framework on .NET45
-  exclude Utils->MJonSerializator.cs, DataTypes->DbMJSON.cs and reference to System.Web.Extension
-  
-- to make DBreeze running on .NET 4.0 and MONO add global #define: NET40 (ProjectProperties->Build->Conditional compilation properties), change project Framework on .NET40
-- to make DBreeze running on .NET 4.5 and MONO add global #define: NET40 (ProjectProperties->Build->Conditional compilation properties), change project Framework on .NET45
-- to make DBreeze running on .NET 3.5 add global #define: NET35 (remove NET40), change project Framework
-
--to make DBreeze running on .NETCore, Windows UWP and .NET 4.5.1 (also probably higher) - pickup project DBreeze.UWP
-
--to make DBreeze running on .NET Portable - pickup project DBreeze.Portable
+- Check DBreeze.Deployment.Deployer project that packs different .NET versions based on main solution projects.
+- Define constants are mostly added with the new version of the framework, but old constants move to the new project or framework version

@@ -132,8 +132,11 @@
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs">
       <Link>Utils\MultiKeyDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionary.cs">
-      <Link>Utils\MultiKeySortedDictionary.cs</Link>
+    <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs">
+      <Link>Utils\MultiKeyDictionaryTyped.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs">
+      <Link>Utils\MultiKeySortedDictionaryTyped.cs</Link>
     </Compile>
     <Compile Include="DataStructures\DataAsTree.cs" />
     <Compile Include="DataTypes\DataTypesConvertor.cs" />

@@ -138,7 +138,6 @@
     <Compile Include="Utils\MultiKeyDictionary.cs" />
     <Compile Include="Utils\MultiKeySortedDictionaryTyped.cs" />
     <Compile Include="Utils\MultiKeyDictionaryTyped.cs" />
-    <Compile Include="Utils\MultiKeySortedDictionary.cs" />
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\Net35support.cs" />
     <Compile Include="Utils\DeepCloneExpressionTree.cs" />
