@@ -23,7 +23,7 @@ namespace DBreeze.Utils
     /// var mkdRes = mkd.Get&lt;string&gt;(17L, "key2");
     /// var mkdResBool1 = mkd.TryGetValue&lt;List&lt;string&gt;&gt;(out var dder1, 11L, "key22");
     /// </summary>
-    public class MultiKeyDictionary
+    public static class MultiKeyDictionary
     {
         #region "tests"
         /*
