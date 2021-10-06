@@ -286,6 +286,9 @@ namespace VisualTester
             hzu.Add((3, (2, 2),65m), "dfs7");
             hzu.Add((3, (2, 3),65m), "dfs8");
             hzu.Add((3, (2, 4),65m), "dfs9");
+
+            hzu[(3, (2, 4), 65m)] = "dfs19";
+
             var tr243254 = hzu.Serialize();
             MultiKeyDictionary<(int was, (int, int), decimal), string> hzu1 = new MultiKeyDictionary<(int, (int, int), decimal), string>();
             hzu1.Deserialize(tr243254);

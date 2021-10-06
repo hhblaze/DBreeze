@@ -6318,6 +6318,13 @@
             </summary>
             <param name="keys"></param>
         </member>
+        <member name="P:DBreeze.Utils.MultiKeyDictionary`2.Item(`0)">
+            <summary>
+            Gets/Sets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Get(`0)">
             <summary>
             Gets the value by complete Key
@@ -6446,6 +6453,13 @@
             Remove support deleting starting from key (if dimension is 3 then 3, 2 or 1 key can be supplied). To remove all use Clear()
             </summary>
             <param name="keys"></param>
+        </member>
+        <member name="P:DBreeze.Utils.MultiKeySortedDictionary`2.Item(`0)">
+            <summary>
+            Gets/Sets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Get(`0)">
             <summary>

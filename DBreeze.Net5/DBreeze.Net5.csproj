@@ -13,12 +13,12 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\net5.0\DBreeze.xml</DocumentationFile>
-    <DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>
+    <DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>
+    <DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

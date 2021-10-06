@@ -16,12 +16,12 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>
-    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>    
+    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;</DefineConstants>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard1.6\DBreeze.xml</DocumentationFile>
-    <DefineConstants>TRACE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>
+    <DefineConstants>TRACE;NETSTANDARD1_6;NET40;NETPORTABLE;</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -610,6 +610,16 @@ namespace DBreeze.Utils
             return;
         }
 
+        /// <summary>
+        /// Gets/Sets the value by complete Key
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        public TValue this[TKey keys]
+        {
+            get => this.Get(keys);
+            set => this.Add(keys, value);
+        }
 
         /// <summary>
         /// Gets the value by complete Key

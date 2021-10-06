@@ -311,12 +311,12 @@ namespace Deployer
                 //----------------------------------------- DBreeze.Net5 project --------------------------------------
                 //Change base when necessary
                 baseFramework = "<TargetFramework>net5.0</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>";
+                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>";
 
 
                 //.NET5 (default)   (based on .NETC5 project)
                 currentFramework = "<TargetFramework>net5.0</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>";
+                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>";
 
                 if (Directory.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0"))
                     Directory.Delete(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0", true);
@@ -349,37 +349,9 @@ namespace Deployer
 
                 //----------------------------------------- DBreeze.NetCoreApp project --------------------------------------
                 //Change base when necessary               
-                baseFramework = "<TargetFramework>net5.0</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>";
+                baseFramework = "<TargetFramework>netcoreapp1.0</TargetFramework>";
+                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;</DefineConstants>";
 
-
-                ////.NET5 (default)   (based on .NETCoreApp project)
-                //currentFramework = "<TargetFramework>net5.0</TargetFramework>";
-                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>";
-
-                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\net5.0"))
-                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\net5.0", true);
-                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
-                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
-                //tpr = prj;
-                //Console.WriteLine("Creating net5.0");
-                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-                ////tpr = tpr.Replace("<TargetFramework>net5.0</TargetFramework>", "<TargetFramework>net5.0</TargetFramework>");
-                ////tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>");
-                //// tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
-
-                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
-                //Compile(msbldpath, "DBreeze.NetCoreApp");
-
-                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\net5.0\DBreeze.dll");
-                //Console.WriteLine("done " + noerror);
-                //if (!noerror)
-                //    return;//bin\Release\net5.0\DBreeze.xml
-                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\net5.0\DBreeze.dll", MyPath + @"NET5_0\DBreeze.dll", true);
-                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\net5.0\DBreeze.xml", MyPath + @"NET5_0\DBreeze.XML", true);
-
-                //File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
 
 
                 //.NET Core App 1.0 (default)    (based on .NETCoreApp project)
