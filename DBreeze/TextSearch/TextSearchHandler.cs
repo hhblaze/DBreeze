@@ -409,15 +409,9 @@ namespace DBreeze.TextSearch
                             wd.NumberInBlock = its.numberInBlock;
                             //Inserting new definition
 
-
-
-                            // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
-                            if (tmpWrds.Count < 100000)
-                                tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
-                            else
+                            tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
+                            if (tmpWrds.Count > 100000)
                             {
-                                // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
-
                                 foreach (var tmpwrd in tmpWrds)
                                 {
                                     its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
@@ -425,6 +419,23 @@ namespace DBreeze.TextSearch
                                 }
                                 tmpWrds.Clear();
                             }
+
+                            //// its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
+                            //if (tmpWrds.Count < 100000)
+                            //    tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
+                            //else
+                            //{
+                            //    // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
+                            //    if (tmpWrds.Count > 100000)
+                            //    {
+                            //        foreach (var tmpwrd in tmpWrds)
+                            //        {
+                            //            its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
+
+                            //        }
+                            //        tmpWrds.Clear();
+                            //    }
+                            //}
 
                         }
                         tpl = new Tuple<HashSet<int>, HashSet<int>, WordInDocs>(new HashSet<int>(), new HashSet<int>(), wd);
