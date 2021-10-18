@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.101.2021.1005</Version>
-    <AssemblyVersion>1.101.2021.1005</AssemblyVersion>
-    <FileVersion>1.101.2021.1005</FileVersion>
+    <Version>1.102.2021.1018</Version>
+    <AssemblyVersion>1.102.2021.1018</AssemblyVersion>
+    <FileVersion>1.102.2021.1018</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -47,6 +47,7 @@
  
   <ItemGroup>
     <Compile Include="..\DBreeze\DataTypes\Row.cs" Link="DataTypes\Row.cs" />
+    <Compile Include="..\DBreeze\Engine\DBreezeConfiguration.cs" Link="Engine\DBreezeConfiguration.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeResources.cs" Link="Engine\DBreezeResources.cs" />
     <Compile Include="..\DBreeze\Engine\Scheme.cs" Link="Engine\Scheme.cs" />
     <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs" Link="Exceptions\DBreezeException.cs" />

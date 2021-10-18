@@ -1308,6 +1308,11 @@
             Configuration concerning TextSearch subsystem
             </summary>
         </member>
+        <member name="F:DBreeze.DBreezeConfiguration.NotifyAhead_WhenWriteTablePossibleDeadlock">
+            <summary>
+            Default is true. On the early stage helps to the programmers to put modifying table into the transaction.SynchronizeTables statement.
+            </summary>
+        </member>
         <member name="T:DBreeze.DBreezeRemoteEngine">
             <summary>
             

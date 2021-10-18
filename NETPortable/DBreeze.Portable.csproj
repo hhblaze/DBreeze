@@ -36,6 +36,9 @@
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs">
+      <Link>Transactions\TransactionsCoordinator.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs">
       <Link>Utils\Compression.cs</Link>
     </Compile>
@@ -178,7 +181,6 @@
     <Compile Include="Transactions\TransactionsJournal.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Transactions\TransactionUnit.cs" />
-    <Compile Include="Transactions\TransactionsCoordinator.cs" />
     <Compile Include="Tries\ITrie.cs" />
     <Compile Include="Tries\ITrieRootNode.cs" />
     <Compile Include="Utils\AsyncOperations.cs" />

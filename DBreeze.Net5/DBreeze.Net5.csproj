@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.101.2021.1005</Version>
-    <FileVersion>1.101.2021.1005</FileVersion>
-    <AssemblyVersion>1.101.2021.1005</AssemblyVersion>
+    <Version>1.102.2021.1018</Version>
+    <FileVersion>1.102.2021.1018</FileVersion>
+    <AssemblyVersion>1.102.2021.1018</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -28,10 +28,12 @@
 
   <ItemGroup>
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
+        <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
     </Compile>
+        <Compile Include="..\DBreeze\Engine\DBreezeConfiguration.cs" Link="Engine\DBreezeConfiguration.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeResources.cs">
       <Link>Engine\DBreezeResources.cs</Link>
     </Compile>

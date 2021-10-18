@@ -1155,77 +1155,6 @@
             </summary>
             <param name="withResetingStatistic">resets statistic</param>
         </member>
-        <member name="P:DBreeze.DBreezeConfiguration.Backup">
-            <summary>
-            Incremental backup plan. If is not instantiated, incremental backup will be switch off
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeConfiguration.DBreezeDataFolderName">
-            <summary>
-            Folder where will reside DBreeze database files
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.eStorage.RemoteInstance">
-            <summary>
-            In case if database files are located on a remote host
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeConfiguration.Storage">
-            <summary>
-            DISK, MEMORY or Remote Instance. DEFAULT IS DISK,
-            DBreezeDataFolderName must be supplied.
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.AlternativeTablesLocations">
-            <summary>
-            Pattern based way to specify storage and location for tables.
-            <para>Key of this dictionary must contain table pattern e.g. Article$/Items# or Car456 or Items*</para>
-            <para>Value, if is String.Empty, means that table will be located in memory.</para>
-            <para>Value, if not empty, means physical storage folder path, where table should reside.</para>
-            <para>If table doesn't intersect any pattern then default DB configuration will be overriden for the storage.</para>
-            <para>If table intersects more the one pattern then first found will be applied.</para>
-            <para>Help for patterns:</para>
-            <para>$ * #</para>
-            <para>"U" symbol in the following examples means intersection</para>
-            <para>* - 1 or more of any symbol kind (every symbol after * will be cutted): Items* U Items123/Pictures</para>
-            <para># - symbols (except slash) followed by slash and minimum another symbol: Items#/Picture U Items123/Picture</para>
-            <para>$ - 1 or more symbols except slash (every symbol after $ will be cutted): Items$ U Items123;  Items$ !U Items123/Pictures </para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.RICommunicator">
-            <summary>
-            In case if we want to use storage layer RemoteInstance (RISR), this must be supplied.
-            Answers for sending data to Remote Acceptor and returning answer back
-            </summary>
-        </member>
-        <member name="T:DBreeze.DBreezeConfiguration.TextSearchConfiguration">
-            <summary>
-            Configuration concerning TextSearch subsystem
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.QuantityOfWordsInBlock">
-            <summary>
-            Search Index setting. Less value - bigger index on the disc, and faster search.
-            More RAM is used
-            <para>Mobile recommendations year 2015: 100</para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MinimalBlockReservInBytes">
-            <summary>
-            Search Index setting. Reservation block growth size
-            <para>Mobile recommendations year 2015: 1000</para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MaximalWordSize">
-            <summary>
-            Maximal word size separated by the space. Default is 50 symbols
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfig">
-            <summary>
-            Configuration concerning TextSearch subsystem
-            </summary>
-        </member>
         <member name="T:DBreeze.DBreezeEngine">
             <summary>
             Main DBreeze Database class.
@@ -3354,79 +3283,6 @@
             </summary>
             <param name="transactionThreadId"></param>
         </member>
-        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
-            <summary>
-            Dictionary of all active transactions. Key is ManagedThreadId
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
-            <summary>
-            Fast access to the Schema object.
-            Used by Transaction class
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            
-            </summary>
-            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
-            <summary>
-            Is called by the engine on Dispose.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
-            <summary>
-            Access synchronizer.
-            All calls of the WRITE LOCATOR come over this function.
-            </summary>
-            <param name="transactionThreadId"></param>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
-            <summary>
-            Can return NULL (if DbIsNotOperatable)
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
-            <summary>
-            Can return NULL if table doesn't exist
-            Can return NULL (if DbIsNotOperatable)
-            
-            Differs from GetTable_Write:
-            1. table is not registered for Write;
-            2. Table is not created, if doesn't exist.
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <param name="ignoreThreadIdCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
-            <summary>
-            Normal Engine Stop, usually in case of Main Thread or DLL disposing
-            </summary>
-        </member>
         <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
             <summary>
             We try to clear tranasction file, when its length is more then 10MB and if it's possible
@@ -3548,6 +3404,79 @@
         <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
             <summary>
             
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
+            <summary>
+            Dictionary of all active transactions. Key is ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
+            <summary>
+            Fast access to the Schema object.
+            Used by Transaction class
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
+            <summary>
+            Is called by the engine on Dispose.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
+            <summary>
+            Access synchronizer.
+            All calls of the WRITE LOCATOR come over this function.
+            </summary>
+            <param name="transactionThreadId"></param>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
+            <summary>
+            Can return NULL (if DbIsNotOperatable)
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Can return NULL if table doesn't exist
+            Can return NULL (if DbIsNotOperatable)
+            
+            Differs from GetTable_Write:
+            1. table is not registered for Write;
+            2. Table is not created, if doesn't exist.
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <param name="ignoreThreadIdCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
+            <summary>
+            Normal Engine Stop, usually in case of Main Thread or DLL disposing
             </summary>
         </member>
         <member name="T:DBreeze.Transactions.RandomKeySorter">
@@ -6485,6 +6414,82 @@
             <param name="result"></param>
             <param name="keys"></param>
             <returns></returns>
+        </member>
+        <member name="P:DBreeze.DBreezeConfiguration.Backup">
+            <summary>
+            Incremental backup plan. If is not instantiated, incremental backup will be switch off
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeConfiguration.DBreezeDataFolderName">
+            <summary>
+            Folder where will reside DBreeze database files
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.eStorage.RemoteInstance">
+            <summary>
+            In case if database files are located on a remote host
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeConfiguration.Storage">
+            <summary>
+            DISK, MEMORY or Remote Instance. DEFAULT IS DISK,
+            DBreezeDataFolderName must be supplied.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.AlternativeTablesLocations">
+            <summary>
+            Pattern based way to specify storage and location for tables.
+            <para>Key of this dictionary must contain table pattern e.g. Article$/Items# or Car456 or Items*</para>
+            <para>Value, if is String.Empty, means that table will be located in memory.</para>
+            <para>Value, if not empty, means physical storage folder path, where table should reside.</para>
+            <para>If table doesn't intersect any pattern then default DB configuration will be overriden for the storage.</para>
+            <para>If table intersects more the one pattern then first found will be applied.</para>
+            <para>Help for patterns:</para>
+            <para>$ * #</para>
+            <para>"U" symbol in the following examples means intersection</para>
+            <para>* - 1 or more of any symbol kind (every symbol after * will be cutted): Items* U Items123/Pictures</para>
+            <para># - symbols (except slash) followed by slash and minimum another symbol: Items#/Picture U Items123/Picture</para>
+            <para>$ - 1 or more symbols except slash (every symbol after $ will be cutted): Items$ U Items123;  Items$ !U Items123/Pictures </para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.RICommunicator">
+            <summary>
+            In case if we want to use storage layer RemoteInstance (RISR), this must be supplied.
+            Answers for sending data to Remote Acceptor and returning answer back
+            </summary>
+        </member>
+        <member name="T:DBreeze.DBreezeConfiguration.TextSearchConfiguration">
+            <summary>
+            Configuration concerning TextSearch subsystem
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.QuantityOfWordsInBlock">
+            <summary>
+            Search Index setting. Less value - bigger index on the disc, and faster search.
+            More RAM is used
+            <para>Mobile recommendations year 2015: 100</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MinimalBlockReservInBytes">
+            <summary>
+            Search Index setting. Reservation block growth size
+            <para>Mobile recommendations year 2015: 1000</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MaximalWordSize">
+            <summary>
+            Maximal word size separated by the space. Default is 50 symbols
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfig">
+            <summary>
+            Configuration concerning TextSearch subsystem
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.NotifyAhead_WhenWriteTablePossibleDeadlock">
+            <summary>
+            Default is true. On the early stage helps to the programmers to put modifying table into the transaction.SynchronizeTables statement.
+            </summary>
         </member>
         <member name="T:DBreeze.DBreezeResources">
             <summary>

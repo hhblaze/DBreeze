@@ -130,5 +130,6 @@ namespace DBreeze
         /// Default is true. On the early stage helps to the programmers to put modifying table into the transaction.SynchronizeTables statement.
         /// </summary>
         public bool NotifyAhead_WhenWriteTablePossibleDeadlock=true;
+
     }
 }
