@@ -127,7 +127,7 @@ namespace DBreeze
         public TextSearchConfiguration TextSearchConfig = new DBreezeConfiguration.TextSearchConfiguration();
 
         /// <summary>
-        /// Default is true. On the early stage helps to the programmers to put modifying table into the transaction.SynchronizeTables statement.
+        /// Default is true. On the early stage helps the programmers to put a modifying table into the transaction.SynchronizeTables statement.
         /// </summary>
         public bool NotifyAhead_WhenWriteTablePossibleDeadlock=true;
 

@@ -184,7 +184,9 @@ namespace VisualTester
 
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
-            DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", NotifyAhead_WhenWriteTablePossibleDeadlock = true } );
+            DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  
+                DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", 
+                NotifyAhead_WhenWriteTablePossibleDeadlock = false } );
            //DBreezeEngine dbe = new DBreezeEngine(@"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp");
 
             //using (var t = dbe.GetTransaction())
