@@ -347,6 +347,8 @@ namespace DBreeze.Transactions
             TransactionUnit transactionUnit = null;
             bool deadlock = false;
 
+            Exception innerException = null;
+
             //When SyncTables is called
             //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> SYNC IN Thread: " + transactionThreadId);
 
@@ -380,8 +382,18 @@ namespace DBreeze.Transactions
                             {
                                 return;                       
                             }
+
+                            //Help for the programmer on the early stage to see problem with the possible deadlock
+                            if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock)
+                            {
+                                if (transactionUnit.TransactionWriteTablesCount > 0)
+                                {
+                                    throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
+                                }
+                            }
+                           
                         }
-                        
+
 
                         //iterating over all open transactions except self, finding out if desired tables are locked by other threads.
                         foreach (var tu in this._transactions.Where(r => r.Value.TransactionThreadId != transactionThreadId))
@@ -417,6 +429,7 @@ namespace DBreeze.Transactions
 
                                     break;
                                 }
+                               
                             }
 
                             if (breakOuterLoop)
@@ -425,14 +438,21 @@ namespace DBreeze.Transactions
                     }
                     catch (System.Exception ex)
                     {
-                        this.UnregisterTransaction(transactionThreadId);
+                        innerException = ex;
+                        //this.UnregisterTransaction(transactionThreadId);
 
-                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED,ex);                        
+                        //throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED,ex);                        
                         
                     }
                     finally
                     {
                         _sync_transactions.ExitReadLock();
+                    }
+
+                    if(innerException != null)
+                    {
+                        this.UnregisterTransaction(transactionThreadId);
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED, innerException);
                     }
 
                     //if(true) this thread owns all table for modification lock

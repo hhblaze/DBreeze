@@ -38,6 +38,7 @@ namespace DBreeze.Transactions
         //    this._transaction = new Transaction(this);           
         //}
 
+     
 
 
         public TransactionUnit(int transactionType, TransactionsCoordinator transactionsCoordinator, eTransactionTablesLockTypes lockType, params string[] tables)            
@@ -182,7 +183,7 @@ namespace DBreeze.Transactions
         }
         #endregion
 
-        int transactionWriteTablesCount = 0;
+        internal int transactionWriteTablesCount = 0;
         /// <summary>
         /// Adds a table which will take place in transaction operations.
         /// Reserved has value null, Real (which are acquired by Transaction for Write) has ITransactable filled.

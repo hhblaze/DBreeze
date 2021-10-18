@@ -102,6 +102,7 @@ namespace DBreeze.Exceptions
             TRANSACTION_IN_DEADLOCK,
             TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED,
             TRANSACTION_GETTING_TRANSACTION_FAILED,
+            MODIFICAION_TABLE_IS_NOT_REGISTERED_IN_SYNCHRONIZE_TABLE,
 
 
             //Transaction
@@ -254,9 +255,9 @@ namespace DBreeze.Exceptions
                 case eDBreezeExceptions.TRANSACTION_IN_DEADLOCK:
                     return new DBreezeException(String.Format("Transaction is in a deadlock state and will be terminated. To avoid such case use Transaction.SynchronizeTables!"), innerException);
                 case eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED:
-                    return new DBreezeException(String.Format("Transaction registration table for Write failed!"), innerException);
+                    return new DBreezeException(String.Format("Transaction registration table for Write failed! " + innerException.ToString()), innerException);
                 case eDBreezeExceptions.TRANSACTION_GETTING_TRANSACTION_FAILED:
-                    return new DBreezeException(String.Format("getting transaction failed!"), innerException);
+                    return new DBreezeException(String.Format("getting transaction failed!"), innerException);               
 
 
                 //Transaction

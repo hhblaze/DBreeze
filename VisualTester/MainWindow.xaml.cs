@@ -184,6 +184,48 @@ namespace VisualTester
 
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
+            DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", NotifyAhead_WhenWriteTablePossibleDeadlock = true } );
+           //DBreezeEngine dbe = new DBreezeEngine(@"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp");
+
+            //using (var t = dbe.GetTransaction())
+            //{
+            //    //t.SynchronizeTables("t1", "t2");
+            //    //t.SynchronizeTables("t*");
+            //    //t.SynchronizeTables("t1");
+            //    //t.SynchronizeTables("t1");
+
+            //    //t.RandomKeySorter.Insert("t1", 1, 1);
+
+            //    t.Insert("t1", 1, 1);
+            //    //t.SynchronizeTables("t1", "t2");
+            //    t.Insert("t2", 1, 1);
+            //    t.Commit();
+            //}
+
+            try
+            {
+                using (var t = dbe.GetTransaction())
+                {
+                    //t.SynchronizeTables("t1", "t2");
+                    //t.SynchronizeTables("t*");
+                    //t.SynchronizeTables("t1");
+                    //t.SynchronizeTables("t1");
+
+                    //t.RandomKeySorter.Insert("t1", 1, 1);
+
+                    t.Insert("t1", 1, 1);
+                    //t.SynchronizeTables("t1", "t2");
+                    t.Insert("t2", 1, 1);
+                    t.Commit();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+           
+
+            return;
             //Dictionary<Tuple<int,int>, string> fd9 = new Dictionary<Tuple<int, int>, string>();
             //fd9.Add(new Tuple<int, int>(15,15), "12");
             //fd9.Add(new Tuple<int, int>(16,17), "14");

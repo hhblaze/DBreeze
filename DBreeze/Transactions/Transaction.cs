@@ -54,7 +54,8 @@ namespace DBreeze.Transactions
         /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
         /// sorted by key ascending
         /// </summary>
-        public RandomKeySorter RandomKeySorter = new RandomKeySorter();   
+        public RandomKeySorter RandomKeySorter = new RandomKeySorter();
+                
 
         /// <summary>
         /// Transaction
@@ -198,7 +199,8 @@ namespace DBreeze.Transactions
             if (syncroTablesIsDone)
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLES_RESERVATION_CANBEDONE_ONCE, new Exception());
 
-            syncroTablesIsDone = false;
+            //syncroTablesIsDone = false;
+            syncroTablesIsDone = true;
             //Reservation can be done only once, before calls of any write function.
 
             if (tablesNames.Count()<1)
