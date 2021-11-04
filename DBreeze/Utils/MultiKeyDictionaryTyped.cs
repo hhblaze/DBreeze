@@ -92,8 +92,16 @@ namespace DBreeze.Utils
         public MultiKeyDictionary()
         {
             _key = default(TKey);
-            MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(),ref this.Impl);
+
+            this.Init();
+            //MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(),ref this.Impl);
             //MKDHelper.CreateSerializeDelegate(_key.Length, _key.GetType(), this.serSeq);
+        }
+
+        void Init()
+        {
+            if (this.Impl == null)
+                MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(), ref this.Impl);
         }
 
 
@@ -307,6 +315,9 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public IEnumerable<(TKey, TValue)> GetAll()
         {
+            if (this.Impl == null)
+                this.Init();
+
             List<object> l = null;
 
             if (dimension > -1)
@@ -353,6 +364,9 @@ namespace DBreeze.Utils
                 - GiveMeAll that belong to WarehouseId 1 -> results to 3 returns
                 - GiveMeAll that belong to WarehouseId 1 and PlaceId 2 -> results to 2 returns
              */
+
+            if (this.Impl == null)
+                this.Init();
 
             if (keys == null || keys.Length == 0)
             {

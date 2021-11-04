@@ -6754,7 +6754,7 @@
         </member>
         <member name="F:DBreeze.DBreezeConfiguration.NotifyAhead_WhenWriteTablePossibleDeadlock">
             <summary>
-            Default is true. On the early stage helps to the programmers to put modifying table into the transaction.SynchronizeTables statement.
+            Default is true. On the early stage helps the programmers to put a modifying table into the transaction.SynchronizeTables statement.
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeEngine">
