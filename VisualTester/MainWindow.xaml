@@ -28,7 +28,7 @@
             <Button Name="btTest7" Margin="5,5,5,0" Height="30"  Content="Thread1" Click="btTest7_Click"></Button>
             <Button Name="btTest8" Margin="5,5,5,0" Height="30"  Content="Thread2" Click="btTest8_Click"></Button>
             <Button Name="btTest9" Margin="5,5,5,0" Height="30"  Content="Thread3" Click="btTest9_Click"></Button>
-            <Button Name="btTest10" Margin="5,5,5,0" Height="30"  Content="test1" Click="btTest10_Click"></Button>
+            <Button Name="btTest10" Margin="5,5,5,0" Height="30"  Content="test1 PRESS" Click="btTest10_Click"></Button>
             <Button Name="btTest11" Margin="5,5,5,0" Height="30"  Content="test1" Click="btTest11_Click"></Button>
             <Button Name="btTest12" Margin="5,5,5,0" Height="30"  Content="test1" Click="btTest12_Click"></Button>
             <Button Name="btRestoreBackup" Margin="5,5,5,0" Height="30"  Content="RestoreBackup" Click="btRestoreBackup_Click"></Button>

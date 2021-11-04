@@ -165,7 +165,6 @@ namespace VisualTester
         //}
 
 
-
         [ProtoBuf.ProtoContract]
         public class Human
         {
@@ -181,9 +180,9 @@ namespace VisualTester
         }
 
 
-
         private void btTest10_Click(object sender, RoutedEventArgs e)
-        {
+        {          
+
             DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  
                 DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", 
                 NotifyAhead_WhenWriteTablePossibleDeadlock = false } );
