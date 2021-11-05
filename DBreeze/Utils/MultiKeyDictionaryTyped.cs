@@ -93,15 +93,21 @@ namespace DBreeze.Utils
         {
             _key = default(TKey);
 
-            this.Init();
-            //MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(),ref this.Impl);
-            //MKDHelper.CreateSerializeDelegate(_key.Length, _key.GetType(), this.serSeq);
+            this.Init();           
         }
+
+        object initLock = new object();
 
         void Init()
         {
             if (this.Impl == null)
-                MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(), ref this.Impl);
+            {
+                lock(initLock)
+                {
+                    if (this.Impl == null)
+                        MultiKeyDictionary.CreateDeconstructDelegate(_key.Length, _key.GetType(), ref this.Impl);
+                }
+            }                
         }
 
 
