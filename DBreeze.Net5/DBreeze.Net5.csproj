@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>DBreeze</AssemblyName>
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.103.2021.1104</Version>
-    <FileVersion>1.103.2021.1104</FileVersion>
-    <AssemblyVersion>1.103.2021.1104</AssemblyVersion>
+    <Version>1.104.2021.1118</Version>
+    <FileVersion>1.104.2021.1118</FileVersion>
+    <AssemblyVersion>1.104.2021.1118</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

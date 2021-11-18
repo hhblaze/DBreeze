@@ -26,7 +26,8 @@ namespace Deployer
 
             di = new DirectoryInfo(MyPath);
             //string msbldpath = MyPath + "run_msbuild.bat";
-            string msbldpath = MyPath + "run_msbuild19.bat";
+            //string msbldpath = MyPath + "run_msbuild19.bat";
+            string msbldpath = MyPath + "run_msbuild22.bat";
 
             string fileVersion = "";
             string productVersion = "";
@@ -308,22 +309,22 @@ namespace Deployer
 
 
 
-                //----------------------------------------- DBreeze.Net5 project --------------------------------------
+                //----------------------------------------- DBreeze.Net5 (Actually base is .Net6) project --------------------------------------
                 //Change base when necessary
-                baseFramework = "<TargetFramework>net5.0</TargetFramework>";
+                baseFramework = "<TargetFramework>net6.0</TargetFramework>";
                 baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>";
 
 
                 //.NET5 (default)   (based on .NETC5 project)
-                currentFramework = "<TargetFramework>net5.0</TargetFramework>";
+                currentFramework = "<TargetFramework>net6.0</TargetFramework>";
                 currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>";
 
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0", true);
+                if (Directory.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0"))
+                    Directory.Delete(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0", true);
                 //msbldpath = MyPath + "run_msbuild_uwp.bat";
                 prj = File.ReadAllText(MyPath + @"..\..\DBreeze.Net5\DBreeze.Net5.csproj");
                 tpr = prj;
-                Console.WriteLine("Creating Net5.0");
+                Console.WriteLine("Creating Net6.0");
                 //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
                 tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
                 //tpr = tpr.Replace("<TargetFramework>net5.0</TargetFramework>", "<TargetFramework>net5.0</TargetFramework>");
@@ -333,12 +334,12 @@ namespace Deployer
                 File.WriteAllText(MyPath + @"..\..\DBreeze.Net5\DBreezeTMP.csproj", tpr);
                 Compile(msbldpath, "DBreeze.Net5");
 
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0\DBreeze.dll");
+                noerror = File.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.dll");
                 Console.WriteLine("done " + noerror);
                 if (!noerror)
                     return;//bin\Release\net5.0\DBreeze.xml
-                File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0\DBreeze.dll", MyPath + @"NET5_0\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net5.0\DBreeze.xml", MyPath + @"NET5_0\DBreeze.XML", true);
+                File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.dll", MyPath + @"NET6_0\DBreeze.dll", true);
+                File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.xml", MyPath + @"NET6_0\DBreeze.XML", true);
 
                 File.Delete(MyPath + @"..\..\DBreeze.Net5\DBreezeTMP.csproj");
 
@@ -551,13 +552,15 @@ namespace Deployer
 
             foreach (var d in di.GetDirectories())
             {
-               
+                Debug.WriteLine(d.FullName);
 
 
                 foreach (var f in d.GetFiles("DBreeze.dll"))
                 {
+                    var vf = FileVersionInfo.GetVersionInfo(f.FullName);
                     fileVersion = FileVersionInfo.GetVersionInfo(f.FullName).FileVersion;
                     productVersion = FileVersionInfo.GetVersionInfo(f.FullName).ProductVersion;
+                    break;
                 }
 
                 //Initial zip files must be copied manually, because we must give them name in the end, like _NET472
@@ -691,7 +694,7 @@ namespace Deployer
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.dll", "lib/netcoreapp2.0/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.xml", "lib/netcoreapp2.0/DBreeze.XML", CompressionLevel.Optimal);
                 
-                CreateLibEntry(archive, "lib/net5.0", MyPath + "NET5_0"); //<--------------------------------------------------------------------------------- USE THAT FOR NEW ENTRIES
+                CreateLibEntry(archive, "lib/net6.0", MyPath + "NET6_0"); //<--------------------------------------------------------------------------------- USE THAT FOR NEW ENTRIES
                 //archive.GetEntry("lib/net5.0/DBreeze.dll").Delete();
                 //archive.GetEntry("lib/net5.0/DBreeze.XML").Delete();
                 //archive.CreateEntryFromFile(MyPath + "NET5_0" + @"\DBreeze.dll", "lib/net5.0/DBreeze.dll", CompressionLevel.Optimal);

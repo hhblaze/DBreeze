@@ -1,0 +1,2 @@
+"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\msbuild.exe" "%~dp0..\..\%1\DBreezeTMP.csproj" /t:restore
+"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\msbuild.exe" "%~dp0..\..\%1\DBreezeTMP.csproj" /t:rebuild /p:Configuration=Release

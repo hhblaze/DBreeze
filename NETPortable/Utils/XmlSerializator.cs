@@ -21,7 +21,7 @@ namespace DBreeze.Utils
         /// </summary>
         /// <param name="objectForSerialization"></param>
         /// <returns></returns>
-        public static string SerializeXml(this object objectForSerialization)
+        internal static string SerializeXml(this object objectForSerialization)
         {
             System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(objectForSerialization.GetType());
 
@@ -62,7 +62,7 @@ namespace DBreeze.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static T DeserializeXml<T>(this string str)
+        internal static T DeserializeXml<T>(this string str)
         {
             System.Xml.Serialization.XmlSerializer xs = new System.Xml.Serialization.XmlSerializer(typeof(T));
 

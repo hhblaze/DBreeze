@@ -24,7 +24,7 @@ namespace DBreeze.Utils
         /// <param name="objectForSerialization"></param>
         /// <returns></returns>
         //public static string SerializeXml(this object objectForSerialization)
-        public static string SerializeXml(this List<string> objectForSerialization)
+        internal static string SerializeXml(this List<string> objectForSerialization)
         {
             StringBuilder sb = new StringBuilder();
             foreach (var el in objectForSerialization)
@@ -54,7 +54,7 @@ namespace DBreeze.Utils
         /// <typeparam name="T"></typeparam>
         /// <param name="str"></param>
         /// <returns></returns>
-        public static List<string> DeserializeXml<T>(this string str)
+        internal static List<string> DeserializeXml<T>(this string str)
         //public static T DeserializeXml<T>(this string str)
         {
             List<string> r = new List<string>();
