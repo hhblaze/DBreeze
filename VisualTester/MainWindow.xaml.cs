@@ -181,12 +181,13 @@ namespace VisualTester
 
 
         private void btTest10_Click(object sender, RoutedEventArgs e)
-        {          
+        {
 
-            DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  
-                DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", 
-                NotifyAhead_WhenWriteTablePossibleDeadlock = false } );
-           //DBreezeEngine dbe = new DBreezeEngine(@"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp");
+            //DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  
+            //    DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", 
+            //    NotifyAhead_WhenWriteTablePossibleDeadlock = false } );
+
+            DBreezeEngine dbe = new DBreezeEngine(@"D:\Temp\1\dbtmp");
 
             //using (var t = dbe.GetTransaction())
             //{
@@ -216,7 +217,7 @@ namespace VisualTester
 
                     t.Insert("t1", 1, 1);
                     //t.SynchronizeTables("t1", "t2");
-                    t.Insert("t2", 1, 1);
+                    t.Insert("t1", 1, 1);
                     t.Commit();
                 }
             }
