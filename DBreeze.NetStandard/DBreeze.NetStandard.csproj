@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.104.2021.1118</Version>
-    <AssemblyVersion>1.104.2021.1118</AssemblyVersion>
-    <FileVersion>1.104.2021.1118</FileVersion>
+    <Version>1.105.2021.1208</Version>
+    <AssemblyVersion>1.105.2021.1208</AssemblyVersion>
+    <FileVersion>1.105.2021.1208</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

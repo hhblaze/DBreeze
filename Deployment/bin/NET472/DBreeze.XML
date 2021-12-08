@@ -5007,6 +5007,25 @@
             </param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.SelectForwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Int32,System.Boolean)">
+            <summary>
+            Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="tableName"></param>
+            <param name="startKey"></param>
+            <param name="includeStartKey">if start key will be included in the final result</param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey">if stop key will be included in the final result</param>
+            <param name="grabSomeLeadingRecords">helps to grab several leading records before statrKey</param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Boolean)">
             <summary>
             Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
@@ -5018,6 +5037,26 @@
             <param name="includeStartKey">if start key will be included in the final result</param>
             <param name="stopKey"></param>
             <param name="includeStopKey">if stop key will be included in the final result</param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.SelectBackwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Int32,System.Boolean)">
+            <summary>
+            Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
+            Contains grabSomeLeadingRecords, that helps to grab several leading records before statrKey
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="tableName"></param>
+            <param name="startKey"></param>
+            <param name="includeStartKey">if start key will be included in the final result</param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey">if stop key will be included in the final result</param>
+            <param name="grabSomeLeadingRecords">helps to grab several leading records before statrKey</param>
             <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
             <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
             <para>If this parameter set to true, enumerator will return key/value,</para>

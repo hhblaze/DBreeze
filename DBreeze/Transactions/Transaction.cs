@@ -2292,6 +2292,62 @@ namespace DBreeze.Transactions
             }
         }
 
+        /// <summary>
+        /// Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tableName"></param>
+        /// <param name="startKey"></param>
+        /// <param name="includeStartKey">if start key will be included in the final result</param>
+        /// <param name="stopKey"></param>
+        /// <param name="includeStopKey">if stop key will be included in the final result</param>
+        /// <param name="grabSomeLeadingRecords">helps to grab several leading records before statrKey</param>
+        /// <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+        /// <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+        /// <para>If this parameter set to true, enumerator will return key/value,</para>
+        /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+        /// </param>
+        /// <returns></returns>
+        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, int grabSomeLeadingRecords, bool AsReadVisibilityScope = false)
+        {
+
+            ITrieRootNode readRoot = null;
+            LTrie table = GetReadTableFromBuffer(tableName, out readRoot, AsReadVisibilityScope);
+
+            if (table == null)
+            {
+                //do nothing end of iteration                
+            }
+            else
+            {
+                byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
+                byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
+
+                if (grabSomeLeadingRecords > 0)
+                {
+                    Dictionary<int, LTrieRow> rRows = new Dictionary<int, LTrieRow>();
+                    int j = 0;
+                    foreach (var xrow in table.IterateBackwardStartFrom(btStartKey, false, readRoot, this._valuesLazyLoadingIsOn).Take(grabSomeLeadingRecords))
+                    {
+                        rRows.Add(j, xrow);
+                        j++;
+                    }
+
+                    foreach (var xrow in rRows.OrderByDescending(r => r.Key))
+                        yield return new Row<TKey, TValue>(xrow.Value, null, !(readRoot == null));
+                }
+
+                //readRoot can be either filled or null
+                //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
+                foreach (var xrow in table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot, this._valuesLazyLoadingIsOn))
+                {
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
+                }
+            }
+        }
+
 
         /// <summary>
         /// Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
@@ -2333,7 +2389,64 @@ namespace DBreeze.Transactions
                 }
             }
         }
-             
+
+        /// <summary>
+        /// Iterates table backward (ordered by key descending). Starting from specified StartKey down to specified StopKey.
+        /// Contains grabSomeLeadingRecords, that helps to grab several leading records before statrKey
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tableName"></param>
+        /// <param name="startKey"></param>
+        /// <param name="includeStartKey">if start key will be included in the final result</param>
+        /// <param name="stopKey"></param>
+        /// <param name="includeStopKey">if stop key will be included in the final result</param>
+        /// <param name="grabSomeLeadingRecords">helps to grab several leading records before statrKey</param>
+        /// <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+        /// <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+        /// <para>If this parameter set to true, enumerator will return key/value,</para>
+        /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+        /// </param>
+        /// <returns></returns>
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(string tableName, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, int grabSomeLeadingRecords, bool AsReadVisibilityScope = false)
+        {
+
+            ITrieRootNode readRoot = null;
+            LTrie table = GetReadTableFromBuffer(tableName, out readRoot, AsReadVisibilityScope);
+
+            if (table == null)
+            {
+                //do nothing end of iteration                
+            }
+            else
+            {
+                byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
+                byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
+
+                if (grabSomeLeadingRecords > 0)
+                {
+                    Dictionary<int, LTrieRow> rRows = new Dictionary<int, LTrieRow>();
+                    int j = 0;
+                    foreach (var xrow in table.IterateForwardStartFrom(btStartKey, false, readRoot, this._valuesLazyLoadingIsOn).Take(grabSomeLeadingRecords))
+                    {
+                        rRows.Add(j, xrow);
+                        j++;
+                    }
+
+                    foreach(var xrow in rRows.OrderByDescending(r=>r.Key))
+                        yield return new Row<TKey, TValue>(xrow.Value, null, !(readRoot == null));
+                }
+
+                //readRoot can be either filled or null
+                //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
+                foreach (var xrow in table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot, this._valuesLazyLoadingIsOn))
+                {
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
+                }
+            }
+        }
+
         /// <summary>
         /// <para>Mostly can be used for string or byte[] keys</para>
         /// <para>Iterates table forward (ordered by key ascending). Starting and including specified key part (big-endian from byte[] point of view)</para>

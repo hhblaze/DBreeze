@@ -208,6 +208,29 @@ namespace VisualTester
             {
                 using (var t = dbe.GetTransaction())
                 {
+                    foreach(var row in t.SelectBackwardFromTo<int,int>("t1",7,true,3,true,2))
+                    {
+                        Console.WriteLine(row.Key);
+                        
+                    }
+                    Console.WriteLine("-------");
+                    foreach (var row in t.SelectForwardFromTo<int, int>("t1", 5, true, 9, true, 2))
+                    {
+                        Console.WriteLine(row.Key);
+
+                    }
+                }
+
+                return;
+
+                using (var t = dbe.GetTransaction())
+                {
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        t.Insert<int, int>("t1", i, i);
+                    }
+
                     //t.SynchronizeTables("t1", "t2");
                     //t.SynchronizeTables("t*");
                     //t.SynchronizeTables("t1");
@@ -215,9 +238,11 @@ namespace VisualTester
 
                     //t.RandomKeySorter.Insert("t1", 1, 1);
 
-                    t.Insert("t1", 1, 1);
+                    //t.Insert("t1", 1, 1);
                     //t.SynchronizeTables("t1", "t2");
-                    t.Insert("t1", 1, 1);
+                    //t.Insert("t1", 1, 1);
+
+
                     t.Commit();
                 }
             }
