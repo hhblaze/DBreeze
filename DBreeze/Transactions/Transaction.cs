@@ -2334,7 +2334,7 @@ namespace DBreeze.Transactions
                     //    currents[table] = null;
                 }
 
-                byte[] minKey = null;
+                byte[] minKey;
                 string minKeyTable = String.Empty;
                 Row<TKey, TValue> minRow = null;
 
@@ -2369,7 +2369,7 @@ namespace DBreeze.Transactions
                         }
                     }
 
-                    //mins are found returning 
+                    //mins are found, returning 
                     if (minKey != null)
                     {
                         minRow.TableName = minKeyTable;
@@ -2536,7 +2536,7 @@ namespace DBreeze.Transactions
                 }
 
 
-                byte[] maxKey = null;
+                byte[] maxKey;
                 string maxKeyTable = String.Empty;
                 Row<TKey, TValue> maxRow = null;
 
@@ -2571,7 +2571,7 @@ namespace DBreeze.Transactions
                         }
                     }
 
-                    //mins are found returning 
+                    //maxs are found, returning 
                     if (maxKey != null)
                     {
                         maxRow.TableName = maxKeyTable;
