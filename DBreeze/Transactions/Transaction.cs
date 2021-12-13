@@ -2292,6 +2292,107 @@ namespace DBreeze.Transactions
             }
         }
 
+
+        /// <summary>
+        /// Iterates multiple tables forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey,
+        /// returning minimal values from different tables first. If several tables contain the same values they will be supplied in 
+        /// order of supplied table names. Keys in all tables must have the same structure and of course length, otherwise exception
+        /// will be thrown
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tables"></param>
+        /// <param name="startKey"></param>
+        /// <param name="includeStartKey"></param>
+        /// <param name="stopKey"></param>
+        /// <param name="includeStopKey"></param>
+        /// <param name="AsReadVisibilityScope"></param>
+        /// <returns></returns>
+        public IEnumerable<Row<TKey, TValue>> Multi_SelectForwardFromTo<TKey, TValue>(HashSet<string> tables, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope = false)
+        {
+            if(tables != null && tables.Count>0)
+            {
+                Dictionary<string, IEnumerator<Row<TKey,TValue>>> enumerators = new Dictionary<string, IEnumerator<Row<TKey,TValue>>>();
+                Dictionary<string, Row<TKey, TValue>> currents = new Dictionary<string, Row<TKey,TValue>>();
+                int keyLength = -1;
+
+                foreach(var table in tables)
+                {
+                    var ienum = SelectForwardFromTo<TKey, TValue>(table, startKey, includeStartKey, stopKey, includeStopKey, AsReadVisibilityScope).GetEnumerator();
+                    enumerators[table] = ienum;
+                    if (ienum.MoveNext())
+                    {
+                        currents[table] = ienum.Current; //returns null if row not found
+                        if (keyLength == -1)
+                            keyLength = ienum.Current.Key.ToBytes().Length;
+                        else if(ienum.Current.Key.ToBytes().Length != keyLength)
+                        {
+                            throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE, new Exception());                           
+                        }
+                    }
+                    else
+                        currents[table] = null;
+                }
+
+                byte[] minKey = null;
+                string minKeyTable = String.Empty;
+                Row<TKey, TValue> minRow = null;
+
+                while (true)
+                {
+                    //Comparing all currents, returning minimal and movingNext found current. if all currents are null return                 
+
+                    minKey = null;
+
+                    //Finding minimal of all currents
+                    foreach (var cur in currents)
+                    {
+                        if (cur.Value == null)
+                            continue;
+
+                        var currentKey = cur.Value.Key.ToBytes();
+
+                        if (minKey == null)
+                        {   
+                            minKey = currentKey;
+                            minKeyTable = cur.Key;
+                            minRow = cur.Value;
+                            continue;
+                        }
+
+                        //finding minKey from all currents
+                       if(currentKey.IfStringArraySmallerThen(minKey))
+                        {
+                            minKey = currentKey;
+                            minKeyTable = cur.Key;
+                            minRow = cur.Value;
+                        }
+                    }
+
+                    //mins are found returning 
+                    if (minKey != null)
+                    {
+                        minRow.TableName = minKeyTable;
+                        yield return minRow;
+                        var ienum = enumerators[minKeyTable];                       
+                        if (ienum.MoveNext())
+                            currents[minKeyTable] = ienum.Current; //returns null if row not found
+                        else
+                            currents[minKeyTable] = null;
+
+                    }
+                    else
+                        break;
+                    
+                }
+
+            }
+
+        }
+
+
+
+
         /// <summary>
         /// Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
         /// </summary>
@@ -2388,6 +2489,107 @@ namespace DBreeze.Transactions
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Iterates multiple tables backward (ordered by key descending). Starting from specified StartKey down to specified StopKey,
+        /// returning maximal values from different tables first. If several tables contain the same values they will be supplied in 
+        /// order of the supplied table names. Keys in all tables must have the same structure and, of course, length, otherwise exception
+        /// will be thrown.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="tables"></param>
+        /// <param name="startKey"></param>
+        /// <param name="includeStartKey"></param>
+        /// <param name="stopKey"></param>
+        /// <param name="includeStopKey"></param>
+        /// <param name="AsReadVisibilityScope"></param>
+        /// <returns></returns>
+        public IEnumerable<Row<TKey, TValue>> Multi_SelectBackwardFromTo<TKey, TValue>(HashSet<string> tables, TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope = false)
+        {
+            if (tables != null && tables.Count > 0)
+            {
+                Dictionary<string, IEnumerator<Row<TKey, TValue>>> enumerators = new Dictionary<string, IEnumerator<Row<TKey, TValue>>>();
+                Dictionary<string, Row<TKey, TValue>> currents = new Dictionary<string, Row<TKey, TValue>>();
+
+                int keyLength = -1;
+
+                foreach (var table in tables)
+                {
+                    var ienum = SelectBackwardFromTo<TKey, TValue>(table, startKey, includeStartKey, stopKey, includeStopKey, AsReadVisibilityScope).GetEnumerator();
+                    enumerators[table] = ienum;
+                    if (ienum.MoveNext())
+                    {
+                        currents[table] = ienum.Current; //returns null if row not found
+
+                        if (keyLength == -1)
+                            keyLength = ienum.Current.Key.ToBytes().Length;
+                        else if (ienum.Current.Key.ToBytes().Length != keyLength)
+                        {
+                            throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE, new Exception());
+                        }
+                    }
+                    else
+                        currents[table] = null;
+                }
+
+
+                byte[] maxKey = null;
+                string maxKeyTable = String.Empty;
+                Row<TKey, TValue> maxRow = null;
+
+                while (true)
+                {
+                    //Comparing all currents, returning minimal and movingNext found current. if all currents are null return                 
+
+                    maxKey = null;
+
+                    //Finding minimal of all currents
+                    foreach (var cur in currents)
+                    {
+                        if (cur.Value == null)
+                            continue;
+
+                        var currentKey = cur.Value.Key.ToBytes();
+
+                        if (maxKey == null)
+                        {
+                            maxKey = currentKey;
+                            maxKeyTable = cur.Key;
+                            maxRow = cur.Value;
+                            continue;
+                        }
+
+                        //finding minKey from all currents
+                        if (currentKey.IfStringArrayBiggerThen(maxKey))
+                        {
+                            maxKey = currentKey;
+                            maxKeyTable = cur.Key;
+                            maxRow = cur.Value;
+                        }
+                    }
+
+                    //mins are found returning 
+                    if (maxKey != null)
+                    {
+                        maxRow.TableName = maxKeyTable;
+                        yield return maxRow;
+                        var ienum = enumerators[maxKeyTable];
+                        if (ienum.MoveNext())
+                            currents[maxKeyTable] = ienum.Current; //returns null if row not found
+                        else
+                            currents[maxKeyTable] = null;
+
+                    }
+                    else
+                        break;
+
+                }
+
+            }
+
         }
 
         /// <summary>

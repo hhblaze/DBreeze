@@ -183,26 +183,57 @@ namespace VisualTester
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
 
+            return;
             //DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  
             //    DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", 
             //    NotifyAhead_WhenWriteTablePossibleDeadlock = false } );
 
             DBreezeEngine dbe = new DBreezeEngine(@"D:\Temp\1\dbtmp");
 
-            //using (var t = dbe.GetTransaction())
-            //{
-            //    //t.SynchronizeTables("t1", "t2");
-            //    //t.SynchronizeTables("t*");
-            //    //t.SynchronizeTables("t1");
-            //    //t.SynchronizeTables("t1");
 
-            //    //t.RandomKeySorter.Insert("t1", 1, 1);
+            using (var tran = dbe.GetTransaction())
+            {
+                //tran.SynchronizeTables("t*");
+              
+                //for (int i = 0; i < 20; i++)
+                //{
+                //    tran.Insert<int, int>("t1", i, i);
+                //    tran.Insert<int, int>("t2", ++i, i);
+                //    tran.Insert<int, int>("t3", ++i, i);
+                //}
+                //// Manual values for duplicate keys between tables
+                //tran.Insert<int, int>("t1", 5, 50);
+                //tran.Insert<int, int>("t2", 8, 80);
+                //tran.Insert<int, int>("t3", 15, 150);
+                //tran.Commit();
 
-            //    t.Insert("t1", 1, 1);
-            //    //t.SynchronizeTables("t1", "t2");
-            //    t.Insert("t2", 1, 1);
-            //    t.Commit();
-            //}
+                //    //t.SynchronizeTables("t1", "t2");
+                //    //t.SynchronizeTables("t*");
+                //    //t.SynchronizeTables("t1");
+                //    //t.SynchronizeTables("t1");
+
+                //    //t.RandomKeySorter.Insert("t1", 1, 1);
+
+                //    t.Insert("t1", 1, 1);
+                //    //t.SynchronizeTables("t1", "t2");
+                //    t.Insert("t2", 1, 1);
+                //    t.Commit();
+                HashSet<string> tables = new HashSet<string>() { "t1", "t4", "t2", "t3" };
+
+                foreach (var el in tran.Multi_SelectForwardFromTo<int, int>(tables, int.MinValue, true, int.MaxValue, true))
+                {
+                    Console.WriteLine($"tbl: {el.TableName}: Key: {el.Key}; Value: {el.Value}");
+                }
+
+                Console.WriteLine("-------------------------------");
+
+                foreach (var el in tran.Multi_SelectBackwardFromTo<int, int>(tables, int.MaxValue, true, int.MinValue, true))
+                {
+                    Console.WriteLine($"tbl: {el.TableName}: Key: {el.Key}; Value: {el.Value}");
+                }
+            }
+
+            return;
 
             try
             {

@@ -13,7 +13,8 @@ using DBreeze.DataTypes;
 using DBreeze.Utils;
 
 namespace DBreeze.DataTypes
-{
+{  
+
     /// <summary>
     /// Row
     /// </summary>
@@ -71,6 +72,11 @@ namespace DBreeze.DataTypes
         //    if (_exists)
         //        _key = DataTypesConvertor.ConvertBack<TKey>(key);
         //}
+
+        /// <summary>
+        /// Default null. Returns table name this row belongs to in case of Multi_SelectForward etc requests
+        /// </summary>
+        public string TableName { get; set; } = null;
 
         /// <summary>
         /// Exists

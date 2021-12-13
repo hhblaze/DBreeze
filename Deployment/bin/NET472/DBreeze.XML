@@ -208,6 +208,11 @@
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
         </member>
+        <member name="P:DBreeze.DataTypes.Row`2.TableName">
+            <summary>
+            Default null. Returns table name this row belongs to in case of Multi_SelectForward etc requests
+            </summary>
+        </member>
         <member name="P:DBreeze.DataTypes.Row`2.Exists">
             <summary>
             Exists
@@ -5007,6 +5012,23 @@
             </param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.Multi_SelectForwardFromTo``2(System.Collections.Generic.HashSet{System.String},``0,System.Boolean,``0,System.Boolean,System.Boolean)">
+            <summary>
+            Iterates multiple tables forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey,
+            returning minimal values from different tables first. If several tables contain the same values they will be supplied in 
+            order of supplied table names. Keys in all tables must have the same structure and of course length, otherwise exception
+            will be thrown
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="tables"></param>
+            <param name="startKey"></param>
+            <param name="includeStartKey"></param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey"></param>
+            <param name="AsReadVisibilityScope"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectForwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Int32,System.Boolean)">
             <summary>
             Iterates table forward (ordered by key ascending). Starting from specified StartKey up to specified StopKey
@@ -5042,6 +5064,23 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.Multi_SelectBackwardFromTo``2(System.Collections.Generic.HashSet{System.String},``0,System.Boolean,``0,System.Boolean,System.Boolean)">
+            <summary>
+            Iterates multiple tables backward (ordered by key descending). Starting from specified StartKey down to specified StopKey,
+            returning maximal values from different tables first. If several tables contain the same values they will be supplied in 
+            order of the supplied table names. Keys in all tables must have the same structure and, of course, length, otherwise exception
+            will be thrown.
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="tables"></param>
+            <param name="startKey"></param>
+            <param name="includeStartKey"></param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey"></param>
+            <param name="AsReadVisibilityScope"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.SelectBackwardFromTo``2(System.String,``0,System.Boolean,``0,System.Boolean,System.Int32,System.Boolean)">

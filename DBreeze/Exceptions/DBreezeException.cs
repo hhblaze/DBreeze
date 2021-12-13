@@ -114,6 +114,9 @@ namespace DBreeze.Exceptions
             UNSUPPORTED_DATATYPE_VALUE,
             KEY_CANT_BE_NULL,
             PARTIAL_VALUE_CANT_BE_NULL,
+            
+            //MULTI TABLES SELECT
+            KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE,
 
             //XML serializer
             XML_SERIALIZATION_ERROR,
