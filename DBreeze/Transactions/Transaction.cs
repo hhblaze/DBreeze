@@ -2330,8 +2330,8 @@ namespace DBreeze.Transactions
                             throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE, new Exception());                           
                         }
                     }
-                    else
-                        currents[table] = null;
+                    //else
+                    //    currents[table] = null;
                 }
 
                 byte[] minKey = null;
@@ -2531,8 +2531,8 @@ namespace DBreeze.Transactions
                             throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE, new Exception());
                         }
                     }
-                    else
-                        currents[table] = null;
+                    //else
+                    //    currents[table] = null;
                 }
 
 
