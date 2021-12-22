@@ -512,6 +512,19 @@ namespace DBreeze.TextSearch
                     return this.foundArrays;
 
                 case eOperation.EXCLUDE:
+
+                    //if((ra==null || ra.Count==0) && (la != null && la.Count>0))
+                    //{
+                    //    this.foundArrays.Add(la.FirstOrDefault());
+                    //    return this.foundArrays;
+                    //}//handling documents that don't have exclude words
+
+                    if (ra?.Count == 0 && la?.Count > 0)
+                    {
+                        this.foundArrays.Add(la.FirstOrDefault());
+                        return this.foundArrays;
+                    }//handling documents that don't have exclude words
+
                     if (la == null || ra == null || la.Count == 0 || ra.Count == 0)
                         return this.foundArrays;
                     mrg = WABI.MergeByExcludeLogic(la.FirstOrDefault(), ra.FirstOrDefault());

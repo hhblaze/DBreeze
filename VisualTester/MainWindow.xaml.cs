@@ -183,13 +183,55 @@ namespace VisualTester
         private void btTest10_Click(object sender, RoutedEventArgs e)
         {
 
-            return;
+           
             //DBreezeEngine dbe = new DBreezeEngine(new DBreezeConfiguration {  
             //    DBreezeDataFolderName = @"C:\Users\Secure\Documents\VSProjects\tests\1\dbtmp", 
             //    NotifyAhead_WhenWriteTablePossibleDeadlock = false } );
 
             DBreezeEngine dbe = new DBreezeEngine(@"D:\Temp\1\dbtmp");
 
+            using (var tran = dbe.GetTransaction())
+            {
+
+                //tran.TextInsert("txt", new byte[] { 1 }, "first master flask");
+                //tran.TextInsert("txt", new byte[] { 2 }, "first master with task");
+                //tran.TextInsert("txt", new byte[] { 3 }, "first floster task");
+                //tran.TextInsert("txt", new byte[] { 4 }, "first master hypster");
+
+                ////tran.TextInsert("txt", new byte[] { 4 }, "entity_4");
+                ////tran.TextInsert("txt", new byte[] { 5 }, "entity_5");
+                ////tran.TextInsert("txt", new byte[] { 6 }, "entity_6");
+                ////
+                ////tran.TextInsert("txt", new byte[] { 7 }, "entity_7");
+                ////tran.TextInsert("txt", new byte[] { 8 }, "entity_8");
+                ////tran.TextInsert("txt", new byte[] { 9 }, "entity_9");
+                ///
+                /// 
+               // tran.Commit();
+
+                var ts = tran.TextSearch("txt");
+                var q = ts.Block("first master");
+
+                //List<string> excludingTags = new List<string> { "#GR_15", "#GR_16" };
+                //List<string> excludingTags = new List<string> { "task", "flask"};
+                //List<string> excludingTags = new List<string> { "task", "flaskfd" };
+                List<string> excludingTags = new List<string> { "taskf withd" };
+
+                foreach (var egr in excludingTags)
+                {
+                    q = q.Exclude(egr,ignoreOnEmptyParameters: false);
+                }
+
+                foreach (var el in q.GetDocumentIDs().Take(1000))
+                {
+                    Debug.WriteLine(el.ToBytesString());
+                }
+
+                
+            }
+      
+
+                return;
 
             using (var tran = dbe.GetTransaction())
             {
