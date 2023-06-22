@@ -4,6 +4,8 @@ branches:
   only:
     - master
 
+configuration: Release
+
 build:
   project: DBreeze/Dbreeze.csproj
   verbosity: minimal
