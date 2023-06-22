@@ -1,3 +1,13 @@
+version: 1.0.{build}
+image: Visual Studio 2022
+branches:
+  only:
+    - master
+
+build:
+  project: DBreeze/Dbreeze.csproj
+  verbosity: minimal
+
 deploy:
 - provider: Webhook
   url: https://app.signpath.io/API/v1/75ba23b1-b387-4f6d-861e-f190db22f4f3/Integrations/AppVeyor?ProjectSlug=DBreeze&SigningPolicySlug=release-signing&ArtifactConfigurationSlug=Release
