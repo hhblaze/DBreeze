@@ -9,6 +9,10 @@ configuration: Release
 build:
   project: DBreeze/Dbreeze.csproj
   verbosity: minimal
+  
+artifacts:
+- path: DBreeze/bin/Release/DBreeze.dll
+  name: DBreeze.dll  
 
 deploy:
 - provider: Webhook
