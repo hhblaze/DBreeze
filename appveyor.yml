@@ -7,12 +7,16 @@ branches:
 configuration: Release
 
 build:
-  project: DBreeze/Dbreeze.csproj
+  project: 
+   - DBreeze/Dbreeze.csproj
+   - DBreeze.Net5/DBreeze.Net5.csproj
   verbosity: minimal
   
 artifacts:
 - path: DBreeze/bin/Release/DBreeze.dll
   name: DBreeze.dll  
+- path: DBreeze.Net5/bin/Release/net6.0/DBreeze.dll
+  name: DBreeze.dll 
   
 environment:
   SIGNPATH_SIGNING_POLICY_SLUG: release-signing
