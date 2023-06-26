@@ -6,11 +6,9 @@ branches:
 
 configuration: Release
 
-build:
-  project: 
-   - DBreeze/Dbreeze.csproj
-   - DBreeze.Net5/DBreeze.Net5.csproj
-  verbosity: minimal
+build_script:
+- cmd: msbuild /p:Configuration=Release DBreeze.Net5/DBreeze.Net5.csproj
+- cmd: msbuild /p:Configuration=Release DBreeze/Dbreeze.csproj
   
 artifacts:
 - path: DBreeze/bin/Release/DBreeze.dll
