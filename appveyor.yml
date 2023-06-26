@@ -6,6 +6,9 @@ branches:
 
 configuration: Release
 
+before_build:
+- cmd: dotnet restore DBreeze.Net5/DBreeze.Net5.csproj
+
 build_script:
 - cmd: msbuild /p:Configuration=Release DBreeze.Net5/DBreeze.Net5.csproj
 - cmd: msbuild /p:Configuration=Release DBreeze/Dbreeze.csproj
