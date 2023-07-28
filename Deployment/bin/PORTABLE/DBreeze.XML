@@ -6845,6 +6845,13 @@
             DBreeze version number
             </summary>        
         </member>
+        <member name="F:DBreeze.DBreezeEngine.Resources">
+            <summary>
+            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
+            Key is a string, Value any standard DBreeze.DataType (or serialized object by supplied serializer).
+            Can be called from anywhere, even from other transactions. There is no need to add into sync table
+            </summary>
+        </member>
         <member name="P:DBreeze.DBreezeEngine.DBisOperable">
             <summary>
             Db is not operable any more by DBisOperableReason reason 

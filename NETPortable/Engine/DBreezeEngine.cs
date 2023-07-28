@@ -39,6 +39,12 @@ namespace DBreeze
         internal TextDeferredIndexer DeferredIndexer = null;
         internal TransactionsCoordinator _transactionsCoordinator = null;
         /// <summary>
+        /// DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
+        /// Key is a string, Value any standard DBreeze.DataType (or serialized object by supplied serializer).
+        /// Can be called from anywhere, even from other transactions. There is no need to add into sync table
+        /// </summary>
+        public DBreezeResources Resources = null;
+        /// <summary>
         /// Db is not operable any more by DBisOperableReason reason 
         /// </summary>
         public bool DBisOperable { get; internal set; } = true;

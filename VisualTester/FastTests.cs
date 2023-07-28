@@ -1501,7 +1501,7 @@ namespace VisualTester
             using (var tran = engine.GetTransaction())
             {
                 tran.ValuesLazyLoadingIsOn = false;
-
+                
                 DBreeze.Diagnostic.SpeedStatistic.StartCounter("a");
                  foreach (var row in tran.SelectForward<int, byte[]>("A"))
                  {
