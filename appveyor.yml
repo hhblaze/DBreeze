@@ -17,11 +17,11 @@ artifacts:
   name: DBreeze.dll 
   
 environment:
-  SIGNPATH_SIGNING_POLICY_SLUG: test-signing
+  SIGNPATH_SIGNING_POLICY_SLUG: release-signing
   ARTIFACT_CONFIGURATION_SLUG: Release  
 
 deploy:
 - provider: Webhook
-  url: https://app.signpath.io/API/v1/75ba23b1-b387-4f6d-861e-f190db22f4f3/Integrations/AppVeyor?ProjectSlug=DBreeze&SigningPolicySlug=test-signing&ArtifactConfigurationSlug=Release
+  url: https://app.signpath.io/API/v1/75ba23b1-b387-4f6d-861e-f190db22f4f3/Integrations/AppVeyor?ProjectSlug=DBreeze&SigningPolicySlug=release-signing&ArtifactConfigurationSlug=Release
   authorization:
      secure: oRfPejC04wpVfiWyfd4RLwz4FQPfZ6SQmGnSlviHIMoePzPEpw7QMSwCBvkQoQF8lY42KFandCa1BF9E+vpUDg==
