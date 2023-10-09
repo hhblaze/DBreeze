@@ -3,6 +3,8 @@
   It's a free software for those who think that it should be free.
 */
 
+#if KNNSearch
+
 using DBreeze.TextSearch;
 using DBreeze.Utils;
 using System;
@@ -885,3 +887,4 @@ namespace DBreeze.HNSW
 
     }
 }
+#endif

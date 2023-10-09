@@ -3,6 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
+#if KNNSearch
 using System;
 using System.Runtime.CompilerServices;
 
@@ -121,3 +122,4 @@ namespace DBreeze.HNSW
         }
     }
 }
+#endif

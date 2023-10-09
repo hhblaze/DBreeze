@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if KNNSearch
+using System;
 
 namespace DBreeze.HNSW
 {
@@ -364,3 +365,4 @@ namespace DBreeze.HNSW
         }
     }
 }
+#endif

@@ -245,29 +245,29 @@ namespace Deployer
                 //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"XAMARIN\DBreeze.XML", true);
 
 
-                //.NET 4.5
-                currentFramework = "<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
+                ////.NET 4.5
+                //currentFramework = "<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
 
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET4.5");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
-                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET4.5");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
+                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
 
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
 
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
-                //--------------------------------------------------------
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
+                ////--------------------------------------------------------
 
                 //Removing DBreeze TMP project
                 File.Delete(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj");
@@ -283,28 +283,28 @@ namespace Deployer
 
                 //-----------------------------------------  DBreeze.Portable project --------------------------------------
 
-                //.NET Portable            
-                if (Directory.Exists(MyPath + @"..\..\NETPortable\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\NETPortable\bin\Release", true);
-                //msbldpath = MyPath + "run_msbuild_port.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\NETPortable\DBreeze.Portable.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating .NETPortable");
-                tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+                ////.NET Portable            
+                //if (Directory.Exists(MyPath + @"..\..\NETPortable\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\NETPortable\bin\Release", true);
+                ////msbldpath = MyPath + "run_msbuild_port.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\NETPortable\DBreeze.Portable.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating .NETPortable");
+                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
 
-                File.WriteAllText(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "NETPortable");
+                //File.WriteAllText(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "NETPortable");
 
-                noerror = File.Exists(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll", MyPath + @"PORTABLE\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.XML", MyPath + @"PORTABLE\DBreeze.XML", true);
+                //noerror = File.Exists(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll", MyPath + @"PORTABLE\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.XML", MyPath + @"PORTABLE\DBreeze.XML", true);
 
-                File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
+                //File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
 
-                //----------------------------------------- EOF DBreeze.Portable project --------------------------------------
+                ////----------------------------------------- EOF DBreeze.Portable project --------------------------------------
 
 
 
@@ -312,12 +312,12 @@ namespace Deployer
                 //----------------------------------------- DBreeze.Net5 (Actually base is .Net6) project --------------------------------------
                 //Change base when necessary
                 baseFramework = "<TargetFramework>net6.0</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>";
+                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch</DefineConstants>";
 
 
-                //.NET5 (default)   (based on .NETC5 project)
+                //.NET6 (default)   (based on .NETC5 project)
                 currentFramework = "<TargetFramework>net6.0</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;</DefineConstants>";
+                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch</DefineConstants>";
 
                 if (Directory.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0"))
                     Directory.Delete(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0", true);
@@ -350,10 +350,10 @@ namespace Deployer
 
                 //----------------------------------------- DBreeze.NetCoreApp project --------------------------------------
                 //Change base when necessary               
-                baseFramework = "<TargetFramework>netcoreapp1.0</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;</DefineConstants>";
+                baseFramework = "<TargetFramework>netcoreapp3.1</TargetFramework>";
+                baseDefineConstants = "<DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;</DefineConstants>";
 
-
+                //TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;
 
                 //.NET Core App 1.0 (default)    (based on .NETCoreApp project)
                 currentFramework = "<TargetFramework>netcoreapp1.0</TargetFramework>";
@@ -437,6 +437,37 @@ namespace Deployer
                 File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
 
 
+
+
+                //.NET Core App 3.1   (based on .NETCoreApp project)
+                currentFramework = "<TargetFramework>netcoreapp3.1</TargetFramework>";
+                currentDefineConstants = "<DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;</DefineConstants>";
+
+                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1"))
+                    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1", true);
+                //msbldpath = MyPath + "run_msbuild_uwp.bat";
+                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+                tpr = prj;
+                Console.WriteLine("Creating netcoreapp3.1");
+                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
+                //tpr = tpr.Replace(rpl[13], rpl[15]);
+                //tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>");
+                // tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
+                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+                Compile(msbldpath, "DBreeze.NetCoreApp");
+
+                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.dll");
+                Console.WriteLine("done " + noerror);
+                if (!noerror)
+                    return;
+                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.dll", MyPath + @"NETCOREAPP3_1\DBreeze.dll", true);
+                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.XML", MyPath + @"NETCOREAPP3_1\DBreeze.XML", true);
+
+                File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
+
+
                 //----------------------------------------- EOF DBreeze.NetCoreApp project --------------------------------------
 
 
@@ -502,7 +533,7 @@ namespace Deployer
 
                 //.NET STANDARD 2.1
                 currentFramework = "<TargetFramework>netstandard2.1</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;</DefineConstants>";
+                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;KNNSearch</DefineConstants>";
 
                 if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
                     Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);

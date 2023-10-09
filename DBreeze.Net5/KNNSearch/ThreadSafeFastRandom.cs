@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if KNNSearch
+using System;
 using System.Runtime.CompilerServices;
 
 namespace DBreeze.HNSW
@@ -116,3 +117,4 @@ namespace DBreeze.HNSW
         }
     }
 }
+#endif

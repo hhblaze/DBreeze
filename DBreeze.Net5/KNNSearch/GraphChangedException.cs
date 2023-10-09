@@ -3,6 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
+#if KNNSearch
 using System;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -37,3 +38,4 @@ namespace DBreeze.HNSW
         }
     }
 }
+#endif

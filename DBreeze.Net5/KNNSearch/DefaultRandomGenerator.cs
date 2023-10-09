@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if KNNSearch
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -32,3 +33,4 @@ namespace DBreeze.HNSW
         public void NextFloats(Span<float> buffer) => ThreadSafeFastRandom.NextFloats(buffer);
     }
 }
+#endif

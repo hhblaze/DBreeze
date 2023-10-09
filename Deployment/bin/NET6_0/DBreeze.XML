@@ -1334,6 +1334,906 @@
             <param name="message"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.HNSW.Algorithms.Algorithm3`2">
+            <summary>
+            The implementation of the SELECT-NEIGHBORS-SIMPLE(q, C, M) algorithm.
+            Article: Section 4. Algorithm 3.
+            </summary>
+            <typeparam name="TItem">The typeof the items in the small world.</typeparam>
+            <typeparam name="TDistance">The type of the distance in the small world.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.Algorithms.Algorithm3`2.SelectBestForConnecting(System.Collections.Generic.List{System.Int32},DBreeze.HNSW.TravelingCosts{System.Int32,`1},System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="T:DBreeze.HNSW.Algorithms.Algorithm4`2">
+            <summary>
+            The implementation of the SELECT-NEIGHBORS-HEURISTIC(q, C, M, lc, extendCandidates, keepPrunedConnections) algorithm.
+            Article: Section 4. Algorithm 4.
+            </summary>
+            <typeparam name="TItem">The typeof the items in the small world.</typeparam>
+            <typeparam name="TDistance">The type of the distance in the small world.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.Algorithms.Algorithm4`2.SelectBestForConnecting(System.Collections.Generic.List{System.Int32},DBreeze.HNSW.TravelingCosts{System.Int32,`1},System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="T:DBreeze.HNSW.Algorithms.Algorithm`2">
+            <summary>
+            The abstract class representing algorithm to control node capacity.
+            </summary>
+            <typeparam name="TItem">The typeof the items in the small world.</typeparam>
+            <typeparam name="TDistance">The type of the distance in the small world.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.Algorithms.Algorithm`2.NewNode(System.Int32,System.Int32)">
+            <summary>
+            Creates a new instance of the <see cref="T:DBreeze.HNSW.Node"/> struct. Controls the exact type of connection lists.
+            </summary>
+            <param name="nodeId">The identifier of the node.</param>
+            <param name="maxLayer">The max layer where the node is presented.</param>
+            <returns>The new instance.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Algorithms.Algorithm`2.SelectBestForConnecting(System.Collections.Generic.List{System.Int32},DBreeze.HNSW.TravelingCosts{System.Int32,`1},System.Int32)">
+            <summary>
+            The algorithm which selects best neighbours from the candidates for the given node.
+            </summary>
+            <param name="candidatesIds">The identifiers of candidates to neighbourhood.</param>
+            <param name="travelingCosts">Traveling costs to compare candidates.</param>
+            <param name="layer">The layer of the neighbourhood.</param>
+            <returns>Best nodes selected from the candidates.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Algorithms.Algorithm`2.GetM(System.Int32)">
+            <summary>
+            Get maximum allowed connections for the given level.
+            </summary>
+            <remarks>
+            Article: Section 4.1:
+            "Selection of the Mmax0 (the maximum number of connections that an element can have in the zero layer) also
+            has a strong influence on the search performance, especially in case of high quality(high recall) search.
+            Simulations show that setting Mmax0 to M(this corresponds to kNN graphs on each layer if the neighbors
+            selection heuristic is not used) leads to a very strong performance penalty at high recall.
+            Simulations also suggest that 2∙M is a good choice for Mmax0;
+            setting the parameter higher leads to performance degradation and excessive memory usage."
+            </remarks>
+            <param name="layer">The level of the layer.</param>
+            <returns>The maximum number of connections.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Algorithms.Algorithm`2.Connect(DBreeze.HNSW.Node,DBreeze.HNSW.Node,System.Int32)">
+            <summary>
+            Tries to connect the node with the new neighbour.
+            </summary>
+            <param name="node">The node to add neighbour to.</param>
+            <param name="neighbour">The new neighbour.</param>
+            <param name="layer">The layer to add neighbour to.</param>
+        </member>
+        <member name="T:DBreeze.HNSW.BinaryHeap`1">
+            <summary>
+            Binary heap wrapper around the <see cref="T:System.Collections.Generic.IList`1"/> It's a max-heap implementation i.e. the maximum element is always on top. But the order of elements can be customized by providing <see cref="T:System.Collections.Generic.IComparer`1"/> instance.
+            </summary>
+            <typeparam name="T">The type of the items in the source list.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftDown(System.Int32)">
+            <summary>
+            Restores the heap property starting from i'th position down to the bottom given that the downstream items fulfill the rule.
+            </summary>
+            <param name="i">The position of item where heap property is violated.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftUp(System.Int32)">
+            <summary>
+            Restores the heap property starting from i'th position up to the head given that the upstream items fulfill the rule.
+            </summary>
+            <param name="i">The position of item where heap property is violated.</param>
+        </member>
+        <member name="T:DBreeze.HNSW.CosineDistance">
+             <summary>
+             Calculates cosine similarity.
+             </summary>
+             <remarks>
+             Intuition behind selecting float as a carrier.
+            
+             1. In practice we work with vectors of dimensionality 100 and each component has value in range [-1; 1]
+                There certainly is a possibility of underflow.
+                But we assume that such cases are rare and we can rely on such underflow losses.
+            
+             2. According to the article http://www.ti3.tuhh.de/paper/rump/JeaRu13.pdf
+                the floating point rounding error is less then 100 * 2^-24 * sqrt(100) * sqrt(100) &lt; 0.0005960
+                We deem such precision is satisfactory for out needs.
+             </remarks>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.NonOptimized(System.Single[],System.Single[])">
+            <summary>
+            Calculates cosine distance without making any optimizations.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.ForUnits(System.Single[],System.Single[])">
+            <summary>
+            Calculates cosine distance with assumption that u and v are unit vectors.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.SIMD(System.Single[],System.Single[])">
+            <summary>
+            Calculates cosine distance optimized using SIMD instructions.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.SIMDForUnits(System.Single[],System.Single[])">
+            <summary>
+            Calculates cosine distance with assumption that u and v are unit vectors using SIMD instructions.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.CosineDistanceDouble">
+             <summary>
+             Calculates cosine similarity.
+             </summary>
+             <remarks>
+             Intuition behind selecting float as a carrier.
+            
+             1. In practice we work with vectors of dimensionality 100 and each component has value in range [-1; 1]
+                There certainly is a possibility of underflow.
+                But we assume that such cases are rare and we can rely on such underflow losses.
+            
+             2. According to the article http://www.ti3.tuhh.de/paper/rump/JeaRu13.pdf
+                the floating point rounding error is less then 100 * 2^-24 * sqrt(100) * sqrt(100) &lt; 0.0005960
+                We deem such precision is satisfactory for out needs.
+             </remarks>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistanceDouble.NonOptimized(System.Double[],System.Double[])">
+            <summary>
+            Calculates cosine distance without making any optimizations.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistanceDouble.ForUnits(System.Double[],System.Double[])">
+            <summary>
+            Calculates cosine distance with assumption that u and v are unit vectors.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistanceDouble.SIMDForUnits(System.Double[],System.Double[])">
+            <summary>
+            Calculates cosine distance with assumption that u and v are unit vectors using SIMD instructions.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.DBStorage`1">
+            <summary>
+            DBreeze mapping of Nodes and Items
+            </summary>
+            <typeparam name="TItem"></typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.DBStorage`1.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProvideRandomValues,System.Func{System.Int32,DBreeze.HNSW.IProvideRandomValues,DBreeze.HNSW.Node},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="items"></param>
+            <param name="generator"></param>
+            <param name="funcAddNode"></param>
+            <returns></returns>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:DBreeze.HNSW.DBStorage`1.FinilizeAddItems(DBreeze.HNSW.Node)">
+            <summary>
+            
+            </summary>
+            <param name="entryPoint"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.DBStorage`1.FinilizeAddItemsDeferred">
+            <summary>
+            
+            </summary>
+            <param name="entryPoint"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.DBStorage`1.SetEntryPoint(DBreeze.HNSW.Node)">
+            <summary>
+            
+            </summary>
+            <param name="entryPoint"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.DBStorage`1.GetEntryPoint">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.HNSW.DBStorage`1.CacheIsActive">
+            <summary>
+            Both caches are bound
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.ItemList`1">
+            <summary>
+            
+            </summary>
+            <typeparam name="TItem"></typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.ItemList`1.GetItemByExternalID(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="externalId"></param>
+            <returns>second par internalID</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.ItemList`1.GetItem(System.Int32)">
+            <summary>
+            Can return NULL, only For KNN search
+            </summary>
+            <param name="index"></param>
+            <returns>Item, internalId, External ID (can be null, if was not supplied)</returns>
+        </member>
+        <member name="F:DBreeze.HNSW.ItemList`1._d">
+            <summary>
+            Cache for AddItems
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.ItemList`1.Item(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <returns></returns>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:DBreeze.HNSW.ItemList`1.ActivateItems(System.Collections.Generic.List{System.Byte[]},System.Boolean)">
+            <summary>
+            Marks node as deleted
+            </summary>
+            <param name="externalItemIds"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.ItemList`1.InsertItem(System.Int32,`0)">
+            <summary>
+            
+            </summary>
+            <param name="itemId"></param>
+            <param name="item"></param>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:DBreeze.HNSW.ItemList`1.InsertItem(System.Int32,System.Byte[],`0)">
+            <summary>
+            
+            </summary>
+            <param name="itemId"></param>
+            <param name="externalEmbeddingId"></param>
+            <param name="item"></param>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="T:DBreeze.HNSW.NodeList">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.NodeList._forFlush">
+            <summary>
+            Cache and calculator while AddNodesActive
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.NodeList.FlushNodes">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.NodeList.ToNode(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="btNode"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.NodeList.FromNode(DBreeze.HNSW.Node)">
+            <summary>
+            
+            </summary>
+            <param name="Node"></param>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.HNSW.NodeInDb.ExtraProperties">
+            <summary>
+            Add node properties here for compatibility with old saved values
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.ItemInDbFloatArray.ExtraProperties">
+            <summary>
+            Add item properties here for compatibility with old saved values
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.DefaultRandomGenerator.Instance">
+            <summary>
+            This is the default configuration (it supports the optimization process to be executed on multiple threads)
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.DefaultRandomGenerator.DisableThreading">
+            <summary>
+            This uses the same random number generator but forces the optimization process to run on a single thread (which may be desirable if multiple requests may be processed concurrently
+            or if it is otherwise not desirable to let a single request access all of the CPUs)
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.DistanceCacheLimits.MaxArrayLength">
+            <summary>
+            https://referencesource.microsoft.com/#mscorlib/system/array.cs,2d2b551eabe74985,references
+            We use powers of 2 for efficient modulo
+            2^28 = 268435456
+            2^29 = 536870912
+            2^30 = 1073741824
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.DistanceCache`1.MakeKey(System.Int32,System.Int32)">
+            <summary>
+            Builds key for the pair of points.
+            MakeKey(fromId, toId) == MakeKey(toId, fromId)
+            </summary>
+            <param name="fromId">The from point identifier.</param>
+            <param name="toId">The to point identifier.</param>
+            <returns>Key of the pair.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.EventSources.WriteMetricIfEnabled(System.Diagnostics.Tracing.EventSource,System.Diagnostics.Tracing.EventCounter,System.Single)">
+            <summary>
+            Writes specific metric if the source is enabled.
+            </summary>
+            <param name="source">The event source to check.</param>
+            <param name="counter">The counter to write metric.</param>
+            <param name="value">The value to write.</param>
+        </member>
+        <member name="T:DBreeze.HNSW.EventSources.GraphBuildEventSource">
+            <summary>
+            Source of events occuring at graph construction phase.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.EventSources.GraphBuildEventSource.Instance">
+            <summary>
+            The singleton instance of the source.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.EventSources.GraphBuildEventSource.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.EventSources.GraphBuildEventSource"/> class.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.EventSources.GraphBuildEventSource.CoreGetDistanceCacheHitRateReporter">
+            <summary>
+            Gets the delegate to report the hit rate of the distance cache.
+            <see cref="M:DBreeze.HNSW.Graph`2.Core.GetDistance(System.Int32,System.Int32)"/>
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.EventSources.GraphBuildEventSource.GraphInsertNodeLatencyReporter">
+            <summary>
+            Gets the delegate to report the node insertion latency.
+            <see cref="!:Graph&lt;TItem, TDistance&gt;.Build(System.Collections.Generic.IReadOnlyList&lt;TItem&gt;, System.Random)"/>
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.EventSources.GraphSearchEventSource">
+            <summary>
+            Source of events occuring at graph construction phase.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.EventSources.GraphSearchEventSource.Instance">
+            <summary>
+            The singleton instance of the source.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.EventSources.GraphSearchEventSource.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.EventSources.GraphSearchEventSource"/> class.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.EventSources.GraphSearchEventSource.GraphKNearestLatencyReporter">
+            <summary>
+            Gets the delegate to report <see cref="!:Graph&lt;TItem, TDistance&gt;.KNearest(TItem, int)" /> latency.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.EventSources.GraphSearchEventSource.GraphKNearestVisitedNodesReporter">
+            <summary>
+            Gets the counter to report the number of expanded nodes at runtime.
+            <see cref="!:Graph&lt;TItem, TDistance&gt;.KNearest(TItem, int)"/>
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.FastRandom">
+             <summary>
+             A fast random number generator for .NET, from https://www.codeproject.com/Articles/9187/A-fast-equivalent-for-System-Random
+             Colin Green, January 2005
+            
+             September 4th 2005
+            	 Added NextBytesUnsafe() - commented out by default.
+            	 Fixed bug in Reinitialise() - y,z and w variables were not being reset.
+            
+             Key points:
+              1) Based on a simple and fast xor-shift pseudo random number generator (RNG) specified in:
+              Marsaglia, George. (2003). Xorshift RNGs.
+              http://www.jstatsoft.org/v08/i14/xorshift.pdf
+            
+              This particular implementation of xorshift has a period of 2^128-1. See the above paper to see
+              how this can be easily extened if you need a longer period. At the time of writing I could find no
+              information on the period of System.Random for comparison.
+            
+              2) Faster than System.Random. Up to 8x faster, depending on which methods are called.
+            
+              3) Direct replacement for System.Random. This class implements all of the methods that System.Random
+              does plus some additional methods. The like named methods are functionally equivalent.
+            
+              4) Allows fast re-initialisation with a seed, unlike System.Random which accepts a seed at construction
+              time which then executes a relatively expensive initialisation routine. This provides a vast speed improvement
+              if you need to reset the pseudo-random number sequence many times, e.g. if you want to re-generate the same
+              sequence many times. An alternative might be to cache random numbers in an array, but that approach is limited
+              by memory capacity and the fact that you may also want a large number of different sequences cached. Each sequence
+              can each be represented by a single seed value (int) when using FastRandom.
+            
+              Notes.
+              A further performance improvement can be obtained by declaring local variables as static, thus avoiding
+              re-allocation of variables on each call. However care should be taken if multiple instances of
+              FastRandom are in use or if being used in a multi-threaded environment.
+            
+             </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.#ctor">
+            <summary>
+            Initialises a new instance using time dependent seed.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.#ctor(System.Int32)">
+            <summary>
+            Initialises a new instance using an int value as seed.
+            This constructor signature is provided to maintain compatibility with
+            System.Random
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.Reinitialise(System.Int32)">
+            <summary>
+            Reinitialises using an int value as a seed.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.Next">
+             <summary>
+             Generates a random int over the range 0 to int.MaxValue-1.
+             MaxValue is not generated in order to remain functionally equivalent to System.Random.Next().
+             This does slightly eat into some of the performance gain over System.Random, but not much.
+             For better performance see:
+            
+             Call NextInt() for an int over the range 0 to int.MaxValue.
+            
+             Call NextUInt() and cast the result to an int to generate an int over the full Int32 value range
+             including negative values.
+             </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.Next(System.Int32)">
+            <summary>
+            Generates a random int over the range 0 to upperBound-1, and not including upperBound.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.Next(System.Int32,System.Int32)">
+            <summary>
+            Generates a random int over the range lowerBound to upperBound-1, and not including upperBound.
+            upperBound must be >= lowerBound. lowerBound may be negative.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextDouble">
+            <summary>
+            Generates a random double. Values returned are from 0.0 up to but not including 1.0.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextFloat">
+            <summary>
+            Generates a random double. Values returned are from 0.0 up to but not including 1.0.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextFloats(System.Span{System.Single})">
+            <summary>
+            Fills the provided byte array with random floats.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextBytes(System.Byte[])">
+            <summary>
+            Fills the provided byte array with random bytes.
+            This method is functionally equivalent to System.Random.NextBytes().
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextBytes(System.Span{System.Byte})">
+            <summary>
+            Fills the provided byte array with random bytes.
+            This method is functionally equivalent to System.Random.NextBytes().
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextUInt">
+             <summary>
+             Generates a uint. Values returned are over the full range of a uint,
+             uint.MinValue to uint.MaxValue, inclusive.
+            
+             This is the fastest method for generating a single random number because the underlying
+             random number generator algorithm generates 32 random bits that can be cast directly to
+             a uint.
+             </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextInt">
+             <summary>
+             Generates a random int over the range 0 to int.MaxValue, inclusive.
+             This method differs from Next() only in that the range is 0 to int.MaxValue
+             and not 0 to int.MaxValue-1.
+            
+             The slight difference in range means this method is slightly faster than Next()
+             but is not functionally equivalent to System.Random.Next().
+             </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.FastRandom.NextBool">
+            <summary>
+            Generates a single random bit.
+            This method's performance is improved by generating 32 bits in one operation and storing them
+            ready for future calls.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.Graph`2">
+            <summary>
+            The implementation of a hierarchical small world graph.
+            </summary>
+            <typeparam name="TItem">The type of items to connect into small world.</typeparam>
+            <typeparam name="TDistance">The type of distance between items (expects any numeric type: float, double, decimal, int, ...).</typeparam>
+            <content>
+            The implementation of knn search.
+            </content>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Core.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProvideRandomValues,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="items">with external embedding ID as a key</param>
+            <param name="generator"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Core.ActivateItems(System.Collections.Generic.List{System.Byte[]},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="externalItemIds"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Core.NewNodeFunc(System.Int32,DBreeze.HNSW.IProvideRandomValues)">
+            <summary>
+            
+            </summary>
+            <param name="nodeId"></param>
+            <param name="generator"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.#ctor(System.Func{`0,`0,`1},DBreeze.HNSW.SmallWorld{`0,`1}.Parameters,DBreeze.Transactions.Transaction,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.Graph`2"/> class.
+            </summary>
+            <param name="distance">The distance function.</param>
+            <param name="parameters">The parameters of the world.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.IndexIDs(System.Collections.Generic.List{System.Int32},DBreeze.HNSW.IProvideRandomValues,DBreeze.HNSW.IProgressReporter)">
+            <summary>
+            
+            </summary>
+            <param name="internalIDs"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProvideRandomValues,DBreeze.HNSW.IProgressReporter,System.Boolean)">
+            <summary>
+            Creates graph from the given items.
+            Contains implementation of INSERT(hnsw, q, M, Mmax, efConstruction, mL) algorithm.
+            Article: Section 4. Algorithm 1.
+            </summary>
+            <param name="items">K: external embeddingID (external ID of the document that represents this embedding)</param>
+            <param name="generator"></param>
+            <param name="progressReporter"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.ActivateItems(System.Collections.Generic.List{System.Byte[]},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="externalItemIds"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.IndexItems(System.Collections.Generic.IReadOnlyList{System.Int32},DBreeze.HNSW.IProvideRandomValues,DBreeze.HNSW.IProgressReporter)">
+            <summary>
+            
+            </summary>
+            <param name="newIDs"></param>
+            <param name="generator"></param>
+            <param name="progressReporter"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.KNearest(`0,System.Int32,System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Get k nearest items for a given one.
+            Contains implementation of K-NN-SEARCH(hnsw, q, K, ef) algorithm.
+            Article: Section 4. Algorithm 5.
+            </summary>
+            <param name="destination">The given node to get the nearest neighbourhood for.</param>
+            <param name="k">The size of the neighbourhood.</param>
+            <param name="excludingDocuments">External Documents IDs to be excluded from the search</param>
+            <returns>The list of the nearest neighbours.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Print">
+            <summary>
+            Prints edges of the graph.
+            </summary>
+            <returns>String representation of the graph's edges.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.Graph`2.Searcher">
+            <summary>
+            The graph searcher.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Searcher.#ctor(DBreeze.HNSW.Graph{`0,`1}.Core)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.Graph`2.Searcher"/> struct.
+            </summary>
+            <param name="core">The core of the graph.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Searcher.RunKnnAtLayer(System.Int32,DBreeze.HNSW.TravelingCosts{System.Int32,`1},System.Collections.Generic.List{System.Int32},System.Int32,System.Int32,System.Int64@,System.Int64,System.Collections.Generic.HashSet{System.Int32})">
+            <summary>
+            The implementaiton of SEARCH-LAYER(q, ep, ef, lc) algorithm.
+            Article: Section 4. Algorithm 2.
+            </summary>
+            <param name="entryPointId">The identifier of the entry point for the search.</param>
+            <param name="targetCosts">The traveling costs for the search target.</param>
+            <param name="resultList">The list of identifiers of the nearest neighbours at the level.</param>
+            <param name="layer">The layer to perform search at.</param>
+            <param name="k">The number of the nearest neighbours to get from the layer.</param>
+            <param name="version">The version of the graph, will retry the search if the version changed</param>
+            <param name="excludingItems">List of items internal IDs that should not come to the result set (also deactiated items will not come)</param>
+            <returns>The number of expanded nodes during the run.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.BFS(DBreeze.HNSW.Graph{`0,`1}.Core,DBreeze.HNSW.Node,System.Int32,System.Action{DBreeze.HNSW.Node})">
+            <summary>
+            Runs breadth first search.
+            </summary>
+            <param name="core">The graph core.</param>
+            <param name="entryPoint">The entry point.</param>
+            <param name="layer">The layer of the graph where to run BFS.</param>
+            <param name="visitAction">The action to perform on each node.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.IProvideRandomValues.NextFloat">
+            <summary>
+            Generates a random float. Values returned are from 0.0 up to but not including 1.0.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.IProvideRandomValues.NextFloats(System.Span{System.Single})">
+            <summary>
+            Fills the elements of a specified array of bytes with random numbers.
+            </summary>
+            <param name="buffer">An array of bytes to contain random numbers.</param>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.HNSW.IProvideRandomValues.Next(System.Int32,System.Int32)" -->
+        <member name="T:DBreeze.HNSW.NeighbourSelectionHeuristic">
+            <summary>
+            Type of heuristic to select best neighbours for a node.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.NeighbourSelectionHeuristic.SelectSimple">
+            <summary>
+            Marker for the Algorithm 3 (SELECT-NEIGHBORS-SIMPLE) from the article. Implemented in <see cref="T:DBreeze.HNSW.Algorithms.Algorithm3`2"/>
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.NeighbourSelectionHeuristic.SelectHeuristic">
+            <summary>
+            Marker for the Algorithm 4 (SELECT-NEIGHBORS-HEURISTIC) from the article. Implemented in <see cref="T:DBreeze.HNSW.Algorithms.Algorithm4`2"/>
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.Node">
+            <summary>
+            The implementation of the node in hnsw graph.
+            </summary>   
+        </member>
+        <member name="F:DBreeze.HNSW.Node.Connections">
+            <summary>
+            First List is a LayerID, Second list Connections with otherNodeIDs
+            </summary>      
+        </member>
+        <member name="P:DBreeze.HNSW.Node.MaxLayer">
+            <summary>
+            Gets the max layer where the node is presented.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.Node.Item(System.Int32)">
+            <summary>
+            Gets connections ids of the node at the given layer
+            </summary>
+            <param name="layer">The layer to get connections at.</param>
+            <returns>The connections of the node at the given layer.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.ReverseComparer`1">
+            <summary>
+            Reverses the order of the nested comparer.
+            </summary>
+            <typeparam name="T">The types of items to comapre.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.ReverseComparer`1.#ctor(System.Collections.Generic.IComparer{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.ReverseComparer`1"/> class.
+            </summary>
+            <param name="comparer">The comparer to invert.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.ReverseComparer`1.Compare(`0,`0)">
+            <inheritdoc />
+        </member>
+        <member name="T:DBreeze.HNSW.ReverseComparerExtensions">
+            <summary>
+            Extension methods to shortcut <see cref="T:DBreeze.HNSW.ReverseComparer`1"/> usage.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.ReverseComparerExtensions.Reverse``1(System.Collections.Generic.IComparer{``0})">
+            <summary>
+            Creates new <see cref="T:DBreeze.HNSW.ReverseComparer`1"/> wrapper for the given comparer.
+            </summary>
+            <typeparam name="T">The types of items to comapre.</typeparam>
+            <param name="comparer">The source comparer.</param>
+            <returns>The inverted to source comparer.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.ScopeLatencyTracker">
+            <summary>
+            Latency tracker for using scope.
+            TODO: make it ref struct in C# 8.0
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.ScopeLatencyTracker.#ctor(System.Action{System.Single})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.ScopeLatencyTracker"/> struct.
+            </summary>
+            <param name="callback">The latency reporting callback to associate with the scope.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.ScopeLatencyTracker.Dispose">
+            <summary>
+            Reports the time ellsapsed between the tracker creation and this call.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2">
+            <summary>
+            The Hierarchical Navigable Small World Graphs. https://arxiv.org/abs/1603.09320
+            </summary>
+            <typeparam name="TItem">The type of items to connect into small world.</typeparam>
+            <typeparam name="TDistance">The type of distance between items (expect any numeric type: float, double, decimal, int, ...).</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.#ctor(System.Func{`0,`0,`1},DBreeze.HNSW.IProvideRandomValues,DBreeze.HNSW.SmallWorld{`0,`1}.Parameters,DBreeze.Transactions.Transaction,System.String,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2"/> class.
+            </summary>
+            <param name="distance">The distance function to use in the small world.</param>
+            <param name="generator">The random number generator for building graph.</param>
+            <param name="parameters">Parameters of the algorithm.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProgressReporter,System.Boolean)">
+            <summary>
+            Builds hnsw graph from the items.
+            </summary>
+            <param name="items"></param>
+            <param name="progressReporter"></param>
+            <returns>IDs of added items</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.ActivateItems(System.Collections.Generic.List{System.Byte[]},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="externalItemId"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.KNNSearch(`0,System.Int32,System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Run knn search for a given item.
+            </summary>
+            <param name="item">The item to search nearest neighbours.</param>
+            <param name="k">The number of nearest neighbours.</param>
+            <param name="excludingDocuments">External Documents IDs to be excluded from the search</param>
+            <returns>The list of found nearest neighbours.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.IndexIDs(System.Collections.Generic.List{System.Int32},DBreeze.HNSW.IProgressReporter)">
+            <summary>
+            
+            </summary>
+            <param name="internalIDs"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.GetItem(System.Int32)">
+            <summary>
+            Get the item with the index
+            </summary>
+            <param name="index">The index of the item</param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Print">
+            <summary>
+            Prints edges of the graph. Mostly for debug and test purposes.
+            </summary>
+            <returns>String representation of the graph's edges.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.ResizeDistanceCache(System.Int32)">
+            <summary>
+            Frees the memory used by the Distance Cache
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.M">
+            <summary>
+            Gets or sets the parameter which defines the maximum number of neighbors in the zero and above-zero layers.
+            The maximum number of neighbors for the zero layer is 2 * M.
+            The maximum number of neighbors for higher layers is M.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.LevelLambda">
+            <summary>
+            Gets or sets the max level decay parameter. https://en.wikipedia.org/wiki/Exponential_distribution See 'mL' parameter in the HNSW article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.NeighbourHeuristic">
+            <summary>
+            Gets or sets parameter which specifies the type of heuristic to use for best neighbours selection.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.ConstructionPruning">
+            <summary>
+            Gets or sets the number of candidates to consider as neighbours for a given node at the graph construction phase. See 'efConstruction' parameter in the article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.ExpandBestSelection">
+            <summary>
+            Gets or sets a value indicating whether to expand candidates if <see cref="F:DBreeze.HNSW.NeighbourSelectionHeuristic.SelectHeuristic"/> is used. See 'extendCandidates' parameter in the article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.KeepPrunedConnections">
+            <summary>
+            Gets or sets a value indicating whether to keep pruned candidates if <see cref="F:DBreeze.HNSW.NeighbourSelectionHeuristic.SelectHeuristic"/> is used. See 'keepPrunedConnections' parameter in the article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.EnableDistanceCacheForConstruction">
+            <summary>
+            Gets or sets a value indicating whether to cache calculated distances at graph construction time.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.InitialDistanceCacheSize">
+            <summary>
+            Gets or sets a the initial distance cache size. 
+            Note: This value is reset to 0 on deserialization to avoid allocating the distance cache for pre-built graphs.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.InitialItemsSize">
+            <summary>
+            Gets or sets a the initial size of the Items list
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.ThreadSafeFastRandom.Next">
+            <summary>
+            Returns a non-negative random integer.
+            </summary>
+            <returns>A 32-bit signed integer that is greater than or equal to 0 and less than System.Int32.MaxValue.</returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.HNSW.ThreadSafeFastRandom.Next(System.Int32)" -->
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.HNSW.ThreadSafeFastRandom.Next(System.Int32,System.Int32)" -->
+        <member name="M:DBreeze.HNSW.ThreadSafeFastRandom.NextFloat">
+            <summary>
+            Generates a random float. Values returned are from 0.0 up to but not including 1.0.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.ThreadSafeFastRandom.NextFloats(System.Span{System.Single})">
+            <summary>
+            Fills the elements of a specified array of bytes with random numbers.
+            </summary>
+            <param name="buffer">An array of bytes to contain random numbers.</param>
+        </member>
+        <member name="T:DBreeze.HNSW.TravelingCosts`2">
+            <summary>
+            Implementation of distance calculation from an arbitrary point to the given destination.
+            </summary>
+            <typeparam name="TItem">Type of the points.</typeparam>
+            <typeparam name="TDistance">Type of the distance.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.TravelingCosts`2.Compare(`0,`0)">
+            <summary>
+            Compares 2 points by the distance from the destination.
+            </summary>
+            <param name="x">Left point.</param>
+            <param name="y">Right point.</param>
+            <returns>
+            -1 if x is closer to the destination than y;
+            0 if x and y are equally far from the destination;
+            1 if x is farther from the destination than y.
+            </returns>
+        </member>
         <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32,System.Boolean)">
             <summary>
             Used for finding out hash from Generation Map
@@ -3295,260 +4195,61 @@
             </summary>
             <param name="transactionThreadId"></param>
         </member>
-        <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
-            <summary>
-            We try to clear tranasction file, when its length is more then 10MB and if it's possible
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionsJournal._transactionsTables">
-            <summary>
-            Key: transaction number, counting up from the engine start
-            Value: Dictionary containing as a Key usertableName, as value link to the table
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsJournal.AddTableForTransaction(System.UInt64,DBreeze.Transactions.ITransactable)">
-            <summary>
-            Every table inside of the transaction before calling Transaction Commit, goes to this in-memory dictionary
-            </summary>
-            <param name="tranNumber"></param>
-            <param name="table"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsJournal.RemoveTransactionFromDictionary(System.UInt64)">
-            <summary>
-            Used in case of failed transaction of multiple tables, to clean in-memory dictionary
-            </summary>
-            <param name="tranNumber"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsJournal.GetTransactionNumber">
-            <summary>
-            Returns new transaction number
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.Transactions.TransactionUnit">
-            <summary>
-            This object includes class Transaction (visible for the user) and holds internally technical transaction information.
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._transaction">
-            <summary>
-            Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
-            <summary>
-            Easy access to transactin coordinator for the Transaction which is visible for the user
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.Transaction">
-            <summary>
-            Transaction visible for the user
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionThreadId">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._sync_transactionWriteTables">
-            <summary>
-            Lock for all tables definitions inside current transaction
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTables">
-            <summary>
-            It holds all tables marked for possible mutations
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTablesAwaitingReservation">
-            <summary>
-            List of tables which are waiting for reservation for writing, we need it to predict deadlock situations.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTablesAwaitingReservation(System.Collections.Generic.List{System.String})">
-            <summary>
-            Used by TransactionCoordinator.RegisterWriteTablesForTransaction
-            </summary>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTable(System.String,DBreeze.Transactions.ITransactable)">
-            <summary>
-            Adds a table which will take place in transaction operations.
-            Reserved has value null, Real (which are acquired by Transaction for Write) has ITransactable filled.
-            ITransactable = null, gives to differ from toched and reserved.
-            </summary>
-            <param name="tableName"></param>
-            <param name="table">if null - will be added to Reservation table</param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTables">
-            <summary>
-            Doesn't need pattern check
-            Returns all tables which took place in write operation for the current transaction
-            Without reserved as Text tables only which have real ITransactable inside
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionWriteTablesCount">
-            <summary>
-            returns count of reserved tables, used by transaction just to find out if reservation (or first table modification) was done or not.
-            reservation can be done only once.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.If_TableIsReservedForWrite(System.String)">
-            <summary>
-            Used inside of Transaction, we can choose fot READ or READ_SYNCHRO for READ FUNCs
-            </summary>
-            <param name="tableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTablesNames">
-            <summary>
-            Returns only table names for reservation
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.Commit">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
-            <summary>
-            Dictionary of all active transactions. Key is ManagedThreadId
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
-            <summary>
-            Fast access to the Schema object.
-            Used by Transaction class
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            
-            </summary>
-            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
-            <summary>
-            Is called by the engine on Dispose.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
-            <summary>
-            Access synchronizer.
-            All calls of the WRITE LOCATOR come over this function.
-            </summary>
-            <param name="transactionThreadId"></param>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
-            <summary>
-            Can return NULL (if DbIsNotOperatable)
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
-            <summary>
-            Can return NULL if table doesn't exist
-            Can return NULL (if DbIsNotOperatable)
-            
-            Differs from GetTable_Write:
-            1. table is not registered for Write;
-            2. Table is not created, if doesn't exist.
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <param name="ignoreThreadIdCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
-            <summary>
-            Normal Engine Stop, usually in case of Main Thread or DLL disposing
-            </summary>
-        </member>
-        <member name="T:DBreeze.Transactions.RandomKeySorter">
-            <summary>
-            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
-            <summary>
-            <para>NOT USED ANYMORE</para>
-            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
-            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
-            <summary>
-            Internal regulator telling, that specified tables should work via fast update
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.TryGetValueByKey(System.String,System.String)">
-            <summary>
-            
-            </summary>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
-            <summary>
-            
-            </summary>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="value"></param>        
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
-            <summary>
-            Removes from the table key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-        </member>
-        <member name="F:DBreeze.Transactions.RandomKeySorter.tbls">
-            <summary>
-            Contains writing LTrie tables
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
-            <summary>
-            Flushing all 
-            </summary>
-        </member>
         <member name="T:DBreeze.Transactions.Transaction">
             <summary>
             Transaction
             </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IReadOnlyDictionary{System.Byte[],System.Single[]},System.Boolean)">
+            <summary>
+            <para>Inserts associated with the external documents vectors into VectorStorage created under tableName.</para>
+            <para>It is possible to have many storages, just use different table names</para>
+            <para>This operation uses inserts into tableName, so tran.SynchronizeTables must reflect that</para>
+            </summary>
+            <param name="tableName">Table where VectorEngine stores its data. Supplied table must be used only by the vector engine.</param>
+            <param name="vectors">Key is an External Document ID; Value is a vector representing the document.</param>
+            <param name="deferredIndexing"></param>
+            <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IReadOnlyDictionary{System.Byte[],System.Double[]},System.Boolean)">
+            <summary>
+            <para>Inserts associated with the external documents vectors into VectorStorage created under tableName.</para>
+            <para>It is possible to have many storages, just use different table names</para>
+            <para>This operation uses inserts into tableName, so tran.SynchronizeTables must reflect that</para>
+            </summary>
+            <param name="tableName">Table where VectorEngine stores its data. Supplied table must be used only by the vector engine.</param>
+            <param name="vectors">Key is an External Document ID; Value is a vector representing the document.</param>
+            <param name="deferredIndexing"></param>
+            <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsRemove(System.String,System.Collections.Generic.List{System.Byte[]},System.Boolean)">
+            <summary>
+            <para>Removes External documents from the VectorStorage of tableName.</para>
+            <para>Internally Uses tableName.Insert operations, so tran.SynchronizeTables must reflect that.</para>
+            <para>Actually VectorStorage will go on to hold those associated vectors, but they will not appear in tran.VectorsSearchSimilar.</para>
+            <para>It is possible to restore association with the activate = true parameter</para>
+            </summary>
+            <param name="tableName"></param>
+            <param name="externalDocumentIDs"></param>
+            <param name="activate">default is false (to remove/deactivate operation), it is possible again to activate removed association</param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Single[],System.Int32,System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            <para>Searches similar documents to vectorRequest in VectorStorage of tableName.</para>        
+            <para>This operation only selects from tableName</para>
+            </summary>
+            <param name="tableName"></param>
+            <param name="vectorRequest"></param>
+            <param name="returnQuantity">Default is 3, how many similar documents must be returned</param>
+            <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
+            <returns>ExternalId, Distance, InternalId. Less Distance - more similar document; result set is already sorted ascending by the Distance</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="internalIDs">must be already sorted ascending</param>
         </member>
         <member name="F:DBreeze.Transactions.Transaction.ManagedThreadId">
             <summary>
@@ -4145,7 +4846,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
             <summary>
-            Inserts/Updates searchable words per external documentID
+            Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -4172,7 +4873,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
             <summary>
-            Removes words from the searchable set of the external documentID
+            Removes FULL-MATCH words from the searchable set of the external documentID 
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -4567,6 +5268,256 @@
             <param name="tableName"></param>
             <param name="newTableFullPath">Depends on thisEngineTable argument, if thisEngineTable == true then full path to the file is supplied, otherwise only source-tableName</param>
             <param name="thisEngineTable">default false, indicates that table belongs to the engine and all open file pointers on it will be closed, use with temporary tables.</param>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
+            <summary>
+            We try to clear tranasction file, when its length is more then 10MB and if it's possible
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsJournal._transactionsTables">
+            <summary>
+            Key: transaction number, counting up from the engine start
+            Value: Dictionary containing as a Key usertableName, as value link to the table
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.AddTableForTransaction(System.UInt64,DBreeze.Transactions.ITransactable)">
+            <summary>
+            Every table inside of the transaction before calling Transaction Commit, goes to this in-memory dictionary
+            </summary>
+            <param name="tranNumber"></param>
+            <param name="table"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.RemoveTransactionFromDictionary(System.UInt64)">
+            <summary>
+            Used in case of failed transaction of multiple tables, to clean in-memory dictionary
+            </summary>
+            <param name="tranNumber"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.GetTransactionNumber">
+            <summary>
+            Returns new transaction number
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Transactions.TransactionUnit">
+            <summary>
+            This object includes class Transaction (visible for the user) and holds internally technical transaction information.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._transaction">
+            <summary>
+            Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
+            <summary>
+            Easy access to transactin coordinator for the Transaction which is visible for the user
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.Transaction">
+            <summary>
+            Transaction visible for the user
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionThreadId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._sync_transactionWriteTables">
+            <summary>
+            Lock for all tables definitions inside current transaction
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTables">
+            <summary>
+            It holds all tables marked for possible mutations
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTablesAwaitingReservation">
+            <summary>
+            List of tables which are waiting for reservation for writing, we need it to predict deadlock situations.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTablesAwaitingReservation(System.Collections.Generic.List{System.String})">
+            <summary>
+            Used by TransactionCoordinator.RegisterWriteTablesForTransaction
+            </summary>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTable(System.String,DBreeze.Transactions.ITransactable)">
+            <summary>
+            Adds a table which will take place in transaction operations.
+            Reserved has value null, Real (which are acquired by Transaction for Write) has ITransactable filled.
+            ITransactable = null, gives to differ from toched and reserved.
+            </summary>
+            <param name="tableName"></param>
+            <param name="table">if null - will be added to Reservation table</param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTables">
+            <summary>
+            Doesn't need pattern check
+            Returns all tables which took place in write operation for the current transaction
+            Without reserved as Text tables only which have real ITransactable inside
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionWriteTablesCount">
+            <summary>
+            returns count of reserved tables, used by transaction just to find out if reservation (or first table modification) was done or not.
+            reservation can be done only once.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.If_TableIsReservedForWrite(System.String)">
+            <summary>
+            Used inside of Transaction, we can choose fot READ or READ_SYNCHRO for READ FUNCs
+            </summary>
+            <param name="tableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTablesNames">
+            <summary>
+            Returns only table names for reservation
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.Commit">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
+            <summary>
+            Dictionary of all active transactions. Key is ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
+            <summary>
+            Fast access to the Schema object.
+            Used by Transaction class
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
+            <summary>
+            Is called by the engine on Dispose.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
+            <summary>
+            Access synchronizer.
+            All calls of the WRITE LOCATOR come over this function.
+            </summary>
+            <param name="transactionThreadId"></param>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
+            <summary>
+            Can return NULL (if DbIsNotOperatable)
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Can return NULL if table doesn't exist
+            Can return NULL (if DbIsNotOperatable)
+            
+            Differs from GetTable_Write:
+            1. table is not registered for Write;
+            2. Table is not created, if doesn't exist.
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <param name="ignoreThreadIdCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
+            <summary>
+            Normal Engine Stop, usually in case of Main Thread or DLL disposing
+            </summary>
+        </member>
+        <member name="T:DBreeze.Transactions.RandomKeySorter">
+            <summary>
+            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+            sorted by key ascending
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
+            <summary>
+            <para>NOT USED ANYMORE</para>
+            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
+            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
+            <summary>
+            Internal regulator telling, that specified tables should work via fast update
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.TryGetValueByKey(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="value"></param>        
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
+            <summary>
+            Removes from the table key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
+        </member>
+        <member name="F:DBreeze.Transactions.RandomKeySorter.tbls">
+            <summary>
+            Contains writing LTrie tables
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
+            <summary>
+            Flushing all 
+            </summary>
         </member>
         <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
             <summary>
@@ -7110,7 +8061,13 @@
         </member>
         <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
             <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing
+            Add tables and their InternalDocumentIDs for paraller indexing of the Text Engine
+            </summary>
+            <param name="defferedDocIds"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.AddVectors(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Add tables and their InternalDocumentIDs for paraller indexing of the Vector Engine, protocol 0,0
             </summary>
             <param name="defferedDocIds"></param>
         </member>
@@ -7127,6 +8084,11 @@
         <member name="T:DBreeze.TextSearch.TextSearchHandler">
             <summary>
             New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.DeferredVectors">
+            <summary>
+            TextSearch handler becomes universal for other entites
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">

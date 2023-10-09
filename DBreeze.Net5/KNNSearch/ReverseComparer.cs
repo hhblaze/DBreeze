@@ -3,6 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
+#if KNNSearch
 namespace DBreeze.HNSW
 {
     using System.Collections.Generic;
@@ -51,3 +52,4 @@ namespace DBreeze.HNSW
         }
     }
 }
+#endif

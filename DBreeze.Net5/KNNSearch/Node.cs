@@ -3,6 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
+#if KNNSearch
 namespace DBreeze.HNSW
 {
     using DBreeze.DataTypes;
@@ -67,3 +68,4 @@ namespace DBreeze.HNSW
    
 
 }//eon
+#endif
