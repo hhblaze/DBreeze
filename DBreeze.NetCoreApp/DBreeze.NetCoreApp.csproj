@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>DBreeze</AssemblyName>
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
@@ -27,6 +27,34 @@
   </ItemGroup>
 
   <ItemGroup>
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Algorithms.Algorithm3.cs" Link="KNNSearch\Algorithms.Algorithm3.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Algorithms.Algorithm4.cs" Link="KNNSearch\Algorithms.Algorithm4.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Algorithms.cs" Link="KNNSearch\Algorithms.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\BinaryHeap.cs" Link="KNNSearch\BinaryHeap.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\CosineDistance.cs" Link="KNNSearch\CosineDistance.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\CosineDistanceDouble.cs" Link="KNNSearch\CosineDistanceDouble.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\DBStorage.cs" Link="KNNSearch\DBStorage.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\DefaultRandomGenerator.cs" Link="KNNSearch\DefaultRandomGenerator.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\DistanceCache.cs" Link="KNNSearch\DistanceCache.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\DistanceUtils.cs" Link="KNNSearch\DistanceUtils.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\EventSources.cs" Link="KNNSearch\EventSources.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\FastRandom.cs" Link="KNNSearch\FastRandom.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Graph.Core.cs" Link="KNNSearch\Graph.Core.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Graph.cs" Link="KNNSearch\Graph.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Graph.Searcher.cs" Link="KNNSearch\Graph.Searcher.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Graph.Utils.cs" Link="KNNSearch\Graph.Utils.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\GraphChangedException.cs" Link="KNNSearch\GraphChangedException.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\IProgressReporter.cs" Link="KNNSearch\IProgressReporter.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\IProvideRandomValues.cs" Link="KNNSearch\IProvideRandomValues.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\NeighbourSelectionHeuristic.cs" Link="KNNSearch\NeighbourSelectionHeuristic.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\Node.cs" Link="KNNSearch\Node.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\ReverseComparer.cs" Link="KNNSearch\ReverseComparer.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\ScopeLatencyTracker.cs" Link="KNNSearch\ScopeLatencyTracker.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\SmallWorld.cs" Link="KNNSearch\SmallWorld.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\ThreadSafeFastRandom.cs" Link="KNNSearch\ThreadSafeFastRandom.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\TravelingCosts.cs" Link="KNNSearch\TravelingCosts.cs" />
+        <Compile Include="..\DBreeze.Net5\KNNSearch\VectorUtils.cs" Link="KNNSearch\VectorUtils.cs" />
+        <Compile Include="..\DBreeze.Net5\Transactions\Transaction.Vector.cs" Link="Transactions\Transaction.Vector.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
@@ -118,6 +146,10 @@
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
 	
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="KNNSearch\" />
   </ItemGroup>
 
 </Project>
