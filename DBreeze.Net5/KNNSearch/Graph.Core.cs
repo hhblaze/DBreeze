@@ -82,12 +82,15 @@ namespace DBreeze.HNSW
             /// <param name="items">with external embedding ID as a key</param>
             /// <param name="generator"></param>
             /// <returns></returns>
-            internal IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator)
+            internal IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, bool deferredIndexing = false)
             {
-                var xnewIDs = Storage.AddItems(items, generator, NewNodeFunc);
+                var xnewIDs = Storage.AddItems(items, generator, NewNodeFunc, deferredIndexing: deferredIndexing);
 
-                DistanceCache?.Resize(xnewIDs.Count, false);
-
+                if (!deferredIndexing)
+                {
+                    DistanceCache?.Resize(xnewIDs.Count, false);
+                }
+                
                 return xnewIDs;
 
                 //int newCount = items.Count;
@@ -106,35 +109,35 @@ namespace DBreeze.HNSW
                 //return newIDs;
             }
 
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="items"></param>
-            /// <param name="generator"></param>
-            /// <returns></returns>
-            internal IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator)
-            {
-                var xnewIDs = Storage.AddItems(items, generator, NewNodeFunc);
+            ///// <summary>
+            ///// 
+            ///// </summary>
+            ///// <param name="items"></param>
+            ///// <param name="generator"></param>
+            ///// <returns></returns>
+            //internal IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator)
+            //{
+            //    var xnewIDs = Storage.AddItems(items, generator, NewNodeFunc);
 
-                DistanceCache?.Resize(xnewIDs.Count, false);
+            //    DistanceCache?.Resize(xnewIDs.Count, false);
 
-                return xnewIDs;
+            //    return xnewIDs;
 
-                //int newCount = items.Count;
+            //    //int newCount = items.Count;
 
-                //var newIDs = new List<int>();
-                //Items.AddRange(items);
-                //DistanceCache?.Resize(newCount, false);
+            //    //var newIDs = new List<int>();
+            //    //Items.AddRange(items);
+            //    //DistanceCache?.Resize(newCount, false);
 
-                //int id0 = Nodes.Count;
+            //    //int id0 = Nodes.Count;
 
-                //for (int id = 0; id < newCount; ++id)
-                //{
-                //    Nodes.Add(Algorithm.NewNode(id0 + id, RandomLayer(generator, Parameters.LevelLambda)));
-                //    newIDs.Add(id0 + id);
-                //}
-                //return newIDs;
-            }
+            //    //for (int id = 0; id < newCount; ++id)
+            //    //{
+            //    //    Nodes.Add(Algorithm.NewNode(id0 + id, RandomLayer(generator, Parameters.LevelLambda)));
+            //    //    newIDs.Add(id0 + id);
+            //    //}
+            //    //return newIDs;
+            //}
 
             /// <summary>
             /// 

@@ -1,4 +1,9 @@
-﻿using DBreeze.HNSW;
+﻿/* 
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+
+using DBreeze.HNSW;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -47,7 +52,7 @@ namespace DBreeze.Transactions
                this, tableName,
                threadSafe: false);
 
-             return world.AddItems(vectors);
+             return world.AddItems(vectors, deferredIndexing: deferredIndexing);
 
         }
 
@@ -73,7 +78,7 @@ namespace DBreeze.Transactions
         /// <summary>
         /// <para>Removes External documents from the VectorStorage of tableName.</para>
         /// <para>Internally Uses tableName.Insert operations, so tran.SynchronizeTables must reflect that.</para>
-        /// <para>Actually VectorStorage will go on to hold those associated vectors, but they will not appear in VectorsSearchSimilar.</para>
+        /// <para>Actually VectorStorage will go on to hold those associated vectors, but they will not appear in tran.VectorsSearchSimilar.</para>
         /// <para>It is possible to restore association with the activate = true parameter</para>
         /// </summary>
         /// <param name="tableName"></param>
@@ -105,10 +110,10 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="vectorRequest"></param>
-        /// <param name="returnQuantity">how many similar documents must be returned</param>
-        /// <param name="excludingDocuments">Default is null, explicitely external documents IDs sear</param>
+        /// <param name="returnQuantity">Default is 3, how many similar documents must be returned</param>
+        /// <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
         /// <returns>ExternalId, Distance, InternalId. Less Distance - more similar document; result set is already sorted ascending by the Distance</returns>
-        public IEnumerable<(byte[] ExternalId, float Distance, int InternalId)> VectorsSearchSimilar(string tableName, float[] vectorRequest, int returnQuantity, List<byte[]> excludingDocuments=null)
+        public IEnumerable<(byte[] ExternalId, float Distance, int InternalId)> VectorsSearchSimilar(string tableName, float[] vectorRequest, int returnQuantity=3, List<byte[]> excludingDocuments=null)
         {
             if (returnQuantity < 1)
                 returnQuantity = 1;
@@ -141,7 +146,29 @@ namespace DBreeze.Transactions
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="internalIDs">must be already sorted ascending</param>
+        internal void VectorsDoIndexing(string tableName, List<int> internalIDs)
+        {
+            var world = new SmallWorld<float[], float>(CosineDistance.SIMDForUnits, DefaultRandomGenerator.Instance,
+                       new SmallWorld<float[], float>.Parameters() //ParametersDouble()
+                       {
+                           EnableDistanceCacheForConstruction = true,//true 
+                           // InitialDistanceCacheSize = SampleSize, 
+                           InitialDistanceCacheSize = 0,
+                           NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+                           KeepPrunedConnections = true,
+                           ExpandBestSelection = true
+                       },
+                       this, tableName,
+                       threadSafe: false);
 
+            world.IndexIDs(internalIDs);
+
+        }
 
 
     }

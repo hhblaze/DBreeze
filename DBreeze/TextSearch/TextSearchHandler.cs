@@ -27,6 +27,11 @@ namespace DBreeze.TextSearch
         Transaction tran = null;
         Dictionary<string, HashSet<uint>> defferedDocIds = new Dictionary<string, HashSet<uint>>();
 
+        /// <summary>
+        /// TextSearch handler becomes universal for other entites
+        /// </summary>
+        public Dictionary<string, HashSet<uint>> DeferredVectors = new Dictionary<string, HashSet<uint>>();
+
         public TextSearchHandler(Transaction tran)
         {
             this.tran = tran;
@@ -305,13 +310,25 @@ namespace DBreeze.TextSearch
         /// </summary>
         public void AfterCommit()
         {
-            //Trying start deffered indexer in parallel thread.
+            bool startIndexer = false;
+            //Trying start deffered indexer in parallel thread for text search.
             if (defferedDocIds.Count > 0)
             {
                 tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.Add(defferedDocIds);
                 defferedDocIds.Clear();
-                tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.StartDefferedIndexing();
+                //tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.StartDefferedIndexing();
+                startIndexer = true;
             }
+
+            if(DeferredVectors.Count > 0)
+            {
+                tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.AddVectors(DeferredVectors);
+                DeferredVectors.Clear();
+                startIndexer = true;
+            }
+
+            if(startIndexer)
+                tran._transactionUnit.TransactionsCoordinator._engine.DeferredIndexer.StartDefferedIndexing();
         }
 
         /// <summary>

@@ -1,4 +1,10 @@
-﻿using DBreeze.Utils;
+﻿/* 
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+
+using DBreeze.TextSearch;
+using DBreeze.Utils;
 using System;
 using System.Collections.Generic;
 using System.Runtime.ConstrainedExecution;
@@ -51,9 +57,10 @@ namespace DBreeze.HNSW
             4.ToIndex() - Node entryPoint
 
             5.ToIndex(byte[] - external documentId); Value: (int) IdOf the Node/Item; helps to remove node
+
          */
 
-       
+
 
         /// <summary>
         /// 
@@ -63,7 +70,7 @@ namespace DBreeze.HNSW
         /// <param name="funcAddNode"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public List<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, Func<int, IProvideRandomValues, Node> funcAddNode)
+        public List<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, Func<int, IProvideRandomValues, Node> funcAddNode, bool deferredIndexing = false)
         {
             CacheIsActive = true;
 
@@ -84,6 +91,12 @@ namespace DBreeze.HNSW
                 if(item.Key == null)
                     throw new Exception($"External ID, can't be null.");
 
+                //-skipping items adding if it already exists
+                var exitem = Items.GetItemByExternalID(item.Key);
+
+                if (exitem.Item1 != null)
+                    continue;
+
                 itemId++;
                 newIDs.Add(itemId);
 
@@ -91,55 +104,77 @@ namespace DBreeze.HNSW
 
                 var node = funcAddNode(itemId, generator);
                 Nodes.Add(node);
+
+                //adding to deferred indexer
+                if(deferredIndexing)
+                {
+                    if (this.tran.tsh == null)
+                        this.tran.tsh = new TextSearchHandler(this.tran);
+
+                    if (!this.tran.tsh.DeferredVectors.TryGetValue(this.tableName, out var hs))
+                    {
+                        this.tran.tsh.DeferredVectors[tableName] = new HashSet<uint>();
+                    }
+
+                    this.tran.tsh.DeferredVectors[tableName].Add((uint)itemId);
+
+                    this.tran.tsh.InsertWasPerformed = true;
+                }                
             }
 
             //----------saving new itemID
             if (newIDs.Count > 0)
-                tran.Insert<byte[], int>(tableName, 1.ToIndex(), itemId);
-
-            tran.ValuesLazyLoadingIsOn = valueLazy;
-            return newIDs;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="items"></param>
-        /// <param name="generator"></param>
-        /// <returns></returns>
-        public List<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator, Func<int, IProvideRandomValues, Node> funcAddNode)
-        {
-            CacheIsActive = true;
-
-            List<int> newIDs = new List<int>();
-            if (items.Count < 1)
-                return newIDs;
-
-            var valueLazy = tran.ValuesLazyLoadingIsOn;
-            tran.ValuesLazyLoadingIsOn = false;
-
-            int itemId = -1;
-            var rowItemId = tran.Select<byte[], int>(tableName, 1.ToIndex());
-            if (rowItemId.Exists)
-                itemId = rowItemId.Value;
-
-            foreach (var item in items)
             {
-                itemId++;
-                newIDs.Add(itemId);
-
-                Items.InsertItem(itemId, item);
-
-                var node = funcAddNode(itemId, generator);
-                Nodes.Add(node);
-            }
-
-            //----------saving new itemID
-            if (newIDs.Count > 0)
                 tran.Insert<byte[], int>(tableName, 1.ToIndex(), itemId);
+
+                
+            }
 
             tran.ValuesLazyLoadingIsOn = valueLazy;
             return newIDs;
         }
+
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="items"></param>
+        ///// <param name="generator"></param>
+        ///// <returns></returns>
+        //public List<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator, Func<int, IProvideRandomValues, Node> funcAddNode)
+        //{
+        //    CacheIsActive = true;
+
+        //    List<int> newIDs = new List<int>();
+        //    if (items.Count < 1)
+        //        return newIDs;
+
+        //    var valueLazy = tran.ValuesLazyLoadingIsOn;
+        //    tran.ValuesLazyLoadingIsOn = false;
+
+        //    int itemId = -1;
+        //    var rowItemId = tran.Select<byte[], int>(tableName, 1.ToIndex());
+        //    if (rowItemId.Exists)
+        //        itemId = rowItemId.Value;
+
+        //    foreach (var item in items)
+        //    {
+
+        //        itemId++;
+        //        newIDs.Add(itemId);
+
+        //        Items.InsertItem(itemId, item);
+
+        //        var node = funcAddNode(itemId, generator);
+        //        Nodes.Add(node);
+        //    }
+
+        //    //----------saving new itemID
+        //    if (newIDs.Count > 0)
+        //        tran.Insert<byte[], int>(tableName, 1.ToIndex(), itemId);
+
+        //    tran.ValuesLazyLoadingIsOn = valueLazy;
+        //    return newIDs;
+        //}
 
         /// <summary>
         /// 
@@ -154,6 +189,17 @@ namespace DBreeze.HNSW
             SetEntryPoint(entryPoint);
 
             CacheIsActive = false;                       
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        public void FinilizeAddItemsDeferred()
+        {
+
+            this.Nodes.FlushNodes();
+            CacheIsActive = false;
         }
 
         /// <summary>

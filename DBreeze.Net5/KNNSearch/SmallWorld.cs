@@ -20,9 +20,9 @@ namespace DBreeze.HNSW
     /// </summary>
     /// <typeparam name="TItem">The type of items to connect into small world.</typeparam>
     /// <typeparam name="TDistance">The type of distance between items (expect any numeric type: float, double, decimal, int, ...).</typeparam>
-    public partial class SmallWorld<TItem, TDistance> where TDistance : struct, IComparable<TDistance>
+    internal partial class SmallWorld<TItem, TDistance> where TDistance : struct, IComparable<TDistance>
     {
-        private const string SERIALIZATION_HEADER = "HNSW";
+        //private const string SERIALIZATION_HEADER = "HNSW";
         private readonly Func<TItem, TItem, TDistance> Distance;
 
         private Graph<TItem, TDistance> Graph;
@@ -80,36 +80,36 @@ namespace DBreeze.HNSW
             _rwLock = threadSafe ? new ReaderWriterLockSlim() : null;
         }
 
+        ///// <summary>
+        ///// Builds hnsw graph from the items.
+        ///// </summary>
+        ///// <param name="items">The items to connect into the graph.</param>
+
+        //public IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProgressReporter progressReporter = null)
+        //{
+        //    _rwLock?.EnterWriteLock();
+        //    try
+        //    {
+        //       return Graph.AddItems(items, Generator, progressReporter);
+        //    }
+        //    finally
+        //    {
+        //        _rwLock?.ExitWriteLock();
+        //    }
+        //}
+
         /// <summary>
         /// Builds hnsw graph from the items.
-        /// </summary>
-        /// <param name="items">The items to connect into the graph.</param>
-
-        public IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProgressReporter progressReporter = null)
-        {
-            _rwLock?.EnterWriteLock();
-            try
-            {
-               return Graph.AddItems(items, Generator, progressReporter);
-            }
-            finally
-            {
-                _rwLock?.ExitWriteLock();
-            }
-        }
-
-        /// <summary>
-        /// 
         /// </summary>
         /// <param name="items"></param>
         /// <param name="progressReporter"></param>
         /// <returns>IDs of added items</returns>
-        public IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProgressReporter progressReporter = null)
+        public IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProgressReporter progressReporter = null, bool deferredIndexing = false)
         {
             _rwLock?.EnterWriteLock();
             try
             {
-                return Graph.AddItems(items, Generator, progressReporter);
+                return Graph.AddItems(items, Generator, progressReporter, deferredIndexing: deferredIndexing);
             }
             finally
             {
@@ -139,7 +139,7 @@ namespace DBreeze.HNSW
         /// </summary>
         /// <param name="item">The item to search nearest neighbours.</param>
         /// <param name="k">The number of nearest neighbours.</param>
-        /// <param name="excludingDocuments">List of excluding documents by externalID</param>
+        /// <param name="excludingDocuments">External Documents IDs to be excluded from the search</param>
         /// <returns>The list of found nearest neighbours.</returns>
         public IList<KNNSearchResult> KNNSearch(TItem item, int k, List<byte[]> excludingDocuments=null)
         {
@@ -147,6 +147,23 @@ namespace DBreeze.HNSW
             try
             {
                 return Graph.KNearest(item, k, excludingDocuments);
+            }
+            finally
+            {
+                _rwLock?.ExitReadLock();
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="internalIDs"></param>
+        public void IndexIDs(List<int> internalIDs, IProgressReporter progressReporter = null)
+        {
+            _rwLock?.EnterReadLock();
+            try
+            {
+                Graph.IndexIDs(internalIDs,Generator);
             }
             finally
             {

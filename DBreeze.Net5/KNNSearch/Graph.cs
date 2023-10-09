@@ -51,46 +51,77 @@ namespace DBreeze.HNSW
         internal SmallWorld<TItem, TDistance>.Parameters Parameters { get; }
 
 
+        ///// <summary>
+        ///// Creates graph from the given items.
+        ///// Contains implementation of INSERT(hnsw, q, M, Mmax, efConstruction, mL) algorithm.
+        ///// Article: Section 4. Algorithm 1.
+        ///// </summary>
+        ///// <param name="items">The items to insert.</param>
+        ///// <param name="generator">The random number generator to distribute nodes across layers.</param>
+        ///// <param name="progressReporter">Interface to report progress </param>
+        //internal IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator, IProgressReporter progressReporter)
+        //{
+        //    if (items is null || !items.Any()) { return Array.Empty<int>(); }
+
+        //    //GraphCore = GraphCore ?? new Core(Distance, Parameters, this.tran, this.tableName);
+        //    //int startIndex = GraphCore.Storage.Items.Count;
+
+        //    var newIDs = GraphCore.AddItems(items, generator);
+        //    //-check for deferred indexing, 
+        //    if (newIDs.Count > 0)
+        //        IndexItems(newIDs, generator, progressReporter);           
+
+        //    return newIDs;
+        //}
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="internalIDs"></param>
+        public void IndexIDs(List<int> internalIDs, IProvideRandomValues generator, IProgressReporter progressReporter = null)
+        {
+            GraphCore.Storage.CacheIsActive = true;
+            List<int> dd = new List<int>();
+            //return dd;
+            for (int i = 0; i < 18; i++)
+                dd.Add(i);
+
+            GraphCore.ResizeDistanceCache(dd.Count);
+
+            IndexItems(dd, generator, progressReporter);
+        }
+
         /// <summary>
         /// Creates graph from the given items.
         /// Contains implementation of INSERT(hnsw, q, M, Mmax, efConstruction, mL) algorithm.
         /// Article: Section 4. Algorithm 1.
         /// </summary>
-        /// <param name="items">The items to insert.</param>
-        /// <param name="generator">The random number generator to distribute nodes across layers.</param>
-        /// <param name="progressReporter">Interface to report progress </param>
-        internal IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator, IProgressReporter progressReporter)
-        {
-            if (items is null || !items.Any()) { return Array.Empty<int>(); }
-
-            //GraphCore = GraphCore ?? new Core(Distance, Parameters, this.tran, this.tableName);
-            //int startIndex = GraphCore.Storage.Items.Count;
-
-            var newIDs = GraphCore.AddItems(items, generator);
-            //for deferred indexing, 
-            IndexItems(newIDs, generator, progressReporter);           
-
-            return newIDs;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="items">K: external embeddingID (external ID of the document that represents this embedding)</param>
         /// <param name="generator"></param>
         /// <param name="progressReporter"></param>
         /// <returns></returns>
-        internal IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, IProgressReporter progressReporter)
+        internal IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, IProgressReporter progressReporter, bool deferredIndexing = false)
         {
             if (items is null || !items.Any()) { return Array.Empty<int>(); }
 
-            //GraphCore = GraphCore ?? new Core(Distance, Parameters, this.tran, this.tableName);
-            //int startIndex = GraphCore.Storage.Items.Count;
+            ////////GraphCore = GraphCore ?? new Core(Distance, Parameters, this.tran, this.tableName);
+            ////////int startIndex = GraphCore.Storage.Items.Count;
 
-            var newIDs = GraphCore.AddItems(items, generator);
-            //for deferred indexing
-            IndexItems(newIDs, generator, progressReporter);
-            
+
+            var newIDs = GraphCore.AddItems(items, generator, deferredIndexing: deferredIndexing);
+
+            //-check for deferred indexing
+            if(deferredIndexing)
+            {               
+                GraphCore.Storage.FinilizeAddItemsDeferred();               
+            }
+            else
+            {
+                if (newIDs.Count > 0)
+                    IndexItems(newIDs, generator, progressReporter);
+            }
+                               
 
             return newIDs;
         }
@@ -214,6 +245,7 @@ namespace DBreeze.HNSW
         /// </summary>
         /// <param name="destination">The given node to get the nearest neighbourhood for.</param>
         /// <param name="k">The size of the neighbourhood.</param>
+        /// <param name="excludingDocuments">External Documents IDs to be excluded from the search</param>
         /// <returns>The list of the nearest neighbours.</returns>
         internal IList<SmallWorld<TItem, TDistance>.KNNSearchResult> KNearest(TItem destination, int k, List<byte[]> excludingDocuments)
         {

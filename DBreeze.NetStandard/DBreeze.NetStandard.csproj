@@ -73,7 +73,7 @@
     <Compile Include="..\DBreeze.Net5\KNNSearch\ThreadSafeFastRandom.cs" Link="KNNSearch\ThreadSafeFastRandom.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\TravelingCosts.cs" Link="KNNSearch\TravelingCosts.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\VectorUtils.cs" Link="KNNSearch\VectorUtils.cs" />
-    <Compile Include="..\DBreeze.Net5\Transactions\Transection.Vector.cs" Link="Transactions\Transection.Vector.cs" />
+    <Compile Include="..\DBreeze.Net5\Transactions\Transaction.Vector.cs" Link="Transactions\Transaction.Vector.cs" />
     <Compile Include="..\DBreeze\DataTypes\Row.cs" Link="DataTypes\Row.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeConfiguration.cs" Link="Engine\DBreezeConfiguration.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeResources.cs" Link="Engine\DBreezeResources.cs" />
