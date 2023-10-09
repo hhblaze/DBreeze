@@ -3418,137 +3418,17 @@
             
             </summary>
         </member>
-        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
-            <summary>
-            Dictionary of all active transactions. Key is ManagedThreadId
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
-            <summary>
-            Fast access to the Schema object.
-            Used by Transaction class
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            
-            </summary>
-            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
-            <summary>
-            Is called by the engine on Dispose.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
-            <summary>
-            Access synchronizer.
-            All calls of the WRITE LOCATOR come over this function.
-            </summary>
-            <param name="transactionThreadId"></param>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
-            <summary>
-            Can return NULL (if DbIsNotOperatable)
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
-            <summary>
-            Can return NULL if table doesn't exist
-            Can return NULL (if DbIsNotOperatable)
-            
-            Differs from GetTable_Write:
-            1. table is not registered for Write;
-            2. Table is not created, if doesn't exist.
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <param name="ignoreThreadIdCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
-            <summary>
-            Normal Engine Stop, usually in case of Main Thread or DLL disposing
-            </summary>
-        </member>
-        <member name="T:DBreeze.Transactions.RandomKeySorter">
-            <summary>
-            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
-            <summary>
-            <para>NOT USED ANYMORE</para>
-            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
-            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
-            <summary>
-            Internal regulator telling, that specified tables should work via fast update
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.TryGetValueByKey(System.String,System.String)">
-            <summary>
-            
-            </summary>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
-            <summary>
-            
-            </summary>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="value"></param>        
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
-            <summary>
-            Removes from the table key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-        </member>
-        <member name="F:DBreeze.Transactions.RandomKeySorter.tbls">
-            <summary>
-            Contains writing LTrie tables
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
-            <summary>
-            Flushing all 
-            </summary>
-        </member>
         <member name="T:DBreeze.Transactions.Transaction">
             <summary>
             Transaction
             </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="internalIDs">must be already sorted ascending</param>
         </member>
         <member name="F:DBreeze.Transactions.Transaction.ManagedThreadId">
             <summary>
@@ -4145,7 +4025,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
             <summary>
-            Inserts/Updates searchable words per external documentID
+            Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -4172,7 +4052,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
             <summary>
-            Removes words from the searchable set of the external documentID
+            Removes FULL-MATCH words from the searchable set of the external documentID 
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -4567,6 +4447,133 @@
             <param name="tableName"></param>
             <param name="newTableFullPath">Depends on thisEngineTable argument, if thisEngineTable == true then full path to the file is supplied, otherwise only source-tableName</param>
             <param name="thisEngineTable">default false, indicates that table belongs to the engine and all open file pointers on it will be closed, use with temporary tables.</param>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
+            <summary>
+            Dictionary of all active transactions. Key is ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
+            <summary>
+            Fast access to the Schema object.
+            Used by Transaction class
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
+            <summary>
+            Is called by the engine on Dispose.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
+            <summary>
+            Access synchronizer.
+            All calls of the WRITE LOCATOR come over this function.
+            </summary>
+            <param name="transactionThreadId"></param>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
+            <summary>
+            Can return NULL (if DbIsNotOperatable)
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Can return NULL if table doesn't exist
+            Can return NULL (if DbIsNotOperatable)
+            
+            Differs from GetTable_Write:
+            1. table is not registered for Write;
+            2. Table is not created, if doesn't exist.
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <param name="ignoreThreadIdCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
+            <summary>
+            Normal Engine Stop, usually in case of Main Thread or DLL disposing
+            </summary>
+        </member>
+        <member name="T:DBreeze.Transactions.RandomKeySorter">
+            <summary>
+            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
+            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
+            sorted by key ascending
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
+            <summary>
+            <para>NOT USED ANYMORE</para>
+            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
+            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
+            <summary>
+            Internal regulator telling, that specified tables should work via fast update
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.TryGetValueByKey(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="value"></param>        
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
+            <summary>
+            Removes from the table key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
+        </member>
+        <member name="F:DBreeze.Transactions.RandomKeySorter.tbls">
+            <summary>
+            Contains writing LTrie tables
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
+            <summary>
+            Flushing all 
+            </summary>
         </member>
         <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
             <summary>
@@ -6180,6 +6187,326 @@
             Each local time must be converted into UTC and then represented as ISO
             </summary>
         </member>
+        <member name="T:DBreeze.Utils.DeepCopyByExpressionTrees">
+            <summary>
+            Superfast deep copier class, which uses Expression trees.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.DeepCopyByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
+            <summary>
+            Creates a deep copy of an object.
+            </summary>
+            <typeparam name="T">Object type.</typeparam>
+            <param name="original">Object to copy.</param>
+            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.CloneByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
+            <summary>
+            Creates a deep copy of an object (Works 3 times faster than ProtobufClone).
+            </summary>
+            <typeparam name="T">Object type.</typeparam>
+            <param name="original">Object to copy.</param>
+            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MultiKeyDictionary">
+            <summary>
+            Once added dimension must stay. 
+            mkd.Add("dsfs", 17L, "key2");
+            mkd.Add(new List&lt;string&gt;{ "w1", "w2" }, 11L, "key22");
+            var mkdRes = mkd.Get&lt;string&gt;(17L, "key2");
+            var mkdResBool1 = mkd.TryGetValue&lt;List&lt;string&gt;&gt;(out var dder1, 11L, "key22");
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary.ByteArraySerializator">
+            <summary>
+            External Serializer for MultiKeyDictionary
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary.ByteArrayDeSerializator">
+            <summary>
+            External deserializer for MultiKeyDictionary
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary.CreateDeconstructDelegate``1(System.Int32,System.Type,System.Func{System.Collections.Generic.List{System.Object},``0}@)">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary.get_type_flds(System.Type)">
+            <summary>
+            
+            </summary>
+            <param name="t"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MultiKeyDictionary`2">
+            <summary>
+            MultiKeyDictionary where key is a Tuple with more than one key.
+            Second generation of the non-generic MKD, supporting cloning, serialization, count and named returns due to the ValueTuple behaviour.
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary`2.Sync">
+            <summary>
+            Sync object. Not instantiated
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeyDictionary`2.Count">
+            <summary>
+            Total count of elements in MKD
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.CloneMultiKeyDictionary">
+            <summary>
+            Clones this multi-key dictionary into another instance
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Add(`0,`1)">
+            <summary>
+            Adds elements
+            </summary>
+            <param name="keys"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Serialize">
+            <summary>
+            MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Deserialize(System.Byte[])">
+            <summary>
+            MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
+            </summary>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetAll">
+            <summary>
+            Iterate over all elements of the dictionary
+            </summary>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.MultiKeyDictionary`2.GetByKeyStart(System.Object[])" -->
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetRecursByKeyStart(System.Collections.Generic.Dictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object},System.Object[])">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.GetRecurs(System.Collections.Generic.Dictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object})">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Clear">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Contains(`0)">
+            <summary>
+            
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Remove(`0)">
+            <summary>
+            Removes key completely
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Remove(System.Object[])">
+            <summary>
+            Remove support deleting starting from key (if dimension is 3 then 3, 2 or 1 key can be supplied). To remove all use Clear()
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="P:DBreeze.Utils.MultiKeyDictionary`2.Item(`0)">
+            <summary>
+            Gets/Sets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.Get(`0)">
+            <summary>
+            Gets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.TryGetValue(`0,`1@)">
+            <summary>
+            Tries to get the value by the complete key
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyDictionary`2.TryGetValue``1(``0@,System.Object[])">
+            <summary>
+            Internal dimensions are checked level up
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MultiKeySortedDictionary`2">
+            <summary>
+            MultiKeySortedDictionary where key is a Tuple with more than one key
+            Second generation of the non-generic MKD, supporting cloning, serialization, count and named returns due to the ValueTuple behaviour.
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.#ctor">
+            <summary>
+            MultiKeySortedDictionary
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeySortedDictionary`2.Sync">
+            <summary>
+            Sync object. Not instantiated
+            </summary>
+        </member>
+        <member name="F:DBreeze.Utils.MultiKeySortedDictionary`2.Count">
+            <summary>
+            Total count of elements in MKD
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Serialize">
+            <summary>
+            MultiKeyDictionary.ByteArraySerializator must be set (once for all instances)
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Deserialize(System.Byte[])">
+            <summary>
+            MultiKeyDictionary.ByteArrayDeSerializator must be set (once for all instances)
+            </summary>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.CloneMultiKeySortedDictionary">
+            <summary>
+            Clones this multi-key dictionary into another instance
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Add(`0,`1)">
+            <summary>
+            Adds elements
+            </summary>
+            <param name="keys"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetAll">
+            <summary>
+            Iterate over all elements of the dictionary
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetAllObj">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.MultiKeySortedDictionary`2.GetByKeyStart(System.Object[])" -->
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetRecursByKeyStart(System.Collections.Generic.SortedDictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object},System.Object[])">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.GetRecurs(System.Collections.Generic.SortedDictionary{System.Object,System.Object},System.Int32,System.Collections.Generic.List{System.Object})">
+            <summary>
+            
+            </summary>
+            <param name="di"></param>
+            <param name="dim"></param>
+            <param name="l"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Clear">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Contains(`0)">
+            <summary>
+            
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Remove(`0)">
+            <summary>
+            Removes key completely
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Remove(System.Object[])">
+            <summary>
+            Remove support deleting starting from key (if dimension is 3 then 3, 2 or 1 key can be supplied). To remove all use Clear()
+            </summary>
+            <param name="keys"></param>
+        </member>
+        <member name="P:DBreeze.Utils.MultiKeySortedDictionary`2.Item(`0)">
+            <summary>
+            Gets/Sets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.Get(`0)">
+            <summary>
+            Gets the value by complete Key
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.TryGetValue(`0,`1@)">
+            <summary>
+            Tries to get the value by the complete key
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeySortedDictionary`2.TryGetValue``1(``0@,System.Object[])">
+            <summary>
+            Internal dimensions are checked level up
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="result"></param>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
         <member name="P:DBreeze.DBreezeConfiguration.Backup">
             <summary>
             Incremental backup plan. If is not instantiated, incremental backup will be switch off
@@ -6790,7 +7117,13 @@
         </member>
         <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
             <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing
+            Add tables and their InternalDocumentIDs for paraller indexing of the Text Engine
+            </summary>
+            <param name="defferedDocIds"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.AddVectors(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Add tables and their InternalDocumentIDs for paraller indexing of the Vector Engine, protocol 0,0
             </summary>
             <param name="defferedDocIds"></param>
         </member>
@@ -6807,6 +7140,11 @@
         <member name="T:DBreeze.TextSearch.TextSearchHandler">
             <summary>
             New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.DeferredVectors">
+            <summary>
+            TextSearch handler becomes universal for other entites
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">

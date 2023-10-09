@@ -1,0 +1,28 @@
+﻿<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+<TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+<DefineConstants>TRACE;NET40</DefineConstants>
+<DefineConstants>TRACE;NET35</DefineConstants>
+<DefineConstants>TRACE;NET40;NETr40</DefineConstants>
+<Reference Include="System.Web.Extensions" />
+<Compile Include="DataTypes\DbMJSON.cs" />
+<Compile Include="Utils\MJsonSerializator.cs" />
+<TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+<TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+<TargetFramework>netcoreapp1.0</TargetFramework>
+<TargetFramework>netcoreapp1.1</TargetFramework>
+<TargetFramework>netcoreapp2.0</TargetFramework>
+<TargetFramework>netstandard1.6</TargetFramework>
+<TargetFramework>netstandard2.0</TargetFramework>
+<TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+<TargetFramework>netstandard2.1</TargetFramework>
+<DefineConstants>TRACE;NET40;NET472</DefineConstants>
+<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE/DefineConstants>
+<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
+
+
+
+

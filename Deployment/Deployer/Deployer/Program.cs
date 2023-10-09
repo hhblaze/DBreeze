@@ -28,6 +28,7 @@ namespace Deployer
             //string msbldpath = MyPath + "run_msbuild.bat";
             //string msbldpath = MyPath + "run_msbuild19.bat";
             string msbldpath = MyPath + "run_msbuild22.bat";
+            string msbldpathV2 = MyPath + "runV2_msbuild22.bat";
 
             string fileVersion = "";
             string productVersion = "";
@@ -56,9 +57,61 @@ namespace Deployer
 
             if (!skipRecompile)
             {
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //msbuild MyProject.csproj /p:TargetFramework=netcoreapp3.1 /p:DefineConstants=NETCOREAPP3_1
+                int exitCode = 0;
+
+                string targetFramework = "TargetFramework";
+                string targetFrameworkVersion = "TargetFrameworkVersion";
+
+                //NET FRAMEWORK
+
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v3.5", "TRACE;RELEASE;" + "NET35", @"DBreeze\bin\Release", "NET35");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.0", "TRACE;RELEASE;" + "NET40;NETr40", @"DBreeze\bin\Release", "NET40");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                // exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.5", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET45");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.6.1", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET461");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.6.2", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET462");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.7", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET47");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.7.2", "TRACE;RELEASE;" + "NET40;NET472", @"DBreeze\bin\Release", "NET472");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+
+                ////NET CORE
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp1.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp1.0", "NETCOREAPP1_0");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp1.1", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp1.1", "NETCOREAPP1_1");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp2.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp2.0", "NETCOREAPP2_0");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp3.1", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;NETCOREAPP;NETCOREAPP3_1;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp3.1", "NETCOREAPP3_1");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+
+                ////NET PORTABLE
+                //exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"NETPortable\DBreeze.Portable.csproj", "v4.5", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;", @"NETPortable\bin\Release", "PORTABLE");
+                //if (exitCode != 0) { Console.ReadKey(); return; }
+
+                ////.NET
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net6.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch", @"DBreeze.Net5\bin\Release\net6.0", "NET6_0");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+
+                ////.NET STANDARD
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard2.0", "TRACE;RELEASE;" + "NETSTANDARD;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_0", @"DBreeze.NetStandard\bin\Release\netstandard2.0", "NETSTANDARD2_0");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard1.6", "TRACE;RELEASE;" + "NETSTANDARD1_6;NET40;NETPORTABLE", @"DBreeze.NetStandard\bin\Release\netstandard1.6", "NETSTANDARD16");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard2.1", "TRACE;RELEASE;" + "NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;KNNSearch", @"DBreeze.NetStandard\bin\Release\netstandard2.1", "NETSTANDARD2_1");
+                if (exitCode != 0) { Console.ReadKey(); return; }
 
 
+                Utils.ConsolePrint("ALL IS DONE", ConsoleColor.Green);
 
+                return;
 
                 //----------------------------------------- DBreeze (Framework) project --------------------------------------
                 baseFramework = "<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>";
@@ -245,29 +298,29 @@ namespace Deployer
                 //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"XAMARIN\DBreeze.XML", true);
 
 
-                ////.NET 4.5
-                //currentFramework = "<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>";
-                //currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
+                //.NET 4.5
+                currentFramework = "<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>";
+                currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
 
-                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                //tpr = prj;
-                //Console.WriteLine("Creating .NET4.5");
-                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                ////tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
-                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
-                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                tpr = prj;
+                Console.WriteLine("Creating .NET4.5");
+                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                //tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
+                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
+                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
 
-                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                //Compile(msbldpath, "DBreeze");
+                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                Compile(msbldpath, "DBreeze");
 
-                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                //Console.WriteLine("done " + noerror);
-                //if (!noerror)
-                //    return;
-                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
-                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
-                ////--------------------------------------------------------
+                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                Console.WriteLine("done " + noerror);
+                if (!noerror)
+                    return;
+                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
+                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
+                //--------------------------------------------------------
 
                 //Removing DBreeze TMP project
                 File.Delete(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj");
@@ -283,26 +336,26 @@ namespace Deployer
 
                 //-----------------------------------------  DBreeze.Portable project --------------------------------------
 
-                ////.NET Portable            
-                //if (Directory.Exists(MyPath + @"..\..\NETPortable\bin\Release"))
-                //    Directory.Delete(MyPath + @"..\..\NETPortable\bin\Release", true);
-                ////msbldpath = MyPath + "run_msbuild_port.bat";
-                //prj = File.ReadAllText(MyPath + @"..\..\NETPortable\DBreeze.Portable.csproj");
-                //tpr = prj;
-                //Console.WriteLine("Creating .NETPortable");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+                //.NET Portable            
+                if (Directory.Exists(MyPath + @"..\..\NETPortable\bin\Release"))
+                    Directory.Delete(MyPath + @"..\..\NETPortable\bin\Release", true);
+                //msbldpath = MyPath + "run_msbuild_port.bat";
+                prj = File.ReadAllText(MyPath + @"..\..\NETPortable\DBreeze.Portable.csproj");
+                tpr = prj;
+                Console.WriteLine("Creating .NETPortable");
+                tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
 
-                //File.WriteAllText(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj", tpr);
-                //Compile(msbldpath, "NETPortable");
+                File.WriteAllText(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj", tpr);
+                Compile(msbldpath, "NETPortable");
 
-                //noerror = File.Exists(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll");
-                //Console.WriteLine("done " + noerror);
-                //if (!noerror)
-                //    return;
-                //File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll", MyPath + @"PORTABLE\DBreeze.dll", true);
-                //File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.XML", MyPath + @"PORTABLE\DBreeze.XML", true);
+                noerror = File.Exists(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll");
+                Console.WriteLine("done " + noerror);
+                if (!noerror)
+                    return;
+                File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll", MyPath + @"PORTABLE\DBreeze.dll", true);
+                File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.XML", MyPath + @"PORTABLE\DBreeze.XML", true);
 
-                //File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
+                File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
 
                 ////----------------------------------------- EOF DBreeze.Portable project --------------------------------------
 
@@ -787,24 +840,104 @@ namespace Deployer
 
         }
 
+        /// <summary>
+        /// Returns non 0 if error
+        /// </summary>
+        /// <param name="msbldpath"></param>
+        /// <param name="folder"></param>
+        /// <param name="targetFramework"></param>
+        /// <param name="compilationSymbols"></param>
+        /// <returns></returns>
+        static int Compile(string msbldpath, string folder, string targetFramework, string compilationSymbols)
+        {
+            ProcessStartInfo start = new ProcessStartInfo()
+            {
+                Arguments = $@"{folder} {targetFramework} ""{compilationSymbols}""",
+                FileName = msbldpath,
+                WindowStyle = ProcessWindowStyle.Hidden,
+
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            //// Enter in the command line arguments, everything you would enter after the executable name itself
+            //start.Arguments = folder;
+            //// Enter the executable to run, including the complete path
+            //start.FileName = msbldpath;
+            //// Do you want to show a console window?
+            //start.WindowStyle = ProcessWindowStyle.Normal;
+
+            int exitCode = 0;
+
+
+
+
+            using (Process proc = Process.Start(start))
+            {
+                if (proc != null)
+                {
+                    proc.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
+                    proc.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
+
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+
+                    proc.WaitForExit();
+
+                    // Retrieve the app's exit code
+                    exitCode = proc.ExitCode;
+                }
+
+
+            }
+
+            return exitCode;
+
+        }
+
+
         static void Compile(string msbldpath, string folder)
         {
-            ProcessStartInfo start = new ProcessStartInfo();
-            // Enter in the command line arguments, everything you would enter after the executable name itself
-            start.Arguments = folder;
-            // Enter the executable to run, including the complete path
-            start.FileName = msbldpath;
-            // Do you want to show a console window?
-            start.WindowStyle = ProcessWindowStyle.Normal;
+            ProcessStartInfo start = new ProcessStartInfo()
+            {
+                 Arguments = folder,
+                 FileName = msbldpath,
+                 WindowStyle = ProcessWindowStyle.Hidden,
+
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            //// Enter in the command line arguments, everything you would enter after the executable name itself
+            //start.Arguments = folder;
+            //// Enter the executable to run, including the complete path
+            //start.FileName = msbldpath;
+            //// Do you want to show a console window?
+            //start.WindowStyle = ProcessWindowStyle.Normal;
+
             int exitCode = 0;
+
+
             
 
             using (Process proc = Process.Start(start))
-            {                
-                proc.WaitForExit();
+            {
+                if(proc != null)
+                {
+                    proc.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
+                    proc.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
 
-                // Retrieve the app's exit code
-                exitCode = proc.ExitCode;
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+
+                    proc.WaitForExit();
+
+                    // Retrieve the app's exit code
+                    exitCode = proc.ExitCode;
+                }
+              
                 
             }
 

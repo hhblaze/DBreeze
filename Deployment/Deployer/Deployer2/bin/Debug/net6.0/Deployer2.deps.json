@@ -1,0 +1,59 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "Deployer2/1.0.0": {
+        "dependencies": {
+          "NuGet.Core": "2.12.0"
+        },
+        "runtime": {
+          "Deployer2.dll": {}
+        }
+      },
+      "Microsoft.Web.Xdt/2.1.0": {
+        "runtime": {
+          "lib/net40/Microsoft.Web.XmlTransform.dll": {
+            "assemblyVersion": "2.1.0.0",
+            "fileVersion": "2.1.50413.0"
+          }
+        }
+      },
+      "NuGet.Core/2.12.0": {
+        "dependencies": {
+          "Microsoft.Web.Xdt": "2.1.0"
+        },
+        "runtime": {
+          "lib/net40-Client/NuGet.Core.dll": {
+            "assemblyVersion": "2.12.0.817",
+            "fileVersion": "2.12.0.817"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Deployer2/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Web.Xdt/2.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-/ieJ02r4MEJM21Eyl+c5kwoJWPhy+qEEcN68JaqDoamabgxJI1jGi/kNLuKvHUCl6tU7E0rMvaR6FmEnDWtS4A==",
+      "path": "microsoft.web.xdt/2.1.0",
+      "hashPath": "microsoft.web.xdt.2.1.0.nupkg.sha512"
+    },
+    "NuGet.Core/2.12.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kSDD1VFIq7BBrimjMRk9HeeQlZteyknbHgz3AT4AUVUCZ8BZaCSzO1A5UTVPLLbSHryjozPcEmNYSds/IDAIjw==",
+      "path": "nuget.core/2.12.0",
+      "hashPath": "nuget.core.2.12.0.nupkg.sha512"
+    }
+  }
+}

@@ -16,7 +16,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard1.6\DBreeze.xml</DocumentationFile>
-    <DefineConstants>$(DefineConstants);NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD;NETSTANDARD2_1;KNNSearch</DefineConstants>    
+    <DefineConstants>$(DefineConstants);NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD;KNNSearch</DefineConstants>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
