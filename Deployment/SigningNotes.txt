@@ -1,0 +1,9 @@
+AppVeyor.com
+
+https://ci.appveyor.com/project/hhblaze/dbreeze
+https://www.appveyor.com/docs/status-badges/
+
+SignPath.io
+https://app.signpath.io/Web/75ba23b1-b387-4f6d-861e-f190db22f4f3/Home/Dashboard
+https://about.signpath.io/documentation/origin-verification#
+https://about.signpath.io/documentation/artifact-configuration#predefined-configuration-for-single-portable-executable-file
