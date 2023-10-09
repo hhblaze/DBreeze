@@ -71,7 +71,7 @@ namespace Deployer
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.0", "TRACE;RELEASE;" + "NET40;NETr40", @"DBreeze\bin\Release", "NET40");
                 if (exitCode != 0) { Console.ReadKey(); return; }
-                // exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.5", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET45");
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.5", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET45");
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.6.1", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET461");
                 if (exitCode != 0) { Console.ReadKey(); return; }
@@ -93,8 +93,8 @@ namespace Deployer
                 if (exitCode != 0) { Console.ReadKey(); return; }
 
                 ////NET PORTABLE
-                //exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"NETPortable\DBreeze.Portable.csproj", "v4.5", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;", @"NETPortable\bin\Release", "PORTABLE");
-                //if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"NETPortable\DBreeze.Portable.csproj", "v4.5", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;", @"NETPortable\bin\Release", "PORTABLE");
+                if (exitCode != 0) { Console.ReadKey(); return; }
 
                 ////.NET
                 exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net6.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch", @"DBreeze.Net5\bin\Release\net6.0", "NET6_0");
@@ -111,181 +111,39 @@ namespace Deployer
 
                 Utils.ConsolePrint("ALL IS DONE", ConsoleColor.Green);
 
-                return;
+                //return;
 
-                //----------------------------------------- DBreeze (Framework) project --------------------------------------
-                baseFramework = "<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>";
-                baseDefineConstants = "<DefineConstants>TRACE;NET40;NET472</DefineConstants>";
-
-
-                /*
-
-                                    Currently on .NET Frameworks, initial DBREEZE is .NET 4.7.2, so its constants are 
-                                    <DefineConstants>TRACE;NET40;NET472</DefineConstants> [21]
-                                    When constant is used it means that code-block can be used starting from this framework and higher
-                                    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion> [19]
-                 */
+                ////----------------------------------------- DBreeze (Framework) project --------------------------------------
+                //baseFramework = "<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>";
+                //baseDefineConstants = "<DefineConstants>TRACE;NET40;NET472</DefineConstants>";
 
 
+                ///*
+
+                //                    Currently on .NET Frameworks, initial DBREEZE is .NET 4.7.2, so its constants are 
+                //                    <DefineConstants>TRACE;NET40;NET472</DefineConstants> [21]
+                //                    When constant is used it means that code-block can be used starting from this framework and higher
+                //                    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion> [19]
+                // */
 
 
-                //.NET Framework 3.5
-                currentFramework = "<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET35</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET35");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                ////tpr = tpr.Replace(rpl[2], rpl[3]); //4.5 on 3.5
-                //tpr = tpr.Replace(rpl[19], rpl[3]); //4.7.2 on 3.5 //<TargetFrameworkVersion>v3.5</TargetFrameworkVersion> [3]
-                ////tpr = tpr.Replace(rpl[5], rpl[6]); //NET40 on //NET35
-                //tpr = tpr.Replace(rpl[21], rpl[6]); //NET472 on //NET35
-
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET35\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET35\DBreeze.XML", true);
 
 
-                //.NET Framework 4.0
-                currentFramework = "<TargetFrameworkVersion>v4.0</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40;NETr40</DefineConstants>";
+                ////.NET Framework 3.5
+                //currentFramework = "<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET35</DefineConstants>";
 
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET40");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[19], rpl[4]); //4.7.2 on 4.0
-                //tpr = tpr.Replace(rpl[21], rpl[7]); //NET472 on //NET40;NETr40
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET40\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET40\DBreeze.XML", true);
-
-
-                //.NET Framework 4.6.1
-                currentFramework = "<TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET4.6.1");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[19], rpl[11]); //4.7.2 on 4.6.1            
-                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET461\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET461\DBreeze.XML", true);
-
-
-                //.NET Framework 4.6.2
-                currentFramework = "<TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET4.6.2");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[19], rpl[12]); //4.7.2 on 4.6.2
-                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET462\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET462\DBreeze.XML", true);
-
-
-                //.NET Framework 4.7
-                currentFramework = "<TargetFrameworkVersion>v4.7</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET4.7");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[19], rpl[18]); //4.7.2 on 4.7
-                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET47\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET47\DBreeze.XML", true);
-
-
-                //.NET Framework 4.72
-                currentFramework = "<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40;NET472</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET4.7.2");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[2], rpl[19]); //4.5 on 4.7.2            
-                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET472
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET472\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET472\DBreeze.XML", true);
-
-
-                ////.NET Framework Xamarin
-                ////                      (removing, it must support one of .NET Standard versions https://github.com/dotnet/standard/blob/master/docs/versions.md)
                 //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
                 //tpr = prj;
-                //Console.WriteLine("Creating Xamarin");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release            
-                //tpr = tpr.Replace(rpl[8], ""); //System.Web.Extensions
-                //tpr = tpr.Replace(rpl[9], ""); //DbMJSON
-                //tpr = tpr.Replace(rpl[10], ""); //MJsonSerializator
+                //Console.WriteLine("Creating .NET35");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                //////tpr = tpr.Replace(rpl[2], rpl[3]); //4.5 on 3.5
+                ////tpr = tpr.Replace(rpl[19], rpl[3]); //4.7.2 on 3.5 //<TargetFrameworkVersion>v3.5</TargetFrameworkVersion> [3]
+                //////tpr = tpr.Replace(rpl[5], rpl[6]); //NET40 on //NET35
+                ////tpr = tpr.Replace(rpl[21], rpl[6]); //NET472 on //NET35
+
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
 
                 //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
                 //Compile(msbldpath, "DBreeze");
@@ -294,325 +152,467 @@ namespace Deployer
                 //Console.WriteLine("done " + noerror);
                 //if (!noerror)
                 //    return;
-                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"XAMARIN\DBreeze.dll", true);
-                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"XAMARIN\DBreeze.XML", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET35\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET35\DBreeze.XML", true);
+
+
+                ////.NET Framework 4.0
+                //currentFramework = "<TargetFrameworkVersion>v4.0</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40;NETr40</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET40");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[19], rpl[4]); //4.7.2 on 4.0
+                ////tpr = tpr.Replace(rpl[21], rpl[7]); //NET472 on //NET40;NETr40
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET40\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET40\DBreeze.XML", true);
+
+
+                ////.NET Framework 4.6.1
+                //currentFramework = "<TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET4.6.1");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[19], rpl[11]); //4.7.2 on 4.6.1            
+                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET461\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET461\DBreeze.XML", true);
+
+
+                ////.NET Framework 4.6.2
+                //currentFramework = "<TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET4.6.2");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[19], rpl[12]); //4.7.2 on 4.6.2
+                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET462\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET462\DBreeze.XML", true);
+
+
+                ////.NET Framework 4.7
+                //currentFramework = "<TargetFrameworkVersion>v4.7</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET4.7");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[19], rpl[18]); //4.7.2 on 4.7
+                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET47\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET47\DBreeze.XML", true);
+
+
+                ////.NET Framework 4.72
+                //currentFramework = "<TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40;NET472</DefineConstants>";
 
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET4.7.2");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[2], rpl[19]); //4.5 on 4.7.2            
+                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET472
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
 
-                //.NET 4.5
-                currentFramework = "<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>";
-                currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
 
-                if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
-                tpr = prj;
-                Console.WriteLine("Creating .NET4.5");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                //tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
-                //tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET472\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET472\DBreeze.XML", true);
 
-                File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze");
 
-                noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
-                //--------------------------------------------------------
+                //////.NET Framework Xamarin
+                //////                      (removing, it must support one of .NET Standard versions https://github.com/dotnet/standard/blob/master/docs/versions.md)
+                ////if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                ////    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                ////tpr = prj;
+                ////Console.WriteLine("Creating Xamarin");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release            
+                ////tpr = tpr.Replace(rpl[8], ""); //System.Web.Extensions
+                ////tpr = tpr.Replace(rpl[9], ""); //DbMJSON
+                ////tpr = tpr.Replace(rpl[10], ""); //MJsonSerializator
 
-                //Removing DBreeze TMP project
-                File.Delete(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj");
+                ////File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                ////Compile(msbldpath, "DBreeze");
 
-                //----------------------------------------- EOF DBreeze (Framework) project --------------------------------------
+                ////noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                ////Console.WriteLine("done " + noerror);
+                ////if (!noerror)
+                ////    return;
+                ////File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"XAMARIN\DBreeze.dll", true);
+                ////File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"XAMARIN\DBreeze.XML", true);
 
 
+                ////.NET 4.5
+                //currentFramework = "<TargetFrameworkVersion>v4.5</TargetFrameworkVersion>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NET40</DefineConstants>";
 
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET4.5");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                ////tpr = tpr.Replace(rpl[19], rpl[2]); //4.7.2 on 4.5
+                ////tpr = tpr.Replace(rpl[21], rpl[5]); //NET472 on //NET40
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { prjDEBUG, prjRELEASE }, { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
 
+                //File.WriteAllText(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze");
 
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
+                ////--------------------------------------------------------
 
+                ////Removing DBreeze TMP project
+                //File.Delete(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj");
 
+                ////----------------------------------------- EOF DBreeze (Framework) project --------------------------------------
 
-                //-----------------------------------------  DBreeze.Portable project --------------------------------------
 
-                //.NET Portable            
-                if (Directory.Exists(MyPath + @"..\..\NETPortable\bin\Release"))
-                    Directory.Delete(MyPath + @"..\..\NETPortable\bin\Release", true);
-                //msbldpath = MyPath + "run_msbuild_port.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\NETPortable\DBreeze.Portable.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating .NETPortable");
-                tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
 
-                File.WriteAllText(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "NETPortable");
 
-                noerror = File.Exists(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll", MyPath + @"PORTABLE\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.XML", MyPath + @"PORTABLE\DBreeze.XML", true);
 
-                File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
 
-                ////----------------------------------------- EOF DBreeze.Portable project --------------------------------------
 
 
+                ////-----------------------------------------  DBreeze.Portable project --------------------------------------
 
-
-                //----------------------------------------- DBreeze.Net5 (Actually base is .Net6) project --------------------------------------
-                //Change base when necessary
-                baseFramework = "<TargetFramework>net6.0</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch</DefineConstants>";
-
-
-                //.NET6 (default)   (based on .NETC5 project)
-                currentFramework = "<TargetFramework>net6.0</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.Net5\DBreeze.Net5.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating Net6.0");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-                //tpr = tpr.Replace("<TargetFramework>net5.0</TargetFramework>", "<TargetFramework>net5.0</TargetFramework>");
-                //tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>");
-                // tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze.Net5\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.Net5");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;//bin\Release\net5.0\DBreeze.xml
-                File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.dll", MyPath + @"NET6_0\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.xml", MyPath + @"NET6_0\DBreeze.XML", true);
-
-                File.Delete(MyPath + @"..\..\DBreeze.Net5\DBreezeTMP.csproj");
-
-                //----------------------------------------- EOF DBreeze.Net5 project --------------------------------------
-
-
-
-
-                //----------------------------------------- DBreeze.NetCoreApp project --------------------------------------
-                //Change base when necessary               
-                baseFramework = "<TargetFramework>netcoreapp3.1</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;</DefineConstants>";
-
-                //TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;
-
-                //.NET Core App 1.0 (default)    (based on .NETCoreApp project)
-                currentFramework = "<TargetFramework>netcoreapp1.0</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating netcoreapp1.0");
-                //tpr = tpr.Replace(rpl[14], rpl[13]);    //netcoreapp1.1 on netcoreapp1.0           
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetCoreApp");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0\DBreeze.dll", MyPath + @"NETCOREAPP1_0\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0\DBreeze.XML", MyPath + @"NETCOREAPP1_0\DBreeze.XML", true);
-
-                File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
-
-
-                //.NET Core App 1.1   (based on .NETCoreApp project)
-                currentFramework = "<TargetFramework>netcoreapp1.1</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating netcoreapp1.1");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
-                //tpr = tpr.Replace(rpl[13], rpl[14]);
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetCoreApp");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll", MyPath + @"NETCOREAPP1_1\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.XML", MyPath + @"NETCOREAPP1_1\DBreeze.XML", true);
-
-                File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
-
-
-                //.NET Core App 2.0   (based on .NETCoreApp project)
-                currentFramework = "<TargetFramework>netcoreapp2.0</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating netcoreapp2.0");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
-                //tpr = tpr.Replace(rpl[13], rpl[15]);
-                //tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>");
-                // tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetCoreApp");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll", MyPath + @"NETCOREAPP2_0\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.XML", MyPath + @"NETCOREAPP2_0\DBreeze.XML", true);
-
-                File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
-
-
-
-
-                //.NET Core App 3.1   (based on .NETCoreApp project)
-                currentFramework = "<TargetFramework>netcoreapp3.1</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating netcoreapp3.1");
-                //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
-                //tpr = tpr.Replace(rpl[13], rpl[15]);
-                //tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>");
-                // tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetCoreApp");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.dll", MyPath + @"NETCOREAPP3_1\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.XML", MyPath + @"NETCOREAPP3_1\DBreeze.XML", true);
-
-                File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
-
-
-                //----------------------------------------- EOF DBreeze.NetCoreApp project --------------------------------------
-
-
-
-                //----------------------------------------- DBreeze.NetStandard project --------------------------------------
-                //https://devblogs.microsoft.com/dotnet/the-future-of-net-standard/
-                baseFramework = "<TargetFramework>netstandard1.6</TargetFramework>";
-                baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>";
-
-
-                //.NET STANDARD 1.6  (default)
-                currentFramework = "<TargetFramework>netstandard1.6</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating .NET Standard 1.6");
+                ////.NET Portable            
+                //if (Directory.Exists(MyPath + @"..\..\NETPortable\bin\Release"))
+                //    Directory.Delete(MyPath + @"..\..\NETPortable\bin\Release", true);
+                ////msbldpath = MyPath + "run_msbuild_port.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\NETPortable\DBreeze.Portable.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating .NETPortable");
                 //tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
 
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetStandard");
+                //File.WriteAllText(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "NETPortable");
 
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.dll", MyPath + @"NETSTANDARD16\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.XML", MyPath + @"NETSTANDARD16\DBreeze.XML", true);
+                //noerror = File.Exists(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.dll", MyPath + @"PORTABLE\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\NETPortable\bin\Release\DBreeze.XML", MyPath + @"PORTABLE\DBreeze.XML", true);
 
-                File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+                //File.Delete(MyPath + @"..\..\NETPortable\DBreezeTMP.csproj");
 
-
-
-                //.NET STANDARD 2.0
-                currentFramework = "<TargetFramework>netstandard2.0</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>";
-
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating .NET Standard 2.0");
-                //tpr = tpr.Replace(rpl[16], rpl[17]);    //Debug on Release        //<TargetFramework>netstandard1.6</TargetFramework> 16 , <TargetFramework>netstandard2.0</TargetFramework> 17    
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
-
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetStandard");
-
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.dll", MyPath + @"NETSTANDARD2_0\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.XML", MyPath + @"NETSTANDARD2_0\DBreeze.XML", true);
-
-                File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+                //////----------------------------------------- EOF DBreeze.Portable project --------------------------------------
 
 
-                //.NET STANDARD 2.1
-                currentFramework = "<TargetFramework>netstandard2.1</TargetFramework>";
-                currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;KNNSearch</DefineConstants>";
 
-                if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
-                    Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);
-                //msbldpath = MyPath + "run_msbuild_uwp.bat";
-                prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
-                tpr = prj;
-                Console.WriteLine("Creating .NET Standard 2.1");
-                //tpr = tpr.Replace(rpl[16], rpl[20]);    //<TargetFramework>netstandard1.6</TargetFramework> 16 , <TargetFramework>netstandard2.1</TargetFramework> 20 
-                //tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>",
-                //    "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;</DefineConstants>");
 
-                tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+                ////----------------------------------------- DBreeze.Net5 (Actually base is .Net6) project --------------------------------------
+                ////Change base when necessary
+                //baseFramework = "<TargetFramework>net6.0</TargetFramework>";
+                //baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch</DefineConstants>";
 
-                File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
-                Compile(msbldpath, "DBreeze.NetStandard");
 
-                noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.dll");
-                Console.WriteLine("done " + noerror);
-                if (!noerror)
-                    return;
-                File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.dll", MyPath + @"NETSTANDARD2_1\DBreeze.dll", true);
-                File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.XML", MyPath + @"NETSTANDARD2_1\DBreeze.XML", true);
+                ////.NET6 (default)   (based on .NETC5 project)
+                //currentFramework = "<TargetFramework>net6.0</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch</DefineConstants>";
 
-                File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.Net5\DBreeze.Net5.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating Net6.0");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+                ////tpr = tpr.Replace("<TargetFramework>net5.0</TargetFramework>", "<TargetFramework>net5.0</TargetFramework>");
+                ////tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET50;</DefineConstants>");
+                //// tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
 
-                //----------------------------------------- EOF DBreeze.NetStandard project --------------------------------------
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.Net5\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.Net5");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;//bin\Release\net5.0\DBreeze.xml
+                //File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.dll", MyPath + @"NET6_0\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.Net5\bin\Release\net6.0\DBreeze.xml", MyPath + @"NET6_0\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.Net5\DBreezeTMP.csproj");
+
+                ////----------------------------------------- EOF DBreeze.Net5 project --------------------------------------
+
+
+
+
+                ////----------------------------------------- DBreeze.NetCoreApp project --------------------------------------
+                ////Change base when necessary               
+                //baseFramework = "<TargetFramework>netcoreapp3.1</TargetFramework>";
+                //baseDefineConstants = "<DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;</DefineConstants>";
+
+                ////TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;
+
+                ////.NET Core App 1.0 (default)    (based on .NETCoreApp project)
+                //currentFramework = "<TargetFramework>netcoreapp1.0</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating netcoreapp1.0");
+                ////tpr = tpr.Replace(rpl[14], rpl[13]);    //netcoreapp1.1 on netcoreapp1.0           
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetCoreApp");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0\DBreeze.dll", MyPath + @"NETCOREAPP1_0\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.0\DBreeze.XML", MyPath + @"NETCOREAPP1_0\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
+
+
+                ////.NET Core App 1.1   (based on .NETCoreApp project)
+                //currentFramework = "<TargetFramework>netcoreapp1.1</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating netcoreapp1.1");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
+                ////tpr = tpr.Replace(rpl[13], rpl[14]);
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetCoreApp");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll", MyPath + @"NETCOREAPP1_1\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.XML", MyPath + @"NETCOREAPP1_1\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
+
+
+                ////.NET Core App 2.0   (based on .NETCoreApp project)
+                //currentFramework = "<TargetFramework>netcoreapp2.0</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating netcoreapp2.0");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
+                ////tpr = tpr.Replace(rpl[13], rpl[15]);
+                ////tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>");
+                //// tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetCoreApp");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp2.0\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.dll", MyPath + @"NETCOREAPP2_0\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp1.1\DBreeze.XML", MyPath + @"NETCOREAPP2_0\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
+
+
+
+
+                ////.NET Core App 3.1   (based on .NETCoreApp project)
+                //currentFramework = "<TargetFramework>netcoreapp3.1</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;RELEASE;NETCOREAPP;NETCOREAPP3_1;</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating netcoreapp3.1");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release       
+                ////tpr = tpr.Replace(rpl[13], rpl[15]);
+                ////tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>", "<DefineConstants>TRACE;RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>");
+                //// tpr = tpr.Replace(rpl[22], rpl[23]); //<DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE</DefineConstants>   ---->   <DefineConstants>RELEASE;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0</DefineConstants>
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetCoreApp");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.dll", MyPath + @"NETCOREAPP3_1\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetCoreApp\bin\Release\netcoreapp3.1\DBreeze.XML", MyPath + @"NETCOREAPP3_1\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetCoreApp\DBreezeTMP.csproj");
+
+
+                ////----------------------------------------- EOF DBreeze.NetCoreApp project --------------------------------------
+
+
+
+                ////----------------------------------------- DBreeze.NetStandard project --------------------------------------
+                ////https://devblogs.microsoft.com/dotnet/the-future-of-net-standard/
+                //baseFramework = "<TargetFramework>netstandard1.6</TargetFramework>";
+                //baseDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>";
+
+
+                ////.NET STANDARD 1.6  (default)
+                //currentFramework = "<TargetFramework>netstandard1.6</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET Standard 1.6");
+                ////tpr = tpr.Replace(rpl[0], rpl[1]);    //Debug on Release           
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetStandard");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.dll", MyPath + @"NETSTANDARD16\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard1.6\DBreeze.XML", MyPath + @"NETSTANDARD16\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+
+
+
+                ////.NET STANDARD 2.0
+                //currentFramework = "<TargetFramework>netstandard2.0</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET Standard 2.0");
+                ////tpr = tpr.Replace(rpl[16], rpl[17]);    //Debug on Release        //<TargetFramework>netstandard1.6</TargetFramework> 16 , <TargetFramework>netstandard2.0</TargetFramework> 17    
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetStandard");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.dll", MyPath + @"NETSTANDARD2_0\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0\DBreeze.XML", MyPath + @"NETSTANDARD2_0\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+
+
+                ////.NET STANDARD 2.1
+                //currentFramework = "<TargetFramework>netstandard2.1</TargetFramework>";
+                //currentDefineConstants = "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;KNNSearch</DefineConstants>";
+
+                //if (Directory.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0"))
+                //    Directory.Delete(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.0", true);
+                ////msbldpath = MyPath + "run_msbuild_uwp.bat";
+                //prj = File.ReadAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+                //tpr = prj;
+                //Console.WriteLine("Creating .NET Standard 2.1");
+                ////tpr = tpr.Replace(rpl[16], rpl[20]);    //<TargetFramework>netstandard1.6</TargetFramework> 16 , <TargetFramework>netstandard2.1</TargetFramework> 20 
+                ////tpr = tpr.Replace("<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE</DefineConstants>",
+                ////    "<DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;</DefineConstants>");
+
+                //tpr = tpr.ReplaceMultiple(new Dictionary<string, string> { { baseFramework, currentFramework }, { baseDefineConstants, currentDefineConstants } });
+
+                //File.WriteAllText(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj", tpr);
+                //Compile(msbldpath, "DBreeze.NetStandard");
+
+                //noerror = File.Exists(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.dll");
+                //Console.WriteLine("done " + noerror);
+                //if (!noerror)
+                //    return;
+                //File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.dll", MyPath + @"NETSTANDARD2_1\DBreeze.dll", true);
+                //File.Copy(MyPath + @"..\..\DBreeze.NetStandard\bin\Release\netstandard2.1\DBreeze.XML", MyPath + @"NETSTANDARD2_1\DBreeze.XML", true);
+
+                //File.Delete(MyPath + @"..\..\DBreeze.NetStandard\DBreezeTMP.csproj");
+
+                ////----------------------------------------- EOF DBreeze.NetStandard project --------------------------------------
 
             }//eof skipRecompile (for testing and debugging packaging system)
 
@@ -777,12 +777,17 @@ namespace Deployer
                 archive.GetEntry("lib/netcoreapp2.0/DBreeze.XML").Delete();
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.dll", "lib/netcoreapp2.0/DBreeze.dll", CompressionLevel.Optimal);
                 archive.CreateEntryFromFile(MyPath + "NETCOREAPP2_0" + @"\DBreeze.xml", "lib/netcoreapp2.0/DBreeze.XML", CompressionLevel.Optimal);
-                
+
+                archive.GetEntry("lib/netcoreapp3.1/DBreeze.dll")?.Delete();
+                archive.GetEntry("lib/netcoreapp3.1/DBreeze.XML")?.Delete();
+                archive.CreateEntryFromFile(MyPath + "NETCOREAPP3_1" + @"\DBreeze.dll", "lib/netcoreapp3.1/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETCOREAPP3_1" + @"\DBreeze.xml", "lib/netcoreapp3.1/DBreeze.XML", CompressionLevel.Optimal);
+
                 CreateLibEntry(archive, "lib/net6.0", MyPath + "NET6_0"); //<--------------------------------------------------------------------------------- USE THAT FOR NEW ENTRIES
-                //archive.GetEntry("lib/net5.0/DBreeze.dll").Delete();
-                //archive.GetEntry("lib/net5.0/DBreeze.XML").Delete();
-                //archive.CreateEntryFromFile(MyPath + "NET5_0" + @"\DBreeze.dll", "lib/net5.0/DBreeze.dll", CompressionLevel.Optimal);
-                //archive.CreateEntryFromFile(MyPath + "NET5_0" + @"\DBreeze.XML", "lib/net5.0/DBreeze.XML", CompressionLevel.Optimal);
+                archive.GetEntry("lib/net6.0/DBreeze.dll")?.Delete();
+                archive.GetEntry("lib/net6.0/DBreeze.XML")?.Delete();
+                archive.CreateEntryFromFile(MyPath + "NET6_0" + @"\DBreeze.dll", "lib/net6.0/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NET6_0" + @"\DBreeze.XML", "lib/net6.0/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/netstandard1.6/DBreeze.dll").Delete();
                 archive.GetEntry("lib/netstandard1.6/DBreeze.XML").Delete();
@@ -798,10 +803,10 @@ namespace Deployer
                 archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.xml", "lib/netstandard2.0/DBreeze.XML", CompressionLevel.Optimal);
 
                 CreateLibEntry(archive, "lib/netstandard2.1", MyPath + "NETSTANDARD2_1"); //<------------------------------------------------------------------------------------ USE THAT FOR NEW ENTRIES
-                //archive.GetEntry("lib/netstandard2.1/DBreeze.dll").Delete();
-                //archive.GetEntry("lib/netstandard2.1/DBreeze.XML").Delete();
-                //archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.dll", "lib/netstandard2.1/DBreeze.dll", CompressionLevel.Optimal);
-                //archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.xml", "lib/netstandard2.1/DBreeze.XML", CompressionLevel.Optimal);
+                archive.GetEntry("lib/netstandard2.1/DBreeze.dll")?.Delete();
+                archive.GetEntry("lib/netstandard2.1/DBreeze.XML")?.Delete();
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.dll", "lib/netstandard2.1/DBreeze.dll", CompressionLevel.Optimal);
+                archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_1" + @"\DBreeze.xml", "lib/netstandard2.1/DBreeze.XML", CompressionLevel.Optimal);
 
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.dll").Delete();
                 archive.GetEntry("lib/portable-net45+win8+wp8+wpa81/DBreeze.XML").Delete();
