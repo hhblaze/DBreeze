@@ -731,7 +731,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
             <summary>
-            Inserts/Updates searchable words per external documentID
+            Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -758,7 +758,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
             <summary>
-            Removes words from the searchable set of the external documentID
+            Removes FULL-MATCH words from the searchable set of the external documentID 
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -1153,6 +1153,13 @@
             <param name="tableName"></param>
             <param name="newTableFullPath">Depends on thisEngineTable argument, if thisEngineTable == true then full path to the file is supplied, otherwise only source-tableName</param>
             <param name="thisEngineTable">default false, indicates that table belongs to the engine and all open file pointers on it will be closed, use with temporary tables.</param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="internalIDs">must be already sorted ascending</param>
         </member>
         <member name="M:DBreeze.Transactions.ITransactable.ITRCommitFinished">
             <summary>
@@ -6118,7 +6125,13 @@
         </member>
         <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
             <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing
+            Add tables and their InternalDocumentIDs for paraller indexing of the Text Engine
+            </summary>
+            <param name="defferedDocIds"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.AddVectors(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Add tables and their InternalDocumentIDs for paraller indexing of the Vector Engine, protocol 0,0
             </summary>
             <param name="defferedDocIds"></param>
         </member>
@@ -6135,6 +6148,11 @@
         <member name="T:DBreeze.TextSearch.TextSearchHandler">
             <summary>
             New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.DeferredVectors">
+            <summary>
+            TextSearch handler becomes universal for other entites
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">

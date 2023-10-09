@@ -114,6 +114,9 @@
     <Compile Include="..\DBreeze\Transactions\Transaction.cs">
       <Link>Transactions\Transaction.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Transactions\Transaction.Vector.cs">
+      <Link>Transactions\Transaction.Vector.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze\Utils\Biser.cs">
       <Link>Utils\Biser.cs</Link>
     </Compile>
