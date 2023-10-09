@@ -1773,6 +1773,9 @@ namespace VisualTester
         private void btTestSearchText_Click(object sender, RoutedEventArgs e)
         {
 
+
+
+            
             //Dictionary<string, HashSet<uint>> d = new Dictionary<string, HashSet<uint>>();
             //d.Add("t1", null);
             //d.Add("t2", new HashSet<uint> { 4, 5, 6 });
@@ -1785,9 +1788,32 @@ namespace VisualTester
             //return;
             if (textsearchengine == null)
             {
-                textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");
+                textsearchengine = new DBreezeEngine(@"D:\temp\DBR1\");               
             }
-           
+
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                for (int i = 0; i < 1005; i++)
+                {
+                    tran.TextInsert("transtext", i.ToBytes(), "Apple" + i);
+                }
+                //tran.TextInsert("transtext", new byte[] { 1 }, "Apple Banana Сегодня день 周杰伦", "#LG1 #LG2");
+                //tran.TextInsert("transtext", new byte[] { 2 }, "Banana MANGO", "#LG2 #LG3");
+                tran.Commit();
+
+            }
+
+            using (var tran = textsearchengine.GetTransaction())
+            {
+                //var block = tran.TextSearch("transtext").Block("Apple");
+                var ts = tran.TextSearch("transtext");
+                ts.NoisyQuantity = 10000;
+                var block = ts.Block("Apple");
+                Console.WriteLine($"---- {block.GetDocumentIDs().Count()} ---");//returns 1
+            }
+            return;
+
+
             using (var tran = textsearchengine.GetTransaction())
             {
                 tran.TextInsert("transtext", new byte[] { 1 }, "Apple Banana Сегодня день 周杰伦", "#LG1 #LG2");

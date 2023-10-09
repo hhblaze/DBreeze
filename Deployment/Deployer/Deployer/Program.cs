@@ -267,7 +267,7 @@ namespace Deployer
                     return;
                 File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.dll", MyPath + @"NET45\DBreeze.dll", true);
                 File.Copy(MyPath + @"..\..\DBreeze\bin\Release\DBreeze.XML", MyPath + @"NET45\DBreeze.XML", true);
-
+                //--------------------------------------------------------
 
                 //Removing DBreeze TMP project
                 File.Delete(MyPath + @"..\..\DBreeze\DBreezeTMP.csproj");

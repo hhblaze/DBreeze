@@ -22,7 +22,7 @@ namespace DBreeze.Transactions
     /// <summary>
     /// Transaction
     /// </summary>
-    public class Transaction:IDisposable
+    public partial class Transaction:IDisposable
     {
         /// <summary>
         /// Managed threadId of the transaction
@@ -1877,7 +1877,7 @@ namespace DBreeze.Transactions
         #region "Insert for text search"
 
         /// <summary>
-        /// Inserts/Updates searchable words per external documentID
+        /// Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
         /// </summary>
         /// <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
         /// <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        
@@ -1916,7 +1916,7 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// Removes words from the searchable set of the external documentID
+        /// Removes FULL-MATCH words from the searchable set of the external documentID 
         /// </summary>
         /// <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
         /// <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>        

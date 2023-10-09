@@ -19,7 +19,7 @@ namespace Deployer {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resource1 {
@@ -61,7 +61,15 @@ namespace Deployer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to &lt;Configuration Condition=&quot; &apos;$(Configuration)&apos; == &apos;&apos; &quot;&gt;Debug&lt;/Configuration&gt;
+        ///&lt;Configuration Condition=&quot; &apos;$(Configuration)&apos; == &apos;&apos; &quot;&gt;Release&lt;/Configuration&gt;
+        ///&lt;TargetFrameworkVersion&gt;v4.5&lt;/TargetFrameworkVersion&gt;
+        ///&lt;TargetFrameworkVersion&gt;v3.5&lt;/TargetFrameworkVersion&gt;
+        ///&lt;TargetFrameworkVersion&gt;v4.0&lt;/TargetFrameworkVersion&gt;
+        ///&lt;DefineConstants&gt;TRACE;NET40&lt;/DefineConstants&gt;
+        ///&lt;DefineConstants&gt;TRACE;NET35&lt;/DefineConstants&gt;
+        ///&lt;DefineConstants&gt;TRACE;NET40;NETr40&lt;/DefineConstants&gt;
+        ///&lt;Reference Include=&quot;System.Web.Extension [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string templ {
             get {
