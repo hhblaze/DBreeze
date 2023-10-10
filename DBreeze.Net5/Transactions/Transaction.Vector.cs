@@ -148,6 +148,22 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// <para>Searches similar documents to vectorRequest in VectorStorage of tableName.</para>        
+        /// <para>This operation only selects from tableName</para>
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="vectorRequest"></param>
+        /// <param name="returnQuantity">Default is 3, how many similar documents must be returned</param>
+        /// <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
+        /// <returns>ExternalId, Distance, InternalId. Less Distance - more similar document; result set is already sorted ascending by the Distance</returns>
+        public IEnumerable<(byte[] ExternalId, float Distance, int InternalId)> VectorsSearchSimilar(string tableName, double[] vectorRequest, int returnQuantity = 3, List<byte[]> excludingDocuments = null)
+        {
+            return this.VectorsSearchSimilar(tableName, vectorRequest.Select(Convert.ToSingle).ToArray(), returnQuantity, excludingDocuments);
+        }
+
+
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="tableName"></param>

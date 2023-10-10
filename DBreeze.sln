@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30804.86
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34018.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBreeze", "DBreeze\DBreeze.csproj", "{5C425A2A-5717-4D1B-9949-9C90785B6C57}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBreeze.NetCoreApp", "DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "{816FC4D4-CFA1-4F57-B1E1-A72298D91B96}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBreeze.Net5", "DBreeze.Net5\DBreeze.Net5.csproj", "{AA2DF615-E519-4458-B23D-A5375CE981FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TesterNet6", "TesterNet6\TesterNet6.csproj", "{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -142,6 +144,26 @@ Global
 		{AA2DF615-E519-4458-B23D-A5375CE981FE}.Release|x64.Build.0 = Release|Any CPU
 		{AA2DF615-E519-4458-B23D-A5375CE981FE}.Release|x86.ActiveCfg = Release|Any CPU
 		{AA2DF615-E519-4458-B23D-A5375CE981FE}.Release|x86.Build.0 = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|ARM.Build.0 = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|x64.Build.0 = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Debug|x86.Build.0 = Debug|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|ARM.ActiveCfg = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|ARM.Build.0 = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|x64.ActiveCfg = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|x64.Build.0 = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|x86.ActiveCfg = Release|Any CPU
+		{E42506A6-6EF7-42D8-ABF8-4894509AE8BF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

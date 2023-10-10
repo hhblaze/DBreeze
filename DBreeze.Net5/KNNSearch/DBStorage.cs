@@ -64,12 +64,14 @@ namespace DBreeze.HNSW
 
 
 
+       
         /// <summary>
         /// 
         /// </summary>
         /// <param name="items"></param>
         /// <param name="generator"></param>
         /// <param name="funcAddNode"></param>
+        /// <param name="deferredIndexing"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         public List<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, Func<int, IProvideRandomValues, Node> funcAddNode, bool deferredIndexing = false)
