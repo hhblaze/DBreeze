@@ -54,7 +54,7 @@ namespace DBreeze.HNSW
 
         /* DBreeze Definition
             1.ToIndex() - VectorStat (holds monotonic counter and other world info)
-            2.ToIndex(itemId);V: serialized Item (1536 float[]/double[] from OAI) (ItemInDbFloatArray holds EmbeddingVector and External Doc Id for fast returns in KNNsearch)
+            2.ToIndex(itemId);V: serialized, Brotli compressed Item (1536 float[]/double[] from OAI) (ItemInDbFloatArray holds EmbeddingVector and External Doc Id for fast returns in KNNsearch)
             3.ToIndex(itemId);V: serialized Node (NodeInDb holds mostly connections)
             4.ToIndex() - Node entryPoint
 
@@ -357,7 +357,7 @@ namespace DBreeze.HNSW
             {
                 case var type when type == typeof(float[]):
                     {
-                        var itemDB = ItemInDbFloatArray.BiserDecode(row.Value);
+                        var itemDB = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
                         return ((TItem)(object)itemDB.Vector, index, itemDB.ExternalID);                     
                     }
                 default:
@@ -392,7 +392,7 @@ namespace DBreeze.HNSW
                 case var type when type == typeof(float[]):
                     {
 
-                        var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value);
+                        var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
                         if (this._CacheIsActive)
                         {
                             _d[index] = itemInDb;
@@ -436,7 +436,7 @@ namespace DBreeze.HNSW
                     case var type when type == typeof(float[]):
                         {
                            
-                            var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value);
+                            var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
                             if (this._CacheIsActive)
                             {
                                 _d[index] = itemInDb;
@@ -473,7 +473,7 @@ namespace DBreeze.HNSW
                     if (item.Deleted != !activate)
                     {
                         item.Deleted = !activate;
-                        var btNode = item.BiserEncoder().Encode();
+                        var btNode = item.BiserEncoder().Encode().CompressBytesBrotliDBreeze();
                         tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(rowEx.Value), btNode);
                     }
                 }
@@ -483,43 +483,43 @@ namespace DBreeze.HNSW
         }
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="itemId"></param>
-        /// <param name="item"></param>
-        /// <exception cref="Exception"></exception>
-        public void InsertItem(int itemId, TItem item)
-        {
-            ItemInDbFloatArray ItemInDb = null;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="itemId"></param>
+        ///// <param name="item"></param>
+        ///// <exception cref="Exception"></exception>
+        //public void InsertItem(int itemId, TItem item)
+        //{
+        //    ItemInDbFloatArray ItemInDb = null;
 
-            byte[] ser = null;
+        //    byte[] ser = null;
 
-            switch (typeof(TItem))
-            {
-                case var type when type == typeof(float[]):
-                    {
-                        ItemInDb = new ItemInDbFloatArray()
-                        {
-                            Vector = (float[])(object)item
-                        };
-                        ser = ItemInDb.BiserEncoder().Encode();
+        //    switch (typeof(TItem))
+        //    {
+        //        case var type when type == typeof(float[]):
+        //            {
+        //                ItemInDb = new ItemInDbFloatArray()
+        //                {
+        //                    Vector = (float[])(object)item
+        //                };
+        //                ser = ItemInDb.BiserEncoder().Encode().CompressBytesBrotliDBreeze();
 
-                        if (this._CacheIsActive)
-                        {
-                            // _d[itemId] = item;
-                            _d[itemId] = ItemInDb;
-                        }
-                    }
-                    break;
-                default:
-                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
-            }
+        //                if (this._CacheIsActive)
+        //                {
+        //                    // _d[itemId] = item;
+        //                    _d[itemId] = ItemInDb;
+        //                }
+        //            }
+        //            break;
+        //        default:
+        //            throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+        //    }
 
-            tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(itemId), ser);
-        }
-               
-        
+        //    tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(itemId), ser);
+        //}
+
+
         /// <summary>
         /// 
         /// </summary>
@@ -546,7 +546,8 @@ namespace DBreeze.HNSW
                         //checking dimension
                         itemLength = ItemInDb.Vector.Length;
 
-                        ser = ItemInDb.BiserEncoder().Encode();
+                        ser = ItemInDb.BiserEncoder().Encode().CompressBytesBrotliDBreeze();
+                        
 
                         if (this._CacheIsActive)
                         {
