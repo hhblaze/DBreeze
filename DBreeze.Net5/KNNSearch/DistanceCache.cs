@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace DBreeze.HNSW
 {
-    public static class DistanceCacheLimits
+    internal static class DistanceCacheLimits
     {
         /// <summary>
         /// https://referencesource.microsoft.com/#mscorlib/system/array.cs,2d2b551eabe74985,references

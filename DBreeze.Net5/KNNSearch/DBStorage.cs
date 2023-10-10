@@ -53,7 +53,7 @@ namespace DBreeze.HNSW
         public ItemList<TItem> Items { get; private set; }
 
         /* DBreeze Definition
-            1.ToIndex() - idCounter
+            1.ToIndex() - VectorStat (holds monotonic counter and other world info)
             2.ToIndex(itemId);V: serialized Item (1536 float[]/double[] from OAI) (ItemInDbFloatArray holds EmbeddingVector and External Doc Id for fast returns in KNNsearch)
             3.ToIndex(itemId);V: serialized Node (NodeInDb holds mostly connections)
             4.ToIndex() - Node entryPoint
@@ -84,29 +84,39 @@ namespace DBreeze.HNSW
 
             var valueLazy = tran.ValuesLazyLoadingIsOn;
             tran.ValuesLazyLoadingIsOn = false;
-
-            int itemId = -1;
-            var rowItemId = tran.Select<byte[], int>(tableName, 1.ToIndex());
-            if (rowItemId.Exists)
-                itemId = rowItemId.Value;
+                        
+            VectorStat vstat = null;
+            var rowVectorStat = tran.Select<byte[], byte[]>(tableName, 1.ToIndex());
+            if (rowVectorStat.Exists)
+                vstat = VectorStat.BiserDecode(rowVectorStat.Value);
+            else
+                vstat = new VectorStat();
 
             foreach (var item in items)
             {
                 if(item.Key == null)
                     throw new Exception($"External ID, can't be null.");
+                                
 
                 //-skipping items adding if it already exists
                 var exitem = Items.GetItemByExternalID(item.Key);
 
                 if (exitem.Item1 != null)
                     continue;
+                                
+                vstat.Id++;
+                newIDs.Add(vstat.Id);
 
-                itemId++;
-                newIDs.Add(itemId);
+                int itemLength = Items.InsertItem(vstat.Id, item.Key, item.Value);
+                if(vstat.VectorDimension == -1)
+                {
+                    //first ever inserted element
+                    vstat.VectorDimension = itemLength;
+                }
+                else if(vstat.VectorDimension != itemLength)
+                    throw new Exception($"All vectors in one Vector Table must be of the same dimensionality, if first vector was 1563 elements, then the others must be also 1536 elements etc.");
 
-                Items.InsertItem(itemId, item.Key, item.Value);
-
-                var node = funcAddNode(itemId, generator);
+                var node = funcAddNode(vstat.Id, generator);
                 Nodes.Add(node);
 
                 //adding to deferred indexer
@@ -120,7 +130,7 @@ namespace DBreeze.HNSW
                         this.tran.tsh.DeferredVectors[tableName] = new HashSet<uint>();
                     }
 
-                    this.tran.tsh.DeferredVectors[tableName].Add((uint)itemId);
+                    this.tran.tsh.DeferredVectors[tableName].Add((uint)vstat.Id);
 
                     this.tran.tsh.InsertWasPerformed = true;
                 }                
@@ -129,7 +139,7 @@ namespace DBreeze.HNSW
             //----------saving new itemID
             if (newIDs.Count > 0)
             {
-                tran.Insert<byte[], int>(tableName, 1.ToIndex(), itemId);
+                tran.Insert<byte[], byte[]>(tableName, 1.ToIndex(), vstat.BiserEncoder().Encode());
 
                 
             }
@@ -507,18 +517,20 @@ namespace DBreeze.HNSW
 
             tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(itemId), ser);
         }
-
+               
+        
         /// <summary>
         /// 
         /// </summary>
         /// <param name="itemId"></param>
         /// <param name="externalEmbeddingId"></param>
         /// <param name="item"></param>
+        /// <returns>Item Length</returns>
         /// <exception cref="Exception"></exception>
-        public void InsertItem(int itemId, byte[] externalEmbeddingId, TItem item)
+        public int InsertItem(int itemId, byte[] externalEmbeddingId, TItem item)
         {
             ItemInDbFloatArray ItemInDb = null;
-
+            int itemLength = -1;
             byte[] ser = null;
 
             switch (typeof(TItem))
@@ -530,6 +542,9 @@ namespace DBreeze.HNSW
                             Vector = (float[])(object)item,
                             ExternalID = externalEmbeddingId
                         };
+                        //checking dimension
+                        itemLength = ItemInDb.Vector.Length;
+
                         ser = ItemInDb.BiserEncoder().Encode();
 
                         if (this._CacheIsActive)
@@ -545,6 +560,8 @@ namespace DBreeze.HNSW
 
             tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(itemId), ser);            
             tran.Insert<byte[], int>(this.tableName, 5.ToIndex(externalEmbeddingId), itemId);
+
+            return itemLength;
         }
     }//eoc
 
@@ -617,10 +634,11 @@ namespace DBreeze.HNSW
         {
             get
             {
-                var rowItemId = tran.Select<byte[], int>(tableName, 1.ToIndex());
-                if (rowItemId.Exists)
+                var rowVectorStat = tran.Select<byte[], byte[]>(tableName, 1.ToIndex());
+                if (rowVectorStat.Exists)
                 {
-                    return rowItemId.Value + 1;
+                    var vstat = VectorStat.BiserDecode(rowVectorStat.Value);
+                    return vstat.Id + 1;
                 }
                 else
                     return 0;
@@ -706,14 +724,69 @@ namespace DBreeze.HNSW
          - Biser prepeared serializers for Nodes and items
      
      */
+
+    internal partial class VectorStat
+    {
+        public int Id { get; set; } = -1;
+
+        public int VectorDimension { get; set; } = -1;
+
+        public string VectorType { get; set; } = null;
+
+    }
+
+    internal partial class VectorStat : Biser.IEncoder
+    {
+
+
+        public Biser.Encoder BiserEncoder(Biser.Encoder existingEncoder = null)
+        {
+            Biser.Encoder encoder = new Biser.Encoder(existingEncoder);
+
+
+            encoder.Add(Id);
+            encoder.Add(VectorDimension);
+            encoder.Add(VectorType);
+
+            return encoder;
+        }
+
+
+        public static VectorStat BiserDecode(byte[] enc = null, Biser.Decoder extDecoder = null)
+        {
+            Biser.Decoder decoder = null;
+            if (extDecoder == null)
+            {
+                if (enc == null || enc.Length == 0)
+                    return null;
+                decoder = new Biser.Decoder(enc);
+            }
+            else
+            {
+                if (extDecoder.CheckNull())
+                    return null;
+                else
+                    decoder = extDecoder;
+            }
+
+            VectorStat m = new VectorStat();
+
+
+
+            m.Id = decoder.GetInt();
+            m.VectorDimension = decoder.GetInt();
+            m.VectorType = decoder.GetString();
+
+
+            return m;
+        }
+
+
+    }
+
     internal partial class NodeInDb
     {
-        public List<List<int>> Connections { get; set; }      
-                
-        /// <summary>
-        /// Add node properties here for compatibility with old saved values
-        /// </summary>
-        public Dictionary<string,byte[]> ExtraProperties{ get; set; }
+        public List<List<int>> Connections { get; set; }                      
     }
 
     internal partial class NodeInDb : Biser.IEncoder
@@ -729,10 +802,6 @@ namespace DBreeze.HNSW
                 encoder.Add(r1, (r2) => {
                     encoder.Add(r2);
                 });
-            });
-            encoder.Add(ExtraProperties, (r3) => {
-                encoder.Add(r3.Key);
-                encoder.Add(r3.Value);
             });
 
             return encoder;
@@ -775,18 +844,6 @@ namespace DBreeze.HNSW
                     return pvar1;
                 }, m.Connections, true);
             }
-            m.ExtraProperties = decoder.CheckNull() ? null : new System.Collections.Generic.Dictionary<System.String, System.Byte[]>();
-            if (m.ExtraProperties != null)
-            {
-                decoder.GetCollection(() => {
-                    var pvar3 = decoder.GetString();
-                    return pvar3;
-                },
-            () => {
-                var pvar4 = decoder.GetByteArray();
-                return pvar4;
-            }, m.ExtraProperties, true);
-            }
 
 
             return m;
@@ -802,10 +859,6 @@ namespace DBreeze.HNSW
         public byte[] ExternalID { get; set; }
         public bool Deleted { get; set; } = false;
 
-        /// <summary>
-        /// Add item properties here for compatibility with old saved values
-        /// </summary>
-        public Dictionary<string, byte[]> ExtraProperties { get; set; }
     }
 
     internal partial class ItemInDbFloatArray : Biser.IEncoder
@@ -829,10 +882,6 @@ namespace DBreeze.HNSW
             }
             encoder.Add(ExternalID);
             encoder.Add(Deleted);
-            encoder.Add(ExtraProperties, (r3) => {
-                encoder.Add(r3.Key);
-                encoder.Add(r3.Value);
-            });
 
             return encoder;
         }
@@ -869,18 +918,6 @@ namespace DBreeze.HNSW
             }
             m.ExternalID = decoder.GetByteArray();
             m.Deleted = decoder.GetBool();
-            m.ExtraProperties = decoder.CheckNull() ? null : new System.Collections.Generic.Dictionary<System.String, System.Byte[]>();
-            if (m.ExtraProperties != null)
-            {
-                decoder.GetCollection(() => {
-                    var pvar3 = decoder.GetString();
-                    return pvar3;
-                },
-            () => {
-                var pvar4 = decoder.GetByteArray();
-                return pvar4;
-            }, m.ExtraProperties, true);
-            }
 
 
             return m;

@@ -10,7 +10,7 @@ namespace DBreeze.HNSW
     using System.Collections.Generic;
     using System.Numerics;
 
-    public static class VectorUtils
+    internal static class VectorUtils
     {
         public static float Magnitude(IList<float> vector)
         {

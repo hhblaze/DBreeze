@@ -9,7 +9,7 @@ namespace DBreeze.HNSW
     /// <summary>
     /// Type of heuristic to select best neighbours for a node.
     /// </summary>
-    public enum NeighbourSelectionHeuristic
+    internal enum NeighbourSelectionHeuristic
     {
         /// <summary>
         /// Marker for the Algorithm 3 (SELECT-NEIGHBORS-SIMPLE) from the article. Implemented in <see cref="Algorithms.Algorithm3{TItem, TDistance}"/>

@@ -20,6 +20,13 @@ namespace TesterNet6.TextCorpus
         static string tblKNNITLogos = "KNNITLogos"; //Vector Table for ITLogos
         static string tblDocsITLogos = "DocsITLogos"; //Docs ItLogos
 
+
+        public async static Task Example()
+        {
+            await ITGiantLogotypes.Store_Docs_Vectors();
+            await ITGiantLogotypes.SearchLogo();
+        }
+
         public class DBLogotype
         {
             public ITGiantLogotypesJson Company { get; set; }
@@ -38,7 +45,9 @@ namespace TesterNet6.TextCorpus
             
             //Those for tests....
             string question = "fruit like logo";
-            question = "square like logo";
+            //question = "square like logo";
+            question = "rectangle like logo";
+            question = "multicolor logo";
 
             //-getting embedding vector for the question
             var emb = await OpenAI.GetEmbedding(question);
@@ -74,7 +83,7 @@ namespace TesterNet6.TextCorpus
         /// 
         /// </summary>
         /// <returns></returns>
-        public async static Task StoreDoc_StoreVectors()
+        public async static Task Store_Docs_Vectors()
         {
 
             //-to skip this run again, checking if data already exists

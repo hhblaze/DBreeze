@@ -14,7 +14,7 @@ namespace DBreeze.HNSW
     /// </summary>
     /// <typeparam name="TItem">Type of the points.</typeparam>
     /// <typeparam name="TDistance">Type of the distance.</typeparam>
-    public class TravelingCosts<TItem, TDistance> : IComparer<TItem>
+    internal class TravelingCosts<TItem, TDistance> : IComparer<TItem>
     {
         private static readonly Comparer<TDistance> DistanceComparer = Comparer<TDistance>.Default;
 

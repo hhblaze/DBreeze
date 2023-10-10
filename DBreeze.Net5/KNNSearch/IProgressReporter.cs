@@ -1,7 +1,7 @@
 ﻿#if KNNSearch
 namespace DBreeze.HNSW
 {
-    public interface IProgressReporter
+    internal interface IProgressReporter
     {
         void Progress(int current, int total);
     }

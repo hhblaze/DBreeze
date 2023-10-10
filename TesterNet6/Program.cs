@@ -7,7 +7,8 @@ using System.Text.Json;
 using TesterNet6.TextCorpus;
 using DBreeze.Tries;
 
-namespace TesterNet6 // Note: actual namespace depends on the project name.
+
+namespace TesterNet6 
 {
     internal class Program
     {
@@ -23,9 +24,13 @@ namespace TesterNet6 // Note: actual namespace depends on the project name.
             InitDB();
             OpenAI.Init(PathToOpenAIKey);
 
+            //Examples
+            await ITGiantLogotypes.Example();
 
-            await ITGiantLogotypes.StoreDoc_StoreVectors();
-            await ITGiantLogotypes.SearchLogo();
+
+
+            //Technical helpers
+            //Biser_Objectify();
 
 
             await Task.Run(() =>
@@ -55,6 +60,17 @@ namespace TesterNet6 // Note: actual namespace depends on the project name.
             DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = TesterNet6.ProtobufExtension.DeserializeProtobuf;
         }
 
+        static void Biser_Objectify()
+        {
+      //             var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.NodeInDb), true,
+      //      @"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
 
+      //      resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.ItemInDbFloatArray), true,
+      // @"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+
+      //      resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.VectorStat), true,
+      //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+
+        }
     }
 }

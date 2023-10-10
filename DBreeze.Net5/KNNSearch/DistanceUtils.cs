@@ -8,7 +8,7 @@ namespace DBreeze.HNSW
 {
     using System;
 
-    public static class DistanceUtils
+    internal static class DistanceUtils
     {
         public static bool LowerThan<TDistance>(TDistance x, TDistance y) where TDistance : IComparable<TDistance>
         {

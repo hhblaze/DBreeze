@@ -6,7 +6,7 @@ using System.Text;
 
 namespace DBreeze.HNSW
 {
-    public sealed class DefaultRandomGenerator : IProvideRandomValues
+    internal sealed class DefaultRandomGenerator : IProvideRandomValues
     {
         /// <summary>
         /// This is the default configuration (it supports the optimization process to be executed on multiple threads)

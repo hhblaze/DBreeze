@@ -212,7 +212,7 @@ namespace DBreeze.Transactions
         internal void VectorsDoIndexing(string tableName, List<int> internalIDs)
         {
            
-            //A cap, this functionality is supported only for .NET STANDARD 2.1 and .NET Core>6
+            //A cap, this functionality is supported only for .NET STANDARD2.1> and .NET6> .NetCore3.1>
 
         }
 

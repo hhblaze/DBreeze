@@ -13,7 +13,7 @@ namespace DBreeze.HNSW
     /// Reverses the order of the nested comparer.
     /// </summary>
     /// <typeparam name="T">The types of items to comapre.</typeparam>
-    public class ReverseComparer<T> : IComparer<T>
+    internal class ReverseComparer<T> : IComparer<T>
     {
         private readonly IComparer<T> Comparer;
 
@@ -38,7 +38,7 @@ namespace DBreeze.HNSW
     /// </summary>
     [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1402:File may only contain a single type", Justification = "By Design")]
     [SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1204:Static elements must appear before instance elements", Justification = "By Design")]
-    public static class ReverseComparerExtensions
+    internal static class ReverseComparerExtensions
     {
         /// <summary>
         /// Creates new <see cref="ReverseComparer{T}"/> wrapper for the given comparer.

@@ -11,7 +11,7 @@ namespace DBreeze.HNSW
     using System.Diagnostics.Tracing;
     using System.Runtime.InteropServices;
 
-    public static class EventSources
+    internal static class EventSources
     {
         /// <summary>
         /// Writes specific metric if the source is enabled.

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace DBreeze.HNSW
 {
-    public interface IProvideRandomValues
+    internal interface IProvideRandomValues
     {
         bool IsThreadSafe { get; }
 

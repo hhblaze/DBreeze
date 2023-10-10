@@ -18,15 +18,13 @@ namespace DBreeze.Transactions
 
 
         /// <summary>
-        /// 
+        /// A cap, this functionality is supported only for .NET STANDARD2.1> and .NET6> .NetCore3.1>
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="internalIDs">must be already sorted ascending</param>
         internal void VectorsDoIndexing(string tableName, List<int> internalIDs)
-        {
-           
-            //A cap, this functionality is supported only for .NET STANDARD 2.1 and .NET Core>6
-
+        {            
+            //A cap, this functionality is supported only for .NET STANDARD2.1> and .NET6> .NetCore3.1>
         }
 
 

@@ -25,7 +25,7 @@ namespace DBreeze.HNSW
     ///    the floating point rounding error is less then 100 * 2^-24 * sqrt(100) * sqrt(100) &lt; 0.0005960
     ///    We deem such precision is satisfactory for out needs.
     /// </remarks>
-    public static class CosineDistance
+    internal static class CosineDistance
     {
         /// <summary>
         /// Calculates cosine distance without making any optimizations.
