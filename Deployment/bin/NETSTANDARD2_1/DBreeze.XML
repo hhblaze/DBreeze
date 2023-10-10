@@ -3538,6 +3538,17 @@
             <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
             <returns>ExternalId, Distance, InternalId. Less Distance - more similar document; result set is already sorted ascending by the Distance</returns>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Double[],System.Int32,System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            <para>Searches similar documents to vectorRequest in VectorStorage of tableName.</para>        
+            <para>This operation only selects from tableName</para>
+            </summary>
+            <param name="tableName"></param>
+            <param name="vectorRequest"></param>
+            <param name="returnQuantity">Default is 3, how many similar documents must be returned</param>
+            <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
+            <returns>ExternalId, Distance, InternalId. Less Distance - more similar document; result set is already sorted ascending by the Distance</returns>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
             <summary>
             
@@ -6748,6 +6759,7 @@
             <param name="items"></param>
             <param name="generator"></param>
             <param name="funcAddNode"></param>
+            <param name="deferredIndexing"></param>
             <returns></returns>
             <exception cref="T:System.Exception"></exception>
         </member>
@@ -6819,14 +6831,6 @@
             </summary>
             <param name="externalItemIds"></param>
         </member>
-        <member name="M:DBreeze.HNSW.ItemList`1.InsertItem(System.Int32,`0)">
-            <summary>
-            
-            </summary>
-            <param name="itemId"></param>
-            <param name="item"></param>
-            <exception cref="T:System.Exception"></exception>
-        </member>
         <member name="M:DBreeze.HNSW.ItemList`1.InsertItem(System.Int32,System.Byte[],`0)">
             <summary>
             
@@ -6834,6 +6838,7 @@
             <param name="itemId"></param>
             <param name="externalEmbeddingId"></param>
             <param name="item"></param>
+            <returns>Item Length</returns>
             <exception cref="T:System.Exception"></exception>
         </member>
         <member name="T:DBreeze.HNSW.NodeList">
@@ -6865,14 +6870,9 @@
             <param name="Node"></param>
             <returns></returns>
         </member>
-        <member name="P:DBreeze.HNSW.NodeInDb.ExtraProperties">
+        <member name="P:DBreeze.HNSW.VectorStat.VectorType">
             <summary>
-            Add node properties here for compatibility with old saved values
-            </summary>
-        </member>
-        <member name="P:DBreeze.HNSW.ItemInDbFloatArray.ExtraProperties">
-            <summary>
-            Add item properties here for compatibility with old saved values
+            Only float[] as in KNNSearch implementation intuition about 0,......5%
             </summary>
         </member>
         <member name="P:DBreeze.HNSW.DefaultRandomGenerator.Instance">
