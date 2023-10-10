@@ -14,7 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\net5.0\DBreeze.xml</DocumentationFile>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>$(DefineConstants);NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch</DefineConstants>
+    <DefineConstants>$(DefineConstants);NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;NET6FUNC</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -55,6 +55,7 @@
         <Compile Include="..\DBreeze.Net5\KNNSearch\TravelingCosts.cs" Link="KNNSearch\TravelingCosts.cs" />
         <Compile Include="..\DBreeze.Net5\KNNSearch\VectorUtils.cs" Link="KNNSearch\VectorUtils.cs" />
         <Compile Include="..\DBreeze.Net5\Transactions\Transaction.Vector.cs" Link="Transactions\Transaction.Vector.cs" />
+        <Compile Include="..\DBreeze.Net5\Utils\CompressionBrotli.cs" Link="Utils\CompressionBrotli.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
