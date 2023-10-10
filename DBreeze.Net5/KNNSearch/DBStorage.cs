@@ -198,8 +198,7 @@ namespace DBreeze.HNSW
         public void FinilizeAddItems(Node entryPoint)
         {
 
-            this.Nodes.FlushNodes();
-            //this.Items.FinilizeAddNodesActive();
+            this.Nodes.FlushNodes();          
 
             SetEntryPoint(entryPoint);
 
@@ -212,7 +211,6 @@ namespace DBreeze.HNSW
         /// <param name="entryPoint"></param>
         public void FinilizeAddItemsDeferred()
         {
-
             this.Nodes.FlushNodes();
             CacheIsActive = false;
         }
@@ -617,6 +615,7 @@ namespace DBreeze.HNSW
             foreach (var n in _forFlush)
             {
                 var btNode = NodeList.FromNode(n.Value);
+               
                 tran.Insert<byte[], byte[]>(this.tableName, 3.ToIndex(n.Value.Id), btNode);
             }
            
@@ -714,7 +713,7 @@ namespace DBreeze.HNSW
             NodeInDb n = new NodeInDb() { 
                 Connections = node.Connections,                 
             };
-
+          
             return node.Id.To_4_bytes_array_BigEndian()
                 .Concat(n.BiserEncoder().Encode());
         }
@@ -732,7 +731,9 @@ namespace DBreeze.HNSW
         public int Id { get; set; } = -1;
 
         public int VectorDimension { get; set; } = -1;
-
+        /// <summary>
+        /// Only float[] as in KNNSearch implementation intuition about 0,......5%
+        /// </summary>
         public string VectorType { get; set; } = null;
 
     }
