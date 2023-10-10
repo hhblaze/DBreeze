@@ -63,5 +63,6 @@ Key features:
 Special thanx:
 
 "Free code signing provided by SignPath.io, certificate by SignPath Foundation"
+[Signed DLLs](https://github.com/hhblaze/DBreeze/tree/master/Deployment/bin/SignedDLL) are located separately. 
 
 hhblaze@gmail.com
