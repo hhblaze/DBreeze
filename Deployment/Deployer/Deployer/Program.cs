@@ -89,7 +89,7 @@ namespace Deployer
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp2.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp2.0", "NETCOREAPP2_0");
                 if (exitCode != 0) { Console.ReadKey(); return; }
-                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp3.1", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;NETCOREAPP;NETCOREAPP3_1;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp3.1", "NETCOREAPP3_1");
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj", "netcoreapp3.1", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;KNNSearch;NETCOREAPP;NETCOREAPP3_1;NET6FUNC;", @"DBreeze.NetCoreApp\bin\Release\netcoreapp3.1", "NETCOREAPP3_1");
                 if (exitCode != 0) { Console.ReadKey(); return; }
 
                 ////NET PORTABLE
@@ -97,7 +97,7 @@ namespace Deployer
                 if (exitCode != 0) { Console.ReadKey(); return; }
 
                 ////.NET
-                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net6.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch", @"DBreeze.Net5\bin\Release\net6.0", "NET6_0");
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net6.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;KNNSearch;NET6FUNC;", @"DBreeze.Net5\bin\Release\net6.0", "NET6_0");
                 if (exitCode != 0) { Console.ReadKey(); return; }
 
                 ////.NET STANDARD
@@ -105,7 +105,7 @@ namespace Deployer
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard1.6", "TRACE;RELEASE;" + "NETSTANDARD1_6;NET40;NETPORTABLE", @"DBreeze.NetStandard\bin\Release\netstandard1.6", "NETSTANDARD16");
                 if (exitCode != 0) { Console.ReadKey(); return; }
-                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard2.1", "TRACE;RELEASE;" + "NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;KNNSearch", @"DBreeze.NetStandard\bin\Release\netstandard2.1", "NETSTANDARD2_1");
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard2.1", "TRACE;RELEASE;" + "NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1;KNNSearch;NET6FUNC;", @"DBreeze.NetStandard\bin\Release\netstandard2.1", "NETSTANDARD2_1");
                 if (exitCode != 0) { Console.ReadKey(); return; }
 
 
