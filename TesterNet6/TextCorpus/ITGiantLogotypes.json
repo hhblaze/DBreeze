@@ -1,0 +1,30 @@
+﻿[
+  {
+    "Company": "APPLE",
+    "LogoDescription": "Apple's logo is a simple, elegant apple with a bite taken out of the right side. The apple is monochromatic, usually depicted in black or silver. It represents simplicity, innovation, and the user-friendly design philosophy of Apple products."
+  },
+  {
+    "Company": "GOOGLE",
+    "LogoDescription": "Google's logo consists of the company name written in a colorful, playful font. Each letter is a different color (blue, red, yellow, blue, green, red). This colorful logo reflects Google's diverse range of services and its creative approach to technology."
+  },
+  {
+    "Company": "MICROSOFT",
+    "LogoDescription": "Microsoft's logo features a square divided into four smaller squares of varying colors: red, green, blue, and yellow. This design represents the company's versatile product range, including software, hardware, and services. The logo is modern, simple, and approachable."
+  },
+  {
+    "Company": "AMAZON",
+    "LogoDescription": "Amazon's logo showcases the company's name with a curved arrow underneath, starting from the letter 'a' and ending at 'z'. The arrow also forms a smile, indicating customer satisfaction. The use of orange and black colors adds a sense of energy and excitement, reflecting Amazon's diverse range of products and services."
+  },
+  {
+    "Company": "META",
+    "LogoDescription": "Meta's logo features the company's name in lowercase letters, written in a custom, rounded font. The letters are usually depicted in blue color. The logo represents connection and networking, with the rounded letters symbolizing a sense of community and inclusivity."
+  },
+  {
+    "Company": "TWITTER",
+    "LogoDescription": "Twitter's logo is a stylized bluebird facing right. The bird is often simplified to its essential features, such as its wings and head. The simplicity of the design represents brevity, which is a core concept of Twitter, where posts are limited to a certain character count."
+  },
+  {
+    "Company": "SAMSUNG",
+    "LogoDescription": "Samsung's logo consists of the company's name in bold, uppercase letters. The letters are usually in blue color and are slanted slightly to the right. The design is clean and modern, reflecting Samsung's focus on innovation and technology."
+  }
+]
