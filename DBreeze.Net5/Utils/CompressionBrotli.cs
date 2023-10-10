@@ -20,7 +20,7 @@ namespace DBreeze.Utils
         //   data:
         //
         //   compressionLevel:
-        public static byte[] CompressBytesBrotli(this byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal)
+        public static byte[] CompressBytesBrotliDBreeze(this byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
             using MemoryStream memoryStream = new MemoryStream();
             using (BrotliStream brotliStream = new BrotliStream(memoryStream, compressionLevel))
@@ -37,7 +37,7 @@ namespace DBreeze.Utils
         //
         // Parameters:
         //   data:
-        public static byte[] DecompressBytesBrotli(this byte[] data)
+        public static byte[] DecompressBytesBrotliDBreeze(this byte[] data)
         {
             using MemoryStream stream = new MemoryStream(data);
             using MemoryStream memoryStream = new MemoryStream();
@@ -56,7 +56,7 @@ namespace DBreeze.Utils
         //   compressionLevel:
         //
         //   cancel:
-        public static async Task<byte[]> CompressBytesAsyncBrotli(byte[] bytes, CompressionLevel compressionLevel = CompressionLevel.Optimal, CancellationToken cancel = default(CancellationToken))
+        public static async Task<byte[]> CompressBytesAsyncBrotliDBreeze(byte[] bytes, CompressionLevel compressionLevel = CompressionLevel.Optimal, CancellationToken cancel = default(CancellationToken))
         {
             using MemoryStream outputStream = new MemoryStream();
             using (BrotliStream compressionStream = new BrotliStream(outputStream, compressionLevel))
@@ -74,9 +74,9 @@ namespace DBreeze.Utils
         //   compressedFileName:
         //
         //   compressionLevel:
-        public static void CompressFileBrotli(string originalFileName, string compressedFileName, CompressionLevel compressionLevel = CompressionLevel.Optimal)
+        public static void CompressFileBrotliDBreeze(string originalFileName, string compressedFileName, CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
-            CompressFileAsyncBrotli(originalFileName, compressedFileName, default(CancellationToken), compressionLevel).GetAwaiter().GetResult();
+            CompressFileAsyncBrotliDBreeze(originalFileName, compressedFileName, default(CancellationToken), compressionLevel).GetAwaiter().GetResult();
         }
 
         //
@@ -88,11 +88,11 @@ namespace DBreeze.Utils
         //   cancel:
         //
         //   compressionLevel:
-        public static async Task CompressFileAsyncBrotli(string originalFileName, string compressedFileName, CancellationToken cancel = default(CancellationToken), CompressionLevel compressionLevel = CompressionLevel.Optimal)
+        public static async Task CompressFileAsyncBrotliDBreeze(string originalFileName, string compressedFileName, CancellationToken cancel = default(CancellationToken), CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
             using FileStream originalStream = File.Open(originalFileName, FileMode.Open);
             using FileStream compressedStream = File.Create(compressedFileName);
-            await CompressStreamAsyncBrotli(originalStream, compressedStream, cancel, compressionLevel);
+            await CompressStreamAsyncBrotliDBreeze(originalStream, compressedStream, cancel, compressionLevel);
         }
 
         //
@@ -100,9 +100,9 @@ namespace DBreeze.Utils
         //   originalStream:
         //
         //   compressedStream:
-        public static void CompressStreamBrotli(Stream originalStream, Stream compressedStream, CompressionLevel compressionLevel = CompressionLevel.Optimal)
+        public static void CompressStreamBrotliDBreeze(Stream originalStream, Stream compressedStream, CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
-            CompressStreamAsyncBrotli(originalStream, compressedStream, default(CancellationToken), compressionLevel).GetAwaiter().GetResult();
+            CompressStreamAsyncBrotliDBreeze(originalStream, compressedStream, default(CancellationToken), compressionLevel).GetAwaiter().GetResult();
         }
 
         //
@@ -114,7 +114,7 @@ namespace DBreeze.Utils
         //   cancel:
         //
         //   compressionLevel:
-        public static async Task CompressStreamAsyncBrotli(Stream originalStream, Stream compressedStream, CancellationToken cancel = default(CancellationToken), CompressionLevel compressionLevel = CompressionLevel.Optimal)
+        public static async Task CompressStreamAsyncBrotliDBreeze(Stream originalStream, Stream compressedStream, CancellationToken cancel = default(CancellationToken), CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
             using BrotliStream compressor = new BrotliStream(compressedStream, compressionLevel);
             await originalStream.CopyToAsync(compressor, cancel);
@@ -125,7 +125,7 @@ namespace DBreeze.Utils
         //   bytes:
         //
         //   cancel:
-        public static async Task<byte[]> DecompressBytesAsyncBrotli(byte[] bytes, CancellationToken cancel = default(CancellationToken))
+        public static async Task<byte[]> DecompressBytesAsyncBrotliDBreeze(byte[] bytes, CancellationToken cancel = default(CancellationToken))
         {
             using MemoryStream inputStream = new MemoryStream(bytes);
             using MemoryStream outputStream = new MemoryStream();
@@ -142,9 +142,9 @@ namespace DBreeze.Utils
         //   compressedFileName:
         //
         //   outputFileName:
-        public static void DecompressFileBrotli(string compressedFileName, string outputFileName)
+        public static void DecompressFileBrotliDBreeze(string compressedFileName, string outputFileName)
         {
-            DecompressFileAsyncBrotli(compressedFileName, outputFileName).GetAwaiter().GetResult();
+            DecompressFileAsyncBrotliDBreeze(compressedFileName, outputFileName).GetAwaiter().GetResult();
         }
 
         //
@@ -154,11 +154,11 @@ namespace DBreeze.Utils
         //   outputFileName:
         //
         //   cancel:
-        public static async Task DecompressFileAsyncBrotli(string compressedFileName, string outputFileName, CancellationToken cancel = default(CancellationToken))
+        public static async Task DecompressFileAsyncBrotliDBreeze(string compressedFileName, string outputFileName, CancellationToken cancel = default(CancellationToken))
         {
             using FileStream compressedFileStream = File.Open(compressedFileName, FileMode.Open);
             using FileStream outputFileStream = File.Create(outputFileName);
-            await DecompressStreamAsyncBrotli(compressedFileStream, outputFileStream, cancel);
+            await DecompressStreamAsyncBrotliDBreeze(compressedFileStream, outputFileStream, cancel);
         }
 
         //
@@ -166,9 +166,9 @@ namespace DBreeze.Utils
         //   compressedStream:
         //
         //   outputStream:
-        public static void DecompressStreamBrotli(Stream compressedStream, Stream outputStream)
+        public static void DecompressStreamBrotliDBreeze(Stream compressedStream, Stream outputStream)
         {
-            DecompressStreamAsyncBrotli(compressedStream, outputStream).GetAwaiter().GetResult();
+            DecompressStreamAsyncBrotliDBreeze(compressedStream, outputStream).GetAwaiter().GetResult();
         }
 
         //
@@ -178,7 +178,7 @@ namespace DBreeze.Utils
         //   outputStream:
         //
         //   cancel:
-        public static async Task DecompressStreamAsyncBrotli(Stream compressedStream, Stream outputStream, CancellationToken cancel = default(CancellationToken))
+        public static async Task DecompressStreamAsyncBrotliDBreeze(Stream compressedStream, Stream outputStream, CancellationToken cancel = default(CancellationToken))
         {
             using BrotliStream decompressor = new BrotliStream(compressedStream, CompressionMode.Decompress);
             await decompressor.CopyToAsync(outputStream, cancel);

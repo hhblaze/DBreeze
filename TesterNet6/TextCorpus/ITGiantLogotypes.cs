@@ -29,7 +29,7 @@ namespace TesterNet6.TextCorpus
 
         public class DBLogotype
         {
-            public ITGiantLogotypesJson Company { get; set; }
+            public ITGiantLogotypesJson Logotype { get; set; }
             public double[] Embedding { get; set; }
         }
 
@@ -70,8 +70,8 @@ namespace TesterNet6.TextCorpus
                 {
                     var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(el.ExternalId));
                     var dbCompany = JsonSerializer.Deserialize<DBLogotype>(rowDoc.Value);
-                    Console.WriteLine($"Company: {dbCompany.Company.Company}");
-                    Console.WriteLine($"\tDescription: {dbCompany.Company.LogoDescription}");                    
+                    Console.WriteLine($"Company: {dbCompany.Logotype.Company}");
+                    Console.WriteLine($"\tDescription: {dbCompany.Logotype.LogoDescription}");                    
 
                 }
             }
@@ -96,7 +96,7 @@ namespace TesterNet6.TextCorpus
 
 
             /*
-                -Reading data from json, 
+                - Reading data from json, 
                 - Adding each element as a document 
                 - Store embedding vectors of each document in a vector table (has own name) for this document type
              */
@@ -115,7 +115,7 @@ namespace TesterNet6.TextCorpus
                 {
                     slt = new DBLogotype
                     {
-                        Company = el,
+                        Logotype = el,
                         Embedding = emb.EmbeddingAnswer.ToArray(), //converting to double[]
                     };
                     embeddings.Add(slt);                   

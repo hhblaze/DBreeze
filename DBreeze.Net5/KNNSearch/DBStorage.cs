@@ -108,6 +108,7 @@ namespace DBreeze.HNSW
                 newIDs.Add(vstat.Id);
 
                 int itemLength = Items.InsertItem(vstat.Id, item.Key, item.Value);
+
                 if(vstat.VectorDimension == -1)
                 {
                     //first ever inserted element
