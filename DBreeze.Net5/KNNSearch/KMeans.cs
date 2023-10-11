@@ -31,6 +31,9 @@ namespace DBreeze.HNSW
             if ((initialCentroids?.Count ?? 0) == 0 && k<1)
                 return new Dictionary<int, List<int>>();
 
+            if ((initialCentroids?.Count ?? 0) > 0)
+                k= initialCentroids.Count;
+
             if (dataLength < k)
                 k = dataLength;
 

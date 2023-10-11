@@ -73,7 +73,7 @@ namespace DBreeze.HNSW
         /// <returns></returns>
         internal Dictionary<int, List<byte[]>> KMeans(int k, List<byte[]> externalIDsAsCentroids = null)
         {
-            return GraphCore.KMeans(k);
+            return GraphCore.KMeans(k, externalIDsAsCentroids);
         }
 
         /// <summary>

@@ -91,7 +91,7 @@ namespace DBreeze.HNSW
             _rwLock?.EnterWriteLock();
             try
             {
-                return Graph.KMeans(k);
+                return Graph.KMeans(k, externalIDsAsCentroids);
             }
             finally
             {
