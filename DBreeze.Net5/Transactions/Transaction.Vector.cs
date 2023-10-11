@@ -105,7 +105,7 @@ namespace DBreeze.Transactions
 
 
         /// <summary>
-        /// <para>Clusterization. Tries to assign all existing vectors (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
+        /// <para>Clustering. Tries to assign all existing vectors (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
         /// <para>It's possible to try to  create quantityOfClusters, starting from random cluster centers (just supply quantityOfClusters and leave externalDocumentIDsAsCentroids = null) or</para>
         /// <para>to try to create clusters around existing documents (supply externalDocumentIDsAsCentroids; quantityOfClusters will not play), taken those documents initially as centers of their clusters</para>
         /// </summary>
@@ -113,7 +113,7 @@ namespace DBreeze.Transactions
         /// <param name="quantityOfClusters"></param>
         /// <param name="externalDocumentIDsAsCentroids">Can be NULL (then quantityOfClusters is taken), tends to create initial centroids for KMean from existing vectors, overrides quantityOfClusters, will make quantityOfClusters equal to externalIDsAsCentroids.Count.</param>
         /// <returns>Key is a number of cluster (not more than externalDocumentIDsAsCentroids.Count -1 or quantityOfClusters-1, when externalDocumentIDsAsCentroids = null); Value: List of externalDocumentIDs in this cluster</returns>
-        public Dictionary<int, List<byte[]>> VectorsClusterizationKMeans(string tableName, int quantityOfClusters, List<byte[]> externalDocumentIDsAsCentroids = null)
+        public Dictionary<int, List<byte[]>> VectorsClusteringKMeans(string tableName, int quantityOfClusters, List<byte[]> externalDocumentIDsAsCentroids = null)
         {
             var world = new SmallWorld<float[], float>(CosineDistance.SIMDForUnits, DefaultRandomGenerator.Instance,
                     new SmallWorld<float[], float>.Parameters() //ParametersDouble()

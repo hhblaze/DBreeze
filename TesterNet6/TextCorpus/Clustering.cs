@@ -9,7 +9,7 @@ using static TesterNet6.TextCorpus.ITGiantLogotypes;
 
 namespace TesterNet6.TextCorpus
 {
-    internal class Clusterization
+    internal class Clustering
     {
         static string tblKNNITLogos = "KNNITLogos"; //Vector Table for ITLogos
         static string tblDocsITLogos = "DocsITLogos"; //Docs ItLogos
@@ -24,7 +24,7 @@ namespace TesterNet6.TextCorpus
             {
                 tran.ValuesLazyLoadingIsOn = false; //to read key already with value
 
-                var res = tran.VectorsClusterizationKMeans(tblKNNITLogos, 2);
+                var res = tran.VectorsClusteringKMeans(tblKNNITLogos, 2);
 
                 foreach (var el in res)
                 {
@@ -63,7 +63,7 @@ namespace TesterNet6.TextCorpus
                 }
 
 
-                var res = tran.VectorsClusterizationKMeans(tblKNNITLogos, 0, externalDocumentIDsAsCentroids: twoClusters);
+                var res = tran.VectorsClusteringKMeans(tblKNNITLogos, 0, externalDocumentIDsAsCentroids: twoClusters);
 
                 foreach (var el in res)
                 {

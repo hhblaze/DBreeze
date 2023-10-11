@@ -27,7 +27,7 @@ namespace TesterNet6
             //Examples
             //await ITGiantLogotypes.Example();
 
-            Clusterization.KMeansTest();
+            Clustering.KMeansTest();
 
 
 

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 #if KNNSearch
 namespace DBreeze.HNSW
 {
-    internal static class Clusterization
+    internal static class Clustering
     {
 
 

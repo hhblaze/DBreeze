@@ -82,7 +82,7 @@ namespace DBreeze.HNSW
         }
 
         /// <summary>
-        /// Clusterization.KMeans
+        /// Clustering.KMeans
         /// </summary>
         /// <param name="k">quantity of desired clusters</param>
         /// <returns>Key: integer that represents clusterID (just 0,1,2 etc up to externalIDsAsCentroids.Count-1 or k-1)</returns>

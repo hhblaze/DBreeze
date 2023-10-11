@@ -98,7 +98,7 @@ namespace DBreeze.HNSW
                         initialCentroids.Add(Storage.Items.GetItemByExternalID(el).Item2);
                 }
 
-                var res = Clusterization.KMeansCluster((ItemList<float[]>)(object)Storage.Items, k, (Func<float[], float[],float>)(object)Distance, initialCentroids: initialCentroids);
+                var res = Clustering.KMeansCluster((ItemList<float[]>)(object)Storage.Items, k, (Func<float[], float[],float>)(object)Distance, initialCentroids: initialCentroids);
                
                 Dictionary<int, List<byte[]>> d = res
                 .Select((pair, index) => new { Index = index, Items = pair.Value })
