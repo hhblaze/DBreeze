@@ -1884,6 +1884,21 @@
             <param name="externalIDsToFormCentroids"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Core.KMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <param name="clusterPrototypes"></param>
+            <param name="itemsToBeClustered"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.Core.GetVectorsByExternalDocumentIDs(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            
+            </summary>
+            <param name="externalDocumentIDs"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.HNSW.Graph`2.Core.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProvideRandomValues,System.Boolean)">
             <summary>
             
@@ -1924,6 +1939,21 @@
             
             </summary>
             <param name="k"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.KMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <param name="clusterPrototypes"></param>
+            <param name="itemsToBeClustered"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Graph`2.GetVectorsByExternalDocumentIDs(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            
+            </summary>
+            <param name="externalDocumentIDs"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.HNSW.Graph`2.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProvideRandomValues,DBreeze.HNSW.IProgressReporter,System.Boolean)">
@@ -2022,6 +2052,15 @@
             <param name="k"></param>
             <param name="distanceFunc"></param>
             <param name="initialCentroids">Internal Vectors ID that create initial centroids or null - then will be taken k for the random centroids</param>  
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.Clustering.KMeansCluster(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]},System.Func{System.Single[],System.Single[],System.Single})">
+            <summary>
+            
+            </summary>
+            <param name="dataToCheck"></param>
+            <param name="distanceFunc"></param>
+            <param name="initialCentroids"></param>
             <returns></returns>
         </member>
         <member name="T:DBreeze.HNSW.NeighbourSelectionHeuristic">
@@ -2127,6 +2166,21 @@
             </summary>
             <param name="k">quantity of desired clusters</param>
             <returns>Key: integer that represents clusterID (just 0,1,2 etc up to externalIDsAsCentroids.Count-1 or k-1)</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.KMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <param name="clusterPrototypes"></param>
+            <param name="itemsToBeClustered"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.GetVectorsByExternalDocumentIDs(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            
+            </summary>
+            <param name="externalDocumentIDs"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.AddItems(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],`0},DBreeze.HNSW.IProgressReporter,System.Boolean)">
             <summary>
@@ -4248,6 +4302,14 @@
             <param name="deferredIndexing"></param>
             <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.GetVectorsByExternalDocumentIDs``1(System.String,System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Gets vector by externalDocumentIDs. Supported types are types of the insert in the table (float[], double[]...)
+            </summary>
+            <param name="tableName"></param>
+            <param name="externalDocumentIDs"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsRemove(System.String,System.Collections.Generic.List{System.Byte[]},System.Boolean)">
             <summary>
             <para>Removes External documents from the VectorStorage of tableName.</para>
@@ -4269,6 +4331,22 @@
             <param name="quantityOfClusters"></param>
             <param name="externalDocumentIDsAsCentroids">Can be NULL (then quantityOfClusters is taken), tends to create initial centroids for KMean from existing vectors, overrides quantityOfClusters, will make quantityOfClusters equal to externalIDsAsCentroids.Count.</param>
             <returns>Key is a number of cluster (not more than externalDocumentIDsAsCentroids.Count -1 or quantityOfClusters-1, when externalDocumentIDsAsCentroids = null); Value: List of externalDocumentIDs in this cluster</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsClusteringKMeans(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]})">
+            <summary>
+            having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
+            </summary>
+            <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
+            <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
+            <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsClusteringKMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <param name="clusterPrototypes"></param>
+            <param name="itemsToBeClustered"></param>
+            <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Single[],System.Int32,System.Collections.Generic.List{System.Byte[]})">
             <summary>
