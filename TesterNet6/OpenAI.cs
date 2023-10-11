@@ -20,6 +20,35 @@ namespace TesterNet6
         /// </summary>
         public static void Init(string pathToOpenAiKey)
         {
+
+//#if NETCOREAPP
+//            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls13;
+//#else
+//            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Ssl3;
+//#endif
+
+//            //System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls13;
+
+//            WebProxy proxy = null;
+
+//            if (MCacheSup._CAL.HTTP_Proxy_Active)
+//            {
+//                proxy = new WebProxy
+//                {
+//                    Address = new Uri($"http://{MCacheSup._CAL.HTTP_Proxy_Host}:{MCacheSup._CAL.HTTP_Proxy_Port}"),
+//                    BypassProxyOnLocal = false,
+//                    UseDefaultCredentials = MCacheSup._CAL.HTTP_Proxy_UseDefaultCredentials,
+//                };
+
+//                // *** These creds are given to the proxy server, not the web server ***
+//                if (!MCacheSup._CAL.HTTP_Proxy_UseDefaultCredentials)
+//                {
+//                    proxy.Credentials = new NetworkCredential(
+//                    userName: MCacheSup._CAL.HTTP_Proxy_Username,
+//                    password: MCacheSup._CAL.HTTP_Proxy_Password);
+//                };
+//            }
+
             var handler = new System.Net.Http.HttpClientHandler();
             if (handler.SupportsAutomaticDecompression)
             {
@@ -44,7 +73,7 @@ namespace TesterNet6
         {
            
             var statCall = await OpenAI.GPTCallEmbedding(userInput).ConfigureAwait(false);
-            //statCall.GptEmbeddingsFullResponse = NetJSON.NetJSON.Deserialize<OAIEmbeddingsResponse>(statCall.fullResp);
+            
             statCall.GptEmbeddingsFullResponse = JsonSerializer.Deserialize<OAIEmbeddingsResponse>(statCall.fullResp);
 
             if (statCall.GptEmbeddingsFullResponse.data.Count > 0)
