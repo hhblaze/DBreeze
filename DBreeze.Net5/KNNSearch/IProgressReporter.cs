@@ -1,4 +1,4 @@
-﻿#if KNNSearch
+﻿#if NET6FUNC
 namespace DBreeze.HNSW
 {
     internal interface IProgressReporter

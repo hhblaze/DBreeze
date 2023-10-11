@@ -1,4 +1,4 @@
-﻿#if KNNSearch
+﻿#if NET6FUNC
 using System;
 using System.Runtime.CompilerServices;
 

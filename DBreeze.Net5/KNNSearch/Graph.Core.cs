@@ -3,7 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
-#if KNNSearch
+#if NET6FUNC
 namespace DBreeze.HNSW
 {
     using System;
@@ -119,8 +119,17 @@ namespace DBreeze.HNSW
             /// <returns></returns>
             internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
             {
-                var res = Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered, (Func<float[], float[], float>)(object)Distance);
-                return res;
+                return Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered, (Func<float[], float[], float>)(object)Distance);                
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="externalDocumentIDs"></param>
+            /// <returns></returns>
+            internal List<TItem> GetVectorsByExternalDocumentIDs(List<byte[]> externalDocumentIDs)
+            {
+                return externalDocumentIDs.Select(r=> (TItem)(object)Storage.Items.GetItemByExternalID(r)).ToList();              
             }
 
             /// <summary>
@@ -132,7 +141,7 @@ namespace DBreeze.HNSW
             internal IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, bool deferredIndexing = false)
             {
                 var xnewIDs = Storage.AddItems(items, generator, NewNodeFunc, deferredIndexing: deferredIndexing);
-                
+               
                 return xnewIDs;
 
                 //int newCount = items.Count;

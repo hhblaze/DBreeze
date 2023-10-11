@@ -3,7 +3,7 @@
   It's a free software for those who think that it should be free.
 */
 
-#if KNNSearch
+#if NET6FUNC
 
 using DBreeze.TextSearch;
 using DBreeze.Utils;

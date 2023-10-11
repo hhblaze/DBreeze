@@ -3,7 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
-#if KNNSearch
+#if NET6FUNC
 namespace DBreeze.HNSW
 {
     using System;
@@ -118,6 +118,26 @@ namespace DBreeze.HNSW
                 _rwLock?.ExitWriteLock();
             }
 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="externalDocumentIDs"></param>
+        /// <returns></returns>
+        internal List<TItem> GetVectorsByExternalDocumentIDs(List<byte[]> externalDocumentIDs)
+        {
+            _rwLock?.EnterWriteLock();
+            try
+            {
+                return Graph.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
+            }
+            finally
+            {
+                _rwLock?.ExitWriteLock();
+            }
+
+            
         }
 
         ///// <summary>

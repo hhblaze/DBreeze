@@ -3,7 +3,7 @@
 // Licensed under the MIT License.
 // </copyright>
 
-#if KNNSearch
+#if NET6FUNC
 using System;
 using System.Runtime.Serialization;
 using System.Threading;

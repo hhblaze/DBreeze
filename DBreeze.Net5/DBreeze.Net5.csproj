@@ -14,12 +14,12 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\net5.0\DBreeze.xml</DocumentationFile>
-    <DefineConstants>$(DefineConstants);KNNSearch;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6_0;NETCOREAPP;NET6FUNC</DefineConstants>
+    <DefineConstants>$(DefineConstants);NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6_0;NETCOREAPP;NET6FUNC</DefineConstants>
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);KNNSearch;NET6FUNC</DefineConstants>
+    <DefineConstants>$(DefineConstants);NET6FUNC</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

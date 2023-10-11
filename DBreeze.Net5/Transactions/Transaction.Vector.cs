@@ -3,7 +3,7 @@
   It's a free software for those who think that it should be free.
 */
 
-#if KNNSearch
+#if NET6FUNC
 using DBreeze.HNSW;
 using System;
 using System.Collections.Generic;
@@ -77,6 +77,52 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// Gets vector by externalDocumentIDs. Supported types are types of the insert in the table (float[], double[]...)
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="externalDocumentIDs"></param>
+        /// <returns></returns>
+        public List<TItem> GetVectorsByExternalDocumentIDs<TItem>(string tableName, List<byte[]> externalDocumentIDs)
+        {
+            switch (typeof(TItem))
+            {
+                case var type when type == typeof(float[]):
+                    break;
+                case var type when type == typeof(double[]):
+                    break;
+                default:
+
+                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported. Supported: float[], double[].");
+            }
+
+            var world = new SmallWorld<float[], float>(CosineDistance.SIMDForUnits, DefaultRandomGenerator.Instance,
+              new SmallWorld<float[], float>.Parameters()
+              {
+                  EnableDistanceCacheForConstruction = true,//true 
+                                                            // InitialDistanceCacheSize = SampleSize, 
+                  InitialDistanceCacheSize = 0,
+                  NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+                  KeepPrunedConnections = true,
+                  ExpandBestSelection = true
+              },
+              this, tableName,
+              threadSafe: false);
+
+            switch (typeof(TItem))
+            {
+                case var type when type == typeof(float[]):
+                    return (List<TItem>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);                   
+                case var type when type == typeof(double[]):
+                    return (List<TItem>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs).Select(Convert.ToDouble).ToList();                    
+                default:
+
+                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported. Supported: float[], double[].");
+            }
+
+        }
+
+
+        /// <summary>
         /// <para>Removes External documents from the VectorStorage of tableName.</para>
         /// <para>Internally Uses tableName.Insert operations, so tran.SynchronizeTables must reflect that.</para>
         /// <para>Actually VectorStorage will go on to hold those associated vectors, but they will not appear in tran.VectorsSearchSimilar.</para>
@@ -132,11 +178,11 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// 
+        /// having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
         /// </summary>
-        /// <param name="clusterPrototypes"></param>
-        /// <param name="itemsToBeClustered"></param>
-        /// <returns></returns>
+        /// <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
+        /// <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
+        /// <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
         public Dictionary<int, List<int>> VectorsClusteringKMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
         {
             return VectorsClusteringKMeans(
