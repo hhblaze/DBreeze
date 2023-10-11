@@ -42,8 +42,7 @@ namespace TesterNet6
 
         public async static Task<GptCallStat> GetEmbedding(string userInput)
         {
-            //string userInput = "Мама мыла раму";
-
+           
             var statCall = await OpenAI.GPTCallEmbedding(userInput).ConfigureAwait(false);
             //statCall.GptEmbeddingsFullResponse = NetJSON.NetJSON.Deserialize<OAIEmbeddingsResponse>(statCall.fullResp);
             statCall.GptEmbeddingsFullResponse = JsonSerializer.Deserialize<OAIEmbeddingsResponse>(statCall.fullResp);
@@ -94,8 +93,6 @@ namespace TesterNet6
             callStat.Bearer = "OpenAI";
             callStat.Model = "text-embedding-ada-002";
 
-            //long requestTokensUsed = 0;
-            //long responseTokensUsed = 0;
 
             try
             {
@@ -105,49 +102,10 @@ namespace TesterNet6
                 string endpoint = "https://api.openai.com/v1/embeddings";
 
 
-                var requestMessage = new HttpRequestMessage();
-                //requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");            
+                var requestMessage = new HttpRequestMessage();                            
                 requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-                #region "helper"
-                /*
-                 using System.Web;
-                 string escapedJson = HttpUtility.JavaScriptStringEncode(unescapedJson);
-                string unescapedJson = HttpUtility.JavaScriptStringDecode(escapedJson);
-
-                https://platform.openai.com/docs/api-reference/chat
-                https://platform.openai.com/docs/guides/gpt/chat-completions-api
-                https://www.freeformatter.com/json-escape.html
-
-                Chat views
-                //https://gscode.in/chat-box-design/
-                //https://codepen.io/masudrana2779/pen/OJbRyRB
-
-                //https://dev.tiesky.com:27750/modules.getfz.GM_GPT/web.zip/chat.html
-
-                https://json2csharp.com/
-
-
-               string cont = @"{
-        ""model"": ""gpt-3.5-turbo"",
-        ""messages"": [
-          {
-            ""role"": ""system"",
-            ""content"": ""Your role is to provide me a javascript function main() that answers with JSON object, without surrounding text. Inside of the main() function should be called as many external functions as necessary to provide an answer. Results of those functions must be computed and aggregated when necessary using javascript.\tFor external functions supply DateTime in format 'YYYYMMDD hh:mm:ss', but compute DateTime with javascript where possible. For view formatters use external functions. \r\n\tFor example, if user asks 'How much fuel spent Tino this year' you should answer with: \r\nfunction main() \r\n{ \r\n\r\n\tvar carId = external_GetCarIdByUserName('Tino');\r\n\tstartDate = \/\/compute it with javascript ;\r\n\tstopDate = \/\/compute it with javascript ;\r\n\tvar fuelConsumption = external_GetCarFuelCosumptionById(carId, startDate, stopDate);\r\n\tvar response={ 'FuelConsumption' : fuelConsumption};\r\n\treturn response;\r\n}""
-          },
-          {
-            ""role"": ""user"",
-            ""content"": """+userInput+@"""
-          }
-        ]
-      }";
-
-                VS escaping format
-                   ""content"": """+userInput+@"""
-
-
-                 */
-                #endregion
+              
 
                 //postman
                 //https://platform.openai.com/docs/api-reference/chat
@@ -176,32 +134,22 @@ namespace TesterNet6
   }}";
 
 
-                //requestMessage.Content = new StringContent("{\"model\": \"" + "gpt-3.5-turbo" + "\", \"prompt\": \"" + input + "\", \"temperature\": 0.7, \"max_tokens\": 150}", Encoding.UTF8, "application/json");
-
-
-                //callStat.TokeneizerRequestTokensUsed = GPT3Tokenizer.Encode(cont).Count();
+             
 
                 requestMessage.Content = new StringContent(cont, Encoding.UTF8, "application/json");
 
 
-                //requestMessage.Content = new StringContent($@"
-                //{{
-                //   ""model"":""text-davinci-003"",
-                //   ""prompt"":""{input}"",
-                //   ""temperature"":0.7,
-                //   ""max_tokens"":150,
-                //}}", Encoding.UTF8, "application/json");
 
 
                 requestMessage.Method = HttpMethod.Post;
                 requestMessage.RequestUri = new Uri(endpoint);
 
 
-                //var content = new StringContent("{\"prompt\": \"" + input + "\", \"temperature\": 0.7, \"max_tokens\": 150}", Encoding.UTF8, "application/json");
+                
                 var response = await _HttpClient.SendAsync(requestMessage);
                 response.EnsureSuccessStatusCode();
                 callStat.fullResp = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                //callStat.TokeneizerResponseTokensUsed = GPT3Tokenizer.Encode(callStat.fullResp).Count();
+               
 
                 return callStat;
 
