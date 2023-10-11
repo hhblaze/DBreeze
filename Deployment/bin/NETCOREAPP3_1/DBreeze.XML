@@ -3456,9 +3456,9 @@
             <param name="externalDocumentIDs"></param>
             <param name="activate">default is false (to remove/deactivate operation), it is possible again to activate removed association</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsClusterizationKMeans(System.String,System.Int32,System.Collections.Generic.List{System.Byte[]})">
+        <member name="M:DBreeze.Transactions.Transaction.VectorsClusteringKMeans(System.String,System.Int32,System.Collections.Generic.List{System.Byte[]})">
             <summary>
-            <para>Clusterization. Tries to assign all existing vectors (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
+            <para>Clustering. Tries to assign all existing vectors (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
             <para>It's possible to try to  create quantityOfClusters, starting from random cluster centers (just supply quantityOfClusters and leave externalDocumentIDsAsCentroids = null) or</para>
             <para>to try to create clusters around existing documents (supply externalDocumentIDsAsCentroids; quantityOfClusters will not play), taken those documents initially as centers of their clusters</para>
             </summary>
@@ -7253,7 +7253,7 @@
             <param name="buffer">An array of bytes to contain random numbers.</param>
         </member>
         <!-- Badly formed XML comment ignored for member "M:DBreeze.HNSW.IProvideRandomValues.Next(System.Int32,System.Int32)" -->
-        <member name="M:DBreeze.HNSW.Clusterization.KMeansCluster(DBreeze.HNSW.ItemList{System.Single[]},System.Int32,System.Func{System.Single[],System.Single[],System.Single},System.Collections.Generic.List{System.Int32})">
+        <member name="M:DBreeze.HNSW.Clustering.KMeansCluster(DBreeze.HNSW.ItemList{System.Single[]},System.Int32,System.Func{System.Single[],System.Single[],System.Single},System.Collections.Generic.List{System.Int32})">
             <summary>
             
             </summary>
@@ -7362,7 +7362,7 @@
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.KMeans(System.Int32,System.Collections.Generic.List{System.Byte[]})">
             <summary>
-            Clusterization.KMeans
+            Clustering.KMeans
             </summary>
             <param name="k">quantity of desired clusters</param>
             <returns>Key: integer that represents clusterID (just 0,1,2 etc up to externalIDsAsCentroids.Count-1 or k-1)</returns>
