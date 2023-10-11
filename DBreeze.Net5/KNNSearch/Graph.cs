@@ -76,6 +76,11 @@ namespace DBreeze.HNSW
             return GraphCore.KMeans(k, externalIDsAsCentroids);
         }
 
+        internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        {
+            return GraphCore.KMeans(clusterPrototypes, itemsToBeClustered);
+        }
+
         /// <summary>
         /// Creates graph from the given items.
         /// Contains implementation of INSERT(hnsw, q, M, Mmax, efConstruction, mL) algorithm.

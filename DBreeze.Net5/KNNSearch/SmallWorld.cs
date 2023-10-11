@@ -100,6 +100,26 @@ namespace DBreeze.HNSW
             
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="clusterPrototypes"></param>
+        /// <param name="itemsToBeClustered"></param>
+        /// <returns></returns>
+        public Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        {
+            _rwLock?.EnterWriteLock();
+            try
+            {
+                return Graph.KMeans(clusterPrototypes, itemsToBeClustered);
+            }
+            finally
+            {
+                _rwLock?.ExitWriteLock();
+            }
+
+        }
+
         ///// <summary>
         ///// Builds hnsw graph from the items.
         ///// </summary>

@@ -45,7 +45,7 @@ namespace TesterNet6.TextCorpus
             //----------SECOND APPROACH
 
 
-            //-from all items in tblKNNITLogos we try to create clusters around 
+            //-from all items in tblKNNITLogos we try to create clusters around specifed documents
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 tran.ValuesLazyLoadingIsOn = false; //to read key already with value
@@ -84,6 +84,106 @@ namespace TesterNet6.TextCorpus
         }//eof
 
 
+
+        // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
+        public class FurnitureItem
+        {
+            public string Name { get; set; }
+            public string Description { get; set; }
+
+            public double[] Embedding { get; set; }
+        }
+
+        public class FurnitureV1
+        {
+            public string Cluster { get; set; }
+            public List<FurnitureItem> Items { get; set; }
+        }
+
+
+        public static async Task KMeansFindCluster()
+        {
+            //-getting embeddings for each item of @"..\..\..\TextCorpus\FurnitureV1.json", further we will work only with @"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json"
+            //await GetFunrnitureV1Embeddings();
+
+            var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json"));
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {               
+                //Flattering cluster prototypes and itemsTobeClustered
+                Dictionary<int, (string ClusterName, FurnitureItem Furniture)> clusterPrototypes = new Dictionary<int, (string clusterName, FurnitureItem)>();
+                Dictionary<int, (string ClusterName, FurnitureItem Furniture)> itemsToBeClustered = new Dictionary<int, (string clusterName, FurnitureItem)>();
+
+                //Let's take first element from each Cluster as a Cluster prototype and the rest of elements will have to find to which cluster they belong to
+                int i = 0;
+                int j = 0;
+                foreach (var cluster in furnitureLst)
+                {
+                    var first = cluster.Items.First();                    
+                    clusterPrototypes.Add(i,(cluster.Cluster,first));
+
+                    foreach (var item in cluster.Items.Skip(1)) //skipping first value from the cluster and adding to itemsToBeClustered
+                    {
+                        itemsToBeClustered.Add(j, (cluster.Cluster, item));                       
+                        j++;
+                    }
+                    i++;
+                }
+
+                
+                //-supplying two Lists of embeddings, first are prototypes that represent different clusters and second are items to be sparsed between all prototypes clusters
+                var res = tran.VectorsClusteringKMeans(
+                    clusterPrototypes.Values.Select(r=>r.Item2.Embedding).ToList(), 
+                    itemsToBeClustered.Values.Select(r => r.Item2.Embedding).ToList()
+                    );
+
+                //resulting output
+                i = 0;
+                j = 0;
+                foreach (var el in res)
+                {
+                    Console.WriteLine($"CLUSTER: -------------{clusterPrototypes[i].ClusterName}-------------");
+                    foreach (var item in el.Value)
+                    {
+                        Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[j].ClusterName}; Name: {itemsToBeClustered[j].Furniture.Name}");
+                        j++;
+                    }
+                    i++;
+                }
+
+            }
+
+
+        }
+
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public static async Task GetFunrnitureV1Embeddings()
+        {
+            var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1.json"));
+
+            foreach (var cluster in furnitureLst)
+            {
+                foreach (var clusterItem in cluster.Items)
+                {
+                    var emb = await OpenAI.GetEmbedding(cluster.Cluster + " " + clusterItem.Name + " " + clusterItem.Description);
+                    if (emb != null && !emb.error)
+                    {
+                        clusterItem.Embedding = emb.EmbeddingAnswer.ToArray();
+                    }
+                    else
+                    {
+
+                    }
+                }
+            }
+
+            File.WriteAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json", JsonSerializer.Serialize(furnitureLst));
+        }
 
     }//eoc
 }//eon

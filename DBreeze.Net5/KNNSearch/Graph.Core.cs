@@ -114,6 +114,18 @@ namespace DBreeze.HNSW
             /// <summary>
             /// 
             /// </summary>
+            /// <param name="clusterPrototypes"></param>
+            /// <param name="itemsToBeClustered"></param>
+            /// <returns></returns>
+            internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+            {
+                var res = Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered, (Func<float[], float[], float>)(object)Distance);
+                return res;
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
             /// <param name="items">with external embedding ID as a key</param>
             /// <param name="generator"></param>
             /// <returns></returns>

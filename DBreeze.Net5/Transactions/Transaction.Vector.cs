@@ -131,6 +131,44 @@ namespace DBreeze.Transactions
             return world.KMeans(quantityOfClusters, externalDocumentIDsAsCentroids);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="clusterPrototypes"></param>
+        /// <param name="itemsToBeClustered"></param>
+        /// <returns></returns>
+        public Dictionary<int, List<int>> VectorsClusteringKMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
+        {
+            return VectorsClusteringKMeans(
+                clusterPrototypes.Select(arr => arr.Select(Convert.ToSingle).ToArray()).ToList(),
+                itemsToBeClustered.Select(arr => arr.Select(Convert.ToSingle).ToArray()).ToList()
+                );
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="clusterPrototypes"></param>
+        /// <param name="itemsToBeClustered"></param>
+        /// <returns></returns>
+        public Dictionary<int, List<int>> VectorsClusteringKMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        {
+            var world = new SmallWorld<float[], float>(CosineDistance.SIMDForUnits, DefaultRandomGenerator.Instance,
+                    new SmallWorld<float[], float>.Parameters() //ParametersDouble()
+                    {
+                        EnableDistanceCacheForConstruction = true,//true 
+                                                                  //InitialDistanceCacheSize = SampleSize, 
+                        InitialDistanceCacheSize = 0,
+                        NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+                        KeepPrunedConnections = true,
+                        ExpandBestSelection = true
+                    },
+                    this, String.Empty,
+                    threadSafe: false);
+
+            return world.KMeans(clusterPrototypes, itemsToBeClustered);
+        }
+
 
 
         /// <summary>

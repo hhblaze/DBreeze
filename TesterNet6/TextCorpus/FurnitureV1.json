@@ -1,0 +1,452 @@
+[
+	{
+		"Cluster": "Sofa",
+		"Items": [
+			{
+				"Name": "Classic Comfort Sofa",
+				"Description": "A timeless sofa design with plush cushions for ultimate comfort."
+			},
+			{
+				"Name": "Modern Elegance Couch",
+				"Description": "Sleek and sophisticated sofa featuring clean lines and premium upholstery."
+			},
+			{
+				"Name": "Luxury Leather Loveseat",
+				"Description": "A luxurious loveseat crafted from genuine leather, exuding opulence and style."
+			},
+			{
+				"Name": "Cozy Corner Sectional",
+				"Description": "L-shaped sectional sofa perfect for creating a cozy seating arrangement in any room."
+			},
+			{
+				"Name": "Contemporary Reclining Sofa",
+				"Description": "A modern sofa with built-in recliners for added relaxation and convenience."
+			},
+			{
+				"Name": "Vintage Velvet Settee",
+				"Description": "Charming settee upholstered in soft velvet, adding a touch of retro elegance."
+			},
+			{
+				"Name": "Family-Friendly Sofa Bed",
+				"Description": "Versatile sofa that transforms into a comfortable bed, ideal for accommodating guests."
+			},
+			{
+				"Name": "Minimalist Upholstered Couch",
+				"Description": "Simplicity meets style with this minimalist upholstered couch, perfect for modern interiors."
+			},
+			{
+				"Name": "Rustic Wooden Sofa",
+				"Description": "Rustic sofa crafted from reclaimed wood, showcasing natural beauty and eco-friendliness."
+			},
+			{
+				"Name": "Chic Linen Settee",
+				"Description": "Linen-upholstered settee featuring chic design elements, enhancing any living space."
+			}
+		]
+	},
+	{
+		"Cluster": "Chairs",
+		"Items": [
+			{
+				"Name": "Ergonomic Office Chair",
+				"Description": "Comfortable office chair designed for optimal support during long working hours."
+			},
+			{
+				"Name": "Mid-Century Modern Armchair",
+				"Description": "Iconic armchair with a mid-century modern vibe, adding retro charm to any room."
+			},
+			{
+				"Name": "Swivel Rocking Chair",
+				"Description": "Swivel chair with a rocking feature, providing both mobility and relaxation in one."
+			},
+			{
+				"Name": "Velvet Accent Chair",
+				"Description": "Plush velvet accent chair in vibrant colors, making a bold statement in any space."
+			},
+			{
+				"Name": "Classic Wooden Dining Chair",
+				"Description": "Traditional dining chair crafted from sturdy wood, perfect for family gatherings."
+			},
+			{
+				"Name": "Sleek Metal Bar Stool",
+				"Description": "Modern bar stool with a metal frame and leather seat, adding contemporary flair to bars and kitchens."
+			},
+			{
+				"Name": "Outdoor Patio Chair",
+				"Description": "Weather-resistant patio chair for outdoor relaxation, combining style and durability."
+			},
+			{
+				"Name": "Plush Lounge Chair",
+				"Description": "Sumptuous lounge chair with extra padding, offering the ultimate lounging experience."
+			},
+			{
+				"Name": "Foldable Butterfly Chair",
+				"Description": "Portable and foldable chair with a butterfly-inspired design, perfect for small spaces."
+			},
+			{
+				"Name": "Antique Rocking Chair",
+				"Description": "Vintage rocking chair with ornate carvings, adding a touch of nostalgia to your home."
+			}
+		]
+	},
+	{
+		"Cluster": "Tables",
+		"Items": [
+			{
+				"Name": "Rectangular Dining Table",
+				"Description": "Sturdy dining table with a classic design, providing ample space for family meals."
+			},
+			{
+				"Name": "Modern Glass Coffee Table",
+				"Description": "Sleek coffee table with a glass top and metal base, adding a contemporary touch to your living room."
+			},
+			{
+				"Name": "Rustic Wooden Side Table",
+				"Description": "Charming side table crafted from reclaimed wood, perfect for rustic-inspired interiors."
+			},
+			{
+				"Name": "Elegant Marble Console Table",
+				"Description": "Luxurious console table featuring a marble top and gold accents, enhancing your entryway or hallway."
+			},
+			{
+				"Name": "Versatile Folding Table",
+				"Description": "Compact folding table that can be used for various purposes, ideal for small spaces."
+			},
+			{
+				"Name": "Industrial Style End Table",
+				"Description": "End table with an industrial design, featuring metal and wood elements for a trendy look."
+			},
+			{
+				"Name": "Vintage Bedside Table",
+				"Description": "Quaint bedside table with drawers, adding a touch of vintage charm to your bedroom."
+			},
+			{
+				"Name": "Outdoor Picnic Table",
+				"Description": "Durable picnic table made from weather-resistant materials, perfect for outdoor gatherings and barbecues."
+			},
+			{
+				"Name": "Adjustable Height Standing Desk",
+				"Description": "Ergonomic standing desk with adjustable height settings, promoting a healthier work environment."
+			},
+			{
+				"Name": "Foldable Card Table",
+				"Description": "Portable card table that can be easily folded and stored, ideal for game nights and events."
+			}
+		]
+	},
+	{
+		"Cluster": "Beds",
+		"Items": [
+			{
+				"Name": "King-sized Upholstered Bed",
+				"Description": "Luxurious king-sized bed with a padded headboard, offering both comfort and style."
+			},
+			{
+				"Name": "Canopy Bed with Sheer Curtains",
+				"Description": "Elegant canopy bed featuring sheer curtains, creating a dreamy and romantic atmosphere in your bedroom."
+			},
+			{
+				"Name": "Minimalist Platform Bed",
+				"Description": "Sleek platform bed with clean lines and a low profile, perfect for modern bedroom aesthetics."
+			},
+			{
+				"Name": "Bunk Bed with Storage Drawers",
+				"Description": "Space-saving bunk bed with built-in storage drawers, providing organization and functionality for kids' rooms."
+			},
+			{
+				"Name": "Rustic Wooden Bed Frame",
+				"Description": "Charming wooden bed frame with rustic detailing, adding warmth and character to your bedroom."
+			},
+			{
+				"Name": "Tufted Velvet Daybed",
+				"Description": "Plush velvet daybed with tufted upholstery, doubling as a stylish seating option and a comfortable sleeping space."
+			},
+			{
+				"Name": "Trundle Bed for Guests",
+				"Description": "Convenient trundle bed that can be pulled out to accommodate guests, maximizing space in guest rooms."
+			},
+			{
+				"Name": "Adjustable Massage Bed",
+				"Description": "Innovative adjustable bed with massage features, offering relaxation and customizable sleeping positions."
+			},
+			{
+				"Name": "Four-Poster Bed with Carvings",
+				"Description": "Opulent four-poster bed with intricate wood carvings, creating a regal and grand focal point in your bedroom."
+			},
+			{
+				"Name": "Mid-Century Modern Bed",
+				"Description": "Iconic mid-century modern bed with tapered legs and a minimalist frame, capturing the essence of retro design."
+			}
+		]
+	},
+	{
+		"Cluster": "Storage",
+		"Items": [
+			{
+				"Name": "Spacious Wardrobe with Mirrors",
+				"Description": "Large wardrobe with mirrored doors, providing ample storage space for clothes and accessories."
+			},
+			{
+				"Name": "Bookcase with Adjustable Shelves",
+				"Description": "Versatile bookcase with adjustable shelves, allowing you to customize storage for books, decor, and more."
+			},
+			{
+				"Name": "Entryway Hall Tree",
+				"Description": "Functional hall tree with hooks, storage bench, and a mirror, organizing your entryway with style."
+			},
+			{
+				"Name": "Drawer Chest with Geometric Patterns",
+				"Description": "Drawer chest featuring intricate geometric patterns, adding a touch of artistry to your storage solutions."
+			},
+			{
+				"Name": "Floating Wall Shelves",
+				"Description": "Sleek floating shelves for wall-mounted storage, displaying decorative items and creating a modern look."
+			},
+			{
+				"Name": "Storage Ottoman with Tray",
+				"Description": "Multipurpose storage ottoman with a removable tray, serving as a coffee table and hidden storage unit."
+			},
+			{
+				"Name": "Rattan Basket Storage Unit",
+				"Description": "Chic storage unit with rattan baskets, offering a natural and rustic storage solution for various items."
+			},
+			{
+				"Name": "Cubby Organizer for Kids",
+				"Description": "Colorful cubby organizer with bins, encouraging kids to stay organized while adding vibrancy to their room."
+			},
+			{
+				"Name": "Modular Closet System",
+				"Description": "Customizable modular closet system with shelves, drawers, and hanging rods, optimizing your closet space efficiently."
+			},
+			{
+				"Name": "Bathroom Vanity with Storage",
+				"Description": "Elegant bathroom vanity with ample storage for toiletries, featuring a marble countertop and stylish hardware."
+			}
+		]
+	},
+	{
+		"Cluster": "Lighting",
+		"Items": [
+			{
+				"Name": "Chandelier with Crystal Drops",
+				"Description": "Exquisite chandelier with crystal drops, illuminating your space with a touch of glamour and elegance."
+			},
+			{
+				"Name": "Pendant Lights with Geometric Shades",
+				"Description": "Modern pendant lights featuring geometric shades, casting unique patterns of light across your room."
+			},
+			{
+				"Name": "Floor Lamp with Adjustable Arm",
+				"Description": "Functional floor lamp with an adjustable arm and dimmable light, providing task lighting for reading or working."
+			},
+			{
+				"Name": "Table Lamp with Ceramic Base",
+				"Description": "Table lamp with a ceramic base and fabric shade, adding a subtle touch of sophistication to your bedside table or desk."
+			},
+			{
+				"Name": "Wall Sconces with Vintage Appeal",
+				"Description": "Vintage-inspired wall sconces with intricate detailing, creating a warm and inviting ambiance in your space."
+			},
+			{
+				"Name": "LED Strip Lights for Ambient Lighting",
+				"Description": "Flexible LED strip lights that can be customized and installed to create ambient lighting effects in any room."
+			},
+			{
+				"Name": "Ceiling Fan with Remote Control",
+				"Description": "Ceiling fan featuring a remote control and adjustable speeds, providing both lighting and ventilation for your room."
+			},
+			{
+				"Name": "Task Lighting Desk Lamp",
+				"Description": "Task lighting desk lamp with adjustable brightness and color temperature, perfect for focused work or study."
+			},
+			{
+				"Name": "Outdoor Solar Lanterns",
+				"Description": "Solar-powered lanterns for outdoor lighting, enhancing your garden or patio with a warm and eco-friendly glow."
+			},
+			{
+				"Name": "Smart Home Lighting System",
+				"Description": "Smart lighting system compatible with voice assistants and mobile apps, allowing you to control lighting ambiance with ease."
+			}
+		]
+	},
+	{
+		"Cluster": "Decor",
+		"Items": [
+			{
+				"Name": "Decorative Throw Pillows",
+				"Description": "Assortment of throw pillows in various textures and patterns, adding a pop of color and comfort to your sofa or bed."
+			},
+			{
+				"Name": "Artificial Plants for Indoor Greenery",
+				"Description": "Realistic artificial plants and succulents, bringing a touch of nature to your home without the need for maintenance."
+			},
+			{
+				"Name": "Wall Art Prints with Inspirational Quotes",
+				"Description": "Canvas wall art prints featuring motivational quotes, inspiring positivity and creativity in your living space."
+			},
+			{
+				"Name": "Handwoven Area Rug with Boho Vibes",
+				"Description": "Handwoven area rug with bohemian patterns, adding warmth and a touch of cultural charm to your floors."
+			},
+			{
+				"Name": "Mirrors with Decorative Frames",
+				"Description": "Elegant mirrors with decorative frames, reflecting light and creating the illusion of space while enhancing your decor."
+			},
+			{
+				"Name": "Candle Holders with Metallic Finish",
+				"Description": "Metallic candle holders in various heights, adding a touch of sophistication and ambiance to your dining table or mantel."
+			},
+			{
+				"Name": "Ethnic Throw Blankets",
+				"Description": "Colorful throw blankets with ethnic patterns, adding a cozy and cultural vibe to your living room or bedroom."
+			},
+			{
+				"Name": "Framed Family Photos and Memories",
+				"Description": "Personalized photo frames showcasing cherished family photos and memories, adding a personal touch to your decor."
+			},
+			{
+				"Name": "Handcrafted Ceramic Vases",
+				"Description": "Artisanal ceramic vases in various shapes and sizes, serving as stylish vessels for fresh or artificial flowers."
+			},
+			{
+				"Name": "Hanging Wall Shelves for Displays",
+				"Description": "Floating wall shelves for displaying small decor items, creating a curated and visually appealing wall arrangement."
+			}
+		]
+	},
+	{
+		"Cluster": "Outdoor Furniture",
+		"Items": [
+			{
+				"Name": "All-Weather Patio Dining Set",
+				"Description": "Durable outdoor dining set designed to withstand all weather conditions, perfect for al fresco dining experiences."
+			},
+			{
+				"Name": "Adirondack Chairs with Side Table",
+				"Description": "Classic Adirondack chairs paired with a side table, offering comfortable seating for outdoor relaxation."
+			},
+			{
+				"Name": "Hammock with Wooden Stand",
+				"Description": "Cozy hammock suspended on a sturdy wooden stand, creating an inviting spot for leisurely afternoon naps."
+			},
+			{
+				"Name": "Outdoor Sectional Sofa Set",
+				"Description": "Modular sectional sofa set for outdoor lounging, featuring water-resistant cushions and a stylish design."
+			},
+			{
+				"Name": "Foldable Picnic Table and Bench Set",
+				"Description": "Portable picnic table and bench set that folds for easy storage, ideal for picnics and outdoor gatherings."
+			},
+			{
+				"Name": "Sun Loungers with Umbrella",
+				"Description": "Adjustable sun loungers paired with a sunshade umbrella, offering a comfortable and shaded space for sunbathing."
+			},
+			{
+				"Name": "Fire Pit Table with Chairs",
+				"Description": "Fire pit table set with comfortable chairs, creating a cozy ambiance for outdoor gatherings and roasting marshmallows."
+			},
+			{
+				"Name": "Outdoor Bar Cart with Wheels",
+				"Description": "Rolling bar cart with shelves and compartments, perfect for serving drinks and snacks during outdoor parties."
+			},
+			{
+				"Name": "Garden Bench with Floral Motifs",
+				"Description": "Decorative garden bench adorned with floral motifs, providing a charming seating option for gardens and patios."
+			},
+			{
+				"Name": "Swing Chair with Canopy",
+				"Description": "Swing chair with a canopy for outdoor relaxation, gently swaying in the breeze for a peaceful experience."
+			}
+		]
+	},
+	{
+		"Cluster": "Kids' Furniture",
+		"Items": [
+			{
+				"Name": "Colorful Playroom Storage Shelves",
+				"Description": "Bright and playful storage shelves for organizing toys and books in kids' playrooms, encouraging tidiness."
+			},
+			{
+				"Name": "Car-Shaped Bed for Kids",
+				"Description": "Bed shaped like a car, creating an exciting and adventurous sleeping space for young car enthusiasts."
+			},
+			{
+				"Name": "Animal-Themed Desk and Chair Set",
+				"Description": "Desk and chair set featuring animal designs, making study time fun and engaging for children."
+			},
+			{
+				"Name": "Treehouse-Inspired Bunk Bed",
+				"Description": "Bunk bed designed like a treehouse, providing a whimsical and imaginative sleeping arrangement for siblings."
+			},
+			{
+				"Name": "Educational Alphabet Rug",
+				"Description": "Colorful rug with alphabet letters and illustrations, serving as an educational and decorative addition to kids' rooms."
+			},
+			{
+				"Name": "Toy Storage Chest with Safety Hinges",
+				"Description": "Sturdy toy storage chest with safety hinges, ensuring a safe and organized space for storing toys and games."
+			},
+			{
+				"Name": "Kid-Sized Rocking Chair",
+				"Description": "Small rocking chair designed for kids, providing a comfortable and enjoyable seating experience for playtime."
+			},
+			{
+				"Name": "Princess-Themed Vanity Set",
+				"Description": "Vanity set with a mirror and storage for accessories, perfect for little princesses to play dress-up and grooming."
+			},
+			{
+				"Name": "Space-Themed Bunk Bed with Slide",
+				"Description": "Bunk bed featuring a slide and space-themed designs, creating a playful and imaginative environment for bedtime adventures."
+			},
+			{
+				"Name": "Interactive Learning Table",
+				"Description": "Interactive table with learning games and activities, fostering educational engagement and creativity for kids."
+			}
+		]
+	},
+	{
+		"Cluster": "Pet Furniture",
+		"Items": [
+			{
+				"Name": "Cozy Pet Bed with Memory Foam",
+				"Description": "Comfortable pet bed with memory foam cushioning, providing a cozy and supportive sleeping space for cats and dogs."
+			},
+			{
+				"Name": "Scratch-Resistant Cat Tree",
+				"Description": "Multi-level cat tree with scratching posts, platforms, and cozy hideaways, offering entertainment and exercise for feline friends."
+			},
+			{
+				"Name": "Elevated Dog Bed with Canopy",
+				"Description": "Raised dog bed with a canopy for shade, keeping dogs cool and comfortable during outdoor lounging."
+			},
+			{
+				"Name": "Interactive Treat-Dispensing Toy",
+				"Description": "Interactive toy that dispenses treats, providing mental stimulation and rewards for pets during playtime."
+			},
+			{
+				"Name": "Pet Feeding Station with Storage",
+				"Description": "Pet feeding station with bowls and storage compartments, organizing pet food, treats, and accessories in one place."
+			},
+			{
+				"Name": "Collapsible Pet Playpen",
+				"Description": "Portable playpen for pets, creating a secure and enclosed space for small animals like puppies, kittens, and rabbits."
+			},
+			{
+				"Name": "Cat Hammock Window Perch",
+				"Description": "Window-mounted cat hammock with a cozy perch, allowing cats to enjoy the view and bask in the sunlight."
+			},
+			{
+				"Name": "Orthopedic Dog Sofa Bed",
+				"Description": "Orthopedic sofa bed for dogs with joint issues, providing therapeutic support and comfort for a restful sleep."
+			},
+			{
+				"Name": "Self-Cleaning Litter Box",
+				"Description": "Innovative self-cleaning litter box for cats, automatically removing waste and maintaining a clean environment for feline friends."
+			},
+			{
+				"Name": "Pet Grooming Station with Tools",
+				"Description": "Pet grooming station equipped with brushes, combs, and nail clippers, making grooming sessions easier and more convenient."
+			}
+		]
+	}
+]
