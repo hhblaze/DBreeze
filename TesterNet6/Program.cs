@@ -25,7 +25,9 @@ namespace TesterNet6
             OpenAI.Init(PathToOpenAIKey);
 
             //Examples
-            await ITGiantLogotypes.Example();
+            //await ITGiantLogotypes.Example();
+
+            Clusterization.KMeansTest();
 
 
 

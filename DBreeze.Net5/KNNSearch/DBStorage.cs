@@ -452,6 +452,25 @@ namespace DBreeze.HNSW
             //}
         }
 
+        /// <summary>
+        /// Uswd in KMeans
+        /// </summary>
+        public new int Count
+        {
+            get
+            {
+                var rowVectorStat = tran.Select<byte[], byte[]>(tableName, 1.ToIndex());
+                if (rowVectorStat.Exists)
+                {
+                    var vstat = VectorStat.BiserDecode(rowVectorStat.Value);
+                    return vstat.Id + 1;
+                }
+                else
+                    return 0;
+
+            }
+        }
+
 
         /// <summary>
         /// Marks node as deleted

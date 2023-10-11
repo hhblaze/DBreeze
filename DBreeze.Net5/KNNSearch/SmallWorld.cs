@@ -81,6 +81,25 @@ namespace DBreeze.HNSW
             _rwLock = threadSafe ? new ReaderWriterLockSlim() : null;
         }
 
+        /// <summary>
+        /// Clusterization.KMeans
+        /// </summary>
+        /// <param name="k">quantity of desired clusters</param>
+        /// <returns>Key: integer that represents clusterID (just 0,1,2 etc up to externalIDsAsCentroids.Count-1 or k-1)</returns>
+        public Dictionary<int, List<byte[]>> KMeans(int k, List<byte[]> externalIDsAsCentroids = null)
+        {
+            _rwLock?.EnterWriteLock();
+            try
+            {
+                return Graph.KMeans(k);
+            }
+            finally
+            {
+                _rwLock?.ExitWriteLock();
+            }
+            
+        }
+
         ///// <summary>
         ///// Builds hnsw graph from the items.
         ///// </summary>
@@ -190,66 +209,6 @@ namespace DBreeze.HNSW
             }
         }
 
-        ///// <summary>
-        ///// Serializes the graph WITHOUT linked items.
-        ///// </summary>
-        ///// <returns>Bytes representing the graph.</returns>
-        //public void SerializeGraph(Stream stream)
-        //{
-        //    if (Graph == null)
-        //    {
-        //        throw new InvalidOperationException("The graph does not exist");
-        //    }
-        //    _rwLock?.EnterReadLock();
-        //    try
-        //    {
-        //        MessagePackBinary.WriteString(stream, SERIALIZATION_HEADER);
-        //        MessagePackSerializer.Serialize(stream, Graph.Parameters);
-        //        Graph.Serialize(stream);
-        //    }
-        //    finally
-        //    {
-        //        _rwLock?.ExitReadLock();
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Deserializes the graph from byte array.
-        ///// </summary>
-        ///// <param name="items">The items to assign to the graph's verticies.</param>
-        ///// <param name="bytes">The serialized parameters and edges.</param>
-        //public static SmallWorld<TItem, TDistance> DeserializeGraph(IReadOnlyList<TItem> items, Func<TItem, TItem, TDistance> distance, IProvideRandomValues generator, Stream stream, bool threadSafe = true)
-        //{
-        //    var p0 = stream.Position;
-        //    string hnswHeader;
-        //    try
-        //    {
-        //        hnswHeader = MessagePackBinary.ReadString(stream);
-        //    }
-        //    catch(Exception E)
-        //    {
-        //        if(stream.CanSeek) { stream.Position = p0; } //Resets the stream to original position
-        //        throw new InvalidDataException($"Invalid header found in stream, data is corrupted or invalid", E);
-        //    }
-
-        //    if (hnswHeader != SERIALIZATION_HEADER)
-        //    {
-        //        if (stream.CanSeek) { stream.Position = p0; } //Resets the stream to original position
-        //        throw new InvalidDataException($"Invalid header found in stream, data is corrupted or invalid");
-        //    }
-
-        //    // readStrict: true -> removed, as not available anymore on MessagePack 2.0 - also probably not necessary anymore
-        //    //                     see https://github.com/neuecc/MessagePack-CSharp/pull/663
-
-        //    var parameters = MessagePackSerializer.Deserialize<Parameters>(stream);
-
-        //    //Overwrite previous InitialDistanceCacheSize parameter, so we don't waste time/memory allocating a distance cache for an already existing graph
-        //    parameters.InitialDistanceCacheSize = 0;
-
-        //    var world = new SmallWorld<TItem, TDistance>(distance, generator, parameters, threadSafe: threadSafe);
-        //    world.Graph.Deserialize(items, stream);
-        //    return world;
-        //}
 
         /// <summary>
         /// Prints edges of the graph. Mostly for debug and test purposes.

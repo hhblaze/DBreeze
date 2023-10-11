@@ -52,29 +52,6 @@ namespace DBreeze.HNSW
         internal SmallWorld<TItem, TDistance>.Parameters Parameters { get; }
 
 
-        ///// <summary>
-        ///// Creates graph from the given items.
-        ///// Contains implementation of INSERT(hnsw, q, M, Mmax, efConstruction, mL) algorithm.
-        ///// Article: Section 4. Algorithm 1.
-        ///// </summary>
-        ///// <param name="items">The items to insert.</param>
-        ///// <param name="generator">The random number generator to distribute nodes across layers.</param>
-        ///// <param name="progressReporter">Interface to report progress </param>
-        //internal IReadOnlyList<int> AddItems(IReadOnlyList<TItem> items, IProvideRandomValues generator, IProgressReporter progressReporter)
-        //{
-        //    if (items is null || !items.Any()) { return Array.Empty<int>(); }
-
-        //    //GraphCore = GraphCore ?? new Core(Distance, Parameters, this.tran, this.tableName);
-        //    //int startIndex = GraphCore.Storage.Items.Count;
-
-        //    var newIDs = GraphCore.AddItems(items, generator);
-        //    //-check for deferred indexing, 
-        //    if (newIDs.Count > 0)
-        //        IndexItems(newIDs, generator, progressReporter);           
-
-        //    return newIDs;
-        //}
-
 
         /// <summary>
         /// 
@@ -83,14 +60,20 @@ namespace DBreeze.HNSW
         public void IndexIDs(List<int> internalIDs, IProvideRandomValues generator, IProgressReporter progressReporter = null)
         {
             GraphCore.Storage.CacheIsActive = true;
-            List<int> dd = new List<int>();
-            //return dd;
-            for (int i = 0; i < 18; i++)
-                dd.Add(i);
+            
+            GraphCore.ResizeDistanceCache(internalIDs.Count);
 
-            GraphCore.ResizeDistanceCache(dd.Count);
+            IndexItems(internalIDs, generator, progressReporter);
+        }
 
-            IndexItems(dd, generator, progressReporter);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="k"></param>
+        /// <returns></returns>
+        internal Dictionary<int, List<byte[]>> KMeans(int k, List<byte[]> externalIDsAsCentroids = null)
+        {
+            return GraphCore.KMeans(k);
         }
 
         /// <summary>
@@ -120,7 +103,11 @@ namespace DBreeze.HNSW
             else
             {
                 if (newIDs.Count > 0)
+                {
+                    GraphCore.ResizeDistanceCache(newIDs.Count);
+
                     IndexItems(newIDs, generator, progressReporter);
+                }
             }
                                
 

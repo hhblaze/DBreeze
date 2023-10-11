@@ -66,6 +66,7 @@
     <Compile Include="..\DBreeze.Net5\KNNSearch\GraphChangedException.cs" Link="KNNSearch\GraphChangedException.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\IProgressReporter.cs" Link="KNNSearch\IProgressReporter.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\IProvideRandomValues.cs" Link="KNNSearch\IProvideRandomValues.cs" />
+    <Compile Include="..\DBreeze.Net5\KNNSearch\KMeans.cs" Link="KNNSearch\KMeans.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\NeighbourSelectionHeuristic.cs" Link="KNNSearch\NeighbourSelectionHeuristic.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\Node.cs" Link="KNNSearch\Node.cs" />
     <Compile Include="..\DBreeze.Net5\KNNSearch\ReverseComparer.cs" Link="KNNSearch\ReverseComparer.cs" />

@@ -16,6 +16,7 @@ namespace DBreeze.HNSW
 
     using static DBreeze.HNSW.EventSources;
     using System.Net.Http.Headers;
+    using System.Linq;
 
     internal partial class Graph<TItem, TDistance>
     {
@@ -77,6 +78,39 @@ namespace DBreeze.HNSW
                 DistanceCalculationsCount = 0;
             }
 
+           
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="k"></param>
+            /// <param name="externalIDsToFormCentroids"></param>
+            /// <returns></returns>
+            internal Dictionary<int, List<byte[]>> KMeans(int k, List<byte[]> externalIDsAsCentroids = null)
+            {
+                Storage.CacheIsActive = true;
+
+                List<int> initialCentroids = null;
+                if ((externalIDsAsCentroids?.Count ?? 0) > 0)
+                {
+                    initialCentroids = new List<int>(externalIDsAsCentroids.Count);
+
+                    foreach (var el in externalIDsAsCentroids)
+                        initialCentroids.Add(Storage.Items.GetItemByExternalID(el).Item2);
+                }
+
+                var res = Clusterization.KMeansCluster((ItemList<float[]>)(object)Storage.Items, k, (Func<float[], float[],float>)(object)Distance, initialCentroids: initialCentroids);
+               
+                Dictionary<int, List<byte[]>> d = res
+                .Select((pair, index) => new { Index = index, Items = pair.Value })
+                .ToDictionary(
+                    entry => entry.Index,
+                    entry => entry.Items.Select(intId => Storage.Items.GetItemInDB(intId).ExternalID).ToList()
+                );
+
+                Storage.CacheIsActive = false;
+                return d;
+            }
+
             /// <summary>
             /// 
             /// </summary>
@@ -86,11 +120,6 @@ namespace DBreeze.HNSW
             internal IReadOnlyList<int> AddItems(IReadOnlyDictionary<byte[], TItem> items, IProvideRandomValues generator, bool deferredIndexing = false)
             {
                 var xnewIDs = Storage.AddItems(items, generator, NewNodeFunc, deferredIndexing: deferredIndexing);
-
-                if (!deferredIndexing)
-                {
-                    DistanceCache?.Resize(xnewIDs.Count, false);
-                }
                 
                 return xnewIDs;
 
