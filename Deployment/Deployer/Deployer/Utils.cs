@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Deployer
@@ -106,6 +107,59 @@ namespace Deployer
 
         }
 
+        public enum eFileToChangeType
+        {
+            Project,
+            AssemblyInfo
+        }
+        public static int ChangeProjectVersion(string newVersion, eFileToChangeType ftc, string path)
+        {
+            try
+            {
+                var fl = File.ReadAllText(path);
+                Dictionary<string, string > patternsProject = new Dictionary<string, string>
+                {
+                    { @"<Version>.*?</Version>", $@"<Version>{newVersion}</Version>"},
+                    { @"<FileVersion>.*?</FileVersion>", $@"<FileVersion>{newVersion}</FileVersion>" },
+                    { @"<AssemblyVersion>.*?</AssemblyVersion>", $@"<AssemblyVersion>{newVersion}</AssemblyVersion>"}
+                };
+
+                Dictionary<string, string> patternsAssemblyInfo = new Dictionary<string, string>
+                { 
+                    {@"AssemblyVersion\("".*?""\)", $@"AssemblyVersion(""{newVersion}"")" },
+                    { @"AssemblyFileVersion\("".*?""\)",$@"AssemblyFileVersion(""{newVersion}"")" }
+                };
+
+                string output = fl;
+
+                switch(ftc)
+                {
+                    case eFileToChangeType.AssemblyInfo:
+
+                        foreach (var el in patternsAssemblyInfo)
+                            output = Regex.Replace(output, el.Key, el.Value);
+
+                        File.WriteAllText(path, output);
+                        break;
+                    case eFileToChangeType.Project:
+                        foreach (var el in patternsProject)
+                            output = Regex.Replace(output, el.Key, el.Value);
+
+                        File.WriteAllText(path, output);
+                        break;
+                }
+                
+
+            }
+            catch (Exception ex)
+            {
+                Utils.ConsolePrint($"ChangeProjectVersion.Error in  {path}: " + ex.ToString(), ConsoleColor.Red);
+                return 1;
+            }
+            
+
+            return 0;
+        }
 
 
     }

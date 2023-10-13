@@ -1,4 +1,4 @@
-﻿/* 
+/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's free software for those who think that it should be free.
 */
@@ -36,8 +36,5 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
-//[assembly: AssemblyVersion("1.061.2013.1120")]
-//[assembly: AssemblyFileVersion("1.061.2013.1120")]
-[assembly: AssemblyVersion("1.111.2023.1011")]
-[assembly: AssemblyFileVersion("1.111.2023.1011")]
+[assembly: AssemblyVersion("1.112.2023.1013")]
+[assembly: AssemblyFileVersion("1.112.2023.1013")]

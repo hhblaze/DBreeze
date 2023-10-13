@@ -3423,17 +3423,6 @@
             Transaction
             </summary>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IReadOnlyDictionary{System.Byte[],System.Single[]},System.Boolean)">
-            <summary>
-            <para>Inserts associated with the external documents vectors into VectorStorage created under tableName.</para>
-            <para>It is possible to have many storages, just use different table names</para>
-            <para>This operation uses inserts into tableName, so tran.SynchronizeTables must reflect that</para>
-            </summary>
-            <param name="tableName">Table where VectorEngine stores its data. Supplied table must be used only by the vector engine.</param>
-            <param name="vectors">Key is an External Document ID; Value is a vector representing the document.</param>
-            <param name="deferredIndexing"></param>
-            <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
-        </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IReadOnlyDictionary{System.Byte[],System.Double[]},System.Boolean)">
             <summary>
             <para>Inserts associated with the external documents vectors into VectorStorage created under tableName.</para>
@@ -3445,7 +3434,7 @@
             <param name="deferredIndexing"></param>
             <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.GetVectorsByExternalDocumentIDs``1(System.String,System.Collections.Generic.List{System.Byte[]})">
+        <member name="M:DBreeze.Transactions.Transaction.GetVectorsByExternalDocumentIDs(System.String,System.Collections.Generic.List{System.Byte[]})">
             <summary>
             Gets vector by externalDocumentIDs. Supported types are types of the insert in the table (float[], double[]...)
             </summary>
@@ -3466,7 +3455,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsClusteringKMeans(System.String,System.Int32,System.Collections.Generic.List{System.Byte[]})">
             <summary>
-            <para>Clustering. Tries to assign all existing vectors (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
+            <para>Clustering. Tries to assign all existing vectors in the table (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
             <para>It's possible to try to  create quantityOfClusters, starting from random cluster centers (just supply quantityOfClusters and leave externalDocumentIDsAsCentroids = null) or</para>
             <para>to try to create clusters around existing documents (supply externalDocumentIDsAsCentroids; quantityOfClusters will not play), taken those documents initially as centers of their clusters</para>
             </summary>
@@ -3482,25 +3471,6 @@
             <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
             <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
             <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsClusteringKMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
-            <summary>
-            
-            </summary>
-            <param name="clusterPrototypes"></param>
-            <param name="itemsToBeClustered"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Single[],System.Int32,System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            <para>Searches similar documents to vectorRequest in VectorStorage of tableName.</para>        
-            <para>This operation only selects from tableName</para>
-            </summary>
-            <param name="tableName"></param>
-            <param name="vectorRequest"></param>
-            <param name="returnQuantity">Default is 3, how many similar documents must be returned</param>
-            <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
-            <returns>ExternalId, Distance, InternalId. Less Distance - more similar document; result set is already sorted ascending by the Distance</returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Double[],System.Int32,System.Collections.Generic.List{System.Byte[]})">
             <summary>
@@ -6904,7 +6874,7 @@
         </member>
         <member name="P:DBreeze.HNSW.VectorStat.VectorType">
             <summary>
-            Only float[] as in KNNSearch implementation intuition about 0,......5%
+            float[], double[]
             </summary>
         </member>
         <member name="P:DBreeze.HNSW.DefaultRandomGenerator.Instance">
@@ -7147,7 +7117,7 @@
             <param name="externalIDsToFormCentroids"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.HNSW.Graph`2.Core.KMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+        <member name="M:DBreeze.HNSW.Graph`2.Core.KMeans(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]})">
             <summary>
             
             </summary>
@@ -7204,7 +7174,7 @@
             <param name="k"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.HNSW.Graph`2.KMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+        <member name="M:DBreeze.HNSW.Graph`2.KMeans(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]})">
             <summary>
             
             </summary>
@@ -7307,7 +7277,7 @@
             <param name="buffer">An array of bytes to contain random numbers.</param>
         </member>
         <!-- Badly formed XML comment ignored for member "M:DBreeze.HNSW.IProvideRandomValues.Next(System.Int32,System.Int32)" -->
-        <member name="M:DBreeze.HNSW.Clustering.KMeansCluster(DBreeze.HNSW.ItemList{System.Single[]},System.Int32,System.Func{System.Single[],System.Single[],System.Single},System.Collections.Generic.List{System.Int32})">
+        <member name="M:DBreeze.HNSW.Clustering.KMeansCluster(DBreeze.HNSW.ItemList{System.Double[]},System.Int32,System.Func{System.Double[],System.Double[],System.Double},System.Collections.Generic.List{System.Int32})">
             <summary>
             
             </summary>
@@ -7317,13 +7287,13 @@
             <param name="initialCentroids">Internal Vectors ID that create initial centroids or null - then will be taken k for the random centroids</param>  
             <returns></returns>
         </member>
-        <member name="M:DBreeze.HNSW.Clustering.KMeansCluster(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]},System.Func{System.Single[],System.Single[],System.Single})">
+        <member name="M:DBreeze.HNSW.Clustering.KMeansCluster(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]},System.Func{System.Double[],System.Double[],System.Double})">
             <summary>
             
             </summary>
+            <param name="initialCentroids"></param>
             <param name="dataToCheck"></param>
             <param name="distanceFunc"></param>
-            <param name="initialCentroids"></param>
             <returns></returns>
         </member>
         <member name="T:DBreeze.HNSW.NeighbourSelectionHeuristic">
@@ -7430,7 +7400,7 @@
             <param name="k">quantity of desired clusters</param>
             <returns>Key: integer that represents clusterID (just 0,1,2 etc up to externalIDsAsCentroids.Count-1 or k-1)</returns>
         </member>
-        <member name="M:DBreeze.HNSW.SmallWorld`2.KMeans(System.Collections.Generic.List{System.Single[]},System.Collections.Generic.List{System.Single[]})">
+        <member name="M:DBreeze.HNSW.SmallWorld`2.KMeans(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]})">
             <summary>
             
             </summary>

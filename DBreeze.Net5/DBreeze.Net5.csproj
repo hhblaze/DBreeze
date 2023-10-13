@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.111.2023.1011</Version>
-    <FileVersion>1.111.2023.1011</FileVersion>
-    <AssemblyVersion>1.111.2023.1011</AssemblyVersion>
+    <Version>1.112.2023.1013</Version>
+    <FileVersion>1.112.2023.1013</FileVersion>
+    <AssemblyVersion>1.112.2023.1013</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 

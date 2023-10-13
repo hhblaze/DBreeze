@@ -52,6 +52,36 @@ namespace Deployer
             //string prjRELEASE = "<Configuration Condition=\" '$(Configuration)' == '' \">Release</Configuration>";
 
             string prj = File.ReadAllText(MyPath + @"..\..\DBreeze\DBreeze.csproj");
+            int exitCode = 0;
+
+            //-Changing DBreeze versions for all projects
+            if ((args?.Count() ?? 0) > 0)
+            {
+                Console.WriteLine(args[0]);
+                //string prj = File.ReadAllText(MyPath + @"..\..\DBreeze\Properties\AssemblyInfo.cs");
+                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.AssemblyInfo, MyPath + @"..\..\DBreeze\Properties\AssemblyInfo.cs");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.AssemblyInfo, MyPath + @"..\..\NETPortable\Properties\AssemblyInfo.cs");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+
+                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.Net5\DBreeze.Net5.csproj");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.NetStandard\DBreeze.NetStandard.csproj");
+                if (exitCode != 0) { Console.ReadKey(); return; }
+
+            }
+            else
+            {
+                Utils.ConsolePrint($"build version is not specified", ConsoleColor.Red);
+                return;
+            }
+
+            //return;
+            //Utils.ConsolePrint($"Error: {targetFramework} in {folder}: {ex.ToString()}", ConsoleColor.Red);
+
+
 
             bool skipRecompile = false;            
 
@@ -61,7 +91,7 @@ namespace Deployer
                 //if (Directory.Exists(MyPath + @"..\..\DBreeze\bin\Release"))
                 //    Directory.Delete(MyPath + @"..\..\DBreeze\bin\Release", true);
                 //msbuild MyProject.csproj /p:TargetFramework=netcoreapp3.1 /p:DefineConstants=NETCOREAPP3_1
-                int exitCode = 0;
+                
 
                 string targetFramework = "TargetFramework";
                 string targetFrameworkVersion = "TargetFrameworkVersion";
@@ -110,7 +140,7 @@ namespace Deployer
                 if (exitCode != 0) { Console.ReadKey(); return; }
 
 
-                Utils.ConsolePrint("ALL IS DONE", ConsoleColor.Green);
+                Utils.ConsolePrint("Building Done...", ConsoleColor.Green);
 
             }//eof skipRecompile (for testing and debugging packaging system)
 
@@ -198,7 +228,7 @@ namespace Deployer
             //var pck = localRepo.FindPackage("DBreeze");
             //string[] fileVersion1 = null;
 
-           
+
 
             //using (ZipArchive archive = ZipFile.Open(MyPath + @"..\Nuget\Actual\DBreeze.actual.nupkg", ZipArchiveMode.Update))
             //{
@@ -305,7 +335,7 @@ namespace Deployer
             //    //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.dll", CompressionLevel.Optimal);
             //    //archive.CreateEntryFromFile(MyPath + "UWP" + @"\DBreeze.dll", "lib/netstandard1.6/DBreeze.XML", CompressionLevel.Optimal);
 
-               
+
             //    archive.GetEntry("lib/netstandard2.0/DBreeze.dll").Delete();
             //    archive.GetEntry("lib/netstandard2.0/DBreeze.XML").Delete();
             //    archive.CreateEntryFromFile(MyPath + "NETSTANDARD2_0" + @"\DBreeze.dll", "lib/netstandard2.0/DBreeze.dll", CompressionLevel.Optimal);
@@ -328,8 +358,8 @@ namespace Deployer
             //File.Copy(MyPath + @"..\Nuget\Actual\DBreeze.actual.nupkg", MyPath + $"..\\Nuget\\DBreeze.{fileVersion1[0] + "." + fileVersion1[1] + ".0"}.nupkg", true);
 
 
-            Console.WriteLine("Done...");
-            Console.ReadLine();
+            Utils.ConsolePrint("Zipping Done...", ConsoleColor.Green);
+            //Console.ReadLine();
         }
 
         static void CreateLibEntry(ZipArchive archive, string folderInArchive, string pathOrigin)        
