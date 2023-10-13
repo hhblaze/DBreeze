@@ -39,7 +39,7 @@ multi-threaded, transactional and ACID-compliant data management system for
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 hhblaze@gmail.com</description>
-	<summary>DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search, embedding vector database, vector similarity search / clustering etc.), multi-threaded, transactional and ACID-compliant data management system for .NET5> / .NET Framework 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform
+	<summary>DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search, embedding vector database, vector similarity search / clustering etc.), multi-threaded, transactional and ACID-compliant data management system for .NET5&gt; / .NET Framework 3.5&gt; / Xamarin MONO Android iOS / .NET Core 1.0&gt; / .NET Standard 1.6&gt;  / Universal Windows Platform
 ...for servers and internet-of-things...
 Made with C#</summary>
     <releaseNotes>https://docs.google.com/document/u/0/d/1r1l940w4Z5p_6ntEkMTkjCWwbOQtJNr40Pq8wqI6g4o/pub</releaseNotes>
