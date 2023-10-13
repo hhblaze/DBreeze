@@ -6,9 +6,9 @@ DBreeze ![Image of DBreeze](https://github.com/hhblaze/DBreeze/blob/master/Docum
 [![NuGet Badge](https://buildstats.info/nuget/DBreeze)](https://www.nuget.org/packages/DBreeze/)
 [![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)](https://tiesky.com)
 
-DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search, embedding vector database and vector similarity search engine etc.), 
+DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search, embedding vector database, vector similarity search / clustering etc.), 
 multi-threaded, transactional and ACID-compliant data management system for
-.NET 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform / .NET Portable / .NET5
+.NET5> / .NET Framework 3.5> / Xamarin MONO Android iOS / .NET Core 1.0> / .NET Standard 1.6>  / Universal Windows Platform / .NET Portable 
 / [CoreRT](https://github.com/dotnet/corert) 
 
 ...for servers, desktops, mobiles and internet-of-things... Made with C# 
@@ -55,7 +55,7 @@ Key features:
 - Integrated text-search subsystem (full-text/partial).
 - Integrated object database layer.
 - Fast multi-parameter search subsystem with powerful query possibilities.
-- Integrated Vector Database and vector similarity search engine (embedding vectors store/search).
+- Integrated Vector Database and vector similarity search engine (embedding vectors store/search/clustering).
 - Integrated binary and JSON serializer [Biser.NET](https://github.com/hhblaze/Biser)
 - High Availability, Redundancy and Fault Tolerance via [Raft.NET](https://github.com/hhblaze/Raft.Net)
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
