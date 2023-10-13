@@ -1,4 +1,5 @@
-﻿using NuGet;
+﻿using Microsoft.Web.XmlTransform;
+using NuGet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,7 +53,7 @@ namespace Deployer
 
             string prj = File.ReadAllText(MyPath + @"..\..\DBreeze\DBreeze.csproj");
 
-            bool skipRecompile = false;
+            bool skipRecompile = false;            
 
 
             if (!skipRecompile)
@@ -113,7 +114,6 @@ namespace Deployer
 
             }//eof skipRecompile (for testing and debugging packaging system)
 
-
             Console.WriteLine("Packing DLLs and ULTIMATE ZIP");
             //Packing DLLs into zips
             var ultf = di.GetFiles("*ULTIMATE*").First();
@@ -173,18 +173,21 @@ namespace Deployer
 
             ultimate_archive.Dispose();
 
-
-
-
             //Renaming ultimate Archive
             File.Move(ultf.FullName, di.FullName + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_ULTIMATE.zip");
 
+
+
+
+
+
             Console.WriteLine("Packing Nuget");
 
-            string nuspecPath = @"..\Nuspec\DBreeze.nuspec";
+            string nuspecProtoPath = MyPath + @"..\Nuspec\DBreezePrototype.nuspec";
+            string nuspecPath = MyPath + @"..\Nuspec\DBreeze.nuspec";
 
-            var nuspec = File.ReadAllText(nuspecPath);
-            nuspec.ReplaceMultiple(new Dictionary<string, string> {
+            var nuspec = File.ReadAllText(nuspecProtoPath);
+            nuspec = nuspec.ReplaceMultiple(new Dictionary<string, string> {
                 { "{@version}", productVersion }
             });
 

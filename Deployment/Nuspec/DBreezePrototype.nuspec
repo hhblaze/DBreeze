@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>DBreeze</id>
-    <version>1.111.2023.1011</version>
+    <version>{@version}</version>
     <title>DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search, embedding vector database, vector similarity search / clustering etc.), 
 multi-threaded, transactional and ACID-compliant data management system for
 .NET5&gt; / .NET Framework 3.5&gt; / Xamarin MONO Android iOS / .NET Core 1.0&gt; / .NET Standard 1.6&gt;  / Universal Windows Platform / .NET Portable </title>
