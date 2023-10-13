@@ -119,7 +119,7 @@ namespace DBreeze.HNSW
                                     //-skipping result set on excluded and deactivated items
                                     if(!excludingItems.Contains(neighbourId))
                                     {
-                                        var itemInDb = this.Core.Storage.Items.GetItemInDB(neighbourId);
+                                        var itemInDb = this.Core.Storage.Items.GetItem(neighbourId).ItemInDB;
                                         if (!itemInDb.Deleted)
                                         {
                                             resultHeap.Push(neighbourId);

@@ -9,6 +9,7 @@ using DBreeze.TextSearch;
 using DBreeze.Utils;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using System.Text;
@@ -32,11 +33,13 @@ namespace DBreeze.HNSW
             //case var type when type == typeof(float[]):  check that through serializers to DB when adding new types
             switch (typeof(TItem))
             {
-                case var type when type == typeof(float[]):
+                case var type when type == typeof(double[]):
                     break;
+                //case var type when type == typeof(float[]):
+                //    break;
                 default:
 
-                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported. Supported: float[].");
+                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported. Supported: double[].");
             }
 
             this.tran = tran;
@@ -90,7 +93,22 @@ namespace DBreeze.HNSW
             if (rowVectorStat.Exists)
                 vstat = VectorStat.BiserDecode(rowVectorStat.Value);
             else
+            {
                 vstat = new VectorStat();
+                switch (typeof(TItem))
+                {
+                    case var type when type == typeof(double[]):
+                        vstat.VectorType = "double[]";
+                        break;
+                    case var type when type == typeof(float[]):
+                        vstat.VectorType = "float[]";
+                        break;
+                    default:
+                        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+                }
+
+                vstat.VectorType = "float[]";
+            }
 
             foreach (var item in items)
             {
@@ -303,7 +321,7 @@ namespace DBreeze.HNSW
         /// </summary>
         /// <param name="externalId"></param>
         /// <returns>second par internalID</returns>
-        public (ItemInDbFloatArray, int) GetItemByExternalID(byte[] externalId)
+        public (ItemInDb, int) GetItemByExternalID(byte[] externalId)
         {
             var valueLazy = this.tran.ValuesLazyLoadingIsOn;
             this.tran.ValuesLazyLoadingIsOn = false;
@@ -314,31 +332,44 @@ namespace DBreeze.HNSW
 
             if (rowEx.Exists)
             {
-                return (this.GetItemInDB(rowEx.Value), rowEx.Value);
+                return (this.GetItem(rowEx.Value).ItemInDB, rowEx.Value);
             }
 
             return (null, 0);
         }
-       
-        //public void FinilizeAddNodesActive()
-        //{
-        //    if (this._CacheIsActive)
-        //        _d.Clear();
-        //}
+
 
         /// <summary>
         /// Can return NULL, only For KNN search
         /// </summary>
         /// <param name="index"></param>
         /// <returns>Item, internalId, External ID (can be null, if was not supplied)</returns>
-        public (TItem, int, byte[]) GetItem(int index)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public (TItem Vector, int InernalID, ItemInDb ItemInDB) GetItem(int index)
         {
             if (this._CacheIsActive)
             {
                 if (_d.ContainsKey(index))
                 {
-                    var itemDB = _d[index];
-                    return ((TItem)(object)itemDB.Vector, index, itemDB.ExternalID);
+                    var itemInDB = _d[index];
+
+                    //out of switch 
+                    return ((TItem)(object)itemInDB.VectorDouble, index, itemInDB);
+
+                    //switch (typeof(TItem))
+                    //{
+                    //    case var type when type == typeof(double[]):
+                    //        {
+                    //          return ((TItem)(object)itemInDB.VectorDouble, index, itemInDB);                    
+                    //        }
+                    //    case var type when type == typeof(float[]):
+                    //        {
+                    //          return ((TItem)(object)itemInDB.Vector, index, itemInDB);
+                    //        }
+                    //    default:
+                    //        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+                    //}
+
                 }
             }
 
@@ -351,56 +382,44 @@ namespace DBreeze.HNSW
             if (!row.Exists)
                 return (default(TItem), 0, null);
 
-            switch (typeof(TItem))
+            //-from switch, currently only double[]
+            var itemDB = ItemInDb.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
+            if (this._CacheIsActive)
             {
-                case var type when type == typeof(float[]):
-                    {
-                        var itemDB = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
-                        return ((TItem)(object)itemDB.Vector, index, itemDB.ExternalID);                     
-                    }
-                default:
-                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+                _d[index] = itemDB;
             }
+            return ((TItem)(object)itemDB.VectorDouble, index, itemDB);
+            //switch (typeof(TItem))
+            //{
+            //    case var type when type == typeof(double[]):
+            //        {
+            //            var itemDB = ItemInDb.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
+            //            if (this._CacheIsActive)
+            //            {
+            //                _d[index] = itemDB;
+            //            }
+            //            return ((TItem)(object)itemDB.VectorDouble, index, itemDB);                     
+            //        }
+            //    case var type when type == typeof(float[]):
+            //        {
+            //            var itemDB = ItemInDb.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
+            //            if (this._CacheIsActive)
+            //            {
+            //                _d[index] = itemDB;
+            //            }
+            //            return ((TItem)(object)itemDB.Vector, index, itemDB);
+            //        }
+            //    default:
+            //        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+            //}
 
         }
 
         /// <summary>
         /// Cache for AddItems
         /// </summary>
-        Dictionary<int, ItemInDbFloatArray> _d = new Dictionary<int, ItemInDbFloatArray>();
+        Dictionary<int, ItemInDb> _d = new Dictionary<int, ItemInDb>();
 
-        public ItemInDbFloatArray GetItemInDB(int index)
-        {
-            if (this._CacheIsActive)
-            {
-                if (_d.ContainsKey(index))
-                    return _d[index];
-            }
-
-            var valueLazy = this.tran.ValuesLazyLoadingIsOn;
-            this.tran.ValuesLazyLoadingIsOn = false;
-            var row = tran.Select<byte[], byte[]>(this.tableName, 2.ToIndex(index));
-            this.tran.ValuesLazyLoadingIsOn = valueLazy;
-
-            if (!row.Exists)
-                return null;
-
-            switch (typeof(TItem))
-            {
-                case var type when type == typeof(float[]):
-                    {
-
-                        var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
-                        if (this._CacheIsActive)
-                        {
-                            _d[index] = itemInDb;
-                        }
-                        return itemInDb;
-                    }
-                default:
-                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
-            }
-        }
 
         /// <summary>
         /// 
@@ -412,38 +431,40 @@ namespace DBreeze.HNSW
         {
             get
             {
-                
-                if (this._CacheIsActive)
-                {
-                    if (_d.ContainsKey(index))
-                        return (TItem)(object)_d[index].Vector;
-                }
+                var item = GetItem(index);
+                return item.Item1;
 
-                var valueLazy = this.tran.ValuesLazyLoadingIsOn;
-                this.tran.ValuesLazyLoadingIsOn = false;
-                var row = tran.Select<byte[], byte[]>(this.tableName, 2.ToIndex(index));
-                this.tran.ValuesLazyLoadingIsOn = valueLazy;
+                //if (this._CacheIsActive)
+                //{
+                //    if (_d.ContainsKey(index))
+                //        return (TItem)(object)_d[index].Vector;
+                //}
 
-                if (!row.Exists)
-                    return (TItem)(object)default(TItem);
+                //var valueLazy = this.tran.ValuesLazyLoadingIsOn;
+                //this.tran.ValuesLazyLoadingIsOn = false;
+                //var row = tran.Select<byte[], byte[]>(this.tableName, 2.ToIndex(index));
+                //this.tran.ValuesLazyLoadingIsOn = valueLazy;
 
-                //Deserializing
+                //if (!row.Exists)
+                //    return (TItem)(object)default(TItem);
 
-                switch (typeof(TItem))
-                {
-                    case var type when type == typeof(float[]):
-                        {
+                ////Deserializing
+
+                //switch (typeof(TItem))
+                //{
+                //    case var type when type == typeof(float[]):
+                //        {
                            
-                            var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
-                            if (this._CacheIsActive)
-                            {
-                                _d[index] = itemInDb;
-                            }
-                            return (TItem)(object)itemInDb.Vector;
-                        }                        
-                    default:
-                        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
-                }
+                //            var itemInDb = ItemInDbFloatArray.BiserDecode(row.Value.DecompressBytesBrotliDBreeze());
+                //            if (this._CacheIsActive)
+                //            {
+                //                _d[index] = itemInDb;
+                //            }
+                //            return (TItem)(object)itemInDb.Vector;
+                //        }                        
+                //    default:
+                //        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+                //}
 
             }
             //set
@@ -486,7 +507,7 @@ namespace DBreeze.HNSW
                 var rowEx = tran.Select<byte[], int>(this.tableName, 5.ToIndex(eId));
                 if (rowEx.Exists)
                 {
-                    var item = this.GetItemInDB(rowEx.Value);
+                    var item = this.GetItem(rowEx.Value).ItemInDB;
                     if (item.Deleted != !activate)
                     {
                         item.Deleted = !activate;
@@ -500,43 +521,6 @@ namespace DBreeze.HNSW
         }
 
 
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="itemId"></param>
-        ///// <param name="item"></param>
-        ///// <exception cref="Exception"></exception>
-        //public void InsertItem(int itemId, TItem item)
-        //{
-        //    ItemInDbFloatArray ItemInDb = null;
-
-        //    byte[] ser = null;
-
-        //    switch (typeof(TItem))
-        //    {
-        //        case var type when type == typeof(float[]):
-        //            {
-        //                ItemInDb = new ItemInDbFloatArray()
-        //                {
-        //                    Vector = (float[])(object)item
-        //                };
-        //                ser = ItemInDb.BiserEncoder().Encode().CompressBytesBrotliDBreeze();
-
-        //                if (this._CacheIsActive)
-        //                {
-        //                    // _d[itemId] = item;
-        //                    _d[itemId] = ItemInDb;
-        //                }
-        //            }
-        //            break;
-        //        default:
-        //            throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
-        //    }
-
-        //    tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(itemId), ser);
-        //}
-
-
         /// <summary>
         /// 
         /// </summary>
@@ -547,34 +531,53 @@ namespace DBreeze.HNSW
         /// <exception cref="Exception"></exception>
         public int InsertItem(int itemId, byte[] externalEmbeddingId, TItem item)
         {
-            ItemInDbFloatArray ItemInDb = null;
+            ItemInDb ItemInDb = null;
             int itemLength = -1;
             byte[] ser = null;
 
-            switch (typeof(TItem))
+
+            //-from swithc, only double[]
+            ItemInDb = new ItemInDb()
             {
-                case var type when type == typeof(float[]):
-                    {
-                        ItemInDb = new ItemInDbFloatArray()
-                        {
-                            Vector = (float[])(object)item,
-                            ExternalID = externalEmbeddingId
-                        };
-                        //checking dimension
-                        itemLength = ItemInDb.Vector.Length;
+                VectorDouble = (double[])(object)item,
+                ExternalID = externalEmbeddingId
+            };
+            //-checking dimension
+            itemLength = ItemInDb.VectorDouble.Length;
 
-                        ser = ItemInDb.BiserEncoder().Encode().CompressBytesBrotliDBreeze();
-                        
+            //switch (typeof(TItem))
+            //{
+            //    case var type when type == typeof(double[]):
+            //        ItemInDb = new ItemInDb()
+            //        {
+            //            VectorDouble = (double[])(object)item,
+            //            ExternalID = externalEmbeddingId
+            //        };
+            //        //-checking dimension
+            //        itemLength = ItemInDb.VectorDouble.Length;
+            //        break;
+            //    case var type when type == typeof(float[]):
+            //        {
+            //            ItemInDb = new ItemInDb()
+            //            {
+            //                Vector = (float[])(object)item,
+            //                ExternalID = externalEmbeddingId
+            //            };
+            //            //-checking dimension
+            //            itemLength = ItemInDb.Vector.Length;
+            //        }
+            //        break;
+            //    default:
+            //        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+            //}
 
-                        if (this._CacheIsActive)
-                        {
-                            //_d[itemId] = item;
-                            _d[itemId] = ItemInDb;
-                        }
-                    }
-                    break;
-                default:
-                    throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
+
+            ser = ItemInDb.BiserEncoder().Encode().CompressBytesBrotliDBreeze();
+
+
+            if (this._CacheIsActive)
+            {               
+                _d[itemId] = ItemInDb;
             }
 
             tran.Insert<byte[], byte[]>(this.tableName, 2.ToIndex(itemId), ser);            
@@ -751,7 +754,7 @@ namespace DBreeze.HNSW
 
         public int VectorDimension { get; set; } = -1;
         /// <summary>
-        /// Only float[] as in KNNSearch implementation intuition about 0,......5%
+        /// float[], double[]
         /// </summary>
         public string VectorType { get; set; } = null;
 
@@ -875,15 +878,17 @@ namespace DBreeze.HNSW
     }
 
 
-    internal partial class ItemInDbFloatArray
+    internal partial class ItemInDb
     {
         public float[] Vector { get; set; }
         public byte[] ExternalID { get; set; }
         public bool Deleted { get; set; } = false;
 
+        public double[] VectorDouble { get; set; }
+
     }
 
-    internal partial class ItemInDbFloatArray : Biser.IEncoder
+    internal partial class ItemInDb : Biser.IEncoder
     {
 
 
@@ -904,12 +909,22 @@ namespace DBreeze.HNSW
             }
             encoder.Add(ExternalID);
             encoder.Add(Deleted);
+            if (VectorDouble == null)
+                encoder.Add((byte)1);
+            else
+            {
+                encoder.Add((byte)0);
+                for (int it3 = 0; it3 < VectorDouble.Rank; it3++)
+                    encoder.Add(VectorDouble.GetLength(it3));
+                foreach (var el4 in VectorDouble)
+                    encoder.Add(el4);
+            }
 
             return encoder;
         }
 
 
-        public static ItemInDbFloatArray BiserDecode(byte[] enc = null, Biser.Decoder extDecoder = null)
+        public static ItemInDb BiserDecode(byte[] enc = null, Biser.Decoder extDecoder = null)
         {
             Biser.Decoder decoder = null;
             if (extDecoder == null)
@@ -926,7 +941,7 @@ namespace DBreeze.HNSW
                     decoder = extDecoder;
             }
 
-            ItemInDbFloatArray m = new ItemInDbFloatArray();
+            ItemInDb m = new ItemInDb();
 
 
 
@@ -940,6 +955,14 @@ namespace DBreeze.HNSW
             }
             m.ExternalID = decoder.GetByteArray();
             m.Deleted = decoder.GetBool();
+            m.VectorDouble = decoder.CheckNull() ? null : new System.Double[decoder.GetInt()];
+            if (m.VectorDouble != null)
+            {
+                for (int ard3_0 = 0; ard3_0 < m.VectorDouble.GetLength(0); ard3_0++)
+                {
+                    m.VectorDouble[ard3_0] = decoder.GetDouble();
+                }
+            }
 
 
             return m;

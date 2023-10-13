@@ -28,13 +28,15 @@ namespace TesterNet6
             //await ITGiantLogotypes.Example();
 
             //Clustering.KMeansTest();
+            //Clustering.KMeansTest_Furniture();
+
             await Clustering.KMeansFindCluster();
 
 
 
 
             //Technical helpers
-            //Biser_Objectify();
+            Biser_Objectify();
 
 
             await Task.Run(() =>
@@ -66,14 +68,14 @@ namespace TesterNet6
 
         static void Biser_Objectify()
         {
-      //             var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.NodeInDb), true,
-      //      @"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+            //             var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.NodeInDb), true,
+            //      @"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
 
-      //      resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.ItemInDbFloatArray), true,
-      // @"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+       //     var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.ItemInDbFloatArray), true,
+       //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
 
-      //      resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.VectorStat), true,
-      //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+            //      resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.VectorStat), true,
+            //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
 
         }
     }

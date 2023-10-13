@@ -14,6 +14,9 @@ namespace TesterNet6.TextCorpus
         static string tblKNNITLogos = "KNNITLogos"; //Vector Table for ITLogos
         static string tblDocsITLogos = "DocsITLogos"; //Docs ItLogos
 
+        static string tblKNNFurniture = "KNNFurniture"; //Vector Table for ITLogos
+        static string tblDocsFurniture = "DocsFurniture"; //Docs ItLogos
+
         public static void KMeansTest()
         {
 
@@ -84,6 +87,132 @@ namespace TesterNet6.TextCorpus
         }//eof
 
 
+        public static void KMeansTest_Furniture()
+        {
+
+            //----------FIRST APPROACH
+
+            ////-from all items in tblKNNFurniture we try to create 2 random clusters
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.ValuesLazyLoadingIsOn = false; //to read key already with value
+
+            //    var res = tran.VectorsClusteringKMeans(tblKNNFurniture, 10);
+
+            //    foreach (var el in res)
+            //    {
+            //        Console.WriteLine($"CLUSTER: {el.Key}");
+
+            //        foreach (var doc in el.Value)
+            //        {                   
+            //            var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(doc));
+            //            var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
+            //            Console.WriteLine($"\tCluster: {dbFurniture.Cluster}; name: {dbFurniture.Name}");                        
+            //            //Console.WriteLine($"\tDescription: {dbFurniture.Description}");
+
+            //        }
+
+            //    }
+            //}//eo using
+
+
+            ////----------SECOND APPROACH
+
+            //var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json"));
+
+            ////-from all items in tblKNNFurniture we try to create clusters around specifed documents
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.ValuesLazyLoadingIsOn = false; //to read key already with value
+
+            //    List<byte[]> Clusters = new List<byte[]>();
+
+            //    string clusterNmae = "";
+
+            //    //List<byte[]> twoClusters = new List<byte[]>();
+            //    foreach (var row in tran.SelectForwardStartsWith<byte[], string>(tblDocsFurniture, 2.ToIndex()))
+            //    {
+            //        var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(row.Value);
+
+            //        if (!dbFurniture.Cluster.Equals(clusterNmae))
+            //        {
+            //            Clusters.Add(row.Key.Substring(1));
+            //            clusterNmae = dbFurniture.Cluster;
+            //        }                  
+            //    }
+
+
+            //    var res = tran.VectorsClusteringKMeans(tblKNNFurniture, 0, externalDocumentIDsAsCentroids: Clusters);
+
+            //    foreach (var el in res)
+            //    {
+            //        Console.WriteLine($"CLUSTER: {el.Key}");
+            //        foreach (var doc in el.Value)
+            //        {
+            //            var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(doc));
+            //            var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
+            //            Console.WriteLine($"\tCluster: {dbFurniture.Cluster}; name: {dbFurniture.Name}");
+            //            //Console.WriteLine($"\tDescription: {dbFurniture.Description}");
+
+            //        }
+
+            //    }
+            //}//eo using
+
+
+            //---------THIRD APPROACH KMean Finding cluster
+
+            var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json"));
+
+            //-from all items in tblKNNFurniture we try to create clusters around specifed documents
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.ValuesLazyLoadingIsOn = false; //to read key already with value
+
+                Dictionary<int, double[]> Clusters = new Dictionary<int, double[]>();
+
+                Dictionary<int, double[]> ItemsToCheck = new Dictionary<int, double[]>();
+
+                string clusterNmae = "";
+
+                //List<byte[]> twoClusters = new List<byte[]>();
+                foreach (var row in tran.SelectForwardStartsWith<byte[], string>(tblDocsFurniture, 2.ToIndex()))
+                {
+                    var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(row.Value);
+
+                    if (!dbFurniture.Cluster.Equals(clusterNmae))
+                    {
+                        Clusters.Add(row.Key.Substring(1).To_Int32_BigEndian(), dbFurniture.Embedding);
+                        clusterNmae = dbFurniture.Cluster;
+                    }
+
+                    ItemsToCheck.Add(row.Key.Substring(1).To_Int32_BigEndian(), dbFurniture.Embedding);
+                }
+
+
+                var res = tran.VectorsClusteringKMeans(clusterPrototypes: Clusters.Select(r => r.Value).ToList(), itemsToBeClustered: ItemsToCheck.Select(r => r.Value).ToList());
+
+                foreach (var el in res)
+                {
+                    Console.WriteLine($"CLUSTER: {el.Key}");
+                    foreach (var doc in el.Value)
+                    {
+                        
+                        int index = doc + 1;
+                        var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(index));
+                        var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
+                        Console.WriteLine($"\tCluster: {dbFurniture.Cluster}; name: {dbFurniture.Name}");
+                        //Console.WriteLine($"\tDescription: {dbFurniture.Description}");
+
+                    }
+
+                }
+            }//eo using
+
+
+        }//eof
+
+
 
         // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
         public class FurnitureItem
@@ -92,6 +221,8 @@ namespace TesterNet6.TextCorpus
             public string Description { get; set; }
 
             public double[] Embedding { get; set; }
+
+            public string Cluster { get; set; }
         }
 
         public class FurnitureV1
@@ -112,7 +243,8 @@ namespace TesterNet6.TextCorpus
             {               
                 //Flattering cluster prototypes and itemsTobeClustered
                 Dictionary<int, (string ClusterName, FurnitureItem Furniture)> clusterPrototypes = new Dictionary<int, (string clusterName, FurnitureItem)>();
-                Dictionary<int, (string ClusterName, FurnitureItem Furniture)> itemsToBeClustered = new Dictionary<int, (string clusterName, FurnitureItem)>();
+               // Dictionary<int, (string ClusterName, FurnitureItem Furniture)> itemsToBeClustered = new Dictionary<int, (string clusterName, FurnitureItem)>();
+                List<(string ClusterName, FurnitureItem Furniture)> itemsToBeClustered = new List<(string clusterName, FurnitureItem)>();
 
                 //Let's take first element from each Cluster as a Cluster prototype and the rest of elements will have to find to which cluster they belong to
                 int i = 0;
@@ -121,32 +253,64 @@ namespace TesterNet6.TextCorpus
                 {
                     var first = cluster.Items.First();                    
                     clusterPrototypes.Add(i,(cluster.Cluster,first));
+                    //Console.WriteLine($"Cluster: {i} - {cluster.Cluster}; Name: {first.Name}; Desc: {first.Description}");
 
                     foreach (var item in cluster.Items.Skip(1)) //skipping first value from the cluster and adding to itemsToBeClustered
                     {
-                        itemsToBeClustered.Add(j, (cluster.Cluster, item));                       
+                        //itemsToBeClustered.Add(j, (cluster.Cluster, item));
+                        item.Cluster = cluster.Cluster;
+                        itemsToBeClustered.Add((cluster.Cluster, item));
                         j++;
                     }
+                   
                     i++;
                 }
 
-                
+                //- shuffling of itemsToBeClustered, for fun of course
+                List<int> hs=new List<int>();
+                Random rnd = new Random();
+                int ki = 0;
+                foreach (var item in itemsToBeClustered)
+                {
+                    hs.Add(ki);
+                    ki++;
+                }
+                List<(string ClusterName, FurnitureItem Furniture)> itemsToBeClustered2 =new List<(string ClusterName, FurnitureItem Furniture)>();
+                foreach (var item in itemsToBeClustered)
+                {
+                    if (hs.Count == 0)
+                        break;
+                    var pos = rnd.Next(hs.Count);
+                    itemsToBeClustered2.Add(itemsToBeClustered[hs[pos]]);
+                    hs.RemoveAt(pos);
+                }
+                //- end of shuffle
+
+                itemsToBeClustered = itemsToBeClustered2;
+
+                //foreach (var item in itemsToBeClustered2)
+                //{
+                //    Console.WriteLine($"Cluster: {i} - {item.ClusterName}; Name: {item.Furniture.Name}; ");// Desc: {item.Furniture.Description}");
+                //}
+               
+
                 //-supplying two Lists of embeddings, first are prototypes that represent different clusters and second are items to be sparsed between all prototypes clusters
                 var res = tran.VectorsClusteringKMeans(
-                    clusterPrototypes.Values.Select(r=>r.Item2.Embedding).ToList(), 
-                    itemsToBeClustered.Values.Select(r => r.Item2.Embedding).ToList()
+                    clusterPrototypes.Values.Select(r=>r.Item2.Embedding).ToList(),
+                    //shuffled itemsToBeClustered
+                    itemsToBeClustered.Select(r => r.Item2.Embedding).ToList()
                     );
 
-                //resulting output
+
                 i = 0;
-                j = 0;
+                //resulting output               
                 foreach (var el in res)
                 {
                     Console.WriteLine($"CLUSTER: -------------{clusterPrototypes[i].ClusterName}-------------");
                     foreach (var item in el.Value)
                     {
-                        Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[j].ClusterName}; Name: {itemsToBeClustered[j].Furniture.Name}");
-                        j++;
+                        //Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[j].ClusterName}; Name: {itemsToBeClustered[j].Furniture.Name}");
+                        Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[item].ClusterName}; Name: {itemsToBeClustered[item].Furniture.Name}");                       
                     }
                     i++;
                 }

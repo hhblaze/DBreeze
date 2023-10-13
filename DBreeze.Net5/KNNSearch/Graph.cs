@@ -76,13 +76,24 @@ namespace DBreeze.HNSW
             return GraphCore.KMeans(k, externalIDsAsCentroids);
         }
 
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="clusterPrototypes"></param>
+        ///// <param name="itemsToBeClustered"></param>
+        ///// <returns></returns>
+        //internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        //{
+        //    return GraphCore.KMeans(clusterPrototypes, itemsToBeClustered);
+        //}
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="clusterPrototypes"></param>
         /// <param name="itemsToBeClustered"></param>
         /// <returns></returns>
-        internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        internal Dictionary<int, List<int>> KMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
         {
             return GraphCore.KMeans(clusterPrototypes, itemsToBeClustered);
         }

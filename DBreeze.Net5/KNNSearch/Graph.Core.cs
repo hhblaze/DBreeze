@@ -98,18 +98,29 @@ namespace DBreeze.HNSW
                         initialCentroids.Add(Storage.Items.GetItemByExternalID(el).Item2);
                 }
 
-                var res = Clustering.KMeansCluster((ItemList<float[]>)(object)Storage.Items, k, (Func<float[], float[],float>)(object)Distance, initialCentroids: initialCentroids);
+                var res = Clustering.KMeansCluster((ItemList<double[]>)(object)Storage.Items, k, (Func<double[], double[], double>)(object)Distance, initialCentroids: initialCentroids);
                
                 Dictionary<int, List<byte[]>> d = res
                 .Select((pair, index) => new { Index = index, Items = pair.Value })
                 .ToDictionary(
                     entry => entry.Index,
-                    entry => entry.Items.Select(intId => Storage.Items.GetItemInDB(intId).ExternalID).ToList()
+                    entry => entry.Items.Select(intId => Storage.Items.GetItem(intId).ItemInDB.ExternalID).ToList()
                 );
 
                 Storage.CacheIsActive = false;
                 return d;
             }
+
+            ///// <summary>
+            ///// 
+            ///// </summary>
+            ///// <param name="clusterPrototypes"></param>
+            ///// <param name="itemsToBeClustered"></param>
+            ///// <returns></returns>
+            //internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+            //{
+            //    return Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered, (Func<float[], float[], float>)(object)Distance);                
+            //}
 
             /// <summary>
             /// 
@@ -117,9 +128,9 @@ namespace DBreeze.HNSW
             /// <param name="clusterPrototypes"></param>
             /// <param name="itemsToBeClustered"></param>
             /// <returns></returns>
-            internal Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+            internal Dictionary<int, List<int>> KMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
             {
-                return Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered, (Func<float[], float[], float>)(object)Distance);                
+                return Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered, (Func<double[], double[], double>)(object)Distance);
             }
 
             /// <summary>

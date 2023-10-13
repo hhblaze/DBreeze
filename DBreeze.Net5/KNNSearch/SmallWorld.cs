@@ -100,13 +100,33 @@ namespace DBreeze.HNSW
             
         }
 
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="clusterPrototypes"></param>
+        ///// <param name="itemsToBeClustered"></param>
+        ///// <returns></returns>
+        //public Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        //{
+        //    _rwLock?.EnterWriteLock();
+        //    try
+        //    {
+        //        return Graph.KMeans(clusterPrototypes, itemsToBeClustered);
+        //    }
+        //    finally
+        //    {
+        //        _rwLock?.ExitWriteLock();
+        //    }
+
+        //}
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="clusterPrototypes"></param>
         /// <param name="itemsToBeClustered"></param>
         /// <returns></returns>
-        public Dictionary<int, List<int>> KMeans(List<float[]> clusterPrototypes, List<float[]> itemsToBeClustered)
+        public Dictionary<int, List<int>> KMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
         {
             _rwLock?.EnterWriteLock();
             try
@@ -334,9 +354,9 @@ namespace DBreeze.HNSW
 
         public class KNNSearchResult
         {
-            internal KNNSearchResult((TItem item, int id, byte[] externalId) itemEx, TDistance distance):this(itemEx.id, itemEx.item, distance)
+            internal KNNSearchResult((TItem item, int id, ItemInDb itemInDB) itemEx, TDistance distance):this(itemEx.id, itemEx.item, distance)
             {
-              ExternalId = itemEx.externalId;
+              ExternalId = itemEx.itemInDB.ExternalID;
             }
 
             internal KNNSearchResult(int id, TItem item, TDistance distance)
