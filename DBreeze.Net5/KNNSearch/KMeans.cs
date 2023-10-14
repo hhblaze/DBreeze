@@ -1,6 +1,6 @@
 ﻿/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
-  It's a free software for those who think that it should be free.
+  It's free software for those who believe it should be free.
 */
 #if NET6FUNC
 
