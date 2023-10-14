@@ -93,27 +93,26 @@ namespace DBreeze.Transactions
             //return VectorsInsert(tableName, fVectors, deferredIndexing);
         }
 
-
         /// <summary>
-        /// Gets vector by externalDocumentIDs. Supported types are types of the insert in the table (float[], double[]...)
+        /// Gets vectors by externalDocumentIDs.
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="externalDocumentIDs"></param>
         /// <returns></returns>
-        public List<double[]> GetVectorsByExternalDocumentIDs(string tableName, List<byte[]> externalDocumentIDs)
+        public List<double[]> VectorsGetByExternalDocumentIDs(string tableName, List<byte[]> externalDocumentIDs)
         {
             var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-                            new SmallWorld<double[], double>.Parameters()
-                            {
-                                EnableDistanceCacheForConstruction = true,//true 
-                                                                          // InitialDistanceCacheSize = SampleSize, 
-                                InitialDistanceCacheSize = 0,
-                                NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-                                KeepPrunedConnections = true,
-                                ExpandBestSelection = true
-                            },
-                            this, tableName,
-                            threadSafe: false);
+                           new SmallWorld<double[], double>.Parameters()
+                           {
+                               EnableDistanceCacheForConstruction = true,//true 
+                                                                         // InitialDistanceCacheSize = SampleSize, 
+                               InitialDistanceCacheSize = 0,
+                               NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+                               KeepPrunedConnections = true,
+                               ExpandBestSelection = true
+                           },
+                           this, tableName,
+                           threadSafe: false);
 
             return (List<double[]>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
 
@@ -137,7 +136,7 @@ namespace DBreeze.Transactions
             //            return (List<TItem>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
 
             //        }
-                  
+
             //    case var type when type == typeof(double[]):
             //        {
             //            var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
@@ -161,8 +160,77 @@ namespace DBreeze.Transactions
 
             //        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported. Supported: float[], double[].");
             //}
-
         }
+
+        ///// <summary>
+        ///// Gets vector by externalDocumentIDs. Supported types are types of the insert in the table (float[], double[]...)
+        ///// </summary>
+        ///// <param name="tableName"></param>
+        ///// <param name="externalDocumentIDs"></param>
+        ///// <returns></returns>
+        //public List<double[]> GetVectorsByExternalDocumentIDs(string tableName, List<byte[]> externalDocumentIDs)
+        //{
+        //    var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
+        //                    new SmallWorld<double[], double>.Parameters()
+        //                    {
+        //                        EnableDistanceCacheForConstruction = true,//true 
+        //                                                                  // InitialDistanceCacheSize = SampleSize, 
+        //                        InitialDistanceCacheSize = 0,
+        //                        NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+        //                        KeepPrunedConnections = true,
+        //                        ExpandBestSelection = true
+        //                    },
+        //                    this, tableName,
+        //                    threadSafe: false);
+
+        //    return (List<double[]>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
+
+        //    //switch (typeof(TItem))
+        //    //{
+        //    //    case var type when type == typeof(float[]):
+        //    //        {
+        //    //            var world = new SmallWorld<float[], float>(CosineDistance.SIMDForUnits, DefaultRandomGenerator.Instance,
+        //    //                new SmallWorld<float[], float>.Parameters()
+        //    //                {
+        //    //                    EnableDistanceCacheForConstruction = true,//true 
+        //    //                                                              // InitialDistanceCacheSize = SampleSize, 
+        //    //                    InitialDistanceCacheSize = 0,
+        //    //                    NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+        //    //                    KeepPrunedConnections = true,
+        //    //                    ExpandBestSelection = true
+        //    //                },
+        //    //                this, tableName,
+        //    //                threadSafe: false);
+
+        //    //            return (List<TItem>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
+
+        //    //        }
+                  
+        //    //    case var type when type == typeof(double[]):
+        //    //        {
+        //    //            var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
+        //    //                new SmallWorld<double[], double>.Parameters()
+        //    //                {
+        //    //                    EnableDistanceCacheForConstruction = true,//true 
+        //    //                                                              // InitialDistanceCacheSize = SampleSize, 
+        //    //                    InitialDistanceCacheSize = 0,
+        //    //                    NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
+        //    //                    KeepPrunedConnections = true,
+        //    //                    ExpandBestSelection = true
+        //    //                },
+        //    //                this, tableName,
+        //    //                threadSafe: false);
+
+        //    //            return (List<TItem>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
+
+        //    //        }
+
+        //    //    default:
+
+        //    //        throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported. Supported: float[], double[].");
+        //    //}
+
+        //}
 
 
         /// <summary>

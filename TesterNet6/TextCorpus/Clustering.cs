@@ -288,11 +288,26 @@ namespace TesterNet6.TextCorpus
 
                 itemsToBeClustered = itemsToBeClustered2;
 
+                //- shuffle variation
+                    //Random random = new Random();
+                    //int n = itemsToBeClustered.Count;
+                    //while (n > 1)
+                    //{
+                    //    n--;
+                    //    int k = random.Next(n + 1);
+                    //    var value = itemsToBeClustered[k];
+                    //    itemsToBeClustered[k] = itemsToBeClustered[n];
+                    //    itemsToBeClustered[n] = value;
+                    //}
+                //- end of shuffle
+
+
+
                 //foreach (var item in itemsToBeClustered2)
                 //{
                 //    Console.WriteLine($"Cluster: {i} - {item.ClusterName}; Name: {item.Furniture.Name}; ");// Desc: {item.Furniture.Description}");
                 //}
-               
+
 
                 //-supplying two Lists of embeddings, first are prototypes that represent different clusters and second are items to be sparsed between all prototypes clusters
                 var res = tran.VectorsClusteringKMeans(
