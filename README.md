@@ -13,7 +13,7 @@ multi-threaded, transactional and ACID-compliant data management system for
 
 ...for servers, desktops, mobiles and internet-of-things... Made with C# 
 
-- It's a free software for those who think that it should be free.
+- It's free software for those who believe it should be free.
 - It has been used in our own production environment since June 2012.
 - Follow the project, to be in touch with the recent optimizations and enhancements.
 - DBreeze via <a href = 'https://www.nuget.org/packages/DBreeze/'  target='_blank'>NuGet</a> since January 2014. 
