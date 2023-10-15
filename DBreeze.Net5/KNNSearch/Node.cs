@@ -62,6 +62,11 @@ namespace DBreeze.HNSW
                 Connections[layer] = value;
             }
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public byte[] FootPrint;
     }
 
 

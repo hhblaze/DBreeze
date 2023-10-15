@@ -633,15 +633,16 @@ namespace DBreeze.HNSW
 
             if (!this._CacheIsActive)
                 return;
-
+          
             foreach (var n in _forFlush)
             {
                 var btNode = NodeList.FromNode(n.Value);
-               
-                tran.Insert<byte[], byte[]>(this.tableName, 3.ToIndex(n.Value.Id), btNode);
-            }
-           
-            //this.Clear();
+                if(!btNode._ByteArrayEquals(n.Value.FootPrint))
+                {
+                    tran.Insert<byte[], byte[]>(this.tableName, 3.ToIndex(n.Value.Id), btNode);
+                }
+                
+            }            
         }
 
         public new void Add(Node node)
@@ -716,12 +717,14 @@ namespace DBreeze.HNSW
         /// <returns></returns>
         public static Node ToNode(byte[] btNode)
         {
-            var nodeInDb = NodeInDb.BiserDecode(btNode.Substring(4));
             
+            var nodeInDb = NodeInDb.BiserDecode(btNode.Substring(4));
+
             return new Node
             {
                 Id = btNode.Substring(0, 4).To_Int32_BigEndian(),
-                Connections = nodeInDb.Connections,               
+                Connections = nodeInDb.Connections,
+                FootPrint = btNode
             };
         }
 

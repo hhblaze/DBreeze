@@ -30,14 +30,15 @@ namespace TesterNet6
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
 
-            await Clustering.KMeansFindCluster();
+            //await Clustering.KMeansFindCluster();
 
 
 
 
             //Technical helpers
-            Biser_Objectify();
+            //Biser_Objectify();
 
+            Load.LoadV1();
 
             await Task.Run(() =>
             {

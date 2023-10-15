@@ -24,8 +24,8 @@ namespace TesterNet6.TextCorpus
 
         public async static Task Example()
         {
-            await ITGiantLogotypes.Store_Docs_Vectors();
-            await ITGiantLogotypes.SearchLogo();
+            //await ITGiantLogotypes.Store_Docs_Vectors();
+            //await ITGiantLogotypes.SearchLogo();
 
             //await Store_Furniture_Vectors();
             //await SearchFurniture();
