@@ -26,7 +26,7 @@ namespace DBreeze.HNSW
 
         private static int NextPowerOf2(uint x)
         {
-#if NET7_0_OR_GREATER || NET7FUNC
+#if NET7FUNC
             var v = System.Numerics.BitOperations.RoundUpToPowerOf2(x);
             if (v > 0x10000000) return 0x10000000;
             return (int)v;

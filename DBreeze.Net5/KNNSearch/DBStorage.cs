@@ -340,7 +340,7 @@ namespace DBreeze.HNSW
 
 
         /// <summary>
-        /// Can return NULL, only For KNN search
+        /// Can return NULL
         /// </summary>
         /// <param name="index"></param>
         /// <returns>Item, internalId, External ID (can be null, if was not supplied)</returns>
