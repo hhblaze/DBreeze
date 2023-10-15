@@ -3505,9 +3505,9 @@
             <param name="deferredIndexing"></param>
             <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.GetVectorsByExternalDocumentIDs(System.String,System.Collections.Generic.List{System.Byte[]})">
+        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalDocumentIDs(System.String,System.Collections.Generic.List{System.Byte[]})">
             <summary>
-            Gets vector by externalDocumentIDs. Supported types are types of the insert in the table (float[], double[]...)
+            Gets vectors by externalDocumentIDs.
             </summary>
             <param name="tableName"></param>
             <param name="externalDocumentIDs"></param>
@@ -6812,7 +6812,7 @@
         </member>
         <member name="M:DBreeze.HNSW.ItemList`1.GetItem(System.Int32)">
             <summary>
-            Can return NULL, only For KNN search
+            Can return NULL
             </summary>
             <param name="index"></param>
             <returns>Item, internalId, External ID (can be null, if was not supplied)</returns>
@@ -7340,6 +7340,11 @@
             </summary>
             <param name="layer">The layer to get connections at.</param>
             <returns>The connections of the node at the given layer.</returns>
+        </member>
+        <member name="F:DBreeze.HNSW.Node.FootPrint">
+            <summary>
+            
+            </summary>
         </member>
         <member name="T:DBreeze.HNSW.ReverseComparer`1">
             <summary>

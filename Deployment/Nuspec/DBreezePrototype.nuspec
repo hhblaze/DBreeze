@@ -3,7 +3,7 @@
   <metadata>
     <id>DBreeze</id>
     <version>{@version}</version>
-    <title>DBreeze Database embedded NoSql / Key Value / Object / Text Search / Multi-Parameter / Embedding Vectors Storage / ACID</title>
+    <title>DBreeze Database embedded ACID NoSql / Key Value / Object / Text Search / Multi-Parameter / Vector / ... for .NET</title>
 	<icon>images\Dbreeze.Logo.png</icon>
     <authors>Oleksiy Solovyov / Ivars Sudmalis</authors>
     <owners>https://tiesky.com</owners>
