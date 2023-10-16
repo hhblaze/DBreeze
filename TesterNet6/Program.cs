@@ -25,7 +25,7 @@ namespace TesterNet6
             OpenAI.Init(PathToOpenAIKey);
 
             //Examples
-            await ITGiantLogotypes.Example();
+            //await ITGiantLogotypes.Example();
 
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
@@ -33,8 +33,8 @@ namespace TesterNet6
             //await Clustering.KMeansFindCluster();
 
 
-            //Getting Embedding vectors with MSML (short)
-            //MsMLEmbedder.GetSomeEmbeddingVectors();
+            //Getting Embedding vectors with MSML (shorter, lower quality embeddings than OpenAI)
+            MsMLEmbedder.GetSomeEmbeddingVectors();
             
 
 

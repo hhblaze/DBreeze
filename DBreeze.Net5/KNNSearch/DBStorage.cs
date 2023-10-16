@@ -107,7 +107,7 @@ namespace DBreeze.HNSW
                         throw new Exception($"TItem type:  {typeof(TItem).ToString()} is not supported");
                 }
 
-                vstat.VectorType = "float[]";
+                //vstat.VectorType = "float[]";
             }
 
             foreach (var item in items)

@@ -32,8 +32,9 @@ namespace TesterNet6
                     "Text"))
                 .Append(mlContext.Transforms.Text.ApplyWordEmbedding("Features",
                     "Tokens", WordEmbeddingEstimator.PretrainedModelKind
-                    //.SentimentSpecificWordEmbedding
-                    .GloVe300D
+                    .SentimentSpecificWordEmbedding
+                    //.GloVe300D
+                    //.FastTextWikipedia300D
                     ));
           
             textTransformer = textPipeline.Fit(emptyDataView);
