@@ -136,7 +136,7 @@ namespace DBreeze.HNSW
             {
                 if (newIDs.Count > 0)
                 {
-                    GraphCore.ResizeDistanceCache(newIDs.Count);
+                    //GraphCore.ResizeDistanceCache(newIDs.Count); //-orig
 
                     IndexItems(newIDs, generator, progressReporter);
                 }
@@ -254,7 +254,14 @@ namespace DBreeze.HNSW
             // construction is done
             EntryPoint = entryPoint;
 
+
             GraphCore.Storage.FinilizeAddItems(entryPoint);
+
+            //Console.WriteLine($"HitCount: {GraphCore.DistanceCache.HitCount}; HitRate: {GraphCore.DistanceCacheHitRate}; " +
+            //    $"DistanceCalcCount: {GraphCore.DistanceCalculationsCount}; HitDistance: {GraphCore.DistanceCache.HitDistanceCount}; TimeDist:{GraphCore.DistanceCache.timeDistance} ");
+
+            //Console.WriteLine($"Keys: {GraphCore.DistanceCache.keys.Length}; Values: {GraphCore.DistanceCache.values.Length}; HitCount: {GraphCore.DistanceCache.HitCount}; HitRate: {GraphCore.DistanceCacheHitRate}; " +
+            //    $"DistanceCalcCount: {GraphCore.DistanceCalculationsCount}; HitDistance: {GraphCore.DistanceCache.HitDistanceCount}; TimeDist:{GraphCore.DistanceCache.timeDistance} ");
         }
 
 

@@ -27,8 +27,8 @@ namespace TesterNet6.TextCorpus
             //await ITGiantLogotypes.Store_Docs_Vectors();
             //await ITGiantLogotypes.SearchLogo();
 
-            //await Store_Furniture_Vectors();
-            //await SearchFurniture();
+            await Store_Furniture_Vectors();
+            await SearchFurniture();
         }
 
 

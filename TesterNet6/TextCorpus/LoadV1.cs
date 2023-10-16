@@ -16,26 +16,35 @@ namespace TesterNet6.TextCorpus
         public static void LoadV1()
         {
             var rnd=new Random();
-            byte[][] bt = new byte[100][];
+            int batchSize = 100; //100 (batchSize) documents per round
+            byte[][] bt = new byte[batchSize][];
             //for (int i = 0; i < 100; i++)
             //{
             //    bt[i]=new byte[500];
             //    rnd.NextBytes(bt[i]);
             //}
 
-            for (int j = 0; j < 100; j++)//100 times
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            System.Diagnostics.Stopwatch sw1 = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            DateTime now = DateTime.Now;
+            for (int j = 0; j < 1000; j++)//100 times we insert batch
             {
-                for (int i = 0; i < 100; i++)//inserting 100 vectors of size 500 double
+                Console.Write($"{(j* batchSize + batchSize)} - "); //quantity of documents inside
+                
+                for (int i = 0; i < batchSize; i++)//inserting 100 vectors of size 500 double
                 {
                     bt[i] = new byte[500];
+                    //rnd.NextBytes(bt[i]);
                     rnd.NextBytes(bt[i]);
                 }
-
+                sw1.Reset();
+                sw1.Start();
                 using (var tran = Program.DBEngine.GetTransaction())
                 {
                     var x = bt.Select((k, v) => 
                     new KeyValuePair<byte[], double[]>(
-                        (v+j*100).ToBytes(), 
+                        (v+ j*batchSize).ToBytes(), 
                         k.Select(Convert.ToDouble).ToArray()))
                     .ToDictionary(k=>k.Key,v=>v.Value);
 
@@ -43,7 +52,11 @@ namespace TesterNet6.TextCorpus
 
                     tran.Commit();
                 }
+                sw1.Stop();
+                Console.WriteLine($"roundMS: {sw1.ElapsedMilliseconds}");
             }
+            sw.Stop();
+            Console.WriteLine($"MS: {sw.ElapsedMilliseconds}; - {(DateTime.Now - now).TotalMilliseconds}");
                 
 
                 
@@ -51,5 +64,10 @@ namespace TesterNet6.TextCorpus
 
 
         }
+
+
+
+
+
     }
 }

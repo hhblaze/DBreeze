@@ -64,7 +64,7 @@ namespace DBreeze.HNSW
         }
 
         /// <summary>
-        /// 
+        /// OnLoad node content, will be compared with the current node state deciding to be flushed on disk or not.
         /// </summary>
         public byte[] FootPrint;
     }

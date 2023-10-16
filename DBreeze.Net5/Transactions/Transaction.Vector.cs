@@ -68,7 +68,7 @@ namespace DBreeze.Transactions
         /// <param name="deferredIndexing"></param>
         /// <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
         public IReadOnlyList<int> VectorsInsert(string tableName, IReadOnlyDictionary<byte[], double[]> vectors, bool deferredIndexing = false)
-        {
+        {           
             var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
              new SmallWorld<double[], double>.Parameters()
              {
@@ -83,6 +83,11 @@ namespace DBreeze.Transactions
              threadSafe: false);
 
             return world.AddItems(vectors, deferredIndexing: deferredIndexing);
+
+
+
+
+
 
 
             //var fVectors = vectors.ToDictionary(

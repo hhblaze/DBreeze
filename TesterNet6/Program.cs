@@ -25,7 +25,7 @@ namespace TesterNet6
             OpenAI.Init(PathToOpenAIKey);
 
             //Examples
-            //await ITGiantLogotypes.Example();
+            await ITGiantLogotypes.Example();
 
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
@@ -36,9 +36,12 @@ namespace TesterNet6
 
 
             //Technical helpers
+
+            //Load.LoadV1();
+
             //Biser_Objectify();
 
-            Load.LoadV1();
+
 
             await Task.Run(() =>
             {
@@ -69,11 +72,11 @@ namespace TesterNet6
 
         static void Biser_Objectify()
         {
-            //             var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.NodeInDb), true,
-            //      @"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+             //       var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.DistanceCache<double>.DistanceCacheDB), true,
+             //@"D:\Temp\DBVector\", forBiserBinary: true, forBiserJson: false, null);
 
-       //     var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.ItemInDbFloatArray), true,
-       //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
+            //     var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.ItemInDbFloatArray), true,
+            //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);
 
             //      resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.VectorStat), true,
             //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);

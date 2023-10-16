@@ -23,10 +23,10 @@ namespace DBreeze.HNSW
         internal class Core
         {
             private readonly Func<TItem, TItem, TDistance> Distance;
-
-            private readonly DistanceCache<TDistance> DistanceCache;
-
-            private long DistanceCalculationsCount;
+            //-
+            public readonly DistanceCache<TDistance> DistanceCache;
+            //-
+            public long DistanceCalculationsCount;
 
             internal DBStorage<TItem> Storage { get; private set; }
 
@@ -72,6 +72,7 @@ namespace DBreeze.HNSW
                 if (Parameters.EnableDistanceCacheForConstruction)
                 {
                     DistanceCache = new DistanceCache<TDistance>();
+                    
                     DistanceCache.Resize(parameters.InitialDistanceCacheSize, false);
                 }
 
