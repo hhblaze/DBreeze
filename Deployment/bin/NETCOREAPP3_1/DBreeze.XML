@@ -6897,6 +6897,11 @@
             2^30 = 1073741824
             </summary>
         </member>
+        <member name="F:DBreeze.HNSW.DistanceCache`1.ds">
+            <summary>
+            New cache distance
+            </summary>
+        </member>
         <member name="M:DBreeze.HNSW.DistanceCache`1.MakeKey(System.Int32,System.Int32)">
             <summary>
             Builds key for the pair of points.
@@ -7335,7 +7340,7 @@
         </member>
         <member name="F:DBreeze.HNSW.Node.FootPrint">
             <summary>
-            
+            OnLoad node content, will be compared with the current node state deciding to be flushed on disk or not.
             </summary>
         </member>
         <member name="T:DBreeze.HNSW.ReverseComparer`1">
