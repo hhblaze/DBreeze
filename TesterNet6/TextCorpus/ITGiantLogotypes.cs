@@ -232,6 +232,9 @@ namespace TesterNet6.TextCorpus
 
             //-reading DBLogotype with embeddings from the prepared file            
             List <FurnitureV1> embeddings = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json"));
+            //-short vectors from ML.NET / feel the difference
+            //List<FurnitureV1> embeddings = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings_MSML.json"));
+           
 
             if (embeddings.Count > 0)
             {
@@ -301,18 +304,20 @@ namespace TesterNet6.TextCorpus
         {
 
             //Those for tests....
-            string question = "soft place to seat";            
-          
+            string question = "soft place to seat";
+            question = "a cosy leather sofa";
 
-            //-getting embedding vector for the question
+            //-getting embedding vector for the question from OpenAI
             var emb = await OpenAI.GetEmbedding(question);
-
-
             if (emb == null && emb.error)
                 throw new Exception("Can't get embedding from the question");
-
             //-bringing to array
             double[] questionEmbedding = emb.EmbeddingAnswer.ToArray();
+
+            ////-using ML.NET to get short vector
+            //MsMLEmbedder embedder = new MsMLEmbedder();
+            //double[] questionEmbedding = embedder.GetEmbeddingDoubleArray(question);
+
 
             //-show top 3 most relevant answers
             using (var tran = Program.DBEngine.GetTransaction())

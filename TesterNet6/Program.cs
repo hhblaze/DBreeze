@@ -33,6 +33,9 @@ namespace TesterNet6
             //await Clustering.KMeansFindCluster();
 
 
+            //Getting Embedding vectors with MSML (short)
+            //MsMLEmbedder.GetSomeEmbeddingVectors();
+            
 
 
             //Technical helpers
