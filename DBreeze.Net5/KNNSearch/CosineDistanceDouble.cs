@@ -129,6 +129,62 @@ namespace DBreeze.HNSW
         //}
 
         /// <summary>
+        /// Use SIMD when you have arbitrary vectors that may not be normalized (unit vectors).
+        /// 
+        /// Calculates cosine distance optimized using SIMD instructions.
+        /// </summary>
+        /// <param name="u"></param>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        public static double SIMD(double[] u, double[] v)
+        {
+            if (!Vector.IsHardwareAccelerated)
+            {
+                throw new NotSupportedException($"SIMD version of {nameof(CosineDistance)} is not supported");
+            }
+
+            if (u.Length != v.Length)
+            {
+                throw new ArgumentException("Vectors have non-matching dimensions");
+            }
+
+            double dot = 0;
+            double normU = 0;
+            double normV = 0;
+
+            int step = Vector<double>.Count;
+            int i, to = u.Length - step;
+
+            for (i = 0; i <= to; i += step)
+            {
+                var ui = new Vector<double>(u, i);
+                var vi = new Vector<double>(v, i);
+                dot += Vector.Dot(ui, vi);
+                normU += Vector.Dot(ui, ui);
+                normV += Vector.Dot(vi, vi);
+            }
+
+            for (; i < u.Length; ++i)
+            {
+                dot += u[i] * v[i];
+                normU += u[i] * u[i];
+                normV += v[i] * v[i];
+            }
+
+            double norm = Math.Sqrt(normU * normV);
+
+            if (norm == 0)
+            {
+                return 1.0;
+            }
+
+            var similarity = dot / norm;
+            return 1.0 - similarity;
+        }
+
+        /// <summary>
         /// Calculates cosine distance with assumption that u and v are unit vectors using SIMD instructions.
         /// </summary>
         /// <param name="u">Left vector.</param>

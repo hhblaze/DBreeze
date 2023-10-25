@@ -2,10 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static TesterNet6.OpenAI;
+using System.Web;
 using static TesterNet6.TextCorpus.ITGiantLogotypes;
+
 
 namespace TesterNet6.TextCorpus
 {
@@ -238,7 +243,8 @@ namespace TesterNet6.TextCorpus
             //await GetFunrnitureV1Embeddings();
 
             var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json"));
-
+            //var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withLocalEmbeddings.json"));
+           
             using (var tran = Program.DBEngine.GetTransaction())
             {               
                 //Flattering cluster prototypes and itemsTobeClustered
@@ -363,6 +369,36 @@ namespace TesterNet6.TextCorpus
 
             File.WriteAllText(@"..\..\..\TextCorpus\FurnitureV1withEmbeddings.json", JsonSerializer.Serialize(furnitureLst));
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public static async Task GetFunrnitureV2Embeddings()
+        {
+            var furnitureLst = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1.json"));
+
+            foreach (var cluster in furnitureLst)
+            {
+                foreach (var clusterItem in cluster.Items)
+                {
+                    var emb = await OpenAI.GetLocalEmbedding(cluster.Cluster + " " + clusterItem.Name + " " + clusterItem.Description).ConfigureAwait(false);
+                    if (emb != null)
+                    {
+                        //clusterItem.Embedding = emb.EmbeddingAnswer.ToArray();
+                        clusterItem.Embedding = emb.embeddings[0];
+                    }
+                    else
+                    {
+
+                    }
+                }
+            }
+
+            File.WriteAllText(@"..\..\..\TextCorpus\FurnitureV1withLocalEmbeddings.json", JsonSerializer.Serialize(furnitureLst));
+        }
+
+        
 
     }//eoc
 }//eon

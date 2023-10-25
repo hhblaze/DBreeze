@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Text.Json;
 
+
 namespace TesterNet6
 {
     internal static class OpenAI
@@ -217,6 +218,57 @@ namespace TesterNet6
             public int prompt_tokens { get; set; }
             public int completion_tokens { get; set; }
             public int total_tokens { get; set; }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public class ReqEmbV2
+        {
+            public string text { get; set; }
+
+            public double[][] embeddings { get; set; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="userInput"></param>
+        /// <returns></returns>
+        public static async Task<ReqEmbV2> GetLocalEmbedding(string userInput)
+        {            
+            try
+            {
+                string endpoint = "http://localhost:5000/mypost";
+
+                var requestMessage = new HttpRequestMessage();
+
+                ReqEmbV2 req = new ReqEmbV2()
+                {
+                    text = userInput,
+                };
+
+                var reqStr = JsonSerializer.Serialize(req);
+
+                requestMessage.Content = new StringContent(reqStr, Encoding.UTF8, "application/json");
+
+                requestMessage.Method = HttpMethod.Post;
+                requestMessage.RequestUri = new Uri(endpoint);
+
+                var response = await _HttpClient.SendAsync(requestMessage);
+                response.EnsureSuccessStatusCode();
+                var retres = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                return JsonSerializer.Deserialize<ReqEmbV2>(retres);
+                
+
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+
         }
 
     }

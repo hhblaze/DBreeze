@@ -30,12 +30,12 @@ namespace TesterNet6
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
 
-            //await Clustering.KMeansFindCluster();
+            await Clustering.KMeansFindCluster();
 
 
             //Getting Embedding vectors with MSML (shorter, lower quality embeddings than OpenAI)
-            MsMLEmbedder.GetSomeEmbeddingVectors();
-            
+            //MsMLEmbedder.GetSomeEmbeddingVectors();
+
 
 
             //Technical helpers
@@ -44,6 +44,8 @@ namespace TesterNet6
 
             //Biser_Objectify();
 
+            //-Getting embeddings from local python service
+            //await Clustering.GetFunrnitureV2Embeddings();
 
 
             await Task.Run(() =>

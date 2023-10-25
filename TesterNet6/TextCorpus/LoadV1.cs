@@ -16,7 +16,7 @@ namespace TesterNet6.TextCorpus
         public static void LoadV1()
         {
             var rnd=new Random();
-            int batchSize = 100; //100 (batchSize) documents per round
+            int batchSize = 1000; //100 (batchSize) documents per round
             byte[][] bt = new byte[batchSize][];
             //for (int i = 0; i < 100; i++)
             //{
@@ -28,7 +28,7 @@ namespace TesterNet6.TextCorpus
             System.Diagnostics.Stopwatch sw1 = new System.Diagnostics.Stopwatch();
             sw.Start();
             DateTime now = DateTime.Now;
-            for (int j = 0; j < 1000; j++)//100 times we insert batch
+            for (int j = 0; j < 100; j++)//100 times we insert batch
             {
                 Console.Write($"{(j* batchSize + batchSize)} - "); //quantity of documents inside
                 
