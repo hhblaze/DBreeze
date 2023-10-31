@@ -141,7 +141,7 @@ namespace DBreeze.HNSW
             /// <returns></returns>
             internal List<TItem> GetVectorsByExternalDocumentIDs(List<byte[]> externalDocumentIDs)
             {
-                return externalDocumentIDs.Select(r=> (TItem)(object)Storage.Items.GetItemByExternalID(r)).ToList();              
+                return externalDocumentIDs.Select(r=> (TItem)(object)Storage.Items.GetItemByExternalID(r).Item1.VectorDouble).ToList();              
             }
 
             /// <summary>
