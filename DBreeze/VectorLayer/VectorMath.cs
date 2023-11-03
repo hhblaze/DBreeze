@@ -1,4 +1,4 @@
-﻿#if NET40
+﻿#if NET472
 using System;
 using System.Collections.Generic;
 using System.Linq;

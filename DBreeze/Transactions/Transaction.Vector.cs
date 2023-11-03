@@ -2,7 +2,7 @@
   Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
   It's a free software for those who think that it should be free.
 */
-#if NET40
+#if NET6FUNC || NET472
 
 using DBreeze.VectorLayer;
 using DBreeze.Utils;
