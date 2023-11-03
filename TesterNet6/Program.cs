@@ -30,7 +30,7 @@ namespace TesterNet6
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
 
-            await Clustering.KMeansFindCluster();
+            //await Clustering.KMeansFindCluster();
 
 
             //Getting Embedding vectors with MSML (shorter, lower quality embeddings than OpenAI)
@@ -40,7 +40,7 @@ namespace TesterNet6
 
             //Technical helpers
 
-            //Load.LoadV1();
+            Load.LoadV1();
 
             //Biser_Objectify();
 
