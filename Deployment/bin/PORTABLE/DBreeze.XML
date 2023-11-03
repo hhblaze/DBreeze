@@ -1156,7 +1156,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
             <summary>
-            A cap, this functionality is supported only for .NET STANDARD2.1> and .NET6> .NetCore3.1>
+            CAP .NET 3.5
             </summary>
             <param name="tableName"></param>
             <param name="internalIDs">must be already sorted ascending</param>

@@ -4234,7 +4234,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
             <summary>
-            A cap, this functionality is supported only for .NET STANDARD2.1> and .NET6> .NetCore3.1>
+            CAP .NET 3.5
             </summary>
             <param name="tableName"></param>
             <param name="internalIDs">must be already sorted ascending</param>
@@ -7257,6 +7257,127 @@
             <typeparam name="T"></typeparam>
             <param name="str"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.FastRandom">
+             <summary>
+             A fast random number generator for .NET, from https://www.codeproject.com/Articles/9187/A-fast-equivalent-for-System-Random
+             Colin Green, January 2005
+            
+             September 4th 2005
+            	 Added NextBytesUnsafe() - commented out by default.
+            	 Fixed bug in Reinitialise() - y,z and w variables were not being reset.
+            
+             Key points:
+              1) Based on a simple and fast xor-shift pseudo random number generator (RNG) specified in:
+              Marsaglia, George. (2003). Xorshift RNGs.
+              http://www.jstatsoft.org/v08/i14/xorshift.pdf
+            
+              This particular implementation of xorshift has a period of 2^128-1. See the above paper to see
+              how this can be easily extened if you need a longer period. At the time of writing I could find no
+              information on the period of System.Random for comparison.
+            
+              2) Faster than System.Random. Up to 8x faster, depending on which methods are called.
+            
+              3) Direct replacement for System.Random. This class implements all of the methods that System.Random
+              does plus some additional methods. The like named methods are functionally equivalent.
+            
+              4) Allows fast re-initialisation with a seed, unlike System.Random which accepts a seed at construction
+              time which then executes a relatively expensive initialisation routine. This provides a vast speed improvement
+              if you need to reset the pseudo-random number sequence many times, e.g. if you want to re-generate the same
+              sequence many times. An alternative might be to cache random numbers in an array, but that approach is limited
+              by memory capacity and the fact that you may also want a large number of different sequences cached. Each sequence
+              can each be represented by a single seed value (int) when using FastRandom.
+            
+              Notes.
+              A further performance improvement can be obtained by declaring local variables as static, thus avoiding
+              re-allocation of variables on each call. However care should be taken if multiple instances of
+              FastRandom are in use or if being used in a multi-threaded environment.
+            
+             </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.#ctor">
+            <summary>
+            Initialises a new instance using time dependent seed.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.#ctor(System.Int32)">
+            <summary>
+            Initialises a new instance using an int value as seed.
+            This constructor signature is provided to maintain compatibility with
+            System.Random
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.Reinitialise(System.Int32)">
+            <summary>
+            Reinitialises using an int value as a seed.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.Next">
+             <summary>
+             Generates a random int over the range 0 to int.MaxValue-1.
+             MaxValue is not generated in order to remain functionally equivalent to System.Random.Next().
+             This does slightly eat into some of the performance gain over System.Random, but not much.
+             For better performance see:
+            
+             Call NextInt() for an int over the range 0 to int.MaxValue.
+            
+             Call NextUInt() and cast the result to an int to generate an int over the full Int32 value range
+             including negative values.
+             </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.Next(System.Int32)">
+            <summary>
+            Generates a random int over the range 0 to upperBound-1, and not including upperBound.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.Next(System.Int32,System.Int32)">
+            <summary>
+            Generates a random int over the range lowerBound to upperBound-1, and not including upperBound.
+            upperBound must be >= lowerBound. lowerBound may be negative.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.NextDouble">
+            <summary>
+            Generates a random double. Values returned are from 0.0 up to but not including 1.0.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.NextFloat">
+            <summary>
+            Generates a random double. Values returned are from 0.0 up to but not including 1.0.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.NextBytes(System.Byte[])">
+            <summary>
+            Fills the provided byte array with random bytes.
+            This method is functionally equivalent to System.Random.NextBytes().
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.NextUInt">
+             <summary>
+             Generates a uint. Values returned are over the full range of a uint,
+             uint.MinValue to uint.MaxValue, inclusive.
+            
+             This is the fastest method for generating a single random number because the underlying
+             random number generator algorithm generates 32 random bits that can be cast directly to
+             a uint.
+             </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.NextInt">
+             <summary>
+             Generates a random int over the range 0 to int.MaxValue, inclusive.
+             This method differs from Next() only in that the range is 0 to int.MaxValue
+             and not 0 to int.MaxValue-1.
+            
+             The slight difference in range means this method is slightly faster than Next()
+             but is not functionally equivalent to System.Random.Next().
+             </summary>
+        </member>
+        <member name="M:DBreeze.Utils.FastRandom.NextBool">
+            <summary>
+            Generates a single random bit.
+            This method's performance is improved by generating 32 bits in one operation and storing them
+            ready for future calls.
+            </summary>
         </member>
     </members>
 </doc>
