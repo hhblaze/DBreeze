@@ -282,16 +282,15 @@ namespace DBreeze.VectorLayer
         /// <param name="initialCentroids"></param>
         /// <param name="dataToCheck"></param>
         /// <returns></returns>
-        public static Dictionary<int, List<int>> KMeansCluster(List<double[]> initialCentroids, List<double[]> data)
+        public static Dictionary<int, List<int>> KMeansCluster(List<double[]> centroids, List<double[]> data)
         {
-            int dataLength = data.Count;
-            
-            int k = initialCentroids.Count;
-
-            if (dataLength == 0 || k <= 0)
+            if ((centroids?.Count ?? 0) == 0 || (data?.Count ?? 0) == 0)
                 return new Dictionary<int, List<int>>();
 
-            List<double[]> centroids = InitializeCentroidsKMeansPlusPlus(data, k, VectorMath.Distance_SIMDForUnits);
+            int dataLength = data.Count;            
+            int k = centroids.Count;
+
+            //List<double[]> centroids = InitializeCentroidsKMeansPlusPlus(data, k, VectorMath.Distance_SIMDForUnits);            
             int maxIterations = 100;
 
             Dictionary<int, (double[], List<int>)> clusters = new Dictionary<int, (double[], List<int>)>(k);
@@ -355,126 +354,126 @@ namespace DBreeze.VectorLayer
             return clusters.ToDictionary(a=>a.Key,v=>v.Value.Item2);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="initialCentroids"></param>
-        /// <param name="dataToCheck"></param>
-        /// <param name="distanceFunc"></param>
-        /// <returns></returns>
-        public static Dictionary<int, List<int>> KMeansClusterOld(List<double[]> initialCentroids, List<double[]> dataToCheck)
-        {
-            //double[][] data, 
-            int maxIterations = 100;
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="initialCentroids"></param>
+        ///// <param name="dataToCheck"></param>
+        ///// <param name="distanceFunc"></param>
+        ///// <returns></returns>
+        //public static Dictionary<int, List<int>> KMeansClusterOld(List<double[]> initialCentroids, List<double[]> dataToCheck)
+        //{
+        //    //double[][] data, 
+        //    int maxIterations = 100;
 
-            int k = 0;
+        //    int k = 0;
 
-            if ((initialCentroids?.Count ?? 0) == 0 || (dataToCheck?.Count ?? 0) == 0)
-                return new Dictionary<int, List<int>>();
+        //    if ((initialCentroids?.Count ?? 0) == 0 || (dataToCheck?.Count ?? 0) == 0)
+        //        return new Dictionary<int, List<int>>();
 
-            int dataLength = dataToCheck.Count;
-            k = initialCentroids.Count;
-
-
-            int[] clusterAssignments = new int[dataLength];
-            double[][] centroids = new double[k][];
-
-            if ((initialCentroids?.Count ?? 0) > 0)
-            {
-                for (int i = 0; i < initialCentroids.Count; i++)
-                    centroids[i] = initialCentroids[i];
-            }
-            //else
-            //{
-            //    //Random rnd=new Random();
-            //    ThreadSafeFastRandom.Next(dataLength);
-
-            //    for (int i = 0; i < k; i++)
-            //    {
-            //        centroids[i] = data[ThreadSafeFastRandom.Next(dataLength)]; // Initialize centroids randomly
-            //        //centroids[i] = data[rnd.Next(dataLength)]; // Initialize centroids randomly
-            //    }
-            //}
+        //    int dataLength = dataToCheck.Count;
+        //    k = initialCentroids.Count;
 
 
-            //for (int iteration = 0; iteration < maxIterations; iteration++)
-            for (int iteration = 0; iteration < maxIterations; iteration++)
-            {
-                // Assign each data point to the nearest centroid
-                for (int i = 0; i < dataLength; i++)
-                {
-                    double minDistance = double.MaxValue;
+        //    int[] clusterAssignments = new int[dataLength];
+        //    double[][] centroids = new double[k][];
 
-                    int cluster = 0;
-                    for (int j = 0; j < k; j++)
-                    {                       
-                        //double distance = Math.Abs(VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]));
-                        double distance = VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]);
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            cluster = j;
-                        }
-                    }
-                    clusterAssignments[i] = cluster;
-                }
+        //    if ((initialCentroids?.Count ?? 0) > 0)
+        //    {
+        //        for (int i = 0; i < initialCentroids.Count; i++)
+        //            centroids[i] = initialCentroids[i];
+        //    }
+        //    //else
+        //    //{
+        //    //    //Random rnd=new Random();
+        //    //    ThreadSafeFastRandom.Next(dataLength);
 
-                // Update centroids based on the mean of the assigned data points
-                double[][] newCentroids = new double[k][];
-                int[] clusterCounts = new int[k];
-                for (int i = 0; i < k; i++)
-                    newCentroids[i] = new double[dataToCheck[0].Length];
-
-                for (int i = 0; i < dataLength; i++)
-                {
-                    int cluster = clusterAssignments[i];
-                    clusterCounts[cluster]++;
-                    for (int j = 0; j < dataToCheck[i].Length; j++)
-                        newCentroids[cluster][j] += dataToCheck[i][j];
-                }
-
-                for (int i = 0; i < k; i++)
-                {
-                    if (clusterCounts[i] > 0)
-                    {
-                        for (int j = 0; j < newCentroids[i].Length; j++)
-                            newCentroids[i][j] /= clusterCounts[i];
-                    }
-                }
-
-                // Check if centroids have converged
-                bool centroidsChanged = false;
-                for (int i = 0; i < k; i++)
-                {
-                    if (!centroids[i].SequenceEqual(newCentroids[i]))
-                    {
-                        centroidsChanged = true;
-                        break;
-                    }
-                }
-
-                if (!centroidsChanged)
-                    break;
-
-                centroids = newCentroids;
-            }
+        //    //    for (int i = 0; i < k; i++)
+        //    //    {
+        //    //        centroids[i] = data[ThreadSafeFastRandom.Next(dataLength)]; // Initialize centroids randomly
+        //    //        //centroids[i] = data[rnd.Next(dataLength)]; // Initialize centroids randomly
+        //    //    }
+        //    //}
 
 
-            //Key Cluster (equal to K, value items internal IDs)
-            Dictionary<int, List<int>> d = new Dictionary<int, List<int>>(k);
-            for (int j = 0; j < k; j++)
-                d[j] = new List<int>();
+        //    //for (int iteration = 0; iteration < maxIterations; iteration++)
+        //    for (int iteration = 0; iteration < maxIterations; iteration++)
+        //    {
+        //        // Assign each data point to the nearest centroid
+        //        for (int i = 0; i < dataLength; i++)
+        //        {
+        //            double minDistance = double.MaxValue;
 
-            int v = 0;
-            foreach (var el in clusterAssignments)
-            {
-                d[el].Add(v);
-                v++;
-            }
+        //            int cluster = 0;
+        //            for (int j = 0; j < k; j++)
+        //            {                       
+        //                //double distance = Math.Abs(VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]));
+        //                double distance = VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]);
+        //                if (distance < minDistance)
+        //                {
+        //                    minDistance = distance;
+        //                    cluster = j;
+        //                }
+        //            }
+        //            clusterAssignments[i] = cluster;
+        //        }
 
-            return d;
+        //        // Update centroids based on the mean of the assigned data points
+        //        double[][] newCentroids = new double[k][];
+        //        int[] clusterCounts = new int[k];
+        //        for (int i = 0; i < k; i++)
+        //            newCentroids[i] = new double[dataToCheck[0].Length];
 
-        }//eof-----
+        //        for (int i = 0; i < dataLength; i++)
+        //        {
+        //            int cluster = clusterAssignments[i];
+        //            clusterCounts[cluster]++;
+        //            for (int j = 0; j < dataToCheck[i].Length; j++)
+        //                newCentroids[cluster][j] += dataToCheck[i][j];
+        //        }
+
+        //        for (int i = 0; i < k; i++)
+        //        {
+        //            if (clusterCounts[i] > 0)
+        //            {
+        //                for (int j = 0; j < newCentroids[i].Length; j++)
+        //                    newCentroids[i][j] /= clusterCounts[i];
+        //            }
+        //        }
+
+        //        // Check if centroids have converged
+        //        bool centroidsChanged = false;
+        //        for (int i = 0; i < k; i++)
+        //        {
+        //            if (!centroids[i].SequenceEqual(newCentroids[i]))
+        //            {
+        //                centroidsChanged = true;
+        //                break;
+        //            }
+        //        }
+
+        //        if (!centroidsChanged)
+        //            break;
+
+        //        centroids = newCentroids;
+        //    }
+
+
+        //    //Key Cluster (equal to K, value items internal IDs)
+        //    Dictionary<int, List<int>> d = new Dictionary<int, List<int>>(k);
+        //    for (int j = 0; j < k; j++)
+        //        d[j] = new List<int>();
+
+        //    int v = 0;
+        //    foreach (var el in clusterAssignments)
+        //    {
+        //        d[el].Add(v);
+        //        v++;
+        //    }
+
+        //    return d;
+
+        //}//eof-----
 
 
     }//eoc

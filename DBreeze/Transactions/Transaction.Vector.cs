@@ -24,9 +24,9 @@ namespace DBreeze.Transactions
         /// </summary>
         /// <param name="tableName">Table where VectorEngine stores its data. Supplied table must be used only by the vector engine.</param>
         /// <param name="vectors">Key is an External Document ID; Value is a vector representing the document.</param>
-        /// <param name="deferredIndexing"></param>
+        /// <param name="deferredIndexing">not used for now, due to the high speed of inserts</param>
         /// <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
-        public void VectorsInsert(string tableName, IReadOnlyDictionary<byte[], double[]> vectors) //, bool deferredIndexing = false - not used for now, due to the high speed of insert
+        public void VectorsInsert(string tableName, IReadOnlyDictionary<byte[], double[]> vectors,bool deferredIndexing = false)
         {
             Vectors world = new Vectors(this, tableName);
             world.AddVectors(vectors);
