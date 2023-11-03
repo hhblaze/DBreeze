@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VectorLayer
+namespace DBreeze.VectorLayer
 {
     internal static class VectorMath
     {

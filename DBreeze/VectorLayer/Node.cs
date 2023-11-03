@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VectorLayer
+namespace DBreeze.VectorLayer
 {
-    internal class Node 
+    internal partial class Node 
     {
         public enum eType
         {
@@ -18,22 +18,20 @@ namespace VectorLayer
             /// Centroid Node, can refer either on other centroids of the lower generation, or on vectors
             /// </summary>
             Centroid,
-            ///// <summary>
-            ///// Entry Node
-            ///// </summary>
-            //Entry
+           
         }
-        
-        public eType NodeType = eType.Centroid;
-        
-        
-        private uint? ParentNodeId = null;
+
+        public eType NodeType { get; set; } = eType.Centroid;
+        //public eType NodeType = eType.Centroid;
+
+        public long ParentNodeId { get; set; } = -1;
+        //private uint? ParentNodeId = null;
 
         public Node GetParentNode(Storage storage)
         {
-            if (ParentNodeId == null)
+            if (ParentNodeId == -1)
                 return null;
-            return storage.GetNodeById((uint)ParentNodeId);
+            return storage.GetNodeById(ParentNodeId);
         }
 
         public void SetParentNode(Node parentNode)
@@ -41,17 +39,19 @@ namespace VectorLayer
             ParentNodeId = parentNode.Id; 
         }
 
+        public List<long> ChildNodes { get; set; } = new List<long>();
 
-        //public List<Node> ChildNodes { get; set; } = new List<Node>();
-        public List<uint> ChildNodes = new List<uint>();
-        public double[] Vector;
-        public byte[] ExternalId;
-        public bool HoldsVectors=false;
-        
-        //public Node ParentNode = null;
-        //public bool NewNode=false;
-        //public bool Changed=false;
-        public uint Id = 0;
+        //public List<uint> ChildNodes = new List<uint>();
+        public double[] Vector { get; set; }
+        public byte[] ExternalId { get; set; }
+
+
+        public bool HoldsVectors { get; set; } = false;
+        //public bool HoldsVectors=false;       
+        public long Id { get; set; } = 0;
+        //public uint Id = 0;
+
+
         /// <summary>
         /// After Adding this node already was restructed by Restruct Graph
         /// </summary>
@@ -90,7 +90,7 @@ namespace VectorLayer
             foreach (var nodeId in ChildNodes)
             {
                 var node = storage.GetNodeById(nodeId);
-                //!!!!Check Math.Abs
+               
                 var dist = Math.Abs(VectorMath.Distance_SIMDForUnits(node.Vector, vector));
 
                 d[dist] = node;
@@ -108,60 +108,4 @@ namespace VectorLayer
 
     }
 
-
-    //internal abstract class NodeBase
-    //{
-    //    public enum eType
-    //    {
-    //        /// <summary>
-    //        /// Vector itself
-    //        /// </summary>
-    //        Vector,
-    //        /// <summary>
-    //        /// Centroid Node
-    //        /// </summary>
-    //        Centroid,
-    //        /// <summary>
-    //        /// Entry Node
-    //        /// </summary>
-    //        Entry
-    //    }
-
-    //    public eType NodeType { get; set; }
-    //    public double[] Vector { get; set; }
-    //}
-
-    //internal class Node : NodeBase
-    //{
-       
-    //}
-
-    //internal class EntryNode : NodeBase
-    //{
-    //    INode.eType _nodeType = INode.eType.Entry;
-    //    public INode.eType NodeType
-    //    { get => _nodeType; set => _nodeType = value; }
-
-    //    public List<INode> Nodes { get; set; } = new List<INode>();
-    //    public double[] Vector { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-    //    public INode GetClosestNode(double[] vector)
-    //    {
-    //        if (Nodes.Count == 0)
-    //            return null;
-
-    //        foreach(var node in Nodes)
-    //        {
-
-    //        }
-    //    }
-    //}
-
-    //internal class CentroidNode : INode
-    //{
-    //    INode.eType _nodeType = INode.eType.Centroid;
-    //    public INode.eType NodeType
-    //    { get => _nodeType; set => _nodeType = value; }
-    //    public double[] Vector { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    //}
 }

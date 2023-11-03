@@ -113,6 +113,7 @@
     <Compile Include="..\DBreeze\Transactions\Transaction.cs">
       <Link>Transactions\Transaction.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\Transactions\Transaction.Vector.cs" Link="Transactions\Transaction.Vector.cs" />
     <Compile Include="..\DBreeze\Utils\Biser.cs" Link="Utils\Biser.cs" />
     <Compile Include="..\DBreeze\Utils\BiserDecoder.cs" Link="Utils\BiserDecoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserEncoder.cs" Link="Utils\BiserEncoder.cs" />
@@ -120,10 +121,15 @@
     <Compile Include="..\DBreeze\Utils\BiserJsonEncoder.cs" Link="Utils\BiserJsonEncoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserJsonSettings.cs" Link="Utils\BiserJsonSettings.cs" />
     <Compile Include="..\DBreeze\Utils\DeepCloneExpressionTree.cs" Link="Utils\DeepCloneExpressionTree.cs" />
+    <Compile Include="..\DBreeze\Utils\FastRandom.cs" Link="Utils\FastRandom.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs" Link="Utils\MultiKeyDictionary.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs" Link="Utils\MultiKeyDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\KMeans.cs" Link="VectorLayer\KMeans.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\Node.cs" Link="VectorLayer\Node.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\Storage.cs" Link="VectorLayer\Storage.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\Vectors.cs" Link="VectorLayer\Vectors.cs" />
 	
   </ItemGroup>
 

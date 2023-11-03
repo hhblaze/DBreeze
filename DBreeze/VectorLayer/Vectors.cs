@@ -1,75 +1,58 @@
-﻿using System;
+﻿using DBreeze.Tries;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VectorLayer
+namespace DBreeze.VectorLayer
 {
     internal class Vectors
     {
         /// <summary>
-        /// Quantity of vectors per Edge, when reached splitting Edge on two bringing their new centroids on higher level
+        /// Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on upper Edge within the Graph
         /// </summary>
         public int Dense = 100;
 
-        Storage storage = new Storage();
+        Storage storage = null;
 
-        public Vectors() 
-        {            
+        public Vectors(DBreeze.Transactions.Transaction tran, string tableName) 
+        {      
+            storage=new Storage(tran, tableName);
         }
 
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="queryVector"></param>
-        ///// <returns></returns>
-        //public IEnumerable<Node> GetSimilar(double[] queryVector)
-        //{
-        //    //-starting iteration from the entry point
-        //    var ep = storage.GetEntryNode();
-        //    var closestNode = ep.GetClosestNode(queryVector);
-
-        //    if(closestNode.Item1 == null)
-        //        return Enumerable.Empty<Node>();
-            
-        //    return GetSimilarInternal(queryVector, closestNode.Item1);
-        //}
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="queryVector"></param>
-        ///// <param name="nd"></param>
-        ///// <returns></returns>
-        //private IEnumerable<Node> GetSimilarInternal(double[] queryVector, Node nd)
-        //{
-        //    var closestNode = nd.GetClosestNode(queryVector);
-        //    if(closestNode.Item1 != null)
-        //    {
-        //        if (closestNode.Item1.NodeType == Node.eType.Centroid)
-        //        {
-        //            foreach(var node in GetSimilarInternal(queryVector, closestNode.Item1))
-        //                yield return node;
-        //        }
-
-        //        foreach (var node in closestNode.Item2.OrderBy(r => r.Key))
-        //        {
-        //            yield return node.Value;
-        //        }
-        //    }             
-          
-        //}
-
-
-        public IEnumerable<Node> GetSimilar(double[] queryVector)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="queryVector"></param>
+        /// <param name="maxReturn">Default is 100. Defence mechanism to avoid returning the complete graph. But can be set to whatever. Also can work GetSimlar(query, maxReturn: 10000).Take(5000) </param>
+        /// <returns></returns>
+        public IEnumerable<Node> GetSimilar(double[] queryVector, int maxReturn = 100, HashSet<byte[]> excludingDocuemnts=null)
         {
             //-starting iteration from the entry point
             var ep = storage.GetEntryNode();
 
-            foreach (var nod in GetSimilarInternal(queryVector, ep))
+            RecSimilarOption option = new RecSimilarOption() { MaxReturn = maxReturn, Returned = 0 };
+
+            foreach (var nod in GetSimilarInternal(queryVector, ep, option))
+            {
+                if (option.Returned > option.MaxReturn)
+                    break;
+
                 yield return nod;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        class RecSimilarOption
+        {
+            public int MaxReturn;
+            public int Returned;
+            public HashSet<byte[]> ExcludingDocuments = null;
         }
 
         /// <summary>
@@ -78,15 +61,21 @@ namespace VectorLayer
         /// <param name="queryVector"></param>
         /// <param name="nd"></param>
         /// <returns></returns>
-        private IEnumerable<Node> GetSimilarInternal(double[] queryVector, Node nd)
+        private IEnumerable<Node> GetSimilarInternal(double[] queryVector, Node nd, RecSimilarOption option)
         {
             var closestNode = nd.GetClosestNode(queryVector, storage);
             if (closestNode.Item1 != null)
             {
-                if(nd.HoldsVectors)
+                if (nd.HoldsVectors)
                 {
                     foreach (var node in closestNode.Item2) //.OrderBy(r => r.Key)
                     {
+                        if (option.ExcludingDocuments != null && option.ExcludingDocuments.Contains(node.Value.ExternalId))
+                            continue;
+
+                        if (option.Returned > option.MaxReturn)
+                            break;
+                        option.Returned++;
                         yield return node.Value;
                     }
                 }
@@ -94,25 +83,56 @@ namespace VectorLayer
                 {
                     foreach (var centroidNode in closestNode.Item2)
                     {
-                        foreach (var node in GetSimilarInternal(queryVector, centroidNode.Value))
+                        if (option.Returned > option.MaxReturn)
+                            break;
+
+                        foreach (var node in GetSimilarInternal(queryVector, centroidNode.Value, option))
+                        {
+                            if (option.Returned > option.MaxReturn)
+                                break;
                             yield return node;
+                        }
                     }
-                   
+
                 }
             }
             else
             {
-
             }
+        }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="externalIDs"></param>
+        /// <returns></returns>
+        public IEnumerable<(long, double[])> GetVectorsByExternalId(List<byte[]> externalIDs)
+        {
+            Dictionary<long, double[]> d = new Dictionary<long, double[]>();
+
+            foreach (var el in externalIDs)
+            {
+                var node = storage.GetNodeByExternalId(el);
+               yield return (node.Id, node.Vector);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="externalIDs"></param>
+        public void RemoveByExternalId(List<byte[]> externalIDs)
+        {
+            foreach (var el in externalIDs)
+                storage.RemoveNode(el);
         }
 
 
         /// <summary>
-        /// Key ExternalId
+        /// Key ExternalId, Value Embedding Vector
         /// </summary>
         /// <param name="vectors"></param>
-        public void AddVectors(Dictionary<byte[], double[]> vectors)
+        public void AddVectors(IReadOnlyDictionary<byte[], double[]> vectors)
         {
             if ((vectors?.Count ?? 0) == 0)
                 return;
@@ -130,28 +150,28 @@ namespace VectorLayer
             //-Saving changed Nodes
             storage.SaveNodes();
 
-            testInsert();
+            //testInsert();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        private void testInsert()
-        {
-            int totalChilds = 0;
-            foreach(var el in storage.nodesStorage.Where(r=>r.Value.NodeType != Node.eType.Vector)
-                .OrderBy(r=>r.Value.HoldsVectors)
-                )
-            {
-                var parentNode = el.Value.GetParentNode(this.storage);
-                if (el.Value.HoldsVectors)
-                    totalChilds += el.Value.ChildNodes.Count;
-                Debug.WriteLine($"Centroid. ID {el.Key}; ParentId: { (parentNode == null ? -1 : (int)parentNode.Id)}; VHold: {el.Value.HoldsVectors}; Childs: {el.Value.ChildNodes.Count} ");
-            }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //private void testInsert()
+        //{
+        //    int totalChilds = 0;
+        //    foreach(var el in storage.nodesStorage.Where(r=>r.Value.NodeType != Node.eType.Vector)
+        //        .OrderBy(r=>r.Value.HoldsVectors)
+        //        )
+        //    {
+        //        var parentNode = el.Value.GetParentNode(this.storage);
+        //        if (el.Value.HoldsVectors)
+        //            totalChilds += el.Value.ChildNodes.Count;
+        //        Debug.WriteLine($"Centroid. ID {el.Key}; ParentId: { (parentNode == null ? -1 : parentNode.Id)}; VHold: {el.Value.HoldsVectors}; Childs: {el.Value.ChildNodes.Count} ");
+        //    }
 
-            Debug.WriteLine($"Total Childs: {totalChilds}");
-            Debug.WriteLine($"-------------------------------");
-        }
+        //    Debug.WriteLine($"Total Childs: {totalChilds}");
+        //    Debug.WriteLine($"-------------------------------");
+        //}
 
         /// <summary>
         /// 
@@ -201,7 +221,7 @@ namespace VectorLayer
                     var cNodesChildVectors = cNode.Value.ChildNodes.Select(r => storage.GetNodeById(r).Vector).ToList();
                     var cNodesChildIDs = cNode.Value.ChildNodes.Select(r => r).ToList();
 
-                    var res = Clustering.KMeansCluster(cNodesChildVectors, quantityOfClusters, VectorMath.Distance_SIMDForUnits);
+                    var res = Clustering.KMeansCluster(cNodesChildVectors, quantityOfClusters);
 
                     int k = 0;
                     Node centroid=cNode.Value;
