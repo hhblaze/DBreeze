@@ -74,7 +74,8 @@ namespace DBreeze.HNSW
                     int cluster = 0;
                     for (int j = 0; j < k; j++)
                     {
-                        double distance = distanceFunc(data[i], centroids[j]);
+                        //double distance = distanceFunc(data[i], centroids[j]);
+                        double distance = Math.Abs(distanceFunc(data[i], centroids[j]));
                         if (distance < minDistance)
                         {
                             minDistance = distance;

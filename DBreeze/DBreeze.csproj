@@ -146,6 +146,12 @@
     <Compile Include="Utils\StringProcessing.cs" />
     <Compile Include="Utils\ValueTupleDeconstructor.cs" />
     <Compile Include="Utils\XmlSerializator.cs" />
+    <Compile Include="Utils\FastRandom.cs" />
+    <Compile Include="VectorLayer\KMeans.cs" />
+    <Compile Include="VectorLayer\Node.cs" />
+    <Compile Include="VectorLayer\Storage.cs" />
+    <Compile Include="VectorLayer\VectorMath.cs" />
+    <Compile Include="VectorLayer\Vectors.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="!!!Assemblies.txt" />

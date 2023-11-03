@@ -300,6 +300,7 @@ namespace DBreeze.HNSW
 
 
             int retries = 1_024;
+           
             while (true)
             {
                 var versionNow = Interlocked.Read(ref _version);

@@ -30,6 +30,9 @@ namespace DBreeze.HNSW
         public float NextFloat() => ThreadSafeFastRandom.NextFloat();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double NextDouble() => ThreadSafeFastRandom.NextDouble();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void NextFloats(Span<float> buffer) => ThreadSafeFastRandom.NextFloats(buffer);
     }
 }

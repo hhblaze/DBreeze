@@ -264,7 +264,8 @@ namespace DBreeze.HNSW
 
             public static int RandomLayer(IProvideRandomValues generator, double lambda)
             {
-                var r = -Math.Log(generator.NextFloat()) * lambda;
+                //var r = -Math.Log(generator.NextFloat()) * lambda;
+                var r = -Math.Log(generator.NextDouble()) * lambda;
                 return (int)r;
             }
         }

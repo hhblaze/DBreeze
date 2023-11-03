@@ -25,12 +25,12 @@ namespace TesterNet6
             OpenAI.Init(PathToOpenAIKey);
 
             //Examples
-            //await ITGiantLogotypes.Example();
+            await ITGiantLogotypes.Example();
 
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
 
-            await Clustering.KMeansFindCluster();
+            //await Clustering.KMeansFindCluster();
 
 
             //Getting Embedding vectors with MSML (shorter, lower quality embeddings than OpenAI)
@@ -42,7 +42,7 @@ namespace TesterNet6
 
             //Load.LoadV1();
 
-            //Biser_Objectify();
+            Biser_Objectify();
 
             //-Getting embeddings from local python service
             //await Clustering.GetFunrnitureV2Embeddings();
@@ -77,8 +77,12 @@ namespace TesterNet6
 
         static void Biser_Objectify()
         {
-             //       var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.DistanceCache<double>.DistanceCacheDB), true,
-             //@"D:\Temp\DBVector\", forBiserBinary: true, forBiserJson: false, null);
+
+     //       var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.VectorLayer.Node), true,
+     //@"D:\Temp\DBVector\", forBiserBinary: true, forBiserJson: false, null);
+
+            //       var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.DistanceCache<double>.DistanceCacheDB), true,
+            //@"D:\Temp\DBVector\", forBiserBinary: true, forBiserJson: false, null);
 
             //     var resbof = BiserObjectify.Generator.Run(typeof(DBreeze.HNSW.ItemInDbFloatArray), true,
             //@"C:\Users\Secure\Documents\VSProjects\tests\HNSW\DB\", forBiserBinary: true, forBiserJson: false, null);

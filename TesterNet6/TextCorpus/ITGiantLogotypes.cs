@@ -75,7 +75,7 @@ namespace TesterNet6.TextCorpus
 
                 foreach (var el in res)
                 {
-                    var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(el.ExternalId));
+                    var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(el));
                     var dbCompany = JsonSerializer.Deserialize<DBLogotype>(rowDoc.Value);
                     Console.WriteLine($"Company: {dbCompany.Logotype.Company}");
                     Console.WriteLine($"\tDescription: {dbCompany.Logotype.LogoDescription}");                    
@@ -237,6 +237,8 @@ namespace TesterNet6.TextCorpus
             //-short vectors from ML.NET / feel the difference
             //List<FurnitureV1> embeddings = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withLocalEmbeddings.json"));
 
+            //-such format will be inserted into VectorTable, Key is exernal documentID, value is vector itself
+            Dictionary<byte[], double[]> vectorsToInsert = new Dictionary<byte[], double[]>();
 
             if (embeddings.Count > 0)
             {
@@ -249,8 +251,7 @@ namespace TesterNet6.TextCorpus
                     //Creating documents of it
                     int idCnt = tran.Select<byte[], int>(tblDocsFurniture, 1.ToIndex()).Value;
 
-                    //-such format will be inserted into VectorTable, Key is exernal documentID, value is vector itself
-                    Dictionary<byte[], double[]> vectorsToInsert = new Dictionary<byte[], double[]>();
+                   
 
                     foreach (var el in embeddings)
                     {
@@ -287,6 +288,17 @@ namespace TesterNet6.TextCorpus
                 }
             }
 
+            //////foreach(var el in vectorsToInsert)
+            //////{
+            //////    var tmpd= new Dictionary<byte[], double[]>() { { el.Key, el.Value } };
+            //////    using (var tran = Program.DBEngine.GetTransaction())
+            //////    {
+
+            //////        tran.VectorsInsert(tblKNNFurniture, tmpd, deferredIndexing: false);
+            //////        tran.Commit();
+            //////    }
+            //////}
+
 
         }//eof
 
@@ -308,7 +320,7 @@ namespace TesterNet6.TextCorpus
             //Those for tests....
             string question = "soft place to seat";
             question = "a cosy leather sofa";
-            question = "kid's joy";
+            //question = "kid's joy";
 
             //-getting embedding vector for the question from OpenAI
             var emb = await OpenAI.GetEmbedding(question);
@@ -334,7 +346,7 @@ namespace TesterNet6.TextCorpus
 
                 foreach (var el in res)
                 {
-                    var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(el.ExternalId));
+                    var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(el));
                     var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
                     Console.WriteLine($"Cluster: {dbFurniture.Cluster}; name: {dbFurniture.Name}");
                     Console.WriteLine($"\tDescription: {dbFurniture.Description}");

@@ -25,68 +25,68 @@ namespace TesterNet6.TextCorpus
         public static void KMeansTest()
         {
 
-            //----------FIRST APPROACH
+            //////----------FIRST APPROACH - not possible anymore to split complete table, security reasons, use other overloads of VectorsClusteringKMeans
 
-            //-from all items in tblKNNITLogos we try to create 2 random clusters
-            using (var tran = Program.DBEngine.GetTransaction())
-            {
-                tran.ValuesLazyLoadingIsOn = false; //to read key already with value
+            //////-from all items in tblKNNITLogos we try to create 2 random clusters
+            ////using (var tran = Program.DBEngine.GetTransaction())
+            ////{
+            ////    tran.ValuesLazyLoadingIsOn = false; //to read key already with value
 
-                var res = tran.VectorsClusteringKMeans(tblKNNITLogos, 2);
+            ////    var res = tran.VectorsClusteringKMeans(tblKNNITLogos, 2);
 
-                foreach (var el in res)
-                {
-                    foreach (var doc in el.Value)
-                    {
-                        Console.WriteLine($"CLUSTER: {el.Key}");
-                        var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(doc));
-                        var dbCompany = JsonSerializer.Deserialize<DBLogotype>(rowDoc.Value);
-                        Console.WriteLine($"Company: {dbCompany.Logotype.Company}");
-                        Console.WriteLine($"\tDescription: {dbCompany.Logotype.LogoDescription}");
+            ////    foreach (var el in res)
+            ////    {
+            ////        foreach (var doc in el.Value)
+            ////        {
+            ////            Console.WriteLine($"CLUSTER: {el.Key}");
+            ////            var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(doc));
+            ////            var dbCompany = JsonSerializer.Deserialize<DBLogotype>(rowDoc.Value);
+            ////            Console.WriteLine($"Company: {dbCompany.Logotype.Company}");
+            ////            Console.WriteLine($"\tDescription: {dbCompany.Logotype.LogoDescription}");
 
-                    }
+            ////        }
 
-                }
-            }//eo using
-
-
-            //----------SECOND APPROACH
+            ////    }
+            ////}//eo using
 
 
-            //-from all items in tblKNNITLogos we try to create clusters around specifed documents
-            using (var tran = Program.DBEngine.GetTransaction())
-            {
-                tran.ValuesLazyLoadingIsOn = false; //to read key already with value
-
-                List<byte[]> twoClusters=new List<byte[]>();
-                foreach(var row in tran.SelectForwardStartsWith<byte[], string>(tblDocsITLogos, 2.ToIndex()))
-                {
-                    var dbCompany = JsonSerializer.Deserialize<DBLogotype>(row.Value);
-                    //Console.WriteLine($"{row.Key.Substring(1).To_Int32_BigEndian()} Company: {dbCompany.Logotype.Company}");
-
-                    if (dbCompany.Logotype.Company == "MICROSOFT")
-                        twoClusters.Add(row.Key.Substring(1));
-                    if (dbCompany.Logotype.Company == "META")
-                        twoClusters.Add(row.Key.Substring(1));
-                }
+            ////----------SECOND APPROACH - not possible anymore to split complete table, security reasons, use other overloads of VectorsClusteringKMeans
 
 
-                var res = tran.VectorsClusteringKMeans(tblKNNITLogos, 0, externalDocumentIDsAsCentroids: twoClusters);
+            ////-from all items in tblKNNITLogos we try to create clusters around specifed documents
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.ValuesLazyLoadingIsOn = false; //to read key already with value
 
-                foreach (var el in res)
-                {
-                    foreach (var doc in el.Value)
-                    {
-                        Console.WriteLine($"CLUSTER: {el.Key}");
-                        var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(doc));
-                        var dbCompany = JsonSerializer.Deserialize<DBLogotype>(rowDoc.Value);
-                        Console.WriteLine($"Company: {dbCompany.Logotype.Company}");
-                        Console.WriteLine($"\tDescription: {dbCompany.Logotype.LogoDescription}");
+            //    List<byte[]> twoClusters=new List<byte[]>();
+            //    foreach(var row in tran.SelectForwardStartsWith<byte[], string>(tblDocsITLogos, 2.ToIndex()))
+            //    {
+            //        var dbCompany = JsonSerializer.Deserialize<DBLogotype>(row.Value);
+            //        //Console.WriteLine($"{row.Key.Substring(1).To_Int32_BigEndian()} Company: {dbCompany.Logotype.Company}");
 
-                    }
+            //        if (dbCompany.Logotype.Company == "MICROSOFT")
+            //            twoClusters.Add(row.Key.Substring(1));
+            //        if (dbCompany.Logotype.Company == "META")
+            //            twoClusters.Add(row.Key.Substring(1));
+            //    }
 
-                }
-            }//eo using
+
+            //    var res = tran.VectorsClusteringKMeans(tblKNNITLogos, 0, externalDocumentIDsAsCentroids: twoClusters);
+
+            //    foreach (var el in res)
+            //    {
+            //        foreach (var doc in el.Value)
+            //        {
+            //            Console.WriteLine($"CLUSTER: {el.Key}");
+            //            var rowDoc = tran.Select<byte[], string>(tblDocsITLogos, 2.ToIndex(doc));
+            //            var dbCompany = JsonSerializer.Deserialize<DBLogotype>(rowDoc.Value);
+            //            Console.WriteLine($"Company: {dbCompany.Logotype.Company}");
+            //            Console.WriteLine($"\tDescription: {dbCompany.Logotype.LogoDescription}");
+
+            //        }
+
+            //    }
+            //}//eo using
 
 
         }//eof

@@ -100,6 +100,22 @@ namespace DBreeze.HNSW
         }
 
         /// <summary>
+        /// Generates a random double. Values returned are from 0.0 up to but not including 1.0.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double NextDouble()
+        {
+            var inst = _local;
+            if (inst == null)
+            {
+                int seed;
+                seed = GetGlobalSeed();
+                _local = inst = new FastRandom(seed);
+            }
+            return inst.NextDouble();
+        }
+
+        /// <summary>
         /// Fills the elements of a specified array of bytes with random numbers.
         /// </summary>
         /// <param name="buffer">An array of bytes to contain random numbers.</param>

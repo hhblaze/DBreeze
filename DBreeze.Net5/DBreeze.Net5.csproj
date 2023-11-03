@@ -23,6 +23,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="KNNSearch\**" />
+    <EmbeddedResource Remove="KNNSearch\**" />
+    <None Remove="KNNSearch\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="DataTypes\DbXML.cs" />
     <Compile Remove="Storage\_FSR.cs" />
   </ItemGroup>

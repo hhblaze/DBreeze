@@ -15,6 +15,12 @@ namespace DBreeze.HNSW
         float NextFloat();
 
         /// <summary>
+        /// Generates a random double. Values returned are from 0.0 up to but not including 1.0.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        double NextDouble();
+
+        /// <summary>
         /// Fills the elements of a specified array of bytes with random numbers.
         /// </summary>
         /// <param name="buffer">An array of bytes to contain random numbers.</param>
