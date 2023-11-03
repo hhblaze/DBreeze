@@ -1,4 +1,7 @@
-﻿using DBreeze.Tries;
+﻿/* 
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,7 +15,7 @@ namespace DBreeze.VectorLayer
     internal class Vectors
     {
         /// <summary>
-        /// Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on upper Edge within the Graph
+        /// Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on the upper Edge within the Graph
         /// </summary>
         public int Dense = 1000;
 

@@ -26,27 +26,10 @@ namespace DBreeze.Transactions
         /// <param name="vectors">Key is an External Document ID; Value is a vector representing the document.</param>
         /// <param name="deferredIndexing"></param>
         /// <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
-        public void VectorsInsert(string tableName, IReadOnlyDictionary<byte[], double[]> vectors, bool deferredIndexing = false)
+        public void VectorsInsert(string tableName, IReadOnlyDictionary<byte[], double[]> vectors) //, bool deferredIndexing = false - not used for now, due to the high speed of insert
         {
             Vectors world = new Vectors(this, tableName);
             world.AddVectors(vectors);
-
-            //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-            // new SmallWorld<double[], double>.Parameters()
-            // {
-            //     EnableDistanceCacheForConstruction = true,//true 
-            //                                               // InitialDistanceCacheSize = SampleSize, 
-            //     InitialDistanceCacheSize = 0,
-            //     NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-            //     //NeighbourHeuristic = NeighbourSelectionHeuristic.SelectSimple,
-            //     KeepPrunedConnections = true,
-            //     ExpandBestSelection = true
-            // },
-            // this, tableName,
-            // threadSafe: false);
-
-            //return world.AddItems(vectors, deferredIndexing: deferredIndexing);
-
         }
 
         /// <summary>
@@ -60,20 +43,6 @@ namespace DBreeze.Transactions
             Vectors world = new Vectors(this, tableName);
             return world.GetVectorsByExternalId(externalDocumentIDs);
 
-            //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-            //               new SmallWorld<double[], double>.Parameters()
-            //               {
-            //                   EnableDistanceCacheForConstruction = true,//true 
-            //                                                             // InitialDistanceCacheSize = SampleSize, 
-            //                   InitialDistanceCacheSize = 0,
-            //                   NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-            //                   KeepPrunedConnections = true,
-            //                   ExpandBestSelection = true
-            //               },
-            //               this, tableName,
-            //               threadSafe: false);
-
-            //return (List<double[]>)(object)world.GetVectorsByExternalDocumentIDs(externalDocumentIDs);
 
         }
 
@@ -92,84 +61,18 @@ namespace DBreeze.Transactions
         {
             Vectors world = new Vectors(this, tableName);
             world.RemoveByExternalId(externalDocumentIDs);
-
-            ////Here is no matter either float[] ot double[]
-            //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-            //          new SmallWorld<double[], double>.Parameters() //ParametersDouble()
-            //          {
-            //              EnableDistanceCacheForConstruction = true,//true 
-            //              //InitialDistanceCacheSize = SampleSize, 
-            //              InitialDistanceCacheSize = 0,
-            //              NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-            //              KeepPrunedConnections = true,
-            //              ExpandBestSelection = true
-            //          },
-            //          this, tableName,
-            //          threadSafe: false);
-
-            //world.ActivateItems(externalDocumentIDs, activate);
         }
 
 
-        ///// <summary>
-        ///// <para>Clustering. Tries to assign all existing vectors in the table (representing external documents) to specified quantity of clusters using KMeans algorithm.</para>
-        ///// <para>It's possible to try to  create quantityOfClusters, starting from random cluster centers (just supply quantityOfClusters and leave externalDocumentIDsAsCentroids = null) or</para>
-        ///// <para>to try to create clusters around existing documents (supply externalDocumentIDsAsCentroids; quantityOfClusters will not play), taken those documents initially as centers of their clusters</para>
-        ///// </summary>
-        ///// <param name="tableName"></param>
-        ///// <param name="quantityOfClusters"></param>
-        ///// <param name="externalDocumentIDsAsCentroids">Can be NULL (then quantityOfClusters is taken), tends to create initial centroids for KMean from existing vectors, overrides quantityOfClusters, will make quantityOfClusters equal to externalIDsAsCentroids.Count.</param>
-        ///// <returns>Key is a number of cluster (not more than externalDocumentIDsAsCentroids.Count -1 or quantityOfClusters-1, when externalDocumentIDsAsCentroids = null); Value: List of externalDocumentIDs in this cluster</returns>
-        //public Dictionary<int, List<byte[]>> VectorsClusteringKMeans(string tableName, int quantityOfClusters, List<byte[]> externalDocumentIDsAsCentroids = null)
-        //{
-        //    Vectors world = new Vectors(this, tableName);
-        //    return world.KMeans(quantityOfClusters, externalDocumentIDsAsCentroids);
-
-        //    //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-        //    //              new SmallWorld<double[], double>.Parameters() //ParametersDouble()
-        //    //              {
-        //    //                  EnableDistanceCacheForConstruction = true,//true 
-        //    //                                                            // InitialDistanceCacheSize = SampleSize, 
-        //    //                  InitialDistanceCacheSize = 0,
-        //    //                  NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-        //    //                  KeepPrunedConnections = true,
-        //    //                  ExpandBestSelection = true
-        //    //              },
-        //    //              this, tableName,
-        //    //              threadSafe: false);
-
-        //    //return world.KMeans(quantityOfClusters, externalDocumentIDsAsCentroids);
-
-            
-
-        //}
-
         /// <summary>
-        /// having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
+        /// Having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
         /// </summary>
         /// <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
         /// <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
         /// <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
         public Dictionary<int, List<int>> VectorsClusteringKMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
         {
-            return DBreeze.VectorLayer.Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered);
-            //Vectors world = new Vectors(this, tableName);
-            //return world.KMeans(quantityOfClusters, externalDocumentIDsAsCentroids);
-
-            //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-            //               new SmallWorld<double[], double>.Parameters() //ParametersDouble()
-            //               {
-            //                   EnableDistanceCacheForConstruction = true,//true 
-            //                                                             // InitialDistanceCacheSize = SampleSize, 
-            //                   InitialDistanceCacheSize = 0,
-            //                   NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-            //                   KeepPrunedConnections = true,
-            //                   ExpandBestSelection = true
-            //               },
-            //               this, String.Empty,
-            //               threadSafe: false);
-
-            //return world.KMeans(clusterPrototypes, itemsToBeClustered);
+            return DBreeze.VectorLayer.Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered);        
         }
 
 
@@ -189,60 +92,19 @@ namespace DBreeze.Transactions
 
             Vectors world = new Vectors(this, tableName);
             foreach(var el in world.GetSimilar(vectorQuery, maxReturn: maxReturnQuantity, excludingDocuments))
-            {
                 yield return el.ExternalId;
-            }
-
-            //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-            //           new SmallWorld<double[], double>.Parameters() //ParametersDouble()
-            //           {
-            //               EnableDistanceCacheForConstruction = true,//true 
-            //               // InitialDistanceCacheSize = SampleSize, 
-            //               InitialDistanceCacheSize = 0,
-            //               NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-            //               KeepPrunedConnections = true,
-            //               ExpandBestSelection = true
-            //           },
-            //           this, tableName,
-            //           threadSafe: false);
-
-
-            //var knnResult = world.KNNSearch(vectorRequest, returnQuantity, excludingDocuments);
-            //if (knnResult != null)
-            //{
-            //    var searchResult = knnResult.OrderBy(r => Math.Abs(r.Distance));
-            //    if (searchResult != null)
-            //    {
-            //        return searchResult.Select(r => (r.ExternalId, r.Distance, r.Id));
-            //    }
-            //}
-
-            //return new List<(byte[], double, int)>();
         }
 
 
 
         /// <summary>
-        /// CAP Possible future implementation
+        /// CAP Possible future implementation, can be called from transaction coordinatr
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="internalIDs">must be already sorted ascending</param>
         internal void VectorsDoIndexing(string tableName, List<int> internalIDs)
         {
-            //var world = new SmallWorld<double[], double>(CosineDistanceDouble.SIMDForUnits, DefaultRandomGenerator.Instance,
-            //             new SmallWorld<double[], double>.Parameters() //ParametersDouble()
-            //             {
-            //                 EnableDistanceCacheForConstruction = true,//true 
-            //                                                           // InitialDistanceCacheSize = SampleSize, 
-            //                 InitialDistanceCacheSize = 0,
-            //                 NeighbourHeuristic = NeighbourSelectionHeuristic.SelectHeuristic,
-            //                 KeepPrunedConnections = true,
-            //                 ExpandBestSelection = true
-            //             },
-            //             this, tableName,
-            //             threadSafe: false);
-
-            //world.IndexIDs(internalIDs);
+            
 
         }
 
