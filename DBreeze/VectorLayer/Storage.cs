@@ -13,19 +13,16 @@ using System.Text;
 namespace DBreeze.VectorLayer
 {
     /// <summary>
-    /// Emulates a Storage of Nodes in DBreeze, 
-    /// !!!!!!!!!!!!! implement via IFace, to connect different storages
+    /// Storage of GraphNodes in DBreeze,   
     /// </summary>
     internal class Storage
     {
         /* DBreeze Definition
            1.ToIndex() - VectorStat (holds monotonic counter/EntryPoint and other info)           
-           3.ToIndex(itemId);V: serialized and Brotli compressed Node
+           3.ToIndex(itemId);V: serialized and GZIP compressed Node
            5.ToIndex(byte[] - external documentId); Value: (long) - ExternalId to internal nodeId
 
         */
-
-        //long id = -1;
 
         VectorStat VStat = null;
 
@@ -40,17 +37,11 @@ namespace DBreeze.VectorLayer
             GetVectorStat();
         }
 
-        ///// <summary>
-        ///// !!!!!!!!!!!!!!  Interfaced to DB etc
-        ///// !!! public temp for testing
-        ///// </summary>
-        //public Dictionary<long, Node> nodesStorage = new Dictionary<long, Node>();
-
         Node EntryNode = null;
         bool EntryNodeChanged = false;
 
         /// <summary>
-        /// Interfaced 
+        /// 
         /// </summary>
         /// <returns></returns>
         public long GetNewId()
@@ -80,7 +71,6 @@ namespace DBreeze.VectorLayer
 
         /// <summary>
         ///  Never returns NULL
-        ///  
         /// </summary>
         /// <returns></returns>
         public Node GetEntryNode(bool forInsert=false)
@@ -128,13 +118,16 @@ namespace DBreeze.VectorLayer
 
 
         /// <summary>
-        /// Cached nodes just help to speed up the process, they can be duplicated with changedNodes
+        /// 
         /// </summary>
         public Dictionary<long, Node> ChangedNodes = new Dictionary<long, Node>();
+        /// <summary>
+        /// Cached nodes just help to speed up the process, they can be duplicated with changedNodes
+        /// </summary>
         Dictionary<long, Node> CachedNodes = new Dictionary<long, Node>();
 
         /// <summary>
-        /// can return Null
+        /// Can return Null
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>

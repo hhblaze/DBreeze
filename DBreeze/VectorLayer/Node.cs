@@ -26,12 +26,15 @@ namespace DBreeze.VectorLayer
            
         }
 
-        public eType NodeType { get; set; } = eType.Centroid;
-        //public eType NodeType = eType.Centroid;
+        public eType NodeType { get; set; } = eType.Centroid;       
 
-        public long ParentNodeId { get; set; } = -1;
-        //private uint? ParentNodeId = null;
+        public long ParentNodeId { get; set; } = -1;       
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storage"></param>
+        /// <returns></returns>
         public Node GetParentNode(Storage storage)
         {
             if (ParentNodeId == -1)
@@ -39,23 +42,23 @@ namespace DBreeze.VectorLayer
             return storage.GetNodeById(ParentNodeId);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parentNode"></param>
         public void SetParentNode(Node parentNode)
         {
             ParentNodeId = parentNode.Id; 
         }
 
         public List<long> ChildNodes { get; set; } = new List<long>();
-
-        //public List<uint> ChildNodes = new List<uint>();
+        
         public double[] Vector { get; set; }
         public byte[] ExternalId { get; set; }
 
-
         public bool HoldsVectors { get; set; } = false;
-        //public bool HoldsVectors=false;       
-        public long Id { get; set; } = 0;
-        //public uint Id = 0;
-
+            
+        public long Id { get; set; } = 0;       
 
         /// <summary>
         /// After Adding this node already was restructed by Restruct Graph
@@ -76,10 +79,12 @@ namespace DBreeze.VectorLayer
 
         }
 
+        
         /// <summary>
         /// 
         /// </summary>
         /// <param name="vector"></param>
+        /// <param name="storage"></param>
         /// <returns></returns>
         public (Node, SortedDictionary<double, Node>) GetClosestNode(double[] vector, Storage storage)
         {
