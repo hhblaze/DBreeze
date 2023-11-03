@@ -14,7 +14,7 @@ namespace DBreeze.VectorLayer
         /// <summary>
         /// Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on upper Edge within the Graph
         /// </summary>
-        public int Dense = 100;
+        public int Dense = 1000;
 
         Storage storage = null;
 
