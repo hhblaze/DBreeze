@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using DBreeze.Utils;
@@ -14,10 +15,146 @@ namespace DBreeze.VectorLayer
         /// </summary>
         /// <param name="data"></param>
         /// <param name="k"></param>
+        /// <returns></returns>
+        public static Dictionary<int, (double[], HashSet<int>)> KMeansCluster(List<double[]> data, int k)
+        {
+            int dataLength = data.Count;
+            var distanceFunc = VectorMath.Distance_SIMDForUnits;
+
+            if (dataLength == 0 || k <= 0)
+                return new Dictionary<int, (double[], HashSet<int>)>();
+
+            List<double[]> centroids = InitializeCentroidsKMeansPlusPlus(data, k, distanceFunc);
+            int maxIterations = 100;
+
+            Dictionary<int, (double[], HashSet<int>)> clusters = new Dictionary<int, (double[], HashSet<int>)>(k);
+            for (int i = 0; i < k; i++)
+                clusters[i] = (centroids[i], new HashSet<int>());
+
+            for (int iteration = 0; iteration < maxIterations; iteration++)
+            {
+                // Assign each data point to the nearest centroid
+                foreach (var cluster in clusters)
+                    cluster.Value.Item2.Clear();
+
+                for (int i = 0; i < dataLength; i++)
+                {
+                    double minDistance = double.MaxValue;
+                    int clusterIndex = 0;
+
+                    for (int j = 0; j < k; j++)
+                    {
+                        double distance = distanceFunc(data[i], clusters[j].Item1);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            clusterIndex = j;
+                        }
+                    }
+
+                    clusters[clusterIndex].Item2.Add(i);
+                }
+
+                // Update centroids based on the mean of the assigned data points
+                bool centroidsChanged = false;
+
+                foreach (var cluster in clusters)
+                {
+                    double[] newCentroid = new double[data[0].Length];
+
+                    foreach (var dataIndex in cluster.Value.Item2)
+                    {
+                        for (int j = 0; j < data[dataIndex].Length; j++)
+                            newCentroid[j] += data[dataIndex][j];
+                    }
+
+                    for (int j = 0; j < newCentroid.Length; j++)
+                    {
+                        if (cluster.Value.Item2.Count > 0)
+                            newCentroid[j] /= cluster.Value.Item2.Count;
+                    }
+
+                    if (!ArraysEqual(cluster.Value.Item1, newCentroid))
+                    {
+                        centroidsChanged = true;
+                        clusters[cluster.Key] = (newCentroid, cluster.Value.Item2);
+                    }
+                }
+
+                if (!centroidsChanged)
+                    break;
+            }
+
+            return clusters;
+        }
+
+        private static List<double[]> InitializeCentroidsKMeansPlusPlus(List<double[]> data, int k, Func<double[], double[], double> distanceFunc)
+        {
+            List<double[]> centroids = new List<double[]>();
+            Random random = new Random();
+
+            // Choose the first centroid randomly
+            centroids.Add(data[random.Next(data.Count)]);
+
+            while (centroids.Count < k)
+            {
+                double[] distances = new double[data.Count];
+                double totalDistance = 0.0;
+
+                for (int i = 0; i < data.Count; i++)
+                {
+                    double minDistance = double.MaxValue;
+                    for (int j = 0; j < centroids.Count; j++)
+                    {
+                        double distance = distanceFunc(data[i], centroids[j]);
+                        minDistance = Math.Min(minDistance, distance);
+                    }
+                    distances[i] = minDistance * minDistance; // Squaring for probabilities
+                    totalDistance += distances[i];
+                }
+
+                double randValue = random.NextDouble() * totalDistance;
+                double cumulativeProbability = 0.0;
+                for (int i = 0; i < data.Count; i++)
+                {
+                    cumulativeProbability += distances[i];
+                    if (cumulativeProbability >= randValue)
+                    {
+                        centroids.Add(data[i]);
+                        break;
+                    }
+                }
+            }
+
+            return centroids;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ArraysEqual(double[] arr1, double[] arr2)
+        {
+            if (arr1.Length != arr2.Length)
+                return false;
+
+            for (int i = 0; i < arr1.Length; i++)
+            {
+                if (arr1[i] != arr2[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="k"></param>
         /// <param name="distanceFunc"></param>
         /// <param name="initialCentroids"></param>
         /// <returns></returns>
-        public static Dictionary<int, (double[], HashSet<int>)> KMeansCluster(List<double[]> data, int k, List<int> initialCentroids = null)
+        public static Dictionary<int, (double[], HashSet<int>)> KMeansClusterOld(List<double[]> data, int k, List<int> initialCentroids = null)
         {
             //double[][] data, 
             int maxIterations = 100;
@@ -187,8 +324,8 @@ namespace DBreeze.VectorLayer
                     int cluster = 0;
                     for (int j = 0; j < k; j++)
                     {                       
-                        double distance = Math.Abs(VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]));
-                        //double distance = Math.Abs(distanceFunc(dataToCheck[i], centroids[j]));
+                        //double distance = Math.Abs(VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]));
+                        double distance = VectorMath.Distance_SIMDForUnits(dataToCheck[i], centroids[j]);
                         if (distance < minDistance)
                         {
                             minDistance = distance;

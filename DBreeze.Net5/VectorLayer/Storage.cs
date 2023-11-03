@@ -149,7 +149,8 @@ namespace DBreeze.VectorLayer
 
             if (row.Exists)
             {
-                var nodeBt = row.Value.DecompressBytesBrotliDBreeze();
+                //var nodeBt = row.Value.DecompressBytesBrotliDBreeze();
+                var nodeBt = row.Value.GZip_Decompress();
                 node = Node.BiserDecode(nodeBt);
                 //-putting to cache
                 CachedNodes[id] = node;
@@ -182,13 +183,14 @@ namespace DBreeze.VectorLayer
                 tran.Insert<byte[], byte[]>(tableName, 1.ToIndex(), VStat.BiserEncoder().Encode());
 
             //-Saving all changed nodes
-            foreach (var el in ChangedNodes)
+            foreach (var el in ChangedNodes.OrderBy(r=>r.Key))
             {
                 //-reassigning cache
                 CachedNodes[el.Key] = el.Value;
                 //-Saving nodes to DB                
                 var nodeBt = el.Value.BiserEncoder().Encode();
-                nodeBt = nodeBt.CompressBytesBrotliDBreeze();
+                nodeBt = nodeBt.GZip_Compress();
+                //nodeBt = nodeBt.CompressBytesBrotliDBreeze();
                 tran.Insert<byte[], byte[]>(tableName, 3.ToIndex(el.Key), nodeBt); //node self
 
                 if(el.Value.ExternalId != null) //VectorNode only

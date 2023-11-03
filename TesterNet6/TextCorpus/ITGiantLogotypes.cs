@@ -53,8 +53,8 @@ namespace TesterNet6.TextCorpus
             //Those for tests....
             string question = "fruit like logo";
             //question = "square like logo";
-            question = "rectangle like logo";
-            question = "multicolor logo";
+            //question = "rectangle like logo";
+            //question = "multicolor logo";
 
             //-getting embedding vector for the question
             var emb = await OpenAI.GetEmbedding(question);

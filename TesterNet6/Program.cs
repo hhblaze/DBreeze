@@ -25,7 +25,7 @@ namespace TesterNet6
             OpenAI.Init(PathToOpenAIKey);
 
             //Examples
-            await ITGiantLogotypes.Example();
+            //await ITGiantLogotypes.Example();
 
             //Clustering.KMeansTest();
             //Clustering.KMeansTest_Furniture();
@@ -40,9 +40,9 @@ namespace TesterNet6
 
             //Technical helpers
 
-            //Load.LoadV1();
+            Load.LoadV1();
 
-            Biser_Objectify();
+            //Biser_Objectify();
 
             //-Getting embeddings from local python service
             //await Clustering.GetFunrnitureV2Embeddings();
