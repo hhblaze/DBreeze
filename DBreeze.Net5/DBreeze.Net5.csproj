@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);NET6FUNC</DefineConstants>
+    <DefineConstants>$(DefineConstants);NET6FUNC;NET40</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

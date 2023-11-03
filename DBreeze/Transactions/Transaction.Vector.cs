@@ -2,6 +2,7 @@
   Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
   It's a free software for those who think that it should be free.
 */
+#if NET40
 
 using DBreeze.VectorLayer;
 using DBreeze.Utils;
@@ -98,7 +99,7 @@ namespace DBreeze.Transactions
 
 
         /// <summary>
-        /// CAP Possible future implementation, can be called from transaction coordinatr
+        /// CAP Possible future implementation, can be called from TextDeferredIndexer
         /// </summary>
         /// <param name="tableName"></param>
         /// <param name="internalIDs">must be already sorted ascending</param>
@@ -111,3 +112,24 @@ namespace DBreeze.Transactions
 
     }
 }
+#else
+using System;
+using System.Collections.Generic;
+
+namespace DBreeze.Transactions
+{
+    public partial class Transaction : IDisposable
+    {
+        /// <summary>
+        /// CAP .NET 3.5
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="internalIDs">must be already sorted ascending</param>
+        internal void VectorsDoIndexing(string tableName, List<int> internalIDs)
+        {
+
+
+        }
+    }
+}
+#endif
