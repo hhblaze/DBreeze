@@ -201,6 +201,9 @@ namespace DBreeze
 
                     //Initializing 
                     DeferredIndexer = new TextDeferredIndexer(this);
+
+                    //Init DBreezeResources
+                    Resources = new DBreezeResources(this);
                 }
             }
             catch (Exception ex)

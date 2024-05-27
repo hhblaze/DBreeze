@@ -184,7 +184,12 @@ namespace Deployer
                         archive.CreateEntryFromFile(f.Directory + @"\DBreeze.dll", "DBreeze.dll");
                         archive.CreateEntryFromFile(f.Directory + @"\DBreeze.XML", "DBreeze.XML");
                     }
-                    File.Move(f.FullName, f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24));
+                    
+                    if(!f.FullName.Equals(f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24)))
+                    {
+                        File.Copy(f.FullName, f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24), true);
+                        File.Delete(f.FullName);
+                    }                    
 
                     //Adding to Ultimate archive new archives
                     ultimate_archive.CreateEntryFromFile(f.Directory + @"\" + "DBreeze" + "_" + productVersion.Replace(".", "_") + "_" + f.Name.Substring(24)
