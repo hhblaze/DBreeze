@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace DBreeze.Utils
@@ -1658,9 +1659,43 @@ namespace DBreeze.Utils
 
         #endregion
 
+        #region "Double array"
+
+        /// <summary>
+        /// Converts double[] to byte[]. Reversed DoubleArrayToByteArray
+        /// </summary>
+        /// <param name="byteArray"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double[] ByteArrayToDoubleArray(this byte[] byteArray)
+        {
+            int doubleArrayLength = byteArray.Length / sizeof(double);
+            double[] doubleArray = new double[doubleArrayLength];
+            Buffer.BlockCopy(byteArray, 0, doubleArray, 0, byteArray.Length);
+            return doubleArray;
+        }
+        #endregion
+
         #endregion  //End of byte[] to others
 
         #region "Conversions Other to Bytes"
+
+        #region "Double array"
+
+        /// <summary>
+        /// Converts byte[] to double[]. Reversed ByteArrayToDoubleArray
+        /// </summary>
+        /// <param name="byteArray"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte[] DoubleArrayToByteArray(this double[] doubleArray)
+        {
+            int byteArrayLength = doubleArray.Length * sizeof(double);
+            byte[] byteArray = new byte[byteArrayLength];
+            Buffer.BlockCopy(doubleArray, 0, byteArray, 0, byteArrayLength);
+            return byteArray;
+        }
+        #endregion
 
         #region "Single byte"
 

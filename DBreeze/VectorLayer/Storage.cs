@@ -154,7 +154,7 @@ namespace DBreeze.VectorLayer
                 if (node.Vector == null && node.VectorStored)
                 {
                     var vecRow = tran.Select<byte[], byte[]>(tableName, 7.ToIndex(node.Id));
-                    node.Vector = ByteArrayToDoubleArray(vecRow.Value.GZip_Decompress());
+                    node.Vector = vecRow.Value.GZip_Decompress().ByteArrayToDoubleArray();
                 }
                 //--EOF DEBUG
 
@@ -228,16 +228,11 @@ namespace DBreeze.VectorLayer
 
                 if (containsVector && !storedVector)
                 {
-                    var vect1 = DoubleArrayToByteArray(el.Value.Vector);
+                    var vect1 = el.Value.Vector.DoubleArrayToByteArray();
                     vect1 = vect1.GZip_Compress();
-                    tran.Insert<byte[], byte[]>(tableName, 7.ToIndex(el.Value.Id), vect1); //ExternalId to Node
+                    tran.Insert<byte[], byte[]>(tableName, 7.ToIndex(el.Value.Id), vect1);
                 }
 
-
-                //if (tran.Select<byte[], byte[]>(tableName, 3.ToIndex(el.Key)).Exists)
-                //{
-                //    Console.WriteLine($"---------------- Overwriting {el.Key}; Childs; {el.Value.ChildNodes.Count}");
-                //}
                 //---EOF DEBUG
                 tran.Insert<byte[], byte[]>(tableName, 3.ToIndex(el.Key), nodeBt); //node self
 
@@ -249,23 +244,23 @@ namespace DBreeze.VectorLayer
 
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte[] DoubleArrayToByteArray(double[] doubleArray)
-        {
-            int byteArrayLength = doubleArray.Length * sizeof(double);
-            byte[] byteArray = new byte[byteArrayLength];
-            Buffer.BlockCopy(doubleArray, 0, byteArray, 0, byteArrayLength);
-            return byteArray;
-        }
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private static byte[] DoubleArrayToByteArray(double[] doubleArray)
+        //{
+        //    int byteArrayLength = doubleArray.Length * sizeof(double);
+        //    byte[] byteArray = new byte[byteArrayLength];
+        //    Buffer.BlockCopy(doubleArray, 0, byteArray, 0, byteArrayLength);
+        //    return byteArray;
+        //}
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static double[] ByteArrayToDoubleArray(byte[] byteArray)
-        {
-            int doubleArrayLength = byteArray.Length / sizeof(double);
-            double[] doubleArray = new double[doubleArrayLength];
-            Buffer.BlockCopy(byteArray, 0, doubleArray, 0, byteArray.Length);
-            return doubleArray;
-        }
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private static double[] ByteArrayToDoubleArray(byte[] byteArray)
+        //{
+        //    int doubleArrayLength = byteArray.Length / sizeof(double);
+        //    double[] doubleArray = new double[doubleArrayLength];
+        //    Buffer.BlockCopy(byteArray, 0, doubleArray, 0, byteArray.Length);
+        //    return doubleArray;
+        //}
 
         /// <summary>
         /// 

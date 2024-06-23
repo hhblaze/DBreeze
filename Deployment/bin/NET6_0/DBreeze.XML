@@ -5256,6 +5256,20 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ByteArrayToDoubleArray(System.Byte[])">
+            <summary>
+            Converts double[] to byte[]. Reversed DoubleArrayToByteArray
+            </summary>
+            <param name="byteArray"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.DoubleArrayToByteArray(System.Double[])">
+            <summary>
+            Converts byte[] to double[]. Reversed ByteArrayToDoubleArray
+            </summary>
+            <param name="byteArray"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.Byte})">
             <summary>
             Returns 2 byte array which represents byte?
@@ -6724,6 +6738,11 @@
             </summary>
             <param name="parentNode"></param>
         </member>
+        <member name="P:DBreeze.VectorLayer.Node.VectorStored">
+            <summary>
+            Vector is stored under 7.
+            </summary>
+        </member>
         <member name="F:DBreeze.VectorLayer.Node.Restructed">
             <summary>
             After Adding this node already was restructed by Restruct Graph
@@ -6828,6 +6847,7 @@
             </summary>
             <param name="queryVector"></param>
             <param name="maxReturn">Default is 100. Defence mechanism to avoid returning the complete graph. But can be set to whatever. Also can work GetSimlar(query, maxReturn: 10000).Take(5000) </param>
+            <param name="excludingDocuments"></param>
             <returns></returns>
         </member>
         <member name="T:DBreeze.VectorLayer.Vectors.RecSimilarOption">
@@ -6940,6 +6960,17 @@
             Maximal word size separated by the space. Default is 50 symbols
             </summary>
         </member>
+        <member name="T:DBreeze.DBreezeConfiguration.VectorlayerConfiguration">
+            <summary>
+            Configuration concerning Vector layer
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.VectorlayerConfiguration.Dense">
+            <summary>
+             Default 1000. Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on the upper Edge within the Graph.
+             <para>Min 50, Max 5000.</para>
+            </summary>
+        </member>
         <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfig">
             <summary>
             Configuration concerning TextSearch subsystem
@@ -6948,6 +6979,11 @@
         <member name="F:DBreeze.DBreezeConfiguration.NotifyAhead_WhenWriteTablePossibleDeadlock">
             <summary>
             Default is true. On the early stage helps the programmers to put a modifying table into the transaction.SynchronizeTables statement.
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.VectorLayerConfig">
+            <summary>
+            Configuration 
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeResources">

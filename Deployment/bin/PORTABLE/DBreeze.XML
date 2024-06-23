@@ -2240,6 +2240,20 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.ByteArrayToDoubleArray(System.Byte[])">
+            <summary>
+            Converts double[] to byte[]. Reversed DoubleArrayToByteArray
+            </summary>
+            <param name="byteArray"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.DoubleArrayToByteArray(System.Double[])">
+            <summary>
+            Converts byte[] to double[]. Reversed ByteArrayToDoubleArray
+            </summary>
+            <param name="byteArray"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.Byte})">
             <summary>
             Returns 2 byte array which represents byte?
