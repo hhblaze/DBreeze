@@ -7,6 +7,7 @@ using DBreeze.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 
@@ -19,9 +20,9 @@ namespace DBreeze.VectorLayer
     {
         /* DBreeze Definition
            1.ToIndex() - VectorStat (holds monotonic counter/EntryPoint and other info)           
-           3.ToIndex(itemId);V: serialized and GZIP compressed Node
+           3.ToIndex(id [long]);V: serialized and GZIP compressed Node (without vector double[])
            5.ToIndex(byte[] - external documentId); Value: (long) - ExternalId to internal nodeId
-
+           7.ToIndex(id [long]);V: serialized and GZIP compressed Node's vector
         */
 
         VectorStat VStat = null;
@@ -148,6 +149,15 @@ namespace DBreeze.VectorLayer
                 //var nodeBt = row.Value.DecompressBytesBrotliDBreeze();
                 var nodeBt = row.Value.GZip_Decompress();
                 node = Node.BiserDecode(nodeBt);
+
+                //--DEBUG
+                if (node.Vector == null && node.VectorStored)
+                {
+                    var vecRow = tran.Select<byte[], byte[]>(tableName, 7.ToIndex(node.Id));
+                    node.Vector = ByteArrayToDoubleArray(vecRow.Value.GZip_Decompress());
+                }
+                //--EOF DEBUG
+
                 //-putting to cache
                 CachedNodes[id] = node;
                 return node;
@@ -178,15 +188,57 @@ namespace DBreeze.VectorLayer
             if (VStat.Changed)
                 tran.Insert<byte[], byte[]>(tableName, 1.ToIndex(), VStat.BiserEncoder().Encode());
 
+            double[] tmpVec = null;
+            bool containsVector = false;
+            bool storedVector = false;
+
             //-Saving all changed nodes
             foreach (var el in ChangedNodes.OrderBy(r=>r.Key))
             {
                 //-reassigning cache
                 CachedNodes[el.Key] = el.Value;
-                //-Saving nodes to DB                
+                //-Saving nodes to DB
+
+                //--DEBUG
+                //- Storing vector itself
+                containsVector = el.Value.Vector != null;
+                storedVector = el.Value.VectorStored;
+                tmpVec = null;
+
+                if (containsVector)
+                {                    
+                    tmpVec = el.Value.Vector;
+                    el.Value.Vector = null;
+
+                    if(!storedVector)
+                        el.Value.VectorStored = true;
+                }
+                
+                
+                //--EOF DEBUG
+
                 var nodeBt = el.Value.BiserEncoder().Encode();
                 nodeBt = nodeBt.GZip_Compress();
+
+
                 //nodeBt = nodeBt.CompressBytesBrotliDBreeze();
+                //---DEBUG
+                if (tmpVec != null) //restoring vector
+                    el.Value.Vector = tmpVec;
+
+                if (containsVector && !storedVector)
+                {
+                    var vect1 = DoubleArrayToByteArray(el.Value.Vector);
+                    vect1 = vect1.GZip_Compress();
+                    tran.Insert<byte[], byte[]>(tableName, 7.ToIndex(el.Value.Id), vect1); //ExternalId to Node
+                }
+
+
+                //if (tran.Select<byte[], byte[]>(tableName, 3.ToIndex(el.Key)).Exists)
+                //{
+                //    Console.WriteLine($"---------------- Overwriting {el.Key}; Childs; {el.Value.ChildNodes.Count}");
+                //}
+                //---EOF DEBUG
                 tran.Insert<byte[], byte[]>(tableName, 3.ToIndex(el.Key), nodeBt); //node self
 
                 if(el.Value.ExternalId != null) //VectorNode only
@@ -195,6 +247,24 @@ namespace DBreeze.VectorLayer
 
             ChangedNodes.Clear();           
 
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static byte[] DoubleArrayToByteArray(double[] doubleArray)
+        {
+            int byteArrayLength = doubleArray.Length * sizeof(double);
+            byte[] byteArray = new byte[byteArrayLength];
+            Buffer.BlockCopy(doubleArray, 0, byteArray, 0, byteArrayLength);
+            return byteArray;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double[] ByteArrayToDoubleArray(byte[] byteArray)
+        {
+            int doubleArrayLength = byteArray.Length / sizeof(double);
+            double[] doubleArray = new double[doubleArrayLength];
+            Buffer.BlockCopy(byteArray, 0, doubleArray, 0, byteArray.Length);
+            return doubleArray;
         }
 
         /// <summary>
@@ -213,7 +283,9 @@ namespace DBreeze.VectorLayer
 
             tran.RemoveKey(tableName, 3.ToIndex(id));
             tran.RemoveKey(tableName, 5.ToIndex(node.ExternalId));
-
+            //--DEBUG
+            tran.RemoveKey(tableName, 7.ToIndex(id));
+            //--EOF DEBUG
         }
 
         /// <summary>
@@ -274,6 +346,7 @@ namespace DBreeze.VectorLayer
             encoder.Add(ExternalId);
             encoder.Add(HoldsVectors);
             encoder.Add(Id);
+            encoder.Add(VectorStored);
 
             return encoder;
         }
@@ -321,7 +394,7 @@ namespace DBreeze.VectorLayer
             m.ExternalId = decoder.GetByteArray();
             m.HoldsVectors = decoder.GetBool();
             m.Id = decoder.GetLong();
-
+            m.VectorStored = decoder.GetBool();
 
             return m;
         }

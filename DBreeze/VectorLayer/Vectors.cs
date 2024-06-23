@@ -25,6 +25,13 @@ namespace DBreeze.VectorLayer
         public Vectors(DBreeze.Transactions.Transaction tran, string tableName) 
         {      
             storage=new Storage(tran, tableName);
+            //Taking from Config
+            this.Dense = tran._transactionUnit.TransactionsCoordinator._engine.Configuration.VectorLayerConfig.Dense;
+
+            if(this.Dense < 50)
+                this.Dense=50;
+            else if(this.Dense>5000)
+                this.Dense = 5000;
         }
 
         /// <summary>
@@ -32,13 +39,14 @@ namespace DBreeze.VectorLayer
         /// </summary>
         /// <param name="queryVector"></param>
         /// <param name="maxReturn">Default is 100. Defence mechanism to avoid returning the complete graph. But can be set to whatever. Also can work GetSimlar(query, maxReturn: 10000).Take(5000) </param>
+        /// <param name="excludingDocuments"></param>
         /// <returns></returns>
-        public IEnumerable<Node> GetSimilar(double[] queryVector, int maxReturn = 100, HashSet<byte[]> excludingDocuemnts=null)
+        public IEnumerable<Node> GetSimilar(double[] queryVector, int maxReturn = 100, HashSet<byte[]> excludingDocuments=null)
         {
             //-starting iteration from the entry point
             var ep = storage.GetEntryNode();
 
-            RecSimilarOption option = new RecSimilarOption() { MaxReturn = maxReturn, Returned = 0 };
+            RecSimilarOption option = new RecSimilarOption() { MaxReturn = maxReturn, Returned = 0, ExcludingDocuments = excludingDocuments };
 
             foreach (var nod in GetSimilarInternal(queryVector, ep, option))
             {

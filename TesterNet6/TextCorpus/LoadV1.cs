@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static TesterNet6.TextCorpus.Clustering;
 
 namespace TesterNet6.TextCorpus
 {
@@ -11,13 +12,42 @@ namespace TesterNet6.TextCorpus
     {
         static string tblLoadV1 = "LoadV1";
 
+        public static void SelectV1()
+        {
+            DBreeze.Utils.FastRandom frnd = new DBreeze.Utils.FastRandom();
+            int vectorSize = 1536; //OpenAI 1536
+            double[] queryVector=new double[vectorSize];
+            for (int pp = 0; pp < vectorSize; pp++)
+                queryVector[pp] = frnd.NextDouble();
+
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.ValuesLazyLoadingIsOn = false; //to read key already with value
+
+                var res = tran.VectorsSearchSimilar(tblLoadV1, queryVector, 3);
+
+                foreach (var el in res)
+                {
+                    //var rowDoc = tran.Select<byte[], string>(tblDotblLoadV1csFurniture, 2.ToIndex(el));
+                   // var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
+                    Console.WriteLine($"{el.ToHexFromByteArray()}");
+                   // Console.WriteLine($"\tDescription: {dbFurniture.Description}");
+
+                }
+            }
+        }
 
         public static void LoadV1()
         {
-           
+            for(int jhz=0;jhz<10;jhz++)
+                SelectV1();
+
+            return;
             DBreeze.Utils.FastRandom frnd = new DBreeze.Utils.FastRandom();
             var rnd = new Random();
             int batchSize = 1000; //100 (batchSize) documents per round
+            int vectorSize = 1536; //OpenAI 1536
             double[][] bt = new double[batchSize][];
             //for (int i = 0; i < 100; i++)
             //{
@@ -36,8 +66,8 @@ namespace TesterNet6.TextCorpus
                 for (int i = 0; i < batchSize; i++)//inserting 100 vectors of size 500 double
                 {
 
-                    bt[i] = new double[500];
-                    for (int pp = 0; pp < 500; pp++)
+                    bt[i] = new double[vectorSize];
+                    for (int pp = 0; pp < vectorSize; pp++)
                         bt[i][pp] = frnd.NextDouble();
                     //rnd.NextBytes(bt[i]);
                     //rnd.NextBytes(bt[i]);

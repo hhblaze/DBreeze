@@ -58,7 +58,12 @@ namespace DBreeze.VectorLayer
 
         public bool HoldsVectors { get; set; } = false;
             
-        public long Id { get; set; } = 0;       
+        public long Id { get; set; } = 0;
+        
+        /// <summary>
+        /// Vector is stored under 7.
+        /// </summary>
+        public bool VectorStored { get; set; } = false;
 
         /// <summary>
         /// After Adding this node already was restructed by Restruct Graph

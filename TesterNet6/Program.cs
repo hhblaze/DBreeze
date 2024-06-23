@@ -67,6 +67,10 @@ namespace TesterNet6
             {
                 DBreezeDataFolderName = DBPath,
                 Storage = DBreezeConfiguration.eStorage.DISK,
+                VectorLayerConfig = new DBreezeConfiguration.VectorlayerConfiguration()
+                {
+                    Dense = 1000
+                }
             };
             conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
             DBEngine = new DBreezeEngine(conf);

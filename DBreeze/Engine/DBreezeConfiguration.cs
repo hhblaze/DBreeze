@@ -122,6 +122,19 @@ namespace DBreeze
         }
 
         /// <summary>
+        /// Configuration concerning Vector layer
+        /// </summary>
+        public class VectorlayerConfiguration
+        {
+            /// <summary>
+            ///  Default 1000. Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on the upper Edge within the Graph.
+            ///  <para>Min 50, Max 5000.</para>
+            /// </summary>
+            public int Dense = 1000;           
+
+        }
+
+        /// <summary>
         /// Configuration concerning TextSearch subsystem
         /// </summary>
         public TextSearchConfiguration TextSearchConfig = new DBreezeConfiguration.TextSearchConfiguration();
@@ -130,6 +143,11 @@ namespace DBreeze
         /// Default is true. On the early stage helps the programmers to put a modifying table into the transaction.SynchronizeTables statement.
         /// </summary>
         public bool NotifyAhead_WhenWriteTablePossibleDeadlock=true;
+
+        /// <summary>
+        /// Configuration 
+        /// </summary>
+        public VectorlayerConfiguration VectorLayerConfig = new DBreezeConfiguration.VectorlayerConfiguration();
 
     }
 }
