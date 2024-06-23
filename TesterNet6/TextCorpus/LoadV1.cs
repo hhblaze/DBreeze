@@ -40,10 +40,10 @@ namespace TesterNet6.TextCorpus
 
         public static void LoadV1()
         {
-            for(int jhz=0;jhz<10;jhz++)
-                SelectV1();
+            //for(int jhz=0;jhz<10;jhz++)
+            //    SelectV1();
 
-            return;
+            //return;
             DBreeze.Utils.FastRandom frnd = new DBreeze.Utils.FastRandom();
             var rnd = new Random();
             int batchSize = 1000; //100 (batchSize) documents per round
