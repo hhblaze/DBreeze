@@ -38,6 +38,57 @@ namespace TesterNet6.TextCorpus
             }
         }
 
+        static double[] GetRandomEmbedding()
+        {
+            int size = 1536;
+            Random random = new Random();
+            double[] randomArray = new double[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                randomArray[i] = random.NextDouble();
+            }
+            return randomArray;
+            // Now you can use the randomArray
+        }
+
+        static int idCnt = 0;
+        static string tableVector = "tableVector"; //Vector Table
+        public static void Insert01()
+        {
+            //Debug.Log("Store_String_Vectors Start " + Time.time);
+            Console.WriteLine("Store_String_Vectors Start ");
+
+            //-such format will be inserted into VectorTable, Key is exernal documentID, value is vector itself
+            Dictionary<byte[], double[]> vectorsToInsert = new Dictionary<byte[], double[]>();
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                //-sync of Doctable and vector table for searching docs
+                tran.SynchronizeTables(tableVector);
+
+                //Loop and insert 10 times the same data
+                for (int i = 0; i < 50; i++)
+                {
+                    idCnt++;
+
+                    vectorsToInsert.Add(idCnt.To_4_bytes_array_BigEndian(), GetRandomEmbedding());
+                }
+
+                //-storing documents as vectors (with/without deferred indexing) 
+                if (vectorsToInsert.Count > 0)
+                {
+                    //-in case of big quantity of vectors, use deferredIndexing: true (to run computation in the background)
+                    tran.VectorsInsert(tableVector, vectorsToInsert, deferredIndexing: false);
+                }
+
+                tran.Commit();
+
+                //Debug.Log("Vector Count == " + tran.Count(tableVector));
+            }
+
+            Console.WriteLine("Store_String_Vectors End ");
+        }
+
         public static void LoadV1()
         {
             //for(int jhz=0;jhz<10;jhz++)
