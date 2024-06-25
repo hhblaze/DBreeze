@@ -63,11 +63,14 @@ namespace DBreeze.VectorLayer
                 // Update centroids based on the mean of the assigned data points
                 bool centroidsChanged = false;
 
-                foreach (var cluster in clusters)
+                var keys = clusters.Keys.ToList();
+                
+                for (int index = 0; index < keys.Count; index++)
                 {
+                    int key = keys[index];
                     double[] newCentroid = new double[data[0].Length];
 
-                    foreach (var dataIndex in cluster.Value.Item2)
+                    foreach (var dataIndex in clusters[key].Item2)
                     {
                         for (int j = 0; j < data[dataIndex].Length; j++)
                             newCentroid[j] += data[dataIndex][j];
@@ -75,16 +78,38 @@ namespace DBreeze.VectorLayer
 
                     for (int j = 0; j < newCentroid.Length; j++)
                     {
-                        if (cluster.Value.Item2.Count > 0)
-                            newCentroid[j] /= cluster.Value.Item2.Count;
+                        if (clusters[key].Item2.Count > 0)
+                            newCentroid[j] /= clusters[key].Item2.Count;
                     }
 
-                    if (!ArraysEqual(cluster.Value.Item1, newCentroid))
+                    if (!ArraysEqual(clusters[key].Item1, newCentroid))
                     {
                         centroidsChanged = true;
-                        clusters[cluster.Key] = (newCentroid, cluster.Value.Item2);
+                        clusters[key] = (newCentroid, clusters[key].Item2);
                     }
                 }
+                //foreach (var cluster in clusters)
+                //{
+                //    double[] newCentroid = new double[data[0].Length];
+
+                //    foreach (var dataIndex in cluster.Value.Item2)
+                //    {
+                //        for (int j = 0; j < data[dataIndex].Length; j++)
+                //            newCentroid[j] += data[dataIndex][j];
+                //    }
+
+                //    for (int j = 0; j < newCentroid.Length; j++)
+                //    {
+                //        if (cluster.Value.Item2.Count > 0)
+                //            newCentroid[j] /= cluster.Value.Item2.Count;
+                //    }
+
+                //    if (!ArraysEqual(cluster.Value.Item1, newCentroid))
+                //    {
+                //        centroidsChanged = true;
+                //        clusters[cluster.Key] = (newCentroid, cluster.Value.Item2);
+                //    }
+                //}
 
                 if (!centroidsChanged)
                     break;
@@ -324,11 +349,14 @@ namespace DBreeze.VectorLayer
                 // Update centroids based on the mean of the assigned data points
                 bool centroidsChanged = false;
 
-                foreach (var cluster in clusters)
+                var keys = clusters.Keys.ToList();
+
+                for (int index = 0; index < keys.Count; index++)                            
                 {
+                    var key = keys[index];
                     double[] newCentroid = new double[data[0].Length];
 
-                    foreach (var dataIndex in cluster.Value.Item2)
+                    foreach (var dataIndex in clusters[key].Item2)
                     {
                         for (int j = 0; j < data[dataIndex].Length; j++)
                             newCentroid[j] += data[dataIndex][j];
@@ -336,16 +364,39 @@ namespace DBreeze.VectorLayer
 
                     for (int j = 0; j < newCentroid.Length; j++)
                     {
-                        if (cluster.Value.Item2.Count > 0)
-                            newCentroid[j] /= cluster.Value.Item2.Count;
+                        if (clusters[key].Item2.Count > 0)
+                            newCentroid[j] /= clusters[key].Item2.Count;
                     }
 
-                    if (!ArraysEqual(cluster.Value.Item1, newCentroid))
+                    if (!ArraysEqual(clusters[key].Item1, newCentroid))
                     {
                         centroidsChanged = true;
-                        clusters[cluster.Key] = (newCentroid, cluster.Value.Item2);
+                        clusters[key] = (newCentroid, clusters[key].Item2);
                     }
                 }
+
+                //foreach (var cluster in clusters)
+                //{
+                //    double[] newCentroid = new double[data[0].Length];
+
+                //    foreach (var dataIndex in cluster.Value.Item2)
+                //    {
+                //        for (int j = 0; j < data[dataIndex].Length; j++)
+                //            newCentroid[j] += data[dataIndex][j];
+                //    }
+
+                //    for (int j = 0; j < newCentroid.Length; j++)
+                //    {
+                //        if (cluster.Value.Item2.Count > 0)
+                //            newCentroid[j] /= cluster.Value.Item2.Count;
+                //    }
+
+                //    if (!ArraysEqual(cluster.Value.Item1, newCentroid))
+                //    {
+                //        centroidsChanged = true;
+                //        clusters[cluster.Key] = (newCentroid, cluster.Value.Item2);
+                //    }
+                //}
 
                 if (!centroidsChanged)
                     break;
