@@ -67,7 +67,7 @@ namespace DBreeze.VectorLayer
                 
                 for (int index = 0; index < keys.Count; index++)
                 {
-                    int key = keys[index];
+                    var key = keys[index];
                     double[] newCentroid = new double[data[0].Length];
 
                     foreach (var dataIndex in clusters[key].Item2)

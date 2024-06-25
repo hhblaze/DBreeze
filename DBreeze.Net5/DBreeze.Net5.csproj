@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.117.2024.0624</Version>
-    <FileVersion>1.117.2024.0624</FileVersion>
-    <AssemblyVersion>1.117.2024.0624</AssemblyVersion>
+    <Version>1.117.2024.0625</Version>
+    <FileVersion>1.117.2024.0625</FileVersion>
+    <AssemblyVersion>1.117.2024.0625</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
