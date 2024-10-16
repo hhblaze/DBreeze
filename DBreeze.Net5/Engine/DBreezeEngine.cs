@@ -248,6 +248,9 @@ namespace DBreeze
 
             //Disposing DeferredIndexer
             DeferredIndexer.Dispose();
+
+            //Disposing Resources
+            Resources.Dispose();
         }
 
 
