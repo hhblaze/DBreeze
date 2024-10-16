@@ -1,5 +1,5 @@
 - fix path to MSBUILD in runV2_msbuild22.bat, if neccessary (in bin folder)
-- !!!!!!! Set new Version in !!!DBreeze\Deployment\ChangeVersionAndbuild.bat (versions in projects and DLLs will be set autocatically)
+- !!!!!!! Set new Version in !!!DBreeze\Deployment\ChangeVersionAndbuild.bat (versions in projects and DLLs will be set autocatically) (https://dotnet.microsoft.com/en-us/download/visual-studio-sdks?cid=msbuild-developerpacks)
 - Start DBreeze\Deployment\!!!ChangeVersionAndbuild.bat   (.NET Framework 3.5 can be installed via Windows components, the others must be installed separately)
 - Wait until it makes the job done
 - Put manually on codeplex, github file DBreeze\Deployment\bin\DBreeze_1_077_2016_0829_ULTIMATE.zip
