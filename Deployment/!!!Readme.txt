@@ -3,7 +3,23 @@
 - Start DBreeze\Deployment\!!!ChangeVersionAndbuild.bat
 - Wait until it makes the job done
 - Put manually on codeplex, github file DBreeze\Deployment\bin\DBreeze_1_077_2016_0829_ULTIMATE.zip
-- Publish manually Nuget file from DBreeze\Deployment\Nuget\Actual\DBreeze.actual.nupkg (it must be already correctly formed by deployer.exe)
+- Publish manually Nuget (https://www.nuget.org/packages/DBreeze/) file from DBreeze\Deployment\Nuget\Actual\DBreeze.actual.nupkg (it must be already correctly formed by deployer.exe)
+
+-Signing
+    -In root folder must be file appveyor.yml when it appears it starts to recompile DBreeze on AppVeyor and then becomes visible in SignPath.io
+	 We have 2 projects so we create appveyor.yml first from  _appveyor4.7.2 (upload...waiting..getting signed DLL), then the same for _appveyor6.0.yml...
+     For now there is no way to make it at once.
+     Then appveyor.yml should be removed, so AppVeyor doesn't recompile it on each commit.
+
+	AppVeyor.com	
+	https://ci.appveyor.com/project/hhblaze/dbreeze
+	https://www.appveyor.com/docs/status-badges/
+	
+	SignPath.io
+	https://app.signpath.io/Web/75ba23b1-b387-4f6d-861e-f190db22f4f3/Home/Dashboard
+	https://about.signpath.io/documentation/origin-verification#
+	https://about.signpath.io/documentation/artifact-configuration#predefined-configuration-for-single-portable-executable-file
+
 
 
 Extra:
