@@ -297,6 +297,8 @@ namespace DBreeze.VectorLayer
                                 centroid.ChildNodes.Add(chldNode.Id);
                             }
 
+                            centroid.Radius = CalculateRadius(centroid, storage);
+
                             storage.ChangedNodes.Add(centroid.Id, centroid);
                         }
                         else
@@ -307,6 +309,7 @@ namespace DBreeze.VectorLayer
                             //removing unnecessary childs                             
                             centroid.ChildNodes.RemoveAll(r => !childIDsInCentroid.Contains(r));
 
+                            centroid.Radius = CalculateRadius(centroid, storage);
                         }
 
 
@@ -321,7 +324,27 @@ namespace DBreeze.VectorLayer
                 RestructGraph();
         }//eof
 
+        private double CalculateRadius(Node centroid, Storage storage)
+        {
+            if (centroid.ChildNodes.Count == 0)
+                return 0;  // Or some other default for empty nodes
 
+            double maxDistance = 0;
+
+            foreach (var childNodeId in centroid.ChildNodes)
+            {
+                var childNode = storage.GetNodeById(childNodeId);
+                double distance = VectorMath.Distance_SIMDForUnits(centroid.Vector, childNode.Vector);
+
+                //If child node is a centroid - its radius must be added to the distance
+                if (childNode.NodeType == Node.eType.Centroid)
+                    distance += childNode.Radius;
+
+                maxDistance = Math.Max(maxDistance, distance);
+            }
+
+            return maxDistance;
+        }
     }
 }
 #endif

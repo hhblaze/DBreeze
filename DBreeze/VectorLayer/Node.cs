@@ -66,6 +66,11 @@ namespace DBreeze.VectorLayer
         public bool VectorStored { get; set; } = false;
 
         /// <summary>
+        /// Centroid radius
+        /// </summary>
+        public double Radius { get; set; } = 0;
+
+        /// <summary>
         /// After Adding this node already was restructed by Restruct Graph
         /// </summary>
         public bool Restructed = false;
@@ -108,13 +113,31 @@ namespace DBreeze.VectorLayer
                
                 var dist = Math.Abs(VectorMath.Distance_SIMDForUnits(node.Vector, vector));
 
-                d[dist] = node;
+                double adjustedDist = Math.Max(0, dist - node.Radius);
 
-                if(dist < minDistance)
+                if (!d.ContainsKey(adjustedDist)) 
                 {
-                    minDistance = dist; 
+                    d[adjustedDist] = node;
+                }
+                else
+                {  
+                    d[adjustedDist + 0.0000000001 * d.Count] = node;
+                }
+
+
+                if (adjustedDist < minDistance)
+                {
+                    minDistance = adjustedDist;
                     minDistanceNode = node;
                 }
+
+                //d[dist] = node;
+
+                //if(dist < minDistance)
+                //{
+                //    minDistance = dist; 
+                //    minDistanceNode = node;
+                //}
             }
 
             return (minDistanceNode, d);

@@ -12,6 +12,36 @@ namespace DBreeze.VectorLayer
     internal static class VectorMath
     {
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="vectors"></param>
+        /// <returns></returns>
+        public static List<double[]> NormalizeVectors(List<double[]> vectors)
+        {
+            for (int i = 0; i < vectors.Count; i++)
+                vectors[i] = NormalizeVectors(vectors[i]);
+
+            return vectors;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double[] NormalizeVectors(double[] vector)
+        {
+            double magnitude = Math.Sqrt(DotProduct(ref vector, ref vector));
+            for (int j = 0; j < vector.Length; j++)
+            {
+                vector[j] /= magnitude;
+            }
+
+            return vector;
+        }
+
+        /// <summary>
         /// Distance between 2 vectors
         /// </summary>
         /// <param name="u"></param>

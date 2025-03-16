@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using static TesterNet6.TextCorpus.Clustering;
@@ -131,7 +132,7 @@ namespace TesterNet6.TextCorpus
                     new KeyValuePair<byte[], double[]>(
                         (v + j * batchSize).ToBytes(),
                         k.Select(Convert.ToDouble).ToArray()))
-                    .ToDictionary(k => k.Key, v => v.Value);
+                    .ToDictionary(k => k.Key, v => NormalizeVectors(v.Value));
 
                     //world.AddVectors(x);
                     tran.VectorsInsert(tblLoadV1, x);
@@ -145,7 +146,90 @@ namespace TesterNet6.TextCorpus
             Console.WriteLine($"MS: {sw.ElapsedMilliseconds}; - {(DateTime.Now - now).TotalMilliseconds}");
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="vectors"></param>
+        /// <returns></returns>
+        public static List<double[]> NormalizeVectors(List<double[]> vectors)
+        {
+            for (int i = 0; i < vectors.Count; i++)
+                vectors[i] = NormalizeVectors(vectors[i]);
 
+            return vectors;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double[] NormalizeVectors(double[] vector)
+        {
+            double magnitude = Math.Sqrt(DotProduct(ref vector, ref vector));
+            for (int j = 0; j < vector.Length; j++)
+            {
+                vector[j] /= magnitude;
+            }
+
+            return vector;
+        }
+
+        public static double Distance_SIMDForUnits(double[] u, double[] v)
+        {
+            //return 1f - DotProduct(ref u, ref v);
+            return 1.0 - DotProduct(ref u, ref v);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double DotProduct(ref double[] lhs, ref double[] rhs)
+        {
+            double result = 0f;
+
+            var count = lhs.Length;
+            var offset = 0;
+
+            while (count >= 4)
+            {
+                result += VectorDotProduct(lhs[offset], lhs[offset + 1],
+                                           rhs[offset], rhs[offset + 1]);
+
+                result += VectorDotProduct(lhs[offset + 2], lhs[offset + 3],
+                                           rhs[offset + 2], rhs[offset + 3]);
+
+                if (count == 4) return result;
+
+                count -= 4;
+                offset += 4;
+            }
+
+            while (count >= 2)
+            {
+                result += VectorDotProduct(lhs[offset], lhs[offset + 1],
+                                           rhs[offset], rhs[offset + 1]);
+
+                if (count == 2) return result;
+
+                count -= 2;
+                offset += 2;
+            }
+
+            if (count > 0)
+            {
+                result += lhs[offset] * rhs[offset];
+            }
+
+            return result;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double VectorDotProduct(double vector1X, double vector1Y, double vector2X, double vector2Y)
+        {
+            return (vector1X * vector2X) + (vector1Y * vector2Y);
+        }
 
         ///// <summary>
         ///// 
@@ -168,7 +252,7 @@ namespace TesterNet6.TextCorpus
         //    for (int j = 0; j < 100; j++)//100 times we insert batch
         //    {
         //        Console.Write($"{(j* batchSize + batchSize)} - "); //quantity of documents inside
-                
+
         //        for (int i = 0; i < batchSize; i++)//inserting 100 vectors of size 500 double
         //        {
         //            bt[i] = new byte[500];
@@ -194,9 +278,9 @@ namespace TesterNet6.TextCorpus
         //    }
         //    sw.Stop();
         //    Console.WriteLine($"MS: {sw.ElapsedMilliseconds}; - {(DateTime.Now - now).TotalMilliseconds}");
-                
 
-                
+
+
 
 
 

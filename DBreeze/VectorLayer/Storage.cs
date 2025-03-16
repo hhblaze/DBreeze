@@ -342,6 +342,7 @@ namespace DBreeze.VectorLayer
             encoder.Add(HoldsVectors);
             encoder.Add(Id);
             encoder.Add(VectorStored);
+            encoder.Add(Radius);
 
             return encoder;
         }
@@ -390,6 +391,7 @@ namespace DBreeze.VectorLayer
             m.HoldsVectors = decoder.GetBool();
             m.Id = decoder.GetLong();
             m.VectorStored = decoder.GetBool();
+            m.Radius = decoder.GetDouble();
 
             return m;
         }
