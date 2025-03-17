@@ -115,6 +115,13 @@ namespace DBreeze.VectorLayer
                     break;
             }
 
+            //Normalizing centroids
+            for(int i=0; i< clusters.Count; i++)
+            {
+                var c = clusters[i];
+                clusters[i] = (VectorMath.NormalizeVector(c.Item1), c.Item2);           
+            }
+
             return clusters;
         }
 

@@ -254,7 +254,7 @@ namespace DBreeze.VectorLayer
                     }
 
                     foreach(var cl in res)
-                    {
+                    {                      
                         //Child IDs that must be in new centroid
                         var childIDsInCentroid = cl.Value.Item2.Select(r => cNodesChildIDs[r]).ToHashSet();
 
@@ -326,6 +326,14 @@ namespace DBreeze.VectorLayer
 
         private double CalculateRadius(Node centroid, Storage storage)
         {
+            /*
+             
+             CAP - NO RADIUS for vectors, no sense
+             */
+
+            return 0;
+
+
             if (centroid.ChildNodes.Count == 0)
                 return 0;  // Or some other default for empty nodes
 

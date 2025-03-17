@@ -20,7 +20,7 @@ namespace DBreeze.VectorLayer
         public static List<double[]> NormalizeVectors(List<double[]> vectors)
         {
             for (int i = 0; i < vectors.Count; i++)
-                vectors[i] = NormalizeVectors(vectors[i]);
+                vectors[i] = NormalizeVector(vectors[i]);
 
             return vectors;
         }
@@ -31,7 +31,7 @@ namespace DBreeze.VectorLayer
         /// <param name="vector"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double[] NormalizeVectors(double[] vector)
+        public static double[] NormalizeVector(double[] vector)
         {
             double magnitude = Math.Sqrt(DotProduct(ref vector, ref vector));
             for (int j = 0; j < vector.Length; j++)
