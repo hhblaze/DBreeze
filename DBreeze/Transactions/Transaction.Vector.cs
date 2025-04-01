@@ -4,7 +4,7 @@
 */
 #if NET6FUNC || NET472
 
-using DBreeze.VectorLayer;
+//using DBreeze.VectorLayer;
 using DBreeze.Utils;
 using System;
 using System.Collections.Generic;
@@ -122,10 +122,43 @@ namespace DBreeze.Transactions
             {
                 var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
                 var graph = InitVectorTranD<double[]>(tableName, parameters);
+
+
+
                 return graph.Count();
             }
 
             throw new NotSupportedException($"Type {typeof(TVector)} is not supported.");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="externalIds"></param>
+        /// <param name="vectorTableParameters"></param>
+        /// <returns></returns>
+        public IEnumerable<float[]> VectorsGetByExternalId(string tableName, List<long> externalIds, VectorTableParameters<float[]> vectorTableParameters = null)
+        {
+            var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
+            List<float[]> res = new List<float[]>();
+            foreach(var eid in externalIds)
+                yield return graph._parameters.Storage.GetItem(eid, vectorTableParameters?.GetItem ?? null);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="externalIds"></param>
+        /// <param name="vectorTableParameters"></param>
+        /// <returns></returns>
+        public IEnumerable<double[]> VectorsGetByExternalId(string tableName, List<long> externalIds, VectorTableParameters<double[]> vectorTableParameters = null)
+        {
+            var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
+            List<double[]> res = new List<double[]>();
+            foreach (var eid in externalIds)
+                yield return graph._parameters.Storage.GetItem(eid, vectorTableParameters?.GetItem ?? null);
         }
 
         /// <summary>
@@ -140,8 +173,6 @@ namespace DBreeze.Transactions
             graph.AddItems(vectors, clearDistanceCache: true);
 
         }
-
-
 
         /// <summary>
         /// 
@@ -255,16 +286,16 @@ namespace DBreeze.Transactions
         //}
 
 
-        /// <summary>
-        /// Having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
-        /// </summary>
-        /// <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
-        /// <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
-        /// <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
-        public Dictionary<int, List<int>> VectorsClusteringKMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
-        {
-            return DBreeze.VectorLayer.Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered);        
-        }
+        ///// <summary>
+        ///// Having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
+        ///// </summary>
+        ///// <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
+        ///// <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
+        ///// <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
+        //public Dictionary<int, List<int>> VectorsClusteringKMeans(List<double[]> clusterPrototypes, List<double[]> itemsToBeClustered)
+        //{
+        //    return DBreeze.VectorLayer.Clustering.KMeansCluster(clusterPrototypes, itemsToBeClustered);        
+        //}
 
 
         ///// <summary>

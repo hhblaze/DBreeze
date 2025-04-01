@@ -159,11 +159,6 @@
     <Compile Include="VectorLayer\HNSW\SmallWorld.Storage.cs" />
     <Compile Include="VectorLayer\HNSW\SmallWorld.Utils.cs" />
     <Compile Include="VectorLayer\HNSW\VectorTran.cs" />
-    <Compile Include="VectorLayer\KMeans.cs" />
-    <Compile Include="VectorLayer\Node.cs" />
-    <Compile Include="VectorLayer\Storage.cs" />
-    <Compile Include="VectorLayer\VectorMath.cs" />
-    <Compile Include="VectorLayer\Vectors.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="!!!Assemblies.txt" />

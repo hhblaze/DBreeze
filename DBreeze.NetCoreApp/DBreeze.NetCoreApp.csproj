@@ -36,7 +36,6 @@
   <ItemGroup>
         <Compile Include="..\DBreeze.Net5\Utils\CompressionBrotli.cs" Link="Utils\CompressionBrotli.cs" />
         <Compile Include="..\DBreeze.Net5\VectorLayer\HNSW\CosineDistance.cs" Link="VectorLayer\HNSW\CosineDistance.cs" />
-        <Compile Include="..\DBreeze.Net5\VectorLayer\VectorMath.cs" Link="VectorLayer\VectorMath.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
@@ -140,10 +139,6 @@
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Storage.cs" Link="VectorLayer\HNSW\SmallWorld.Storage.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Utils.cs" Link="VectorLayer\HNSW\SmallWorld.Utils.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\VectorTran.cs" Link="VectorLayer\HNSW\VectorTran.cs" />
-    <Compile Include="..\DBreeze\VectorLayer\KMeans.cs" Link="VectorLayer\KMeans.cs" />
-    <Compile Include="..\DBreeze\VectorLayer\Node.cs" Link="VectorLayer\Node.cs" />
-    <Compile Include="..\DBreeze\VectorLayer\Storage.cs" Link="VectorLayer\Storage.cs" />
-    <Compile Include="..\DBreeze\VectorLayer\Vectors.cs" Link="VectorLayer\Vectors.cs" />
 	
   </ItemGroup>
 
