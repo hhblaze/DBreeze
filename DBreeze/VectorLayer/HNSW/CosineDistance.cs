@@ -1,8 +1,8 @@
-﻿#if NET472
-// <copyright file="CosineDistance.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License  
+  It's a free software for those who think that it should be free.
+*/
+#if NET472
 
 namespace DBreeze.HNSW
 {
@@ -71,13 +71,6 @@ namespace DBreeze.HNSW
 
             return 1 - dot;
         }
-
-
-
-        //private static readonly int _vs1f = Vector<float>.Count;
-        //private static readonly int _vs2f = 2 * Vector<float>.Count;
-        //private static readonly int _vs3f = 3 * Vector<float>.Count;
-        //private static readonly int _vs4f = 4 * Vector<float>.Count;
 
 
         public static float DistanceForUnits(float[] u, float[] v) // Cosine distance

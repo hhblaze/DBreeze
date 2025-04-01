@@ -1,8 +1,10 @@
-﻿#if NET6FUNC || NET472
-// <copyright file="SmallWorld.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+
+#if NET6FUNC || NET472
 
 namespace DBreeze.HNSW
 {
@@ -31,26 +33,6 @@ namespace DBreeze.HNSW
         /// </summary>
         private Graph graph;
 
-        ///// <summary>
-        ///// Initializes a new instance of the <see cref="SmallWorld{TItem, TDistance}"/> class.
-        ///// </summary>
-        ///// <param name="distance">The distance funtion to use in the small world.</param>
-        //public SmallWorld(Func<TItem, TItem, TDistance> distance)
-        //{
-        //    //TO BE REMOVED
-        //    this.distance = distance;
-        //}
-
-        //public SmallWorld(Func<TItem, TItem, TDistance> distance, Parameters parameters, Random generator = null)
-        //{
-        //    this.distance = distance;
-        //    this.graph = new Graph(this.distance, parameters);  
-
-        //    if(generator != null)
-        //        graph.RandomGenerator = generator;
-
-        //}
-
         /// <summary>
         /// Type of heuristic to select best neighbours for a node.
         /// </summary>
@@ -69,113 +51,6 @@ namespace DBreeze.HNSW
             SelectHeuristic,
         }
 
-        ///// <summary>
-        ///// Builds hnsw graph from the items.
-        ///// </summary>
-        ///// <param name="items">The items to connect into the graph.</param>
-        ///// <param name="generator">The random number generator for building graph.</param>
-        ///// <param name="parameters">Parameters of the algorithm.</param>
-        //public void BuildGraph(IList<(long externalId, TItem item)> items, Random generator, Parameters parameters)
-        //{
-        //    //TO BE REMOVED
-        //    var graph = new Graph(this.distance, parameters);
-        //    graph.Create(items, generator);
-        //    this.graph = graph;
-        //}
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="items"></param>
-        //public void AddItems(IList<(long externalId, TItem item)> items, bool clearDistanceCache = true)
-        //{
-        //    this.graph.AddItems(items, clearDistanceCache);            
-        //}
-
-        /// <summary>
-        /// 
-        /// </summary>
-        //public Metrics GetMetrics { get { return this.graph.Metrics; } }
-
-        ///// <summary>
-        ///// Run knn search for a given item.
-        ///// </summary>
-        ///// <param name="item">The item to search nearest neighbours.</param>
-        ///// <param name="k">The number of nearest neighbours.</param>
-        ///// <param name="clearDistanceCache">default true</param>
-        ///// <returns>The list of found nearest neighbours.</returns>
-        //public IList<KNNSearchResult> KNNSearch(TItem item, int k, bool clearDistanceCache=true)
-        //{
-        //    var destination = this.graph.NewNode(-1, uint.MaxValue, item, 0, false);
-        //    var neighbourhood = this.graph.KNearest(destination, k);
-        //    var ret =  neighbourhood.Select(
-        //        n => new KNNSearchResult
-        //        {
-        //            Id = n.Id,
-        //            ExternalId = n.ExternalId,
-        //            Item = n.Item,
-        //            Distance = destination.From(n),
-        //        }).ToList();
-
-        //    //Clearing Cache after search
-        //    if(clearDistanceCache)
-        //        this.graph.DistanceCache.Clear();
-
-        //    return ret;
-        //}
-
-        ///// <summary>
-        ///// Serializes the graph WITHOUT linked items.
-        ///// </summary>
-        ///// <returns>Bytes representing the graph.</returns>
-        //public byte[] SerializeGraph()
-        //{
-        //    if (this.graph == null)
-        //    {
-        //        throw new InvalidOperationException("The graph does not exist");
-        //    }
-
-        //    var formatter = new BinaryFormatter();
-        //    using (var stream = new MemoryStream())
-        //    {
-        //        formatter.Serialize(stream, this.graph.Parameters);
-
-        //        var edgeBytes = this.graph.Serialize();
-        //        stream.Write(edgeBytes, 0, edgeBytes.Length);
-
-        //        return stream.ToArray();
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Deserializes the graph from byte array.
-        ///// </summary>
-        ///// <param name="items">The items to assign to the graph's verticies.</param>
-        ///// <param name="bytes">The serialized parameters and edges.</param>
-        //internal void DeserializeGraph(byte[] bytes, IStorage<TItem> storage)
-        //{
-        //    var formatter = new BinaryFormatter();
-        //    using (var stream = new MemoryStream(bytes))
-        //    {
-        //        var parameters = (Parameters)formatter.Deserialize(stream);
-        //        parameters.Storage = storage;
-
-        //        var graph = new Graph(this.distance, parameters);
-        //        graph.Deserialize(bytes.Skip((int)stream.Position).ToArray());
-
-        //        this.graph = graph;
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Prints edges of the graph.
-        ///// Mostly for debug and test purposes.
-        ///// </summary>
-        ///// <returns>String representation of the graph's edges.</returns>
-        //internal string Print()
-        //{
-        //    return this.graph.Print();
-        //}
 
         /// <summary>
         /// Parameters of the algorithm.
@@ -235,8 +110,7 @@ namespace DBreeze.HNSW
             public bool KeepPrunedConnections { get; set; }
 
             [NonSerialized]
-            internal IStorage<TItem, TDistance> Storage;
-            //public SmallWorldStorage Storage;
+            internal IStorage<TItem, TDistance> Storage;            
         }
 
         /// <summary>

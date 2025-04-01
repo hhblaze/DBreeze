@@ -1,8 +1,9 @@
-﻿#if NET6FUNC || NET472
-// <copyright file="BinaryHeap.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License  
+  It's a free software for those who think that it should be free.
+*/
+
+#if NET6FUNC || NET472
 
 namespace DBreeze.HNSW
 {

@@ -4568,54 +4568,122 @@
             <param name="newTableFullPath">Depends on thisEngineTable argument, if thisEngineTable == true then full path to the file is supplied, otherwise only source-tableName</param>
             <param name="thisEngineTable">default false, indicates that table belongs to the engine and all open file pointers on it will be closed, use with temporary tables.</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IReadOnlyDictionary{System.Byte[],System.Double[]},System.Boolean)">
+        <member name="T:DBreeze.Transactions.Transaction.VectorTableParameters`1">
             <summary>
-            <para>Inserts associated with the external documents vectors into VectorStorage created under tableName.</para>
-            <para>It is possible to have many storages, just use different table names</para>
-            <para>This operation uses inserts into tableName, so tran.SynchronizeTables must reflect that</para>
+            Setup vector layer bound to a table
             </summary>
-            <param name="tableName">Table where VectorEngine stores its data. Supplied table must be used only by the vector engine.</param>
-            <param name="vectors">Key is an External Document ID; Value is a vector representing the document.</param>
-            <param name="deferredIndexing">not used for now, due to the high speed of inserts</param>
-            <returns>list of internalIDs associated with the inserted documents externalIDs (not necessary to store, communication with Vectors via externalID is possible)</returns>
+            <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for a vector database - precision is acceptable.</typeparam>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalDocumentIDs(System.String,System.Collections.Generic.List{System.Byte[]})">
+        <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.GetItem">
             <summary>
-            Gets vectors by externalDocumentIDs.
+            <para>Can be used when vectors self are already stored somewhere and this engine is used only for indexing.</para>
+            <para>Otherwise vectors will also be stored in the table.</para>
             </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.QuantityOfLogicalProcessorToCompute">
+            <summary>
+            <para>Default is 0 - will take about 70% of available CPU's to compute HNSW graph.</para>
+            <para>Maximal can be used Environment.ProcessorCount</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.BucketSize">
+            <summary>
+            <para>Vectors connections are grouped into buckets. Each bucket can hold up to BucketSize quantity (can be increased after inserts).</para>
+            <para>Buckets are created automatically.</para>
+            <para>Default is 100000. With 10 buckets - 1MLN vectors.</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.NeighbourSelection">
+            <summary>
+            Default is NeighbourSelectSimple, part of HNSW algorithm (unsafe - can't be changed after the first isnert - take care)
+            </summary>
+        </member>
+        <member name="T:DBreeze.Transactions.Transaction.VectorTableParameters`1.eNeighbourSelectionHeuristic">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.InitVectorTranF``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <typeparam name="TVector"></typeparam>
             <param name="tableName"></param>
-            <param name="externalDocumentIDs"></param>
+            <param name="vectorTableParameters"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsRemove(System.String,System.Collections.Generic.List{System.Byte[]},System.Boolean)">
+        <member name="M:DBreeze.Transactions.Transaction.InitVectorTranD``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
             <summary>
-            <para>Removes External documents from the VectorStorage of tableName.</para>
-            <para>Internally Uses tableName.Insert operations, so tran.SynchronizeTables must reflect that.</para>
-            <para>Actually VectorStorage will go on to hold those associated vectors, but they will not appear in tran.VectorsSearchSimilar.</para>
-            <para>It is possible to restore association with the activate = true parameter</para>
+            
+            </summary>
+            <typeparam name="TVector"></typeparam>
+            <param name="tableName"></param>
+            <param name="vectorTableParameters"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsCount``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{``0})">
+            <summary>
+            
+            </summary>
+            <typeparam name="TVector"></typeparam>
+            <param name="tableName"></param>
+            <param name="vectorTableParameters"></param>
+            <returns></returns>
+            <exception cref="T:System.NotSupportedException"></exception>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalId(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
+            <summary>
+            
             </summary>
             <param name="tableName"></param>
-            <param name="externalDocumentIDs"></param>
-            <param name="activate">default is false (to remove/deactivate operation), it is possible again to activate removed association</param>
+            <param name="externalIds"></param>
+            <param name="vectorTableParameters"></param>
+            <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsClusteringKMeans(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]})">
+        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalId(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
             <summary>
-            Having that each clusterPrototypes vector represent a cluster and itemsToBeClustered must be sparsed between clusterPrototypes
-            </summary>
-            <param name="clusterPrototypes">Each element is a vector representing a cluster (around it must concentrate itemsToBeClustered)</param>
-            <param name="itemsToBeClustered">Vectors of all items that we want to assign to clusters</param>
-            <returns>Key is a index in clusterPrototypes 0..clusterPrototypes-1; Value: List of indexes in itemsToBeClustered</returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Double[],System.Int32,System.Collections.Generic.HashSet{System.Byte[]})">
-            <summary>
-            <para>Searches similar documents to vectorRequest in VectorStorage of tableName.</para>        
-            <para>This operation only selects from tableName</para>
+            
             </summary>
             <param name="tableName"></param>
-            <param name="vectorQuery">query vector, will be searched the most relevant to it in the table</param>
-            <param name="maxReturnQuantity">Default is 100, maximal return quantity (if very big - complete table will be returned), also can work VectorsSearchSimilar(.,maxReturnQuantity = 10000,.).Take(5000) or VectorsSearchSimilar(...).Take(10)  </param>
-            <param name="excludingDocuments">Default is null, External Documents IDs to be excluded from the search</param>
-            <returns>ExternalIds sorted by relevance</returns>
+            <param name="externalIds"></param>
+            <param name="vectorTableParameters"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList{System.ValueTuple{System.Int64,System.Single[]}},DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="vectors">(long ExternalId of the Vector, float[] vector itself - will be auto normalized)</param>
+            <param name="vectorTableParameters"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList{System.ValueTuple{System.Int64,System.Double[]}},DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="vectors">(long ExternalId of the Vector, double[] vector itself - will be auto normalized)</param>
+            <param name="vectorTableParameters"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Single[],System.Int32,DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="queryVector">find vectors in db closest to queryVector. queryVector will be auto-normalized</param>
+            <param name="quantity">finds 'quantity' closest vectors</param>
+            <param name="vectorTableParameters"></param>
+            <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Double[],System.Int32,DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
+            <summary>
+            
+            </summary>
+            <param name="tableName"></param>
+            <param name="queryVector">find vectors in db closest to queryVector. queryVector will be auto-normalized</param>
+            <param name="quantity">finds 'quantity' closest vectors</param>
+            <param name="vectorTableParameters"></param>
+            <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>        
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
             <summary>
@@ -6983,8 +7051,7 @@
         <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.#ctor(DBreeze.HNSW.SmallWorld{`0,`1}.Parameters)">
             <summary>
             Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2.Graph"/> class.
-            </summary>
-            <param name="distance">The distance funtion to use in the small world.</param>
+            </summary>            
             <param name="parameters">The parameters of the algorithm.</param>
         </member>
         <member name="P:DBreeze.HNSW.SmallWorld`2.Graph.NewNode">
@@ -7024,7 +7091,7 @@
             <param name="level">Level of the layer.</param>
             <returns>The list of the nearest neighbours at the level.</returns>
         </member>
-        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.RandomLevel(System.Random,System.Double)">
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.RandomLevel(DBreeze.Utils.FastRandom,System.Double)">
             <summary>
             Gets the level for the layer.
             </summary>
@@ -7078,19 +7145,12 @@
             Gets all connections of the node on all layers.
             </summary>            
         </member>
-        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.GetConnections(System.Int32)">
-            <summary>
-            Get connections of the node on the given layer.
-            </summary>
-            <param name="level">The level of the layer.</param>
-            <returns>List of connected nodes.</returns>
-        </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Node.AddConnection(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32)">
             <summary>
             Add connections to the node on the specific layer.
             </summary>
             <param name="newNeighbour">The node to connect with.</param>
-            <param name="level">The level of the layer.</param>
+            <param name="level">The level of the layer.</param>           
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Node.SelectBestForConnecting(System.Collections.Generic.List{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
             <summary>
@@ -7255,227 +7315,13 @@
             <param name="comparer">The source comparer.</param>
             <returns>The inverted to source comparer.</returns>
         </member>
-        <member name="M:DBreeze.VectorLayer.VectorMath.NormalizeVectors(System.Collections.Generic.List{System.Double[]})">
+        <member name="M:DBreeze.HNSW.VectorTran.InitForTableD``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
             <summary>
             
             </summary>
-            <param name="vectors"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.VectorMath.NormalizeVector(System.Double[])">
-            <summary>
-            
-            </summary>
-            <param name="vector"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.VectorMath.Distance_SIMDForUnits(System.Double[],System.Double[])">
-            <summary>
-            Distance between 2 vectors
-            </summary>
-            <param name="u"></param>
-            <param name="v"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Clustering.KMeansCluster(System.Collections.Generic.List{System.Double[]},System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="data"></param>
-            <param name="k"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Clustering.KMeansCluster(System.Collections.Generic.List{System.Double[]},System.Collections.Generic.List{System.Double[]})">
-            <summary>
-            
-            </summary>
-            <param name="initialCentroids"></param>
-            <param name="dataToCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.VectorLayer.Node.eType.Vector">
-            <summary>
-            Vector itself
-            </summary>
-        </member>
-        <member name="F:DBreeze.VectorLayer.Node.eType.Centroid">
-            <summary>
-            Centroid Node, can refer either on other centroids of the lower generation, or on vectors
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Node.GetParentNode(DBreeze.VectorLayer.Storage)">
-            <summary>
-            
-            </summary>
-            <param name="storage"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Node.SetParentNode(DBreeze.VectorLayer.Node)">
-            <summary>
-            
-            </summary>
-            <param name="parentNode"></param>
-        </member>
-        <member name="P:DBreeze.VectorLayer.Node.VectorStored">
-            <summary>
-            Vector is stored under 7.
-            </summary>
-        </member>
-        <member name="P:DBreeze.VectorLayer.Node.Radius">
-            <summary>
-            Centroid radius
-            </summary>
-        </member>
-        <member name="F:DBreeze.VectorLayer.Node.Restructed">
-            <summary>
-            After Adding this node already was restructed by Restruct Graph
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Node.AddNode(DBreeze.VectorLayer.Node,DBreeze.VectorLayer.Storage)">
-            <summary>
-            Centroids
-            </summary>
-            <param name="node"></param>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Node.GetClosestNode(System.Double[],DBreeze.VectorLayer.Storage)">
-            <summary>
-            
-            </summary>
-            <param name="vector"></param>
-            <param name="storage"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.VectorLayer.Storage">
-            <summary>
-            Storage of GraphNodes in DBreeze,   
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.GetNewId">
-            <summary>
-            
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.GetVectorStat">
-            <summary>
-            Force read from DB, when not yet initialized
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.GetEntryNode(System.Boolean)">
-            <summary>
-             Never returns NULL
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.SetEntryNode(DBreeze.VectorLayer.Node)">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.VectorLayer.Storage.ChangedNodes">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.VectorLayer.Storage.CachedNodes">
-            <summary>
-            Cached nodes just help to speed up the process, they can be duplicated with changedNodes
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.GetNodeById(System.Int64)">
-            <summary>
-            Can return Null
-            </summary>
-            <param name="id"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.SaveNodes">
-            <summary>
-            Interfaced
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.RemoveNode(System.Int64)">
-            <summary>
-            
-            </summary>
-            <param name="id"></param>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.RemoveNode(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="externalId"></param>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Storage.GetNodeByExternalId(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="externalId"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.VectorLayer.VectorStat.Changed">
-            <summary>
-            Not for serialization
-            </summary>
-        </member>
-        <member name="F:DBreeze.VectorLayer.Vectors.Dense">
-            <summary>
-            Quantity of vectors/centroids per Graph Edge, when reached splits Edge on EdgeVectorsQuantity/Dense bringing their new centroids on the upper Edge within the Graph
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.GetSimilar(System.Double[],System.Int32,System.Collections.Generic.HashSet{System.Byte[]})">
-            <summary>
-            
-            </summary>
-            <param name="queryVector"></param>
-            <param name="maxReturn">Default is 100. Defence mechanism to avoid returning the complete graph. But can be set to whatever. Also can work GetSimlar(query, maxReturn: 10000).Take(5000) </param>
-            <param name="excludingDocuments"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.VectorLayer.Vectors.RecSimilarOption">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.GetSimilarInternal(System.Double[],DBreeze.VectorLayer.Node,DBreeze.VectorLayer.Vectors.RecSimilarOption)">
-            <summary>
-            
-            </summary>
-            <param name="queryVector"></param>
-            <param name="nd"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.GetVectorsByExternalId(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            
-            </summary>
-            <param name="externalIDs"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.RemoveByExternalId(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            
-            </summary>
-            <param name="externalIDs"></param>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.AddVectors(System.Collections.Generic.IReadOnlyDictionary{System.Byte[],System.Double[]})">
-            <summary>
-            Key ExternalId, Value Embedding Vector
-            </summary>
-            <param name="vectors"></param>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.AddVectorInternal(DBreeze.VectorLayer.Node,System.Byte[],System.Double[])">
-            <summary>
-            
-            </summary>
-            <param name="externalId"></param>
-            <param name="vector"></param>
-        </member>
-        <member name="M:DBreeze.VectorLayer.Vectors.RestructGraph">
-            <summary>
-            
-            </summary>
+            <typeparam name="TVector"></typeparam>
+            <param name="tableName"></param>
+            <param name="vectorTableParameters"></param>
         </member>
         <member name="P:DBreeze.DBreezeConfiguration.Backup">
             <summary>

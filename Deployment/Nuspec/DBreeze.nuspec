@@ -49,10 +49,7 @@ Made with C#</summary>
   </metadata>
   <files>
 		<file src="Deployment\bin\NET6_0\DBreeze.dll" target="lib\net6.0" />
-		<file src="Deployment\bin\NET6_0\DBreeze.XML" target="lib\net6.0" />	
-
-		<file src="Deployment\bin\NET8_0\DBreeze.dll" target="lib\net8.0" />
-		<file src="Deployment\bin\NET8_0\DBreeze.XML" target="lib\net8.0" />	
+		<file src="Deployment\bin\NET6_0\DBreeze.XML" target="lib\net6.0" />		
 		
 		
 		<file src="Deployment\bin\NET35\DBreeze.dll" target="lib\net35" />
@@ -61,8 +58,8 @@ Made with C#</summary>
 		<file src="Deployment\bin\NET40\DBreeze.dll" target="lib\net40" />
 		<file src="Deployment\bin\NET40\DBreeze.XML" target="lib\net40" />
 		
-		<file src="Deployment\bin\NET45\DBreeze.dll" target="lib\net452" />
-		<file src="Deployment\bin\NET45\DBreeze.XML" target="lib\net452" />
+		<file src="Deployment\bin\NET45\DBreeze.dll" target="lib\net45" />
+		<file src="Deployment\bin\NET45\DBreeze.XML" target="lib\net45" />
 		
 		<file src="Deployment\bin\NET461\DBreeze.dll" target="lib\net461" />
 		<file src="Deployment\bin\NET461\DBreeze.XML" target="lib\net461" />

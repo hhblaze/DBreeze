@@ -1,4 +1,9 @@
-﻿#if NET6FUNC || NET472
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+#if NET6FUNC || NET472
 namespace DBreeze.HNSW
 {
     using System;
@@ -139,43 +144,6 @@ namespace DBreeze.HNSW
             //    //     int* ptr = (int*)&value;
             //    //     return (ptr[1], ptr[0]); // Little Endian
             //    // }
-            //}
-
-
-            ///// <summary>
-            ///// destination is a primary key.
-            ///// </summary>
-            ///// <param name="destination">destination.</param>
-            ///// <param name="departure">departure.</param>
-            ///// <param name="distance">distance.</param>
-            //public void Add(Node destination, Node departure, TDistance distance)
-            //{
-            //    if (!this.Mkd.TryGetValue(destination.Id, out var inner))
-            //    {
-            //        inner = new Dictionary<int, TDistance>();
-            //        this.Mkd[destination.Id] = inner;
-            //    }
-
-            //    inner[departure.Id] = distance;
-            //    this.Count++;
-            //}
-
-            ///// <summary>
-            ///// TryGetValue.
-            ///// </summary>
-            ///// <param name="destination">destination.</param>
-            ///// <param name="departure">departure.</param>
-            ///// <param name="result">result.</param>
-            ///// <returns>boolean value.</returns>
-            //public bool TryGetValue(Node destination, Node departure, out TDistance result)
-            //{
-            //    if (this.Mkd.TryGetValue(destination.Id, out var inner))
-            //    {
-            //        return inner.TryGetValue(departure.Id, out result);
-            //    }
-
-            //    result = default;
-            //    return false;
             //}
 
 

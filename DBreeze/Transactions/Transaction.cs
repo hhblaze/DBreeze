@@ -569,7 +569,7 @@ namespace DBreeze.Transactions
             TextSearchHandlerCommit();
 
             //Vector HNSW layer is forced to be flushed
-#if !NETPORTABLE
+#if NET6FUNC || NET472
             if (_vectorTransactionHelper != null)
                 _vectorTransactionHelper.BeforeComit();
 #endif

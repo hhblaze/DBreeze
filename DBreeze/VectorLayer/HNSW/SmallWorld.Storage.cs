@@ -1,4 +1,9 @@
-﻿#if NET6FUNC || NET472
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+#if NET6FUNC || NET472
 using DBreeze.DataTypes;
 using DBreeze.Tries;
 using DBreeze.Utils;
@@ -17,8 +22,7 @@ namespace DBreeze.HNSW
     internal partial class SmallWorld<TItem, TDistance>
     {
         internal interface IStorage<TItem, TDistance>
-        {
-            //TItem GetItem1(uint externalId);
+        {            
             TItem GetItem(long externalId, Func<long, TItem> f);
             void AddItem(long externalId, int bucketId, int id, TItem item);
             string TableName { get; set; }
@@ -123,7 +127,7 @@ namespace DBreeze.HNSW
 
         internal class SmallWorldStorageF : DBStorage, IStorage<float[], float>
         {
-            //TODO: Put here F/D distance functions (with without "Vector" support) use one time check if "Vector" supported from SIMDForUnits
+            
             public Func<float[], float[], float> GetDistanceFunction()
             {
                 if (CosineDistance.IsHardwareAccelerated())
@@ -168,34 +172,6 @@ namespace DBreeze.HNSW
 
                 return item;
             }
-
-            //float[] SmallWorld<TItem, TDistance>.IStorage<float[]>.GetItem1(uint externalId)
-            //{
-
-            //    //if (this.GetVectorByExternalId != null)
-            //    //    return GetVectorByExternalId(externalId);
-
-            //    if (!itemsCache.TryGetValue(externalId, out var item))
-            //    {
-            //        var ll = tran.ValuesLazyLoadingIsOn;
-            //        tran.ValuesLazyLoadingIsOn = false;
-            //        var row = tran.Select<uint, byte[]>(TableVectorsStorage, externalId);
-            //        tran.ValuesLazyLoadingIsOn = ll;
-            //        if (row.Exists)
-            //        {
-            //            var dec = SmallWorld<TItem, TDistance>.Decompress(row.Value);
-            //            itemsCache[row.Key] = dec;
-            //            return dec;
-            //        }
-            //        else
-            //        {
-            //            throw new Exception($"HNSW. SmallWorldStorageF. GetItem {externalId} is not found");
-            //        }
-
-            //    }
-
-            //    return item;
-            //}
 
             public void ClearItemsCache()
             {
@@ -244,42 +220,6 @@ namespace DBreeze.HNSW
                 addedItems.Add((externalId, bucketId, id));
                 this._sync.ExitWriteLock();               
             }
-
-           
-            //public float[] NormalizeVector(float[] vector)
-            //{
-            //    return CosineDistance.NormalizeVector(vector);
-            //}
-
-
-            ///// <summary>
-            ///// TEST
-            ///// </summary>
-            ///// <param name="batchSize"></param>
-            ///// <returns></returns>
-            //public IEnumerable<List<(uint, float[])>> ByBatch(int batchSize, int take=int.MaxValue)
-            //{
-            //    if (tran.Count(TEMPTableVectorsStorage) == 0)
-            //        yield break;
-
-            //    int i = 0;
-            //    List<(uint, float[])> l = new();
-            //    foreach (var el in tran.SelectForward<uint, byte[]>(TEMPTableVectorsStorage).Take(take))
-            //    {
-            //        if (i == batchSize)
-            //        {
-            //            i = 0;
-            //            yield return l;
-            //            l.Clear();
-            //        }
-            //        var dec = SmallWorld<TItem, TDistance>.Decompress(el.Value);
-            //        l.Add((el.Key, dec));
-            //        i++;
-            //    }
-
-            //    if (l.Count > 0)
-            //        yield return l;
-            //}
 
 
         }
@@ -334,26 +274,6 @@ namespace DBreeze.HNSW
                 return item;
             }
 
-            //double[] SmallWorld<TItem, TDistance>.IStorage<double[]>.GetItem1(uint externalId)
-            //{
-            //    if (!itemsCache.TryGetValue(externalId, out var item))
-            //    {
-            //        var ll = tran.ValuesLazyLoadingIsOn;
-            //        tran.ValuesLazyLoadingIsOn = false;
-            //        var row = tran.Select<uint, byte[]>(TableVectorsStorage, externalId);
-            //        tran.ValuesLazyLoadingIsOn = ll;
-            //        if (row.Exists)
-            //        {
-            //            var dec = SmallWorld<TItem, TDistance>.DecompressD(row.Value);
-            //            itemsCache[row.Key] = dec;
-            //            return dec;
-            //        }
-
-            //    }
-
-            //    return item;
-            //}
-
             public void ClearItemsCache()
             {
                 itemsCache.Clear();
@@ -406,37 +326,7 @@ namespace DBreeze.HNSW
                 addedItems.Add((externalId, bucketId, id));
                 this._sync.ExitWriteLock();
             }
-
-            ///// <summary>
-            ///// 
-            ///// </summary>
-            ///// <param name="batchSize"></param>
-            ///// <param name="take"></param>
-            ///// <returns></returns>
-            //public IEnumerable<List<(uint, double[])>> ByBatch(int batchSize, int take = int.MaxValue)
-            //{
-            //    if (tran.Count(TEMPTableVectorsStorage) == 0)
-            //        yield break;
-
-            //    int i = 0;
-            //    List<(uint, double[])> l = new();
-            //    foreach (var el in tran.SelectForward<uint, byte[]>(TEMPTableVectorsStorage).Take(take))
-            //    {
-            //        if (i == batchSize)
-            //        {
-            //            i = 0;
-            //            yield return l;
-            //            l.Clear();
-            //        }
-            //        var dec = SmallWorld<TItem, TDistance>.DecompressD(el.Value);
-            //        l.Add((el.Key, dec));
-            //        i++;
-            //    }
-
-            //    if (l.Count > 0)
-            //        yield return l;
-            //}
-
+                     
 
         }
 

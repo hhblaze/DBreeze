@@ -222,22 +222,8 @@ namespace DBreeze.Transactions
             graph.Flush();
 
         }
+              
 
-      
-
-        //public long VectorsCount(string tableName, VectorTableParameters<double[]> vectorTableParameters = null)
-        //{
-        //    var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
-        //    return graph.Count();
-        //}
-
-        //public IEnumerable<(long, double[])> VectorsGetByExternalDocumentIDs(string tableName, List<long> externalDocumentIDs)
-        //{
-        //    Vectors world = new Vectors(this, tableName);
-        //    return world.GetVectorsByExternalId(externalDocumentIDs);
-
-
-        //}
 
         /// <summary>
         ///// <para>Inserts associated with the external documents vectors into VectorStorage created under tableName.</para>

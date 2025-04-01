@@ -1,8 +1,9 @@
-﻿#if NET6FUNC || NET472
-// <copyright file="SmallWorld.Graph.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+#if NET6FUNC || NET472
 
 namespace DBreeze.HNSW
 {
@@ -28,8 +29,6 @@ namespace DBreeze.HNSW
             public DistanceCache<TDistance> DistanceCache;
             public NodeCache NodeCache;
 
-            //public Func<TItem, TItem, TDistance> Distance;
-
             /// <summary>
             /// Gets parameters of the algorithm.
             /// </summary>
@@ -48,9 +47,6 @@ namespace DBreeze.HNSW
 
                 this._bucket = bucket;
 
-                //if (composer._generator != null)
-                //    this.RandomGenerator = composer._generator;
-
                 if (entryPointId > -1)
                     entryPoint = this.NodeCache.GetNode(entryPointId);
 
@@ -64,10 +60,9 @@ namespace DBreeze.HNSW
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Graph"/> class.
-            /// </summary>
-            /// <param name="distance">The distance funtion to use in the small world.</param>
+            /// </summary>            
             /// <param name="parameters">The parameters of the algorithm.</param>
-            //public Graph(Func<TItem, TItem, TDistance> distance, Parameters parameters)
+            
             public Graph( Parameters parameters)
             {
                 this.Parameters = parameters;
@@ -105,10 +100,7 @@ namespace DBreeze.HNSW
             public int Count { get; set; } = 0;
 
             Utils.FastRandom RandomGenerator = new Utils.FastRandom(42);
-            //public Random RandomGenerator = new Random(42);
-
-            //public Metrics Metrics { get; private set; }=new Metrics();
-
+          
             public bool Changed = false;
 
             public void Flush()
@@ -245,204 +237,8 @@ namespace DBreeze.HNSW
 
                 return KNearestAtLevel(bestPeer, destination, k, 0);
             }
+                      
 
-            ///// <summary>
-            ///// Serializes edges of the graph.
-            ///// </summary>
-            ///// <returns>Bytes representing edges.</returns>
-            //public byte[] Serialize()
-            //{
-            //    using (var stream = new MemoryStream())
-            //    {
-            //        var formatter = new BinaryFormatter();
-            //        formatter.Serialize(stream, this.entryPoint.Id);
-            //        formatter.Serialize(stream, this.entryPoint.ExternalId);
-            //        formatter.Serialize(stream, this.entryPoint.MaxLevel);                    
-            //        formatter.Serialize(stream, this.Count);
-
-            //        for (int level = this.entryPoint.MaxLevel; level >= 0; --level)
-            //        {
-            //            var edges = new Dictionary<(int, long), List<(int, long)>>();
-            //            BFS(this.entryPoint, level, (node) =>
-            //            {
-            //                edges[(node.Id, node.ExternalId)] = node.GetConnections(level).Select(x => (x.Id, x.ExternalId)).ToList();
-            //            });
-
-            //            formatter.Serialize(stream, edges);
-            //        }
-
-            //        return stream.ToArray();
-            //    }
-            //}
-
-            /* new serializ
-             
-              public byte[] Serialize()
-    {
-        var graphData = new GraphSerializationData
-        {
-            EntryPointId = this.entryPoint.Id,
-            EntryPointExternalId = this.entryPoint.ExternalId,
-            EntryPointMaxLevel = this.entryPoint.MaxLevel,
-            Count = this.Count,
-            EdgesByLevel = new List<Dictionary<(int, long), List<(int, long)>>>()
-        };
-
-        for (int level = this.entryPoint.MaxLevel; level >= 0; --level)
-        {
-            var edges = new Dictionary<(int, long), List<(int, long)>>();
-            BFS(this.entryPoint, level, (node) =>
-            {
-                edges[(node.Id, node.ExternalId)] = node.GetConnections(level).Select(x => (x.Id, x.ExternalId)).ToList();
-            });
-            graphData.EdgesByLevel.Add(edges);
-        }
-
-        return Encoder.Serialize(graphData);  // Use Biser's Encoder
-    }
-
-
-            public void Deserialize(byte[] bytes)
-    {
-        GraphSerializationData graphData = Decoder.Decode<GraphSerializationData>(bytes);  // Use Biser's Decoder
-
-        Dictionary<int, Node> nodeList = new Dictionary<int, Node>();
-
-        Func<(int id, long externalId), int, Node> getOrAdd = (idPair, level) =>
-        {
-            var item = this.Parameters.Storage.GetItem(idPair.externalId);
-
-            if (!nodeList.TryGetValue(idPair.id, out var foundNode))
-            {
-                foundNode = this.NewNode(idPair.id, idPair.externalId, item, level);
-                nodeList[idPair.id] = foundNode;
-            }
-            return foundNode;
-        };
-
-        this.Count = graphData.Count;
-
-        // Restoring root
-        var rootItem = this.Parameters.Storage.GetItem(graphData.EntryPointExternalId);
-        nodeList[graphData.EntryPointId] = this.NewNode(graphData.EntryPointId, graphData.EntryPointExternalId, rootItem, graphData.EntryPointMaxLevel);
-
-        // Restoring the rest
-        for (int level = graphData.EntryPointMaxLevel; level >= 0; --level)
-        {
-            var edges = graphData.EdgesByLevel[graphData.EntryPointMaxLevel - level]; // Access in reverse order
-            foreach (var pair in edges)
-            {
-                var currentNode = getOrAdd(pair.Key, level);
-                foreach (var adjacentId in pair.Value)
-                {
-                    var neighbour = getOrAdd(adjacentId, level);
-                    currentNode.AddConnection(neighbour, level);
-                }
-            }
-        }
-
-        this.entryPoint = nodeList[graphData.EntryPointId];
-    }
-
-
-    [Biser.Serialization.BiserObject]  // Mark for Biser serialization
-    private class GraphSerializationData
-    {
-        [Biser.Serialization.BiserMember(1)]
-        public int EntryPointId { get; set; }
-
-        [Biser.Serialization.BiserMember(2)]
-        public long EntryPointExternalId { get; set; }
-
-        [Biser.Serialization.BiserMember(3)]
-        public int EntryPointMaxLevel { get; set; }
-
-        [Biser.Serialization.BiserMember(4)]
-        public int Count { get; set; }
-
-        [Biser.Serialization.BiserMember(5)]
-        public List<Dictionary<(int, long), List<(int, long)>>> EdgesByLevel { get; set; }
-    }
-             */
-
-
-            ///// <summary>
-            ///// Deserilaizes graph edges and assigns nodes to the items.
-            ///// </summary>            
-            ///// <param name="bytes">The serialized edges.</param>            
-            //public void Deserialize(byte[] bytes)
-            //{
-            //    //public void Deserialize(IList<(long externalId, TItem item)> items, byte[] bytes)
-            //    //var nodeList = Enumerable.Repeat<Node>(null, items.Count).ToList();
-            //    Dictionary<int, Node> nodeList = new Dictionary<int, Node>();
-
-            //    Func<(int id, uint externalId), int, Node> getOrAdd = (idPair, level) =>
-            //    {
-            //        var item = this.GetItem(idPair.externalId);
-            //        //var item = this.Parameters.Storage.GetItem(idPair.externalId);
-            //        //nodeList[idPair.id] = nodeList[idPair.id] ?? this.NewNode(idPair.id, idPair.externalId, item, level);
-
-            //        if (nodeList.TryGetValue(idPair.id, out var founNode))
-            //            nodeList[idPair.id]=founNode;
-            //        else
-            //            nodeList[idPair.id] = this.NewNode(idPair.id, idPair.externalId, item, level, false);
-
-            //        return nodeList[idPair.id];
-            //    };
-
-            //    using (var stream = new MemoryStream(bytes))
-            //    {
-            //        var formatter = new BinaryFormatter();
-            //        int entryId = (int)formatter.Deserialize(stream);
-            //        uint entryExternalId = (uint)formatter.Deserialize(stream);
-            //        int maxLevel = (int)formatter.Deserialize(stream);
-                    
-            //        this.Count = (int)formatter.Deserialize(stream);
-
-            //        //Restoring root
-            //        //var rootItem = this.Parameters.Storage.GetItem(entryExternalId);// items[entryId];                    
-            //        var rootItem = this.GetItem(entryExternalId);// items[entryId];                    
-            //        nodeList[entryId] = this.NewNode(entryId, entryExternalId, rootItem, maxLevel, false);
-            //        //Restoring the rest
-            //        for (int level = maxLevel; level >= 0; --level)
-            //        {
-            //            var edges = (Dictionary<(int id, uint extId), List<(int id, uint extId)>>)formatter.Deserialize(stream);
-            //            foreach (var pair in edges)
-            //            {
-            //                var currentNode = getOrAdd(pair.Key, level);
-            //                foreach (var adjacentId in pair.Value)
-            //                {
-            //                    var neighbour = getOrAdd(adjacentId, level);
-            //                    currentNode.AddConnection(neighbour, level);
-            //                }
-            //            }
-            //        }
-
-            //        this.entryPoint = nodeList[entryId];
-            //    }
-            //}
-
-            ///// <summary>
-            ///// Prints edges of the graph.
-            ///// </summary>
-            ///// <returns>String representation of the graph's edges.</returns>
-            //internal string Print()
-            //{
-            //    var buffer = new StringBuilder();
-            //    for (int level = this.entryPoint.MaxLevel; level >= 0; --level)
-            //    {
-            //        buffer.AppendLine($"[LEVEL {level}]");
-            //        BFS(this.entryPoint, level, (node) =>
-            //        {
-            //            var neighbours = string.Join(", ", node.GetConnections(level).Select(x => x.Id));
-            //            buffer.AppendLine($"({node.Id}) -> {{{neighbours}}}");
-            //        });
-
-            //        buffer.AppendLine();
-            //    }
-
-            //    return buffer.ToString();
-            //}
 
             /// <summary>
             /// The implementaiton of SEARCH-LAYER(q, ep, ef, lc) algorithm.

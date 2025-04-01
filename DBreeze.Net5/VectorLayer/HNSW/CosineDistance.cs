@@ -1,8 +1,10 @@
-﻿#if NET6FUNC
-// <copyright file="CosineDistance.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+
+#if NET6FUNC
 
 namespace DBreeze.HNSW
 {
@@ -31,32 +33,7 @@ namespace DBreeze.HNSW
         {
             return Vector.IsHardwareAccelerated;
         }
-        ///// <summary>
-        ///// Calculates cosine distance without making any optimizations.
-        ///// </summary>
-        ///// <param name="u">Left vector.</param>
-        ///// <param name="v">Right vector.</param>
-        ///// <returns>Cosine distance between u and v.</returns>
-        //public static float NonOptimized(IReadOnlyList<float> u, IReadOnlyList<float> v)
-        //{
-        //    if (u.Count != v.Count)
-        //    {
-        //        throw new ArgumentException("Vectors have non-matching dimensions");
-        //    }
-
-        //    float dot = 0.0f;
-        //    float nru = 0.0f;
-        //    float nrv = 0.0f;
-        //    for (int i = 0; i < u.Count; ++i)
-        //    {
-        //        dot += u[i] * v[i];
-        //        nru += u[i] * u[i];
-        //        nrv += v[i] * v[i];
-        //    }
-
-        //    var similarity = dot / (float)(Math.Sqrt(nru) * Math.Sqrt(nrv));
-        //    return 1 - similarity;
-        //}
+        
 
         /// <summary>
         /// Calculates cosine distance with assumption that u and v are unit vectors.

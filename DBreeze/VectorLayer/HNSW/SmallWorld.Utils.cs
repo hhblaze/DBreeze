@@ -1,8 +1,10 @@
-﻿#if NET6FUNC || NET472
-// <copyright file="SmallWorld.Utils.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+
+#if NET6FUNC || NET472
 
 namespace DBreeze.HNSW
 {
@@ -176,67 +178,6 @@ namespace DBreeze.HNSW
             }
 
         }
-
-        //public static class BrotliStringSerializer
-        //{
-        //    public static byte[] Serialize(List<string> strings)
-        //    {
-        //        using (var ms = new MemoryStream())
-        //        using (var writer = new BinaryWriter(ms))
-        //        {
-        //            foreach (var s in strings)
-        //            {                       
-        //                var compressed = CompressString(s);
-        //                writer.Write(compressed.Length);
-        //                writer.Write(compressed);
-        //            }
-        //            return ms.ToArray();
-        //        }
-        //    }
-
-        //    public static IEnumerable<string> Deserialize(byte[] data)
-        //    {
-        //        using (var ms = new MemoryStream(data))
-        //        using (var reader = new BinaryReader(ms))
-        //        {
-        //            while (ms.Position < ms.Length)
-        //            {
-                       
-        //                var compressedSize = reader.ReadInt32();                        
-        //                var compressedBytes = reader.ReadBytes(compressedSize);                        
-        //                yield return DecompressString(compressedBytes);
-        //            }
-        //        }
-        //    }
-
-        //    private static byte[] CompressString(string input)
-        //    {
-        //        var bytes = Encoding.UTF8.GetBytes(input);
-
-        //        using (var output = new MemoryStream())
-        //        {
-        //            using (var compressor = new BrotliStream(output, CompressionLevel.Fastest))
-        //            {
-        //                compressor.Write(bytes, 0, bytes.Length);
-        //            }
-        //            return output.ToArray();
-        //        }
-        //    }
-
-        //    private static string DecompressString(byte[] compressed)
-        //    {
-        //        using (var input = new MemoryStream(compressed))
-        //        using (var output = new MemoryStream())
-        //        {
-        //            using (var decompressor = new BrotliStream(input, CompressionMode.Decompress))
-        //            {
-        //                decompressor.CopyTo(output);
-        //            }
-        //            return Encoding.UTF8.GetString(output.ToArray());
-        //        }
-        //    }
-        //}
-
 
     }
 }

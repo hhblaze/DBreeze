@@ -1,8 +1,10 @@
-﻿#if NET6FUNC || NET472
-// <copyright file="SmallWorld.Node.cs" company="Microsoft">
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-// </copyright>
+﻿/*
+  Copyright https://github.com/wlou/HNSW.Net MIT License
+  Copyright (C) 2012 dbreeze.tiesky.com / Oleksiy Solovyov / Ivars Sudmalis.
+  It's a free software for those who think that it should be free.
+*/
+
+#if NET6FUNC || NET472
 
 namespace DBreeze.HNSW
 {
@@ -45,8 +47,7 @@ namespace DBreeze.HNSW
                     {
                         //only real nodes in the cache
                         graph.NodeCache.AddNode(this);
-
-                        //TODO: check changed logic. Should be when new in any case changed inspite of connections. But when restored from DB. AddConnection - influences
+                                                
                         this.Changed = true;
                     }
 
@@ -56,14 +57,9 @@ namespace DBreeze.HNSW
                     {
                         this.Connections.Add(new List<int>(GetM(this.Graph.Parameters.M, level)));
                     }
-                    //this.Connections = new List<List<Node>>(this.MaxLevel + 1);
-                    //for (int level = 0; level <= this.MaxLevel; ++level)
-                    //{
-                    //    this.Connections.Add(new List<Node>(GetM(this.Graph.Parameters.M, level)));
-                    //}
+                    
                 }
 
-                //TODO: ChangeBestFOrConnection to work with int...we can economize casts ToList, in any case all is moved into one NodeCache (that is a bit slower then hold connections in nodes)
             }
 
             private static readonly Comparer<TDistance> DistanceComparer = Comparer<TDistance>.Default;
@@ -119,16 +115,14 @@ namespace DBreeze.HNSW
             { 
                 get { 
                     if(TempItem == null)
-                    {
-                        //this.Graph.Metrics.Node_GetItemTouch++;
-                       
+                    {  
                         return this.Graph.GetItem(this.ExternalId);
                        
                     }                        
                     else
                         return TempItem;
                 }
-                //private set { Storage.AddItem(this.ExternalId)} 
+                
             }
 
             public bool Changed=false;
@@ -136,27 +130,11 @@ namespace DBreeze.HNSW
             /// <summary>
             /// Gets all connections of the node on all layers.
             /// </summary>            
-            public List<List<int>> Connections { get; set; }
-            //protected List<List<Node>> Connections { get; private set; }
+            public List<List<int>> Connections { get; set; }           
 
             private static readonly List<Node> EmptyNodeList = new List<Node>();
-            //private Dictionary<int, List<Node>> _nodeConnectionsCache = new Dictionary<int, List<Node>>();
+            
 
-            /// <summary>
-            /// Get connections of the node on the given layer.
-            /// </summary>
-            /// <param name="level">The level of the layer.</param>
-            /// <returns>List of connected nodes.</returns>
-            //public List<Node> GetConnections(int level)
-            //{
-            //    if (level < this.Connections.Count)
-            //    {
-            //        if(_nodeConnectionsCache.TryGetValue(level, out List<Node> nodes))
-            //            return nodes;
-            //    }
-
-            //    return EmptyNodeList;
-            //}
             public List<Node> GetConnections(int level)
             {
                 if (level < this.Connections.Count)
@@ -168,45 +146,13 @@ namespace DBreeze.HNSW
 
                 return EmptyNodeList;
             }
-            //public List<Node> GetConnections(int level)
-            //{
-            //    if (level < this.Connections.Count)
-            //    {
-            //        return this.Connections[level];
-            //    }
-
-            //    return Enumerable.Empty<Node>().ToList();
-            //}
+          
 
             /// <summary>
             /// Add connections to the node on the specific layer.
             /// </summary>
             /// <param name="newNeighbour">The node to connect with.</param>
-            /// <param name="level">The level of the layer.</param>
-            //public void AddConnection(Node newNeighbour, int level)
-            //{
-            //    var levelConnections = this.Connections[level];
-            //    if((levelConnections.Count + 1) > GetM(this.Graph.Parameters.M, level))
-            //    {
-            //        if (!_nodeConnectionsCache.TryGetValue(level, out var levelNeighbours))
-            //        {
-            //            levelNeighbours = levelConnections.Select(r => this.Graph.NodeCache.GetNode(r)).ToList();                        
-            //        }
-            //        levelNeighbours.Add(newNeighbour);                    
-            //        _nodeConnectionsCache[level] = this.SelectBestForConnecting(levelNeighbours);
-            //        this.Connections[level] = _nodeConnectionsCache[level].Select(r => r.Id).ToList();                  
-            //    }
-            //    else
-            //    {
-            //        if(!_nodeConnectionsCache.TryGetValue(level, out var ncl))
-            //            ncl = new List<Node>();
-            //        ncl.Add(newNeighbour);
-            //        _nodeConnectionsCache[level] = ncl;
-
-            //        this.Connections[level].Add(newNeighbour.Id);
-            //    }
-            //   this.Changed = true;
-            //}
+            /// <param name="level">The level of the layer.</param>           
             public void AddConnection(Node newNeighbour, int level)
             {
                 var levelConnections = this.Connections[level];
@@ -223,28 +169,7 @@ namespace DBreeze.HNSW
 
                 this.Changed = true;
             }
-            //public void AddConnection(Node newNeighbour, int level)
-            //{
-            //    var levelNeighbours = this.Connections[level].Select(r => this.Graph.NodeCache.GetNode(r)).ToList();
-
-            //    levelNeighbours.Add(newNeighbour);
-            //    if (levelNeighbours.Count > GetM(this.Graph.Parameters.M, level))
-            //    {
-            //        this.Connections[level] = this.SelectBestForConnecting(levelNeighbours).Select(r => r.Id).ToList();
-
-            //    }
-            //    else
-            //        this.Connections[level] = levelNeighbours.Select(r => r.Id).ToList();
-            //}
-            //public void AddConnection(Node newNeighbour, int level)
-            //{
-            //    var levelNeighbours = this.Connections[level];
-            //    levelNeighbours.Add(newNeighbour);
-            //    if (levelNeighbours.Count > GetM(this.Graph.Parameters.M, level))
-            //    {
-            //        this.Connections[level] = this.SelectBestForConnecting(levelNeighbours);
-            //    }
-            //}
+           
 
             /// <summary>
             /// The algorithm which selects best neighbours from the candidates for this node.
