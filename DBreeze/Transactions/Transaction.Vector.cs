@@ -102,16 +102,26 @@ namespace DBreeze.Transactions
             return graph;
         }
 
-        public long VectorsCount<TVector>(string tableName)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TVector"></typeparam>
+        /// <param name="tableName"></param>
+        /// <param name="vectorTableParameters"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public long VectorsCount<TVector>(string tableName, VectorTableParameters<TVector> vectorTableParameters = null)
         {
             if (typeof(TVector) == typeof(float[]))
             {
-                var graph = InitVectorTranF<float[]>(tableName, null);
+                var parameters = (VectorTableParameters<float[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranF<float[]>(tableName, parameters);                
                 return graph.Count();
             }
             else if (typeof(TVector) == typeof(double[]))
             {
-                var graph = InitVectorTranD<double[]>(tableName, null);
+                var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranD<double[]>(tableName, parameters);
                 return graph.Count();
             }
 
@@ -152,7 +162,7 @@ namespace DBreeze.Transactions
         /// <param name="queryVector">find vectors in db closest to queryVector. queryVector will be auto-normalized</param>
         /// <param name="quantity">finds 'quantity' closest vectors</param>
         /// <param name="vectorTableParameters"></param>
-        /// <returns>Sorted ascending by distance between queryVector and vectors in DB</returns>
+        /// <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>
         public IEnumerable<(long, float)> VectorsSearchSimilar(string tableName, float[] queryVector, int quantity = 10, VectorTableParameters<float[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
         {
             var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
@@ -170,8 +180,7 @@ namespace DBreeze.Transactions
         /// <param name="queryVector">find vectors in db closest to queryVector. queryVector will be auto-normalized</param>
         /// <param name="quantity">finds 'quantity' closest vectors</param>
         /// <param name="vectorTableParameters"></param>
-        /// <returns>Sorted ascending by distance between queryVector and vectors in DB</returns>
-        /// <returns></returns>
+        /// <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>        
         public IEnumerable<(long, double)> VectorsSearchSimilar(string tableName, double[] queryVector, int quantity = 10, VectorTableParameters<double[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
         {
             var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);

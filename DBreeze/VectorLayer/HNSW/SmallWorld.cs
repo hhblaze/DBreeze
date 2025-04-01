@@ -19,7 +19,7 @@ namespace DBreeze.HNSW
     /// <typeparam name="TItem">The type of items to connect into small world.</typeparam>
     /// <typeparam name="TDistance">The type of distance between items (expect any numeric type: float, double, decimal, int, ...).</typeparam>
     internal partial class SmallWorld<TItem, TDistance>
-        where TDistance : IComparable<TDistance>
+        //where TDistance : IComparable<TDistance>
     {
         /// <summary>
         /// The distance function in the items space.

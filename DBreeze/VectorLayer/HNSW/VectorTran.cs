@@ -8,9 +8,9 @@ using static DBreeze.Transactions.Transaction;
 
 namespace DBreeze.HNSW
 {
-    internal class VectorTran
+    internal class VectorTran      
     {
-        
+
         Dictionary<string, SmallWorld<float[], float>.Composer> dF = new Dictionary<string, SmallWorld<float[], float>.Composer>();
         Dictionary<string, SmallWorld<double[], double>.Composer> dD = new Dictionary<string, SmallWorld<double[], double>.Composer>();
 
@@ -23,7 +23,7 @@ namespace DBreeze.HNSW
 
         public void BeforeComit()
         {
-            foreach(var el in dF)
+            foreach (var el in dF)
                 el.Value.Flush();
             foreach (var el in dD)
                 el.Value.Flush();
@@ -31,7 +31,7 @@ namespace DBreeze.HNSW
 
         public SmallWorld<float[], float>.Composer InitForTableF<TVector>(string tableName, VectorTableParameters<float[]> vectorTableParameters = null)
         {//executed from the lock
-            if(!dF.TryGetValue(tableName, out var graph))
+            if (!dF.TryGetValue(tableName, out var graph))
             {
                 SmallWorld<float[], float>.SmallWorldStorageF storage = new SmallWorld<float[], float>.SmallWorldStorageF();
                 storage.tran = this.tran;
@@ -60,11 +60,11 @@ namespace DBreeze.HNSW
 
                 graph = new SmallWorld<float[], float>.Composer(parameters, instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
                     GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
-                              
+
 
                 dF[tableName] = graph;
             }
-           
+
 
             return graph;
         }
@@ -108,11 +108,11 @@ namespace DBreeze.HNSW
                 graph = new SmallWorld<double[], double>.Composer(parameters, instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
                     GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
 
-                
+
 
                 dD[tableName] = graph;
             }
-                
+
 
             return graph;
         }

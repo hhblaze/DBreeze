@@ -17,7 +17,8 @@ namespace DBreeze.HNSW
     /// <content>
     /// The part with the auxiliary tools for hnsw algorithm.
     /// </content>
-    internal partial class SmallWorld<TItem, TDistance>
+    internal partial class SmallWorld<TItem, TDistance> 
+        where TDistance : IComparable<TDistance>
     {
         /// <summary>
         /// Distance is Lower Than.
