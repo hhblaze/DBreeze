@@ -31,9 +31,10 @@ namespace TesterNet6.TextCorpus
                 foreach (var el in res)
                 {
                     //var rowDoc = tran.Select<byte[], string>(tblDotblLoadV1csFurniture, 2.ToIndex(el));
-                   // var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
-                    Console.WriteLine($"{el.ToHexFromByteArray()}");
-                   // Console.WriteLine($"\tDescription: {dbFurniture.Description}");
+                    // var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
+                    //Console.WriteLine($"{el.ToHexFromByteArray()}");
+                    Console.WriteLine($"{el}");
+                    // Console.WriteLine($"\tDescription: {dbFurniture.Description}");
 
                 }
             }
@@ -61,7 +62,7 @@ namespace TesterNet6.TextCorpus
             Console.WriteLine("Store_String_Vectors Start ");
 
             //-such format will be inserted into VectorTable, Key is exernal documentID, value is vector itself
-            Dictionary<byte[], double[]> vectorsToInsert = new Dictionary<byte[], double[]>();
+            Dictionary<long, double[]> vectorsToInsert = new Dictionary<long, double[]>();
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 //-sync of Doctable and vector table for searching docs
@@ -72,14 +73,14 @@ namespace TesterNet6.TextCorpus
                 {
                     idCnt++;
 
-                    vectorsToInsert.Add(idCnt.To_4_bytes_array_BigEndian(), GetRandomEmbedding());
+                    vectorsToInsert.Add(idCnt, GetRandomEmbedding());
                 }
 
                 //-storing documents as vectors (with/without deferred indexing) 
                 if (vectorsToInsert.Count > 0)
                 {
                     //-in case of big quantity of vectors, use deferredIndexing: true (to run computation in the background)
-                    tran.VectorsInsert(tableVector, vectorsToInsert, deferredIndexing: false);
+                    tran.VectorsInsert(tableVector, vectorsToInsert.Select(r=>(r.Key, r.Value)).ToList());
                 }
 
                 tran.Commit();
@@ -128,11 +129,20 @@ namespace TesterNet6.TextCorpus
                 sw1.Start();
                 using (var tran = Program.DBEngine.GetTransaction())
                 {
+                    //var x = bt.Select((k, v) =>
+                    //new KeyValuePair<byte[], double[]>(
+                    //    (v + j * batchSize).ToBytes(),
+                    //    k.Select(Convert.ToDouble).ToArray()))
+                    //.ToDictionary(k => k.Key, v => NormalizeVectors(v.Value));
+
+                    ////world.AddVectors(x);
+                    //tran.VectorsInsert(tblLoadV1, x);
+
                     var x = bt.Select((k, v) =>
-                    new KeyValuePair<byte[], double[]>(
-                        (v + j * batchSize).ToBytes(),
-                        k.Select(Convert.ToDouble).ToArray()))
-                    .ToDictionary(k => k.Key, v => NormalizeVectors(v.Value));
+                   new KeyValuePair<long, double[]>(
+                       (v + j * batchSize),
+                       k.Select(Convert.ToDouble).ToArray())).Select(r => (r.Key, r.Value)).ToList();
+                   //.ToList(k => k.Key, v => NormalizeVectors(v.Value));
 
                     //world.AddVectors(x);
                     tran.VectorsInsert(tblLoadV1, x);

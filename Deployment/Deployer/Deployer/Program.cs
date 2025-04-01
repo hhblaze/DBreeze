@@ -96,13 +96,16 @@ namespace Deployer
                 string targetFramework = "TargetFramework";
                 string targetFrameworkVersion = "TargetFrameworkVersion";
 
+               
+               
                 //NET FRAMEWORK
-
+                 
                 exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v3.5", "TRACE;RELEASE;" + "NET35", @"DBreeze\bin\Release", "NET35");
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.0", "TRACE;RELEASE;" + "NET40;NETr40", @"DBreeze\bin\Release", "NET40");
                 if (exitCode != 0) { Console.ReadKey(); return; }
-                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.5", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET45");
+                //exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.5", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET45");
+                exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.5.2", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET45");
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.Compile(msbldpathV2, targetFrameworkVersion, @"DBreeze\DBreeze.csproj", "v4.6.1", "TRACE;RELEASE;" + "NET40", @"DBreeze\bin\Release", "NET461");
                 if (exitCode != 0) { Console.ReadKey(); return; }
@@ -130,6 +133,8 @@ namespace Deployer
                 ////.NET
                 exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net6.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;", @"DBreeze.Net5\bin\Release\net6.0", "NET6_0");
                 if (exitCode != 0) { Console.ReadKey(); return; }
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net8.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;", @"DBreeze.Net5\bin\Release\net8.0", "NET8_0");
+                if (exitCode != 0) { Console.ReadKey(); return; } 
 
                 ////.NET STANDARD
                 exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.NetStandard\DBreeze.NetStandard.csproj", "netstandard2.0", "TRACE;RELEASE;" + "NETSTANDARD;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_0", @"DBreeze.NetStandard\bin\Release\netstandard2.0", "NETSTANDARD2_0");
@@ -364,7 +369,7 @@ namespace Deployer
 
 
             Utils.ConsolePrint("Zipping Done...", ConsoleColor.Green);
-            //Console.ReadLine();
+            Console.ReadLine();
         }
 
         static void CreateLibEntry(ZipArchive archive, string folderInArchive, string pathOrigin)        

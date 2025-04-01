@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.118.2024.1016</Version>
-    <FileVersion>1.118.2024.1016</FileVersion>
-    <AssemblyVersion>1.118.2024.1016</AssemblyVersion>
+    <Version>1.118.2024.1017</Version>
+    <FileVersion>1.118.2024.1017</FileVersion>
+    <AssemblyVersion>1.118.2024.1017</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -126,11 +126,25 @@
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs" Link="Utils\MultiKeyDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\BinaryHeap.cs" Link="VectorLayer\HNSW\BinaryHeap.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\HNSW.Composer.cs" Link="VectorLayer\HNSW\HNSW.Composer.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\ReverseComparer.cs" Link="VectorLayer\HNSW\ReverseComparer.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Caches.cs" Link="VectorLayer\HNSW\SmallWorld.Caches.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.cs" Link="VectorLayer\HNSW\SmallWorld.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Graph.cs" Link="VectorLayer\HNSW\SmallWorld.Graph.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Node.cs" Link="VectorLayer\HNSW\SmallWorld.Node.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Storage.cs" Link="VectorLayer\HNSW\SmallWorld.Storage.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Utils.cs" Link="VectorLayer\HNSW\SmallWorld.Utils.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\VectorTran.cs" Link="VectorLayer\HNSW\VectorTran.cs" />
     <Compile Include="..\DBreeze\VectorLayer\KMeans.cs" Link="VectorLayer\KMeans.cs" />
     <Compile Include="..\DBreeze\VectorLayer\Node.cs" Link="VectorLayer\Node.cs" />
     <Compile Include="..\DBreeze\VectorLayer\Storage.cs" Link="VectorLayer\Storage.cs" />
     <Compile Include="..\DBreeze\VectorLayer\Vectors.cs" Link="VectorLayer\Vectors.cs" />
 	
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="VectorLayer\HNSW\" />
   </ItemGroup>
 
 </Project>

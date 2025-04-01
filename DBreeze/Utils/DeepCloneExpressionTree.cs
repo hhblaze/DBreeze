@@ -1,4 +1,4 @@
-﻿#if NET472 || NETSTANDARD2_1 || NETCOREAPP2_0
+﻿#if NET6FUNC || NET472 || NETSTANDARD2_1 || NETCOREAPP2_0
 // Made by Frantisek Konopecky, Prague, 2014 - 2016
 // Fast Deep Copy by Expression Trees https://www.codeproject.com/Articles/1111658/Fast-Deep-Copy-by-Expression-Trees-C-Sharp?fid=1907758&select=5469139&fr=1&tid=5467411
 // Code comes under MIT licence - Can be used without 

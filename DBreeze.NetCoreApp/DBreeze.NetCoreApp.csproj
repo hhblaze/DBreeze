@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.118.2024.1016</Version>
-    <FileVersion>1.118.2024.1016</FileVersion>
-    <AssemblyVersion>1.118.2024.1016</AssemblyVersion>
+    <Version>1.118.2024.1017</Version>
+    <FileVersion>1.118.2024.1017</FileVersion>
+    <AssemblyVersion>1.118.2024.1017</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -35,6 +35,7 @@
 
   <ItemGroup>
         <Compile Include="..\DBreeze.Net5\Utils\CompressionBrotli.cs" Link="Utils\CompressionBrotli.cs" />
+        <Compile Include="..\DBreeze.Net5\VectorLayer\HNSW\CosineDistance.cs" Link="VectorLayer\HNSW\CosineDistance.cs" />
         <Compile Include="..\DBreeze.Net5\VectorLayer\VectorMath.cs" Link="VectorLayer\VectorMath.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
@@ -127,7 +128,18 @@
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionary.cs" Link="Utils\MultiKeyDictionary.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs" Link="Utils\MultiKeyDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
+    <Compile Include="..\DBreeze\Utils\PriorityQueue.cs" Link="Utils\PriorityQueue.cs" />
     <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\BinaryHeap.cs" Link="VectorLayer\HNSW\BinaryHeap.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\HNSW.Composer.cs" Link="VectorLayer\HNSW\HNSW.Composer.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\ReverseComparer.cs" Link="VectorLayer\HNSW\ReverseComparer.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Caches.cs" Link="VectorLayer\HNSW\SmallWorld.Caches.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.cs" Link="VectorLayer\HNSW\SmallWorld.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Graph.cs" Link="VectorLayer\HNSW\SmallWorld.Graph.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Node.cs" Link="VectorLayer\HNSW\SmallWorld.Node.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Storage.cs" Link="VectorLayer\HNSW\SmallWorld.Storage.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Utils.cs" Link="VectorLayer\HNSW\SmallWorld.Utils.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\VectorTran.cs" Link="VectorLayer\HNSW\VectorTran.cs" />
     <Compile Include="..\DBreeze\VectorLayer\KMeans.cs" Link="VectorLayer\KMeans.cs" />
     <Compile Include="..\DBreeze\VectorLayer\Node.cs" Link="VectorLayer\Node.cs" />
     <Compile Include="..\DBreeze\VectorLayer\Storage.cs" Link="VectorLayer\Storage.cs" />

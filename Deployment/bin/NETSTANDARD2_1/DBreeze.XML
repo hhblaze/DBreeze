@@ -6699,6 +6699,584 @@
             <param name="keys"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.HNSW.CosineDistance">
+             <summary>
+             Calculates cosine similarity.
+             </summary>
+             <remarks>
+             Intuition behind selecting float as a carrier.
+            
+             1. In practice we work with vectors of dimensionality 100 and each component has value in range [-1; 1]
+                There certainly is a possibility of underflow.
+                But we assume that such cases are rare and we can rely on such underflow losses.
+            
+             2. According to the article http://www.ti3.tuhh.de/paper/rump/JeaRu13.pdf
+                the floating point rounding error is less then 100 * 2^-24 * sqrt(100) * sqrt(100) &lt; 0.0005960
+                We deem such precision is satisfactory for out needs.
+             </remarks>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.DistanceForUnitsSimple(System.Single[],System.Single[])">
+            <summary>
+            Calculates cosine distance with assumption that u and v are unit vectors.
+            </summary>
+            <param name="u">Left vector.</param>
+            <param name="v">Right vector.</param>
+            <returns>Cosine distance between u and v.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.NormalizeSimple(System.Single[])">
+            <summary>
+            Turns vector to unit vector.
+            </summary>
+            <param name="vector">The vector to normalize.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.CosineDistance.NormalizeVector(System.Double[])">
+            <summary>
+            Normalize vector
+            </summary>
+            <param name="vector"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.HNSW.BinaryHeap`1">
+            <summary>
+            Binary heap wrapper around the <see cref="T:System.Collections.Generic.IList`1"/>
+            It's a max-heap implementation i.e. the maximum element is always on top.
+            But the order of elements can be customized by providing <see cref="T:System.Collections.Generic.IComparer`1"/> instance.
+            </summary>
+            <typeparam name="T">The type of the items in the source list.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.#ctor(System.Collections.Generic.List{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.BinaryHeap`1"/> class.
+            </summary>
+            <param name="buffer">The buffer to store heap items.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.#ctor(System.Collections.Generic.List{`0},System.Collections.Generic.IComparer{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.BinaryHeap`1"/> class.
+            </summary>
+            <param name="buffer">The buffer to store heap items.</param>
+            <param name="comparer">The comparer which defines order of items.</param>
+        </member>
+        <member name="P:DBreeze.HNSW.BinaryHeap`1.Comparer">
+            <summary>
+            Gets the heap comparer.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.BinaryHeap`1.Buffer">
+            <summary>
+            Gets the buffer of the heap.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Push(`0)">
+            <summary>
+            Pushes item to the heap.
+            </summary>
+            <param name="item">The item to push.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Pop">
+            <summary>
+            Pops the item from the heap.
+            </summary>
+            <returns>The popped item.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftDown(System.Int32)">
+            <summary>
+            Restores the heap property starting from i'th position down to the bottom
+            given that the downstream items fulfill the rule.
+            </summary>
+            <param name="i">The position of item where heap property is violated.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftUp(System.Int32)">
+            <summary>
+            Restores the heap property starting from i'th position up to the head
+            given that the upstream items fulfill the rule.
+            </summary>
+            <param name="i">The position of item where heap property is violated.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Swap(System.Int32,System.Int32)">
+            <summary>
+            Swaps items with the specified indicies.
+            </summary>
+            <param name="i">The first index.</param>
+            <param name="j">The second index.</param>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2">
+            <summary>
+            <see href="https://arxiv.org/abs/1603.09320">Hierarchical Navigable Small World Graphs</see>.
+            </summary>
+            <typeparam name="TItem">The type of items to connect into small world.</typeparam>
+            <typeparam name="TDistance">The type of distance between items (expect any numeric type: float, double, decimal, int, ...).</typeparam>
+            <summary>
+            <see href="https://arxiv.org/abs/1603.09320">Hierarchical Navigable Small World Graphs</see>.
+            </summary>
+            <typeparam name="TItem">The type of items to connect into small world.</typeparam>
+            <typeparam name="TDistance">The type of distance between items (expect any numeric type: float, double, decimal, int, ...).</typeparam>
+            <content>
+            The part with the implemenation of a hierarchical small world graph.
+            </content>
+            <content>
+            The part with the implementaion of a node in the hnsw graph.
+            </content>
+            <content>
+            The part with the auxiliary tools for hnsw algorithm.
+            </content>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.Composer.GetVectorbyExternalId">
+            <summary>
+            Function to get embeddings from outer table by ExternalId.
+            In case if it is NULL, we also Adding vectors inside Storage.TableVectors
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.KNNSearch(`0,System.Int32,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="item"></param>
+            <param name="k"></param>
+            <param name="clearDistanceCache"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.Count">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.InstanceManager">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.CInstance">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.BucketManager">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.DistanceCache`1">
+            <summary>
+            
+            </summary>
+            <typeparam name="TDistance"></typeparam>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.DistanceCache`1.Mkd">
+            <summary>
+            Gets or sets Mkd.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.DistanceCache`1.Count">
+            <summary>
+            Gets or Sets Count.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.NodeCache">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.NodeCache.Flush">
+            <summary>
+            
+            </summary>
+            <returns>true if something was changed</returns>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.distance">
+            <summary>
+            The distance function in the items space.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.graph">
+            <summary>
+            The hierarchical small world graph instance.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.NeighbourSelectionHeuristic">
+            <summary>
+            Type of heuristic to select best neighbours for a node.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.NeighbourSelectionHeuristic.SelectSimple">
+            <summary>
+            Marker for the Algorithm 3 (SELECT-NEIGHBORS-SIMPLE) from the article.
+            Implemented in <see cref="T:DBreeze.HNSW.SmallWorld`2.NodeAlg3"/>
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.NeighbourSelectionHeuristic.SelectHeuristic">
+            <summary>
+            Marker for the Algorithm 4 (SELECT-NEIGHBORS-HEURISTIC) from the article.
+            Implemented in <see cref="T:DBreeze.HNSW.SmallWorld`2.NodeAlg4"/>
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.Parameters">
+            <summary>
+            Parameters of the algorithm.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Parameters.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2.Parameters"/> class.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.M">
+            <summary>
+            Gets or sets the parameter which defines the maximum number of neighbors in the zero and above-zero layers.
+            The maximum number of neighbors for the zero layer is 2 * M.
+            The maximum number of neighbors for higher layers is M.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.LevelLambda">
+            <summary>
+            Gets or sets the max level decay parameter.
+            https://en.wikipedia.org/wiki/Exponential_distribution
+            See 'mL' parameter in the HNSW article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.NeighbourHeuristic">
+            <summary>
+            Gets or sets parameter which specifies the type of heuristic to use for best neighbours selection.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.ConstructionPruning">
+            <summary>
+            Gets or sets the number of candidates to consider as neighbousr for a given node at the graph construction phase.
+            See 'efConstruction' parameter in the article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.ExpandBestSelection">
+            <summary>
+            Gets or sets a value indicating whether to expand candidates if <see cref="F:DBreeze.HNSW.SmallWorld`2.NeighbourSelectionHeuristic.SelectHeuristic"/> is used.
+            See 'extendCandidates' parameter in the article.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Parameters.KeepPrunedConnections">
+            <summary>
+            Gets or sets a value indicating whether to keep pruned candidates if <see cref="F:DBreeze.HNSW.SmallWorld`2.NeighbourSelectionHeuristic.SelectHeuristic"/> is used.
+            See 'keepPrunedConnections' parameter in the article.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.KNNSearchResult">
+            <summary>
+            Representation of knn search result.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.KNNSearchResult.Id">
+            <summary>
+            Gets or sets the id of the item = rank of the item in source collection.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.KNNSearchResult.Item">
+            <summary>
+            Gets or sets the item itself.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.KNNSearchResult.Distance">
+            <summary>
+            Gets or sets the distance between the item and the knn search query.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.Graph">
+            <summary>
+            The layered graph implementation.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Graph.Parameters">
+            <summary>
+            Gets parameters of the algorithm.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.#ctor(DBreeze.HNSW.SmallWorld{`0,`1}.Parameters)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2.Graph"/> class.
+            </summary>
+            <param name="distance">The distance funtion to use in the small world.</param>
+            <param name="parameters">The parameters of the algorithm.</param>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Graph.NewNode">
+            <summary>
+            Gets the node factory associated with the graph.
+            The node construction arguments are:
+            1st: int -> the id of the new node;
+            2nd: TItem -> the item to attach to the node;
+            3rd: int -> the level of the node.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.AddItems(System.Collections.Generic.IList{System.ValueTuple{System.Int64,`0}},System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="items"></param>
+            <param name="clearDistanceCache"></param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearest(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32)">
+            <summary>
+            Get k nearest items for a given one.
+            Contains implementation of K-NN-SEARCH(hnsw, q, K, ef) algorithm.
+            Article: Section 4. Algorithm 5.
+            </summary>
+            <param name="destination">The given node to get the nearest neighbourhood for.</param>
+            <param name="k">The size of the neighbourhood.</param>
+            <returns>The list of the nearest neighbours.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearestAtLevel(DBreeze.HNSW.SmallWorld{`0,`1}.Node,DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32,System.Int32)">
+            <summary>
+            The implementaiton of SEARCH-LAYER(q, ep, ef, lc) algorithm.
+            Article: Section 4. Algorithm 2.
+            </summary>
+            <param name="entryPoint">The entry point for the search.</param>
+            <param name="destination">The search target.</param>
+            <param name="k">The number of the nearest neighbours to get from the layer.</param>
+            <param name="level">Level of the layer.</param>
+            <returns>The list of the nearest neighbours at the level.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.RandomLevel(System.Random,System.Double)">
+            <summary>
+            Gets the level for the layer.
+            </summary>
+            <param name="generator">The random numbers generator.</param>
+            <param name="lambda">Poisson lambda.</param>
+            <returns>The level value.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.Node">
+            <summary>
+            The abstract node implementation.
+            The <see cref="!:SelectBestForConnecting(IList&lt;Node&gt;)"/> must be implemented by the subclass.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.#ctor(System.Int32,System.Int64,`0,System.Int32,DBreeze.HNSW.SmallWorld{`0,`1}.Graph,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2.Node"/> class.
+            </summary>
+            <param name="id">The identifier of the node.</param>
+            <param name="item">The item which is represented by the node.</param>
+            <param name="maxLevel">The maximum level until which the node exists.</param>
+            <param name="distance">The distance function for attached items.</param>
+            <param name="parameters">The parameters of the algorithm.</param>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.Id">
+            <summary>
+            Gets the identifier of the node.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.ExternalId">
+            <summary>
+            Gets the external identifier of the item.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.MaxLevel">
+            <summary>
+            Gets the maximum level of the node.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.TempItem">
+            <summary>
+            Needed for the knn-search, for the query the Node is also created
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.Item">
+            <summary>
+            Gets the item associated with the node.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.Connections">
+            <summary>
+            Gets all connections of the node on all layers.
+            </summary>            
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.GetConnections(System.Int32)">
+            <summary>
+            Get connections of the node on the given layer.
+            </summary>
+            <param name="level">The level of the layer.</param>
+            <returns>List of connected nodes.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.AddConnection(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32)">
+            <summary>
+            Add connections to the node on the specific layer.
+            </summary>
+            <param name="newNeighbour">The node to connect with.</param>
+            <param name="level">The level of the layer.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.SelectBestForConnecting(System.Collections.Generic.List{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
+            <summary>
+            The algorithm which selects best neighbours from the candidates for this node.
+            </summary>
+            <param name="candidates">The candidates for connecting.</param>
+            <returns>Best nodes selected from the candidates.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.GetM(System.Int32,System.Int32)">
+            <summary>
+            Get maximum allowed connections for the given layer.
+            </summary>
+            <remarks>
+            Article: Section 4.1:
+            "Selection of the Mmax0 (the maximum number of connections that an element can have in the zero layer) also
+            has a strong influence on the search performance, especially in case of high quality(high recall) search.
+            Simulations show that setting Mmax0 to M(this corresponds to kNN graphs on each layer if the neighbors
+            selection heuristic is not used) leads to a very strong performance penalty at high recall.
+            Simulations also suggest that 2∙M is a good choice for Mmax0;
+            setting the parameter higher leads to performance degradation and excessive memory usage".
+            </remarks>
+            <param name="baseM">Base M parameter of the algorithm.</param>
+            <param name="level">The level of the layer.</param>
+            <returns>The maximum number of connections.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.NodeAlg3">
+            <summary>
+            The implementation of the SELECT-NEIGHBORS-SIMPLE(q, C, M) algorithm.
+            Article: Section 4. Algorithm 3.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.NodeAlg3.#ctor(System.Int32,System.Int64,`0,System.Int32,DBreeze.HNSW.SmallWorld{`0,`1}.Graph,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2.NodeAlg3"/> class.
+            </summary>
+            <param name="id">The identifier of the node.</param>
+            <param name="item">The item which is represented by the node.</param>
+            <param name="maxLevel">The maximum level until which the node exists.</param>
+            <param name="distance">The distance function for attached items.</param>
+            <param name="parameters">The parameters of the algorithm.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.NodeAlg3.SelectBestForConnecting(System.Collections.Generic.List{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
+            <inheritdoc />
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.NodeAlg4">
+            <summary>
+            The implementation of the SELECT-NEIGHBORS-HEURISTIC(q, C, M, lc, extendCandidates, keepPrunedConnections) algorithm.
+            Article: Section 4. Algorithm 4.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.NodeAlg4.#ctor(System.Int32,System.Int64,`0,System.Int32,DBreeze.HNSW.SmallWorld{`0,`1}.Graph,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.SmallWorld`2.NodeAlg4"/> class.
+            </summary>
+            <param name="id">The identifier of the node.</param>
+            <param name="item">The item which is represented by the node.</param>
+            <param name="maxLevel">The maximum level until which the node exists.</param>
+            <param name="distance">The distance function for attached items.</param>
+            <param name="parameters">The parameters of the algorithm.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.NodeAlg4.SelectBestForConnecting(System.Collections.Generic.List{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
+            <inheritdoc />
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.DBStorage.TableName">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.DBStorage.FlushNodes(System.Int32,System.Collections.Generic.Dictionary{System.Int32,DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
+            <summary>
+            true, if something was saved
+            </summary>
+            <param name="bucketId"></param>
+            <param name="nodes"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageF.AddItem(System.Int64,System.Int32,System.Int32,System.Single[])">
+            <summary>
+            item should be already normalized
+            </summary>
+            <param name="externalId"></param>
+            <param name="bucketId"></param>
+            <param name="id"></param>
+            <param name="item"></param>           
+        </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageD">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageD.AddItem(System.Int64,System.Int32,System.Int32,System.Double[])">
+            <summary>
+            item should be already normalized
+            </summary>
+            <param name="externalId"></param>
+            <param name="bucketId"></param>
+            <param name="id"></param>
+            <param name="item"></param>           
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.DLt(`1,`1)">
+            <summary>
+            Distance is Lower Than.
+            </summary>
+            <param name="x">Left argument.</param>
+            <param name="y">Right argument.</param>
+            <returns>True if x &lt; y.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.DGt(`1,`1)">
+            <summary>
+            Distance is Greater Than.
+            </summary>
+            <param name="x">Left argument.</param>
+            <param name="y">Right argument.</param>
+            <returns>True if x &gt; y.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.DEq(`1,`1)">
+            <summary>
+            Distances are Equal.
+            </summary>
+            <param name="x">Left argument.</param>
+            <param name="y">Right argument.</param>
+            <returns>True if x == y.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.BFS(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32,System.Action{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
+            <summary>
+            Runs breadth first search.
+            </summary>
+            <param name="entryPoint">The entry point.</param>
+            <param name="level">The level of the graph where to run BFS.</param>
+            <param name="visitAction">The action to perform on each node.</param>
+        </member>
+        <member name="T:DBreeze.HNSW.ReverseComparer`1">
+            <summary>
+            Reverses the order of the nested comparer.
+            </summary>
+            <typeparam name="T">The types of items to comapre.</typeparam>
+        </member>
+        <member name="F:DBreeze.HNSW.ReverseComparer`1.Default">
+            <summary>
+            Gets a default sort order comparer for the type specified by the generic argument.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.ReverseComparer`1.#ctor(System.Collections.Generic.IComparer{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.ReverseComparer`1"/> class.
+            </summary>
+            <param name="comparer">The comparer to invert.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.ReverseComparer`1.Compare(`0,`0)">
+            <inheritdoc />
+        </member>
+        <member name="T:DBreeze.HNSW.ReverseComparerExtensions">
+            <summary>
+            Extension methods to shortcut <see cref="T:DBreeze.HNSW.ReverseComparer`1"/> usage.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.ReverseComparerExtensions.Reverse``1(System.Collections.Generic.IComparer{``0})">
+            <summary>
+            Creates new <see cref="T:DBreeze.HNSW.ReverseComparer`1"/> wrapper for the given comparer.
+            </summary>
+            <typeparam name="T">The types of items to comapre.</typeparam>
+            <param name="comparer">The source comparer.</param>
+            <returns>The inverted to source comparer.</returns>
+        </member>
+        <member name="M:DBreeze.VectorLayer.VectorMath.NormalizeVectors(System.Collections.Generic.List{System.Double[]})">
+            <summary>
+            
+            </summary>
+            <param name="vectors"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.VectorLayer.VectorMath.NormalizeVector(System.Double[])">
+            <summary>
+            
+            </summary>
+            <param name="vector"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.VectorLayer.VectorMath.Distance_SIMDForUnits(System.Double[],System.Double[])">
             <summary>
             Distance between 2 vectors
@@ -6749,6 +7327,11 @@
         <member name="P:DBreeze.VectorLayer.Node.VectorStored">
             <summary>
             Vector is stored under 7.
+            </summary>
+        </member>
+        <member name="P:DBreeze.VectorLayer.Node.Radius">
+            <summary>
+            Centroid radius
             </summary>
         </member>
         <member name="F:DBreeze.VectorLayer.Node.Restructed">

@@ -143,10 +143,22 @@
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\Net35support.cs" />
     <Compile Include="Utils\DeepCloneExpressionTree.cs" />
+    <Compile Include="Utils\PriorityQueue.cs" />
     <Compile Include="Utils\StringProcessing.cs" />
     <Compile Include="Utils\ValueTupleDeconstructor.cs" />
     <Compile Include="Utils\XmlSerializator.cs" />
     <Compile Include="Utils\FastRandom.cs" />
+    <Compile Include="VectorLayer\HNSW\BinaryHeap.cs" />
+    <Compile Include="VectorLayer\HNSW\CosineDistance.cs" />
+    <Compile Include="VectorLayer\HNSW\HNSW.Composer.cs" />
+    <Compile Include="VectorLayer\HNSW\ReverseComparer.cs" />
+    <Compile Include="VectorLayer\HNSW\SmallWorld.Caches.cs" />
+    <Compile Include="VectorLayer\HNSW\SmallWorld.cs" />
+    <Compile Include="VectorLayer\HNSW\SmallWorld.Graph.cs" />
+    <Compile Include="VectorLayer\HNSW\SmallWorld.Node.cs" />
+    <Compile Include="VectorLayer\HNSW\SmallWorld.Storage.cs" />
+    <Compile Include="VectorLayer\HNSW\SmallWorld.Utils.cs" />
+    <Compile Include="VectorLayer\HNSW\VectorTran.cs" />
     <Compile Include="VectorLayer\KMeans.cs" />
     <Compile Include="VectorLayer\Node.cs" />
     <Compile Include="VectorLayer\Storage.cs" />
@@ -161,6 +173,7 @@
   <ItemGroup>
     <None Include="signature.snk" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
