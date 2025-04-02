@@ -21,6 +21,7 @@ using DBreeze.Diagnostic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO.Compression;
 
 namespace VisualTester
 {
@@ -1675,7 +1676,7 @@ namespace VisualTester
         //    //Only one indexer instance can run
         //    System.Threading.Tasks.Task.Run(() =>
         //    {
-                
+
         //        int maximalIterations = 10; //Iterations then a breath
         //        int currentItter = 0;
         //        Dictionary<DateTime,byte[]> toBeIndexed = new Dictionary<DateTime, byte[]>();
@@ -1712,7 +1713,7 @@ namespace VisualTester
 
         //            using (var tran = textsearchengine.GetTransaction())
         //            {
-                        
+
         //                tran.SynchronizeTables("TaskFullTextSearch");       //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         //                Dictionary<string, List<byte[]>> dPendingBack = new Dictionary<string, List<byte[]>>();
@@ -1720,7 +1721,7 @@ namespace VisualTester
         //                {
         //                    dPendingBack.Clear();
         //                    //deserialization of tables and documents to be indexed, using internal DBreeze deserializer (can be used outer deserializers)
-                            
+
 
         //                    foreach (var t in dPendingBack)
         //                    {
@@ -1768,6 +1769,151 @@ namespace VisualTester
         //    });
 
         //}
+
+        private void btTestVectorDB_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        //public static void TestVectorDBv03_insert_01()
+        //{
+        //    string dirPath = @"D:\Temp\DBPedia\";
+
+        //    DBreeze.DBreezeEngine eng = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data"));
+        //    //DBreeze.DBreezeEngine engWrite = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data_01"));
+        //    string tableEmb = "emb";
+        //    string tableEmbText = "embText";
+
+        //    string tableTestEmb = "TestEmb";
+
+        //    int TAKE = 10_000;
+
+
+
+        //    Stopwatch stopwatch = new Stopwatch();
+        //    Stopwatch stopwatchBatch = Stopwatch.StartNew();
+        //    System.TimeSpan timeSpanP;
+
+        //    using (var tranRead = eng.GetTransaction())
+        //    using (var tran = Program.DBEngine.GetTransaction())
+        //    {
+        //        int batchNr = 1;
+        //        int batchSize = 1000;
+        //        foreach (var batch in ByBatch(tranRead, tableEmb, batchSize, skip: 50, take: TAKE))
+        //        {
+        //            stopwatch.Restart();
+
+        //            //graph.AddItems(batch, clearDistanceCache: true);
+        //            tran.VectorsInsert("myVectorTable", batch);
+
+        //            stopwatch.Stop();
+        //            timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
+        //            Debug.WriteLine($"-- {batchSize * batchNr}; BatchTime: {timeSpanP.ToString()}");
+
+        //            batchNr++;
+
+        //        }
+        //        stopwatchBatch.Stop();
+        //        timeSpanP = System.TimeSpan.FromMilliseconds(stopwatchBatch.ElapsedMilliseconds);
+        //        Debug.WriteLine($"-- BatchTime Total time: {timeSpanP.ToString()}");
+
+        //        stopwatch.Restart();
+        //        tran.Commit();
+        //        stopwatch.Stop();
+        //        timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
+        //        Debug.WriteLine($"-- Commit Total time: {timeSpanP.ToString()}");
+        //    }
+        //    eng.Dispose();
+
+        //}
+
+        //public static void TestVectorDBv03_select_01()
+        //{
+        //    string dirPath = @"D:\Temp\DBPedia\";
+
+        //    DBreeze.DBreezeEngine eng = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data"));
+        //    //DBreeze.DBreezeEngine engWrite = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data_01"));
+        //    string tableEmb = "emb";
+        //    string tableEmbText = "embText";
+
+        //    string tableTestEmb = "TestEmb";
+
+        //    int TAKE = 10_000;
+
+        //    string tblVector = "myVectorTable";
+
+        //    Stopwatch stopwatch = new Stopwatch();
+        //    Stopwatch stopwatchBatch = Stopwatch.StartNew();
+        //    System.TimeSpan timeSpanP;
+
+        //    using (var tranRead = eng.GetTransaction())
+        //    using (var tran = Program.DBEngine.GetTransaction())
+        //    {
+        //        //Testing output
+        //        Debug.WriteLine($"-- Total count: {tran.VectorsCount<float[]>(tblVector)}");
+
+        //        foreach (var testRow in tranRead.SelectForward<uint, byte[]>(tableTestEmb).Skip(5).Take(1))
+        //        {
+        //            var embedding = DecompressF(testRow.Value);
+
+        //            stopwatchBatch.Restart();
+        //            var r1 = tran.VectorsSearchSimilar(tblVector, embedding);
+
+        //            foreach (var br in r1)
+        //            {
+        //                Debug.WriteLine($"[{br.distance}] - [{br.externalId}]");
+        //            }
+        //            stopwatchBatch.Stop();
+        //            timeSpanP = System.TimeSpan.FromMilliseconds(stopwatchBatch.ElapsedMilliseconds);
+        //            Debug.WriteLine($"-- Search time: {timeSpanP.ToString()}");
+        //        }
+
+        //    }
+
+        //    eng.Dispose();
+        //}
+
+        //public static IEnumerable<List<(long, float[])>> ByBatch(DBreeze.Transactions.Transaction tran, string table, int batchSize, int take = int.MaxValue, int skip = 0)
+        //{
+        //    if (tran.Count(table) == 0)
+        //        yield break;
+
+        //    int i = 0;
+        //    List<(long, float[])> l = new();
+        //    foreach (var el in tran.SelectForward<uint, byte[]>(table).Skip(skip).Take(take))
+        //    {
+        //        if (i == batchSize)
+        //        {
+        //            i = 0;
+        //            yield return l;
+        //            l.Clear();
+        //        }
+        //        var dec = DecompressF(el.Value);
+        //        l.Add((el.Key, dec));
+        //        i++;
+        //    }
+
+        //    if (l.Count > 0)
+        //        yield return l;
+        //}
+
+        //public static float[] DecompressF(byte[] compressedData)
+        //{
+        //    using (var inputStream = new MemoryStream(compressedData))
+        //    using (var decompressionStream = new BrotliStream(inputStream, CompressionMode.Decompress))
+        //    using (var outputStream = new MemoryStream())
+        //    {
+        //        decompressionStream.CopyTo(outputStream);
+
+        //        byte[] byteArray = outputStream.ToArray();
+        //        float[] floatArray = new float[byteArray.Length / sizeof(float)];
+        //        Buffer.BlockCopy(byteArray, 0, floatArray, 0, byteArray.Length);
+
+        //        return floatArray;
+        //    }
+        //}
+
+
 
         DBreezeEngine textsearchengine = null;
         private void btTestSearchText_Click(object sender, RoutedEventArgs e)
