@@ -1772,147 +1772,156 @@ namespace VisualTester
 
         private void btTestVectorDB_Click(object sender, RoutedEventArgs e)
         {
+            //TestVectorDBv03_insert_01();
+            //TestVectorDBv03_select_01();
+        }
+
+       
+
+        public static void TestVectorDBv03_insert_01()
+        {
+            string dirPath = @"D:\Temp\DBPedia\";
+
+            DBreeze.DBreezeEngine eng = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data"));
+            DBreeze.DBreezeEngine engWrite = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data_02"));
+            string tableEmbGZIP = "embGZIP";
+            string tableEmbText = "embText";
+
+            string tableTestEmb = "TestEmb";
+
+            int TAKE = 10_000;
+
+
+
+            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatchBatch = Stopwatch.StartNew();
+            System.TimeSpan timeSpanP;
+
+            using (var tranRead = eng.GetTransaction())
+            using (var tran = engWrite.GetTransaction())
+            {
+                int batchNr = 1;
+                int batchSize = 1000;
+                foreach (var batch in ByBatch(tranRead, tableEmbGZIP, batchSize, skip: 50, take: TAKE))
+                {
+                    stopwatch.Restart();
+
+                    //graph.AddItems(batch, clearDistanceCache: true);
+                    tran.VectorsInsert("myVectorTable", batch);
+
+                    stopwatch.Stop();
+                    timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
+                    Debug.WriteLine($"-- {batchSize * batchNr}; BatchTime: {timeSpanP.ToString()}");
+
+                    batchNr++;
+
+                }
+                stopwatchBatch.Stop();
+                timeSpanP = System.TimeSpan.FromMilliseconds(stopwatchBatch.ElapsedMilliseconds);
+                Debug.WriteLine($"-- BatchTime Total time: {timeSpanP.ToString()}");
+
+                stopwatch.Restart();
+                tran.Commit();
+                stopwatch.Stop();
+                timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
+                Debug.WriteLine($"-- Commit Total time: {timeSpanP.ToString()}");
+            }
+
+            engWrite.Dispose();
+            eng.Dispose();
 
         }
 
-        //public static void TestVectorDBv03_insert_01()
-        //{
-        //    string dirPath = @"D:\Temp\DBPedia\";
 
-        //    DBreeze.DBreezeEngine eng = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data"));
-        //    //DBreeze.DBreezeEngine engWrite = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data_01"));
-        //    string tableEmb = "emb";
-        //    string tableEmbText = "embText";
+        public static void TestVectorDBv03_select_01()
+        {
+            string dirPath = @"D:\Temp\DBPedia\";
 
-        //    string tableTestEmb = "TestEmb";
+            DBreeze.DBreezeEngine eng = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data"));
+            DBreeze.DBreezeEngine engWrite = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data_02"));
+            
+            string tableEmbGZIP = "embGZIP";
+            string tableEmbText = "embText";
 
-        //    int TAKE = 10_000;
+            string tableTestEmb = "TestEmb";
 
+            int TAKE = 10_000;
 
+            string tblVector = "myVectorTable";
 
-        //    Stopwatch stopwatch = new Stopwatch();
-        //    Stopwatch stopwatchBatch = Stopwatch.StartNew();
-        //    System.TimeSpan timeSpanP;
+            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatchBatch = Stopwatch.StartNew();
+            System.TimeSpan timeSpanP;
 
-        //    using (var tranRead = eng.GetTransaction())
-        //    using (var tran = Program.DBEngine.GetTransaction())
-        //    {
-        //        int batchNr = 1;
-        //        int batchSize = 1000;
-        //        foreach (var batch in ByBatch(tranRead, tableEmb, batchSize, skip: 50, take: TAKE))
-        //        {
-        //            stopwatch.Restart();
+            using (var tranRead = eng.GetTransaction())
+            using (var tran = engWrite.GetTransaction())
+            {
+                //Testing output
+                Debug.WriteLine($"-- Total count: {tran.VectorsCount<float[]>(tblVector)}");
 
-        //            //graph.AddItems(batch, clearDistanceCache: true);
-        //            tran.VectorsInsert("myVectorTable", batch);
+                //foreach (var testRow in tranRead.SelectForward<uint, byte[]>(tableTestEmb).Skip(5).Take(1))
+                foreach (var testRow in tranRead.SelectForward<uint, byte[]>(tableEmbGZIP).Skip(5).Take(1))
+                {
+                    var embedding = DecompressF(testRow.Value);
 
-        //            stopwatch.Stop();
-        //            timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
-        //            Debug.WriteLine($"-- {batchSize * batchNr}; BatchTime: {timeSpanP.ToString()}");
+                    stopwatchBatch.Restart();
+                    var r1 = tran.VectorsSearchSimilar(tblVector, embedding);
 
-        //            batchNr++;
+                    foreach (var br in r1)
+                    {
+                        Debug.WriteLine($"[{br.distance}] - [{br.externalId}]");
+                    }
+                    stopwatchBatch.Stop();
+                    timeSpanP = System.TimeSpan.FromMilliseconds(stopwatchBatch.ElapsedMilliseconds);
+                    Debug.WriteLine($"-- Search time: {timeSpanP.ToString()}");
+                    //Console.WriteLine($"-- Search time: {timeSpanP.ToString()}");
+                    //MessageBox.Show($"-- Search time: {timeSpanP.ToString()}");
+                }
 
-        //        }
-        //        stopwatchBatch.Stop();
-        //        timeSpanP = System.TimeSpan.FromMilliseconds(stopwatchBatch.ElapsedMilliseconds);
-        //        Debug.WriteLine($"-- BatchTime Total time: {timeSpanP.ToString()}");
+            }
+            engWrite.Dispose();
+            eng.Dispose();
+        }
 
-        //        stopwatch.Restart();
-        //        tran.Commit();
-        //        stopwatch.Stop();
-        //        timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
-        //        Debug.WriteLine($"-- Commit Total time: {timeSpanP.ToString()}");
-        //    }
-        //    eng.Dispose();
+        public static IEnumerable<List<(long, float[])>> ByBatch(DBreeze.Transactions.Transaction tran, string table, int batchSize, int take = int.MaxValue, int skip = 0)
+        {
+            if (tran.Count(table) == 0)
+                yield break;
 
-        //}
+            int i = 0;
+            List<(long, float[])> l = new List<(long, float[])>();
+            foreach (var el in tran.SelectForward<long, byte[]>(table).Skip(skip).Take(take))
+            {
+                if (i == batchSize)
+                {
+                    i = 0;
+                    yield return l;
+                    l.Clear();
+                }
+                var dec = DecompressF(el.Value);
+                l.Add((el.Key, dec));
+                i++;
+            }
 
-        //public static void TestVectorDBv03_select_01()
-        //{
-        //    string dirPath = @"D:\Temp\DBPedia\";
+            if (l.Count > 0)
+                yield return l;
+        }
 
-        //    DBreeze.DBreezeEngine eng = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data"));
-        //    //DBreeze.DBreezeEngine engWrite = new DBreeze.DBreezeEngine(System.IO.Path.Combine(dirPath, @"prt_Data_01"));
-        //    string tableEmb = "emb";
-        //    string tableEmbText = "embText";
+        public static float[] DecompressF(byte[] compressedData)
+        {
+            using (var inputStream = new MemoryStream(compressedData))
+            using (var decompressionStream = new GZipStream(inputStream, CompressionMode.Decompress))
+            using (var outputStream = new MemoryStream())
+            {
+                decompressionStream.CopyTo(outputStream);
 
-        //    string tableTestEmb = "TestEmb";
+                byte[] byteArray = outputStream.ToArray();
+                float[] floatArray = new float[byteArray.Length / sizeof(float)];
+                Buffer.BlockCopy(byteArray, 0, floatArray, 0, byteArray.Length);
 
-        //    int TAKE = 10_000;
-
-        //    string tblVector = "myVectorTable";
-
-        //    Stopwatch stopwatch = new Stopwatch();
-        //    Stopwatch stopwatchBatch = Stopwatch.StartNew();
-        //    System.TimeSpan timeSpanP;
-
-        //    using (var tranRead = eng.GetTransaction())
-        //    using (var tran = Program.DBEngine.GetTransaction())
-        //    {
-        //        //Testing output
-        //        Debug.WriteLine($"-- Total count: {tran.VectorsCount<float[]>(tblVector)}");
-
-        //        foreach (var testRow in tranRead.SelectForward<uint, byte[]>(tableTestEmb).Skip(5).Take(1))
-        //        {
-        //            var embedding = DecompressF(testRow.Value);
-
-        //            stopwatchBatch.Restart();
-        //            var r1 = tran.VectorsSearchSimilar(tblVector, embedding);
-
-        //            foreach (var br in r1)
-        //            {
-        //                Debug.WriteLine($"[{br.distance}] - [{br.externalId}]");
-        //            }
-        //            stopwatchBatch.Stop();
-        //            timeSpanP = System.TimeSpan.FromMilliseconds(stopwatchBatch.ElapsedMilliseconds);
-        //            Debug.WriteLine($"-- Search time: {timeSpanP.ToString()}");
-        //        }
-
-        //    }
-
-        //    eng.Dispose();
-        //}
-
-        //public static IEnumerable<List<(long, float[])>> ByBatch(DBreeze.Transactions.Transaction tran, string table, int batchSize, int take = int.MaxValue, int skip = 0)
-        //{
-        //    if (tran.Count(table) == 0)
-        //        yield break;
-
-        //    int i = 0;
-        //    List<(long, float[])> l = new();
-        //    foreach (var el in tran.SelectForward<uint, byte[]>(table).Skip(skip).Take(take))
-        //    {
-        //        if (i == batchSize)
-        //        {
-        //            i = 0;
-        //            yield return l;
-        //            l.Clear();
-        //        }
-        //        var dec = DecompressF(el.Value);
-        //        l.Add((el.Key, dec));
-        //        i++;
-        //    }
-
-        //    if (l.Count > 0)
-        //        yield return l;
-        //}
-
-        //public static float[] DecompressF(byte[] compressedData)
-        //{
-        //    using (var inputStream = new MemoryStream(compressedData))
-        //    using (var decompressionStream = new BrotliStream(inputStream, CompressionMode.Decompress))
-        //    using (var outputStream = new MemoryStream())
-        //    {
-        //        decompressionStream.CopyTo(outputStream);
-
-        //        byte[] byteArray = outputStream.ToArray();
-        //        float[] floatArray = new float[byteArray.Length / sizeof(float)];
-        //        Buffer.BlockCopy(byteArray, 0, floatArray, 0, byteArray.Length);
-
-        //        return floatArray;
-        //    }
-        //}
-
+                return floatArray;
+            }
+        }
 
 
         DBreezeEngine textsearchengine = null;
