@@ -195,23 +195,23 @@ namespace TesterNet6.TextCorpus
                 }
 
 
-                var res = tran.VectorsClusteringKMeans(clusterPrototypes: Clusters.Select(r => r.Value).ToList(), itemsToBeClustered: ItemsToCheck.Select(r => r.Value).ToList());
+                //var res = tran.VectorsClusteringKMeans(clusterPrototypes: Clusters.Select(r => r.Value).ToList(), itemsToBeClustered: ItemsToCheck.Select(r => r.Value).ToList());
 
-                foreach (var el in res)
-                {
-                    Console.WriteLine($"CLUSTER: {el.Key}");
-                    foreach (var doc in el.Value)
-                    {
+                //foreach (var el in res)
+                //{
+                //    Console.WriteLine($"CLUSTER: {el.Key}");
+                //    foreach (var doc in el.Value)
+                //    {
                         
-                        int index = doc + 1;
-                        var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(index));
-                        var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
-                        Console.WriteLine($"\tCluster: {dbFurniture.Cluster}; name: {dbFurniture.Name}");
-                        //Console.WriteLine($"\tDescription: {dbFurniture.Description}");
+                //        int index = doc + 1;
+                //        var rowDoc = tran.Select<byte[], string>(tblDocsFurniture, 2.ToIndex(index));
+                //        var dbFurniture = JsonSerializer.Deserialize<FurnitureItem>(rowDoc.Value);
+                //        Console.WriteLine($"\tCluster: {dbFurniture.Cluster}; name: {dbFurniture.Name}");
+                //        //Console.WriteLine($"\tDescription: {dbFurniture.Description}");
 
-                    }
+                //    }
 
-                }
+                //}
             }//eo using
 
 
@@ -316,25 +316,25 @@ namespace TesterNet6.TextCorpus
 
 
                 //-supplying two Lists of embeddings, first are prototypes that represent different clusters and second are items to be sparsed between all prototypes clusters
-                var res = tran.VectorsClusteringKMeans(
-                    clusterPrototypes.Values.Select(r=>r.Item2.Embedding).ToList(),
-                    //shuffled itemsToBeClustered
-                    itemsToBeClustered.Select(r => r.Item2.Embedding).ToList()
-                    );
+                //var res = tran.VectorsClusteringKMeans(
+                //    clusterPrototypes.Values.Select(r=>r.Item2.Embedding).ToList(),
+                //    //shuffled itemsToBeClustered
+                //    itemsToBeClustered.Select(r => r.Item2.Embedding).ToList()
+                //    );
 
 
-                i = 0;
-                //resulting output               
-                foreach (var el in res)
-                {
-                    Console.WriteLine($"CLUSTER: -------------{clusterPrototypes[i].ClusterName}-------------");
-                    foreach (var item in el.Value)
-                    {
-                        //Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[j].ClusterName}; Name: {itemsToBeClustered[j].Furniture.Name}");
-                        Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[item].ClusterName}; Name: {itemsToBeClustered[item].Furniture.Name}");                       
-                    }
-                    i++;
-                }
+                //i = 0;
+                ////resulting output               
+                //foreach (var el in res)
+                //{
+                //    Console.WriteLine($"CLUSTER: -------------{clusterPrototypes[i].ClusterName}-------------");
+                //    foreach (var item in el.Value)
+                //    {
+                //        //Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[j].ClusterName}; Name: {itemsToBeClustered[j].Furniture.Name}");
+                //        Console.WriteLine($"\t OriginalCluster: {itemsToBeClustered[item].ClusterName}; Name: {itemsToBeClustered[item].Furniture.Name}");                       
+                //    }
+                //    i++;
+                //}
 
             }
 

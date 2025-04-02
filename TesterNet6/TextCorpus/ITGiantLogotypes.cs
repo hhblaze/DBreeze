@@ -148,7 +148,7 @@ namespace TesterNet6.TextCorpus
                     int idCnt = tran.Select<byte[], int>(tblDocsITLogos, 1.ToIndex()).Value;
 
                     //-such format will be inserted into VectorTable, Key is exernal documentID, value is vector itself
-                    Dictionary<byte[], double[]> vectorsToInsert = new Dictionary<byte[], double[]>();
+                    List<(long, double[])> vectorsToInsert = new List<(long, double[])>();
 
                     foreach (var el in embeddings)
                     {
@@ -157,7 +157,7 @@ namespace TesterNet6.TextCorpus
                         tran.Insert<byte[], string>(tblDocsITLogos, 2.ToIndex(idCnt), JsonSerializer.Serialize(el));
 
                         //accumulating vectors in Dictionary (bringing toArray el.Value.Item2.ToArray())
-                        vectorsToInsert.Add(idCnt.To_4_bytes_array_BigEndian(), el.Embedding);
+                        vectorsToInsert.Add((idCnt, el.Embedding));
                     }
 
                     //-storing Doc Index monotonically growing
@@ -170,7 +170,7 @@ namespace TesterNet6.TextCorpus
                     if (vectorsToInsert.Count > 0)
                     {
                         //-in case of big quantity of vectors, use deferredIndexing: true (to run computation in the background)
-                        tran.VectorsInsert(tblKNNITLogos, vectorsToInsert, deferredIndexing: false);
+                        tran.VectorsInsert(tblKNNITLogos, vectorsToInsert);
                     }
 
                     tran.Commit();
@@ -238,7 +238,7 @@ namespace TesterNet6.TextCorpus
             //List<FurnitureV1> embeddings = JsonSerializer.Deserialize<List<FurnitureV1>>(File.ReadAllText(@"..\..\..\TextCorpus\FurnitureV1withLocalEmbeddings.json"));
 
             //-such format will be inserted into VectorTable, Key is exernal documentID, value is vector itself
-            Dictionary<byte[], double[]> vectorsToInsert = new Dictionary<byte[], double[]>();
+            List<(long, double[])> vectorsToInsert = new List<(long, double[])>();
 
             if (embeddings.Count > 0)
             {
@@ -264,7 +264,7 @@ namespace TesterNet6.TextCorpus
                             //-storing doc itself (not necessary to store embedding vector, it will be stored in vector table, but we do it here for tests, to skip next time acquiring from OpenAI)                      
                             tran.Insert<byte[], string>(tblDocsFurniture, 2.ToIndex(idCnt), JsonSerializer.Serialize(item));
                             //accumulating vectors in Dictionary (bringing toArray el.Value.Item2.ToArray())
-                            vectorsToInsert.Add(idCnt.To_4_bytes_array_BigEndian(), item.Embedding);
+                            vectorsToInsert.Add((idCnt, item.Embedding));
                         }
                         
 
@@ -281,7 +281,7 @@ namespace TesterNet6.TextCorpus
                     if (vectorsToInsert.Count > 0)
                     {
                         //-in case of big quantity of vectors, use deferredIndexing: true (to run computation in the background)
-                        tran.VectorsInsert(tblKNNFurniture, vectorsToInsert, deferredIndexing: false);
+                        tran.VectorsInsert(tblKNNFurniture, vectorsToInsert);
                     }
 
                     tran.Commit();

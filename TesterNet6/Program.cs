@@ -40,8 +40,12 @@ namespace TesterNet6
 
             //Technical helpers
 
-            Load.LoadV1();
-            Load.SelectV1();
+            //Load.TestVectorDBv03_insert_01();
+            Load.TestVectorDBv03_select_01();
+
+            //Load.LoadV1();
+            //Load.SelectV1();
+
             //Load.Insert01();
 
             //Biser_Objectify();

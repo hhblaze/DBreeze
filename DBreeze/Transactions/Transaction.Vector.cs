@@ -211,7 +211,7 @@ namespace DBreeze.Transactions
         /// <param name="quantity">finds 'quantity' closest vectors</param>
         /// <param name="vectorTableParameters"></param>
         /// <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>
-        public IEnumerable<(long, float)> VectorsSearchSimilar(string tableName, float[] queryVector, int quantity = 10, VectorTableParameters<float[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
+        public IEnumerable<(long externalId, float distance)> VectorsSearchSimilar(string tableName, float[] queryVector, int quantity = 10, VectorTableParameters<float[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
         {
             var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
             var r1 = graph.KNNSearch(queryVector, quantity, clearDistanceCache: true);
@@ -229,7 +229,7 @@ namespace DBreeze.Transactions
         /// <param name="quantity">finds 'quantity' closest vectors</param>
         /// <param name="vectorTableParameters"></param>
         /// <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>        
-        public IEnumerable<(long, double)> VectorsSearchSimilar(string tableName, double[] queryVector, int quantity = 10, VectorTableParameters<double[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
+        public IEnumerable<(long externalId, double distance)> VectorsSearchSimilar(string tableName, double[] queryVector, int quantity = 10, VectorTableParameters<double[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
         {
             var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
             var r1 = graph.KNNSearch(queryVector, quantity, clearDistanceCache: true);
