@@ -14,7 +14,8 @@ using static DBreeze.Transactions.Transaction;
 
 namespace DBreeze.HNSW
 {
-    internal class VectorTran      
+    
+    internal class VectorTran 
     {
 
         Dictionary<string, SmallWorld<float[], float>.Composer> dF = new Dictionary<string, SmallWorld<float[], float>.Composer>();
@@ -64,7 +65,8 @@ namespace DBreeze.HNSW
                 }
                 parameters.Storage = storage;
 
-                graph = new SmallWorld<float[], float>.Composer(parameters, instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
+                graph = new SmallWorld<float[], float>.Composer(parameters, 
+                    instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
                     GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
 
 
@@ -111,7 +113,8 @@ namespace DBreeze.HNSW
 
                 parameters.Storage = storage;
 
-                graph = new SmallWorld<double[], double>.Composer(parameters, instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
+                graph = new SmallWorld<double[], double>.Composer(parameters, 
+                    instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
                     GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
 
 

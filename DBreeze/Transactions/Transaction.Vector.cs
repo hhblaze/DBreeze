@@ -20,30 +20,31 @@ namespace DBreeze.Transactions
 {
     public partial class Transaction : IDisposable
     {
-        VectorTran _vectorTransactionHelper;
-        ReaderWriterLockSlim _sync_vectorTransactionHelper = new ReaderWriterLockSlim();
+        VectorTran _vectorTransactionHandler;
+        ReaderWriterLockSlim _sync_vectorTransactionHandler = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Setup vector layer bound to a table
         /// </summary>
-        /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for a vector database - precision is acceptable.</typeparam>
+        /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
         public class VectorTableParameters<TVector>             
         {
             /// <summary>
-            /// <para>Can be used when vectors self are already stored somewhere and this engine is used only for indexing.</para>
+            /// <para>Can be used when vectors self are already stored somewhere and the vector engine is used only for the indexing.</para>
             /// <para>Otherwise vectors will also be stored in the table.</para>
             /// </summary>
             public Func<long, TVector> GetItem=null;
             /// <summary>
-            /// <para>Default is 0 - will take about 70% of available CPU's to compute HNSW graph.</para>
+            /// <para>Default is 0 - automatic, will take about 70% of available CPU's to compute buckets with HNSW graphs in parallel.</para>
             /// <para>Maximal can be used Environment.ProcessorCount</para>
             /// </summary>
             public int QuantityOfLogicalProcessorToCompute = 0;
 
             /// <summary>
             /// <para>Vectors connections are grouped into buckets. Each bucket can hold up to BucketSize quantity (can be increased after inserts).</para>
+            /// <para>Each bucket is computed in parallel by CPU processors mentioned in QuantityOfLogicalProcessorToCompute</para>
             /// <para>Buckets are created automatically.</para>
-            /// <para>Default is 100000. With 10 buckets - 1MLN vectors.</para>
+            /// <para>Default is 100000</para>
             /// </summary>
             public int BucketSize = 100000;
 
@@ -74,11 +75,22 @@ namespace DBreeze.Transactions
         private SmallWorld<float[], float>.Composer InitVectorTranF<TVector>(string tableName, VectorTableParameters<float[]> vectorTableParameters = null)
         {
             SmallWorld<float[], float>.Composer graph;
-            _sync_vectorTransactionHelper.EnterWriteLock();
-            if (_vectorTransactionHelper == null)
-                _vectorTransactionHelper = new VectorTran(this);
-            graph = _vectorTransactionHelper.InitForTableF<float[]>(tableName, vectorTableParameters);
-            _sync_vectorTransactionHelper.ExitWriteLock();
+            _sync_vectorTransactionHandler.EnterWriteLock();
+            try
+            {
+                if (_vectorTransactionHandler == null)
+                    _vectorTransactionHandler = new VectorTran(this);
+                graph = _vectorTransactionHandler.InitForTableF<float[]>(tableName, vectorTableParameters);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"DBreeze. VectorLayer: Init of the table {tableName} has failed: " + ex.ToString());
+            }
+            finally
+            {
+                _sync_vectorTransactionHandler.ExitWriteLock();
+            }
+
             return graph;
         }
 
@@ -92,20 +104,29 @@ namespace DBreeze.Transactions
         private SmallWorld<double[], double>.Composer InitVectorTranD<TVector>(string tableName, VectorTableParameters<double[]> vectorTableParameters = null)
         {
             SmallWorld<double[], double>.Composer graph;
-
-            _sync_vectorTransactionHelper.EnterWriteLock();
-            if (_vectorTransactionHelper == null)
-                _vectorTransactionHelper = new VectorTran(this);
-            graph = _vectorTransactionHelper.InitForTableD<double[]>(tableName, vectorTableParameters);
-            _sync_vectorTransactionHelper.ExitWriteLock();
-
+            _sync_vectorTransactionHandler.EnterWriteLock();
+            try
+            {
+                if (_vectorTransactionHandler == null)
+                    _vectorTransactionHandler = new VectorTran(this);
+                graph = _vectorTransactionHandler.InitForTableD<double[]>(tableName, vectorTableParameters);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"DBreeze. VectorLayer: Init of the table {tableName} has failed: " + ex.ToString());
+            }
+            finally
+            {
+                _sync_vectorTransactionHandler.ExitWriteLock();
+            }
+           
             return graph;
         }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <typeparam name="TVector"></typeparam>
+        /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
         /// <param name="tableName"></param>
         /// <param name="vectorTableParameters"></param>
         /// <returns></returns>
@@ -122,43 +143,39 @@ namespace DBreeze.Transactions
             {
                 var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
                 var graph = InitVectorTranD<double[]>(tableName, parameters);
-
-
-
                 return graph.Count();
             }
 
-            throw new NotSupportedException($"Type {typeof(TVector)} is not supported.");
+            throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsCount: Type {typeof(TVector)} is not supported.");
         }
 
         /// <summary>
         /// 
         /// </summary>
+        /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
         /// <param name="tableName"></param>
         /// <param name="externalIds"></param>
         /// <param name="vectorTableParameters"></param>
         /// <returns></returns>
-        public IEnumerable<float[]> VectorsGetByExternalId(string tableName, List<long> externalIds, VectorTableParameters<float[]> vectorTableParameters = null)
+        /// <exception cref="NotSupportedException"></exception>
+        public IEnumerable<(long, TVector)> VectorsGetByExternalId<TVector>(string tableName, List<long> externalIds, VectorTableParameters<TVector> vectorTableParameters = null)
         {
-            var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
-            List<float[]> res = new List<float[]>();
-            foreach(var eid in externalIds)
-                yield return graph._parameters.Storage.GetItem(eid, vectorTableParameters?.GetItem ?? null);
-        }
+            if (typeof(TVector) == typeof(float[]))
+            {
+                var parameters = (VectorTableParameters<float[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranF<float[]>(tableName, parameters);             
+                foreach (var eid in externalIds)
+                    yield return (eid, (TVector)(object)graph._parameters.Storage.GetItem(eid, parameters?.GetItem ?? null));
+            }
+            else if (typeof(TVector) == typeof(double[]))
+            {
+                var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranD<double[]>(tableName, parameters);
+                foreach (var eid in externalIds)
+                    yield return (eid, (TVector)(object)graph._parameters.Storage.GetItem(eid, parameters?.GetItem ?? null));
+            }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="externalIds"></param>
-        /// <param name="vectorTableParameters"></param>
-        /// <returns></returns>
-        public IEnumerable<double[]> VectorsGetByExternalId(string tableName, List<long> externalIds, VectorTableParameters<double[]> vectorTableParameters = null)
-        {
-            var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
-            List<double[]> res = new List<double[]>();
-            foreach (var eid in externalIds)
-                yield return graph._parameters.Storage.GetItem(eid, vectorTableParameters?.GetItem ?? null);
+            throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsGetByExternalId: Type {typeof(TVector)} is not supported.");
         }
 
         /// <summary>

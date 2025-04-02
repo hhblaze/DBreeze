@@ -566,15 +566,18 @@ namespace DBreeze.Transactions
         public void Commit()
         {
             RandomKeySorter.Flush();
-            TextSearchHandlerCommit();
+            
 
             //Vector HNSW layer is forced to be flushed
 #if NET6FUNC || NET472
-            if (_vectorTransactionHelper != null)
-                _vectorTransactionHelper.BeforeComit();
+            if (_vectorTransactionHandler != null)
+                _vectorTransactionHandler.BeforeComit();
 #endif
 
+            TextSearchHandlerCommit();
+
             this._transactionUnit.TransactionsCoordinator.Commit(this.ManagedThreadId);
+
             TextSearchHandlerAfterCommit();
 
         }
