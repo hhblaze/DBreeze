@@ -71,7 +71,7 @@ namespace DBreeze.HNSW
 
                 if (!this.Graph.DistanceCache.TryGetValue(this.Id, departure.Id, out result))
                 {
-                    //result = this.distance(departure, this.destination);
+                    
                     result = this.Graph._composer._distance(departure.Item, this.Item); //Access via graph
 
                     this.Graph.DistanceCache.Add(this.Id, departure.Id, result);

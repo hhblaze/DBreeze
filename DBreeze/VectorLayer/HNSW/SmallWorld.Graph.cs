@@ -66,8 +66,7 @@ namespace DBreeze.HNSW
             public Graph( Parameters parameters)
             {
                 this.Parameters = parameters;
-                //this.Distance = distance;
-
+               
                 this.DistanceCache=new DistanceCache<TDistance>();
                 this.NodeCache = new NodeCache(this);
 
@@ -124,8 +123,6 @@ namespace DBreeze.HNSW
                 if (!items?.Any() ?? false)
                     return;
 
-                //Changed = true;
-
                 Node entryPoint = this.entryPoint;
                 int ii = 0;
                 var qIter = (items.Count + this.Count);
@@ -134,7 +131,7 @@ namespace DBreeze.HNSW
                 {
                     var lItem = items[this.Count];
                     lItem.item = this._composer._normalize(lItem.item);
-                    //lItem.item = this.Parameters.Storage.NormalizeVector(lItem.item);   
+                      
                     entryPoint = this.NewNode(this.Count, lItem.externalId, lItem.item, RandomLevel(this.RandomGenerator, this.Parameters.LevelLambda), false);
                     //Adding to DB
                     this.Parameters.Storage.AddItem(lItem.externalId, this._bucket.BucketId, this.Count, lItem.item);
@@ -172,7 +169,7 @@ namespace DBreeze.HNSW
                     var bestPeer = entryPoint;
                     var lItem = items[ii];
                     lItem.item = this._composer._normalize(lItem.item);
-                    //lItem.item = this.Parameters.Storage.NormalizeVector(lItem.item);
+                   
                     var newNode = this.NewNode(id, lItem.externalId, lItem.item, RandomLevel(this.RandomGenerator, this.Parameters.LevelLambda), false);
 
                     //Adding to DB

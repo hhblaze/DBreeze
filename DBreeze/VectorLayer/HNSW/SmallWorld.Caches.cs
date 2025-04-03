@@ -32,8 +32,6 @@ namespace DBreeze.HNSW
             /// </summary>
             Dictionary<int, Dictionary<int, TDistance>> Mkd { get; set; } = new Dictionary<int, Dictionary<int, TDistance>>(); //much faster, than one long dictionary
 
-            //public Dictionary<long, TDistance> Mkd { get; set; } = new();
-
             /// <summary>
             /// Gets or Sets Count.
             /// </summary>
@@ -44,41 +42,6 @@ namespace DBreeze.HNSW
                 Count = 0;
                 this.Mkd.Clear();
             }
-
-            ///// <summary>
-            ///// destination is a primary key.
-            ///// </summary>
-            ///// <param name="destinationId">destination.</param>
-            ///// <param name="departureId">departure.</param>
-            ///// <param name="distance">distance.</param>
-            //public void Add(int destinationId, int departureId, TDistance distance)
-            //{
-            //    var key = ((long)destinationId << 32) | departureId;
-            //    //var key = CombineIntsToLong(destinationId, departureId);
-            //    Mkd[key] = distance;
-
-            //    this.Count++;
-            //}
-
-            ///// <summary>
-            ///// TryGetValue.
-            ///// </summary>
-            ///// <param name="destinationId">destination.</param>
-            ///// <param name="departureId">departure.</param>
-            ///// <param name="result">result.</param>
-            ///// <returns>boolean value.</returns>
-            //public bool TryGetValue(int destinationId, int departureId, out TDistance result)
-            //{
-            //    var key = ((long)destinationId << 32) | departureId;
-            //    //var key = CombineIntsToLong(destinationId, departureId);
-
-            //    if (this.Mkd.TryGetValue(key, out result))
-            //        return true;
-
-            //    result = default;
-            //    return false;
-            //}
-
 
 
             public long Key = 0;

@@ -28,7 +28,30 @@ namespace TesterNet6.TextCorpus
 
             int TAKE = 10_000;
 
+            //Func<long, float[]> GetItem = (externalId) =>
+            //{
 
+            //    //Vectors inside that storage are already normalized
+
+            //    var ll = tranRead.ValuesLazyLoadingIsOn;
+            //    tran.ValuesLazyLoadingIsOn = false;
+            //    var row = tranRead.Select<uint, byte[]>(tableEmb, (uint)externalId);
+            //    tran.ValuesLazyLoadingIsOn = ll;
+
+
+            //    if (row.Exists)
+            //        return SmallWorld<float[], float>.DecompressF(row.Value);
+            //    else
+            //        throw new Exception($"- GetItem {externalId} is not found");
+            //};
+
+            //var vectorConfig= new DBreeze.Transactions.Transaction.VectorTableParameters<float[]> { 
+            
+            //     BucketSize=100000,
+            //     GetItem = GetItem,
+            //     NeighbourSelection = DBreeze.Transactions.Transaction.VectorTableParameters<float[]>.eNeighbourSelectionHeuristic.NeighbourSelectSimple,
+            //     QuantityOfLogicalProcessorToCompute = Environment.ProcessorCount
+            //};
 
             Stopwatch stopwatch = new Stopwatch();
             Stopwatch stopwatchBatch = Stopwatch.StartNew();
@@ -44,7 +67,7 @@ namespace TesterNet6.TextCorpus
                     stopwatch.Restart();
 
                     //graph.AddItems(batch, clearDistanceCache: true);
-                    tran.VectorsInsert("myVectorTable", batch);
+                    tran.VectorsInsert("myVectorTable", batch, vectorTableParameters: null );
 
                     stopwatch.Stop();
                     timeSpanP = System.TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds);
@@ -90,14 +113,14 @@ namespace TesterNet6.TextCorpus
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 //Testing output
-                Debug.WriteLine($"-- Total count: {tran.VectorsCount<float[]>(tblVector)}");
+                Debug.WriteLine($"-- Total count: {tran.VectorsCount<float[]>(tblVector, vectorTableParameters: null)}");
 
                 foreach (var testRow in tranRead.SelectForward<uint, byte[]>(tableTestEmb).Skip(5).Take(1))
                 {
                     var embedding = DecompressF(testRow.Value);
 
                     stopwatchBatch.Restart();
-                    var r1 = tran.VectorsSearchSimilar(tblVector, embedding);
+                    var r1 = tran.VectorsSearchSimilar(tblVector, embedding, quantity:20, vectorTableParameters: null);
 
                     foreach (var br in r1)
                     {

@@ -188,7 +188,7 @@ namespace DBreeze.HNSW
                    4- Key: new byte[] {4, (long)externalId }
                       Value: (int)bucketId, (int)nodeId
                    5- Key: new byte[] {5, (long)externalId}
-                      Value: brotli compressed TItem (vector self)
+                      Value: GZIPed compressed TItem (vector self)
                 */
 
                 foreach(var el in addedItems)
@@ -293,7 +293,7 @@ namespace DBreeze.HNSW
                    4- Key: new byte[] {4, (long)externalId }
                       Value: (int)bucketId, (int)nodeId
                    5- Key: new byte[] {5, (long)externalId}
-                      Value: brotli compressed TItem (vector self)
+                      Value: GZIPed compressed TItem (vector self)
                 */
                 foreach (var el in addedItems)
                 {
