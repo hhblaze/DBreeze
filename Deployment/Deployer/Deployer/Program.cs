@@ -176,6 +176,7 @@ namespace Deployer
                     var vf = FileVersionInfo.GetVersionInfo(f.FullName);
                     fileVersion = FileVersionInfo.GetVersionInfo(f.FullName).FileVersion;
                     productVersion = FileVersionInfo.GetVersionInfo(f.FullName).ProductVersion;
+                    productVersion = fileVersion;
                     break;
                 }
 

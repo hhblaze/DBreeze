@@ -1,6 +1,6 @@
 DBreeze ![Image of DBreeze](https://raw.githubusercontent.com/hhblaze/DBreeze/master/Documentation/Dbreeze.Logo.png) Database
 =====================
-![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.118%20production-9933FF.svg) 
+![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.119%20production-9933FF.svg) 
 [![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg)](https://github.com/hhblaze/DBreeze/blob/master/LICENSE)
 ![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
 [![NuGet Badge](https://img.shields.io/nuget/dt/DBreeze?color=blue&label=Nuget%20downloads)](https://www.nuget.org/packages/DBreeze/)
@@ -55,7 +55,7 @@ Key features:
 - Integrated text-search subsystem (full-text/partial).
 - Integrated object database layer.
 - Fast multi-parameter search subsystem with powerful query possibilities.
-- Integrated Vector Database Layer / Similarity Search Engine / Clustering, based on KMeans++ Centroids Propagated Graph.
+- Integrated Vector Database Layer / Similarity Search Engine / Clustering, based on HNSW Graphs.
 - Integrated binary and JSON serializer [Biser.NET](https://github.com/hhblaze/Biser)
 - High Availability, Redundancy and Fault Tolerance via [Raft.NET](https://github.com/hhblaze/Raft.Net)
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.

@@ -52,7 +52,7 @@ namespace DBreeze.HNSW
                     //var bucketId = Value.Substring(0, 4).To_Int32_BigEndian();
                     //var nodeId = Value.Substring(4, 4).To_Int32_BigEndian();
              5- Key: new byte[] {5, (long)externalId}
-                Value: brotli compressed TItem (vector self)
+                Value: GZIPed TItem (vector self)
              */
 
 

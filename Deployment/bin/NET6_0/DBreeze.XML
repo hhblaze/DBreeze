@@ -4572,25 +4572,26 @@
             <summary>
             Setup vector layer bound to a table
             </summary>
-            <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for a vector database - precision is acceptable.</typeparam>
+            <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
         </member>
         <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.GetItem">
             <summary>
-            <para>Can be used when vectors self are already stored somewhere and this engine is used only for indexing.</para>
+            <para>Can be used when vectors self are already stored somewhere and the vector engine is used only for the indexing.</para>
             <para>Otherwise vectors will also be stored in the table.</para>
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.QuantityOfLogicalProcessorToCompute">
             <summary>
-            <para>Default is 0 - will take about 70% of available CPU's to compute HNSW graph.</para>
+            <para>Default is 0 - automatic, will take about 70% of available CPU's to compute buckets with HNSW graphs in parallel.</para>
             <para>Maximal can be used Environment.ProcessorCount</para>
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.BucketSize">
             <summary>
             <para>Vectors connections are grouped into buckets. Each bucket can hold up to BucketSize quantity (can be increased after inserts).</para>
+            <para>Each bucket is computed in parallel by CPU processors mentioned in QuantityOfLogicalProcessorToCompute</para>
             <para>Buckets are created automatically.</para>
-            <para>Default is 100000. With 10 buckets - 1MLN vectors.</para>
+            <para>Default is 100000</para>
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.NeighbourSelection">
@@ -4625,29 +4626,22 @@
             <summary>
             
             </summary>
-            <typeparam name="TVector"></typeparam>
+            <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
             <param name="tableName"></param>
             <param name="vectorTableParameters"></param>
             <returns></returns>
             <exception cref="T:System.NotSupportedException"></exception>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalId(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
+        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalId``1(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{``0})">
             <summary>
             
             </summary>
+            <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
             <param name="tableName"></param>
             <param name="externalIds"></param>
             <param name="vectorTableParameters"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.Transaction.VectorsGetByExternalId(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
-            <summary>
-            
-            </summary>
-            <param name="tableName"></param>
-            <param name="externalIds"></param>
-            <param name="vectorTableParameters"></param>
-            <returns></returns>
+            <exception cref="T:System.NotSupportedException"></exception>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList{System.ValueTuple{System.Int64,System.Single[]}},DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
             <summary>
