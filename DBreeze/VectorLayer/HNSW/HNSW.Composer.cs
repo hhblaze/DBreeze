@@ -76,78 +76,7 @@ namespace DBreeze.HNSW
                 if(currentBatch.Count>0)
                     yield return currentBatch;
             }
-
-            ///// <summary>
-            ///// 
-            ///// </summary>
-            ///// <param name="items"></param>
-            ///// <param name="clearDistanceCache"></param>
-            //public void AddItems(IList<(uint externalId, TItem item)> items, bool clearDistanceCache = true)
-            //{
-            //    if (items == null || items.Count == 0)
-            //    {
-            //        return; // Nothing to add
-            //    }
-               
-            //    foreach (var iitems in Batcher(items))
-            //    {
-            //        _lock.EnterWriteLock();
-            //        try
-            //        {
-            //            int totalItems = iitems.Count;
-
-            //            // Determine the number of instances to actually distribute work across.
-            //            // If there are fewer items than instances, don't try to give work to more instances than there are items.
-            //            int effectiveInstanceQuantity = Math.Min(this.InstanceManager.InstanceQuantity, totalItems);
-
-            //            // If after the Min, we have no instances to work with (e.g., if InstanceQuantity was 0, though constructor prevents this), exit.
-            //            // This also implicitly handles totalItems == 0 case again, though already checked.
-            //            if (effectiveInstanceQuantity <= 0) return;
-
-            //            // Calculate base chunk size and the number of instances that will get one extra item
-            //            int chunkSize = totalItems / effectiveInstanceQuantity;
-            //            int remainder = totalItems % effectiveInstanceQuantity;
-
-            //            // Use Parallel.For to iterate through the indices of the instances that will receive items
-            //            Parallel.For(0, effectiveInstanceQuantity, i =>
-            //            {
-            //                // Calculate the starting index in the original list for this instance's chunk
-            //                // Instances with index less than 'remainder' get an extra item, affecting subsequent start indices.
-            //                int startIndex = i * chunkSize + Math.Min(i, remainder);
-
-            //                // Calculate the number of items this instance should process
-            //                int count = chunkSize + (i < remainder ? 1 : 0);
-
-            //                // This check is technically redundant given the effectiveInstanceQuantity logic,
-            //                // as 'count' should always be at least 1 here, but it doesn't hurt.
-            //                if (count > 0)
-            //                {
-            //                    // Extract the sub-list (chunk) for the current instance.
-            //                    // .Skip().Take() works on IEnumerable, .ToList() materializes the chunk.
-            //                    // This creates a new List for each chunk, involving some overhead,
-            //                    // but is clear and works generally with IList.
-            //                    var chunkItems = iitems.Skip(startIndex).Take(count).ToList();
-
-            //                    // Call AddItems on the specific graph instance.
-            //                    // It's crucial that _instances[i].AddItems is safe to call in parallel *across different instances*.
-            //                    // It should primarily modify the state associated with _instances[i].
-
-            //                    this.InstanceManager.CInstances[i].GetInsertBucket().AddItems(chunkItems, clearDistanceCache);
-            //                }
-            //            });
-
-            //            // Note: If totalItems < InstanceQuantity initially, the instances with index >= totalItems
-            //            // (i.e., index >= effectiveInstanceQuantity) will not be touched in this operation, which is expected.
-            //        }
-            //        finally
-            //        {
-            //            _lock.ExitWriteLock();
-            //        }
-            //    }
-
-
-               
-            //}
+                       
 
             public void AddItems(IList<(long externalId, TItem item)> items, bool clearDistanceCache = true)
             {
