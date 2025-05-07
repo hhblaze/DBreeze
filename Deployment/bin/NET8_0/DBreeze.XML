@@ -239,6 +239,32 @@
             Gets deserialized object
             </summary>
         </member>
+        <member name="T:DBreeze.DataTypes.DbMJSON`1">
+            <summary>
+            <para>Microsoft JSON</para>
+            <para></para>
+            <para>Possible to make like this, without class instantiating:</para>
+            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
+            <para>aa.Add("test1")</para>
+            <para>aa.Add("test2")</para>
+            <para>-----inside of transaction---------</para>
+            <para>tran.Insert&lt;uint, DbMJSON&lt;List&lt;string&gt;&gt;&gt;("t1", i, aa);</para>
+            <para>-----------------------------------</para>
+            <para>foreach (var row in tran.SelectForward&lt;uint, DbMJSON&lt;List&lt;string&gt;&gt;&gt;("t1"))</para>
+            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbMJSON`1.SerializedObject">
+            <summary>
+            Returns serialized string representing the internal object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbMJSON`1.Get">
+            <summary>
+            Gets deserialized object
+            </summary>
+        </member>
         <member name="P:DBreeze.DataTypes.DbUnicode.Get">
             <summary>
             Returns string from the object
@@ -5885,6 +5911,21 @@
             If gate is closed then it will be closed timeout time in milliseconds
             </summary>
             <param name="milliseconds"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.JavascriptSerializator.SerializeMJSON(System.Object)">
+            <summary>
+            Serializes object to JSON using .NET System.Text.Json.JsonSerializer
+            </summary>
+            <param name="objectForSerialization"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.JavascriptSerializator.DeserializeMJSON``1(System.String)">
+            <summary>
+            Deserializes object from JSON string using .NET System.Text.Json.JsonSerializer
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="str"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128(System.Byte[])">
