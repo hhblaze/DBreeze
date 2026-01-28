@@ -4657,6 +4657,22 @@
             <param name="vectors">(long ExternalId of the Vector, double[] vector itself - will be auto normalized)</param>
             <param name="vectorTableParameters"></param>
         </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsRemoveF(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
+            <summary>
+            For float[]. Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
+            </summary>
+            <param name="tableName"></param>
+            <param name="externalIds">List of external IDs to mark as deleted</param>
+            <param name="vectorTableParameters"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.VectorsRemoveD(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
+            <summary>
+            For double[]. Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
+            </summary>
+            <param name="tableName"></param>
+            <param name="externalIds">List of external IDs to mark as deleted</param>
+            <param name="vectorTableParameters"></param>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Single[],System.Int32,DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
             <summary>
             
@@ -6900,9 +6916,15 @@
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.Count">
             <summary>
-            
+            Returns the count of non-deleted vectors in the database.
             </summary>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.RemoveItems(System.Collections.Generic.List{System.Int64})">
+            <summary>
+            Marks items as deleted (soft delete) by their external IDs.
+            </summary>
+            <param name="externalIds"></param>
         </member>
         <member name="T:DBreeze.HNSW.SmallWorld`2.InstanceManager">
             <summary>
@@ -7116,6 +7138,11 @@
             <param name="maxLevel">The maximum level until which the node exists.</param>
             <param name="distance">The distance function for attached items.</param>
             <param name="parameters">The parameters of the algorithm.</param>
+        </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.Deleted">
+            <summary>
+            Gets or sets whether this node is marked as deleted (soft delete).
+            </summary>
         </member>
         <member name="P:DBreeze.HNSW.SmallWorld`2.Node.Id">
             <summary>

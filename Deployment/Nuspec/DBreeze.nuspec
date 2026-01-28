@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>DBreeze</id>
-    <version>1.120.2025.0507</version>
+    <version>1.121.2026.0128</version>
     <title>DBreeze Database embedded ACID NoSql / Key Value / Object / Text Search / Multi-Parameter / Vector / ... for .NET</title>
 	<icon>images\Dbreeze.Logo.png</icon>
     <authors>Oleksiy Solovyov / Ivars Sudmalis</authors>
