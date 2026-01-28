@@ -338,16 +338,20 @@ namespace DBreeze.HNSW
                     {
                         if (!visited.Contains(neighbour.Id))
                         {
-                            // enque perspective neighbours to expansion list
-                            farthestResult = resultHeap.Buffer.First();
-                            if (resultHeap.Buffer.Count < k
-                            || DLt(destination.From(neighbour), destination.From(farthestResult)))
+                            // Skip deleted nodes during graph traversal (soft delete filtering)
+                            if (!neighbour.Deleted)
                             {
-                                expansionHeap.Push(neighbour);
-                                resultHeap.Push(neighbour);
-                                if (resultHeap.Buffer.Count > k)
+                                // enque perspective neighbours to expansion list
+                                farthestResult = resultHeap.Buffer.First();
+                                if (resultHeap.Buffer.Count < k
+                                || DLt(destination.From(neighbour), destination.From(farthestResult)))
                                 {
-                                    resultHeap.Pop();
+                                    expansionHeap.Push(neighbour);
+                                    resultHeap.Push(neighbour);
+                                    if (resultHeap.Buffer.Count > k)
+                                    {
+                                        resultHeap.Pop();
+                                    }
                                 }
                             }
 

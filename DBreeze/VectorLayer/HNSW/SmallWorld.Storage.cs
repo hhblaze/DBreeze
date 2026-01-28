@@ -82,7 +82,8 @@ namespace DBreeze.HNSW
                         Connections = n.Value.Connections.CloneByExpressionTree(),
                         ExternalId = n.Value.ExternalId,
                         Id = n.Value.Id,
-                        MaxLevel = n.Value.MaxLevel
+                        MaxLevel = n.Value.MaxLevel,
+                        Deleted = n.Value.Deleted
                     };
                     byte[] btNode = dbNode.BiserEncoder().Encode();
 
@@ -106,7 +107,8 @@ namespace DBreeze.HNSW
                 {
                     BucketId = bucket.BucketId,
                     EntryPointId = bucket.Graph.entryPoint.Id,
-                    Count = bucket.Graph.Count
+                    Count = bucket.Graph.Count,
+                    DeletedCount = bucket.DeletedCount
                 };
 
                 byte[] btBucket = dbBucket.BiserEncoder().Encode();
@@ -410,6 +412,7 @@ namespace DBreeze.HNSW
             public int BucketId { get; set; }
             public int EntryPointId { get; set; }
             public int Count { get; set; }
+            public int DeletedCount { get; set; }
         }
 
         internal partial class BucketDB : Biser.IEncoder
@@ -424,6 +427,7 @@ namespace DBreeze.HNSW
                 encoder.Add(BucketId);
                 encoder.Add(EntryPointId);
                 encoder.Add(Count);
+                encoder.Add(DeletedCount);
 
                 return encoder;
             }
@@ -453,6 +457,7 @@ namespace DBreeze.HNSW
                 m.BucketId = decoder.GetInt();
                 m.EntryPointId = decoder.GetInt();
                 m.Count = decoder.GetInt();
+                m.DeletedCount = decoder.GetInt();
 
 
                 return m;

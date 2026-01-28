@@ -204,6 +204,32 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="externalIds">List of external IDs to mark as deleted</param>
+        /// <param name="vectorTableParameters"></param>
+        public void VectorsRemove(string tableName, List<long> externalIds, VectorTableParameters<float[]> vectorTableParameters = null)
+        {
+            var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
+            graph.RemoveItems(externalIds);
+            graph.Flush();
+        }
+
+        /// <summary>
+        /// Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="externalIds">List of external IDs to mark as deleted</param>
+        /// <param name="vectorTableParameters"></param>
+        public void VectorsRemove(string tableName, List<long> externalIds, VectorTableParameters<double[]> vectorTableParameters = null)
+        {
+            var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
+            graph.RemoveItems(externalIds);
+            graph.Flush();
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="tableName"></param>

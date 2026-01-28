@@ -156,14 +156,18 @@ namespace DBreeze.HNSW
                                 var neighbourhood = graph.KNearest(destination, k);
                                 foreach (var n in neighbourhood)
                                 {
-                                    var result = new KNNSearchResult
+                                    // Skip deleted nodes in final results (soft delete filtering)
+                                    if (!n.Deleted)
                                     {
-                                        Id = n.Id,
-                                        ExternalId = n.ExternalId,
-                                        Item = n.Item,
-                                        Distance = destination.From(n),
-                                    };
-                                    localQueue.Enqueue(result, result.Distance);                                    
+                                        var result = new KNNSearchResult
+                                        {
+                                            Id = n.Id,
+                                            ExternalId = n.ExternalId,
+                                            Item = n.Item,
+                                            Distance = destination.From(n),
+                                        };
+                                        localQueue.Enqueue(result, result.Distance);
+                                    }
                                 }
 
                                 if (clearDistanceCache)
@@ -199,12 +203,13 @@ namespace DBreeze.HNSW
             }
 
             /// <summary>
-            /// 
+            /// Returns the count of non-deleted vectors in the database.
             /// </summary>
             /// <returns></returns>
             public long Count()
             {
                 long counter = 0;
+                long deletedCounter = 0;
 
                 _lock.EnterReadLock();
                 try
@@ -227,8 +232,9 @@ namespace DBreeze.HNSW
                             _sync.ExitWriteLock();
                             if (bucketId != -1)
                             {
-                                var graph = instance.GetSearchBucket(bucketId);
-                                Interlocked.Add(ref counter, graph.Count);
+                                var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                                Interlocked.Add(ref counter, bucket.Graph.Count);
+                                Interlocked.Add(ref deletedCounter, bucket.DeletedCount);
 
                             }
                             else
@@ -241,7 +247,7 @@ namespace DBreeze.HNSW
                     _lock.ExitReadLock();
                 }
 
-                return counter;
+                return counter - deletedCounter;
 
             }
 
@@ -317,6 +323,51 @@ namespace DBreeze.HNSW
 
             //}
 
+
+            /// <summary>
+            /// Marks items as deleted (soft delete) by their external IDs.
+            /// </summary>
+            /// <param name="externalIds"></param>
+            public void RemoveItems(List<long> externalIds)
+            {
+                if (externalIds == null || externalIds.Count == 0) return;
+
+                _lock.EnterWriteLock();
+                try
+                {
+                    foreach (var externalId in externalIds)
+                    {
+                        // Look up bucket and node ID for this external ID
+                        // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
+                        var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
+                            this._parameters.Storage.TableName, 
+                            4.ToIndex(externalId));
+
+                        if (row.Exists)
+                        {
+                            var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
+                            var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
+
+                            // Get the bucket and load the node
+                            var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                            var node = bucket.Graph.NodeCache.GetNode(nodeId);
+
+                            // Mark as deleted if not already deleted
+                            if (!node.Deleted)
+                            {
+                                node.Deleted = true;
+                                node.Changed = true;
+                                bucket.DeletedCount++;
+                                bucket.Graph.Changed = true;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
 
             public void Flush()
             {
@@ -405,6 +456,7 @@ namespace DBreeze.HNSW
             public bool Changed = false;
             public bool InInsertUse=false;
             public int BucketId = 0;
+            public int DeletedCount = 0;
 
             public int Count { get {
                     return this.Graph.Count;
@@ -446,6 +498,7 @@ namespace DBreeze.HNSW
                     
                     bucket.Graph = new Graph(_composer, bucket, b.EntryPointId);
                     bucket.Graph.Count = b.Count;
+                    bucket.DeletedCount = b.DeletedCount;
 
                     //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] LoadBuckets - Loaded Bucket {b.BucketId}: EntryPointId={b.EntryPointId}, Count={b.Count}");
 

@@ -62,6 +62,11 @@ namespace DBreeze.HNSW
 
             }
 
+            /// <summary>
+            /// Gets or sets whether this node is marked as deleted (soft delete).
+            /// </summary>
+            public bool Deleted { get; set; } = false;
+
             private static readonly Comparer<TDistance> DistanceComparer = Comparer<TDistance>.Default;
 
             public TDistance From(Node departure)
@@ -125,12 +130,12 @@ namespace DBreeze.HNSW
                 
             }
 
-            public bool Changed=false;
+            public bool Changed = false;
 
             /// <summary>
             /// Gets all connections of the node on all layers.
             /// </summary>            
-            public List<List<int>> Connections { get; set; }           
+            public List<List<int>> Connections { get; set; }
 
             private static readonly List<Node> EmptyNodeList = new List<Node>();
             
