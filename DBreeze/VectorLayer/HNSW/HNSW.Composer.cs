@@ -111,6 +111,51 @@ namespace DBreeze.HNSW
                 }
             }
 
+            /// <summary>
+            /// Marks items as deleted (soft delete) by their external IDs.
+            /// </summary>
+            /// <param name="externalIds"></param>
+            public void RemoveItems(List<long> externalIds)
+            {
+                if (externalIds == null || externalIds.Count == 0) return;
+
+                _lock.EnterWriteLock();
+                try
+                {
+                    foreach (var externalId in externalIds)
+                    {
+                        // Look up bucket and node ID for this external ID
+                        // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
+                        var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
+                            this._parameters.Storage.TableName,
+                            4.ToIndex(externalId));
+
+                        if (row.Exists)
+                        {
+                            var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
+                            var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
+
+                            // Get the bucket and load the node
+                            var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                            var node = bucket.Graph.NodeCache.GetNode(nodeId);
+
+                            // Mark as deleted if not already deleted
+                            if (!node.Deleted)
+                            {
+                                node.Deleted = true;
+                                node.Changed = true;
+                                bucket.DeletedCount++;
+                                bucket.Graph.Changed = true;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
+
 
             /// <summary>
             /// 
@@ -324,50 +369,7 @@ namespace DBreeze.HNSW
             //}
 
 
-            /// <summary>
-            /// Marks items as deleted (soft delete) by their external IDs.
-            /// </summary>
-            /// <param name="externalIds"></param>
-            public void RemoveItems(List<long> externalIds)
-            {
-                if (externalIds == null || externalIds.Count == 0) return;
-
-                _lock.EnterWriteLock();
-                try
-                {
-                    foreach (var externalId in externalIds)
-                    {
-                        // Look up bucket and node ID for this external ID
-                        // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
-                        var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
-                            this._parameters.Storage.TableName, 
-                            4.ToIndex(externalId));
-
-                        if (row.Exists)
-                        {
-                            var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
-                            var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
-
-                            // Get the bucket and load the node
-                            var bucket = this.BucketManager.GetSearchBucket(bucketId);
-                            var node = bucket.Graph.NodeCache.GetNode(nodeId);
-
-                            // Mark as deleted if not already deleted
-                            if (!node.Deleted)
-                            {
-                                node.Deleted = true;
-                                node.Changed = true;
-                                bucket.DeletedCount++;
-                                bucket.Graph.Changed = true;
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
-            }
+            
 
             public void Flush()
             {
