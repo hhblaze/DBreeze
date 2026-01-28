@@ -1,0 +1,32 @@
+version: 1.0.{build}
+image: Visual Studio 2022
+
+configuration: Release
+
+branches:
+  only:
+    - master
+
+environment:
+  matrix:
+    - BUILD_TARGET: net472
+    - BUILD_TARGET: net6
+    - BUILD_TARGET: net8
+
+before_build:
+  - dotnet restore Deployment/Deployer/Deployer.csproj
+
+build_script:
+  - dotnet build Deployment/Deployer/Deployer.csproj -c Release
+
+after_build:
+  - ps: |
+      Write-Host "Running deployer for $env:BUILD_TARGET"
+      .\Deployment\Deployer\Deployer\bin\Release\Deployer.exe `
+        1.80.0 `
+        $env:BUILD_TARGET
+
+artifacts:
+  - path: DBreeze\bin\Release\*.dll
+  - path: DBreeze.Net5\bin\Release\net6.0\*.dll
+  - path: DBreeze.Net5\bin\Release\net8.0\*.dll

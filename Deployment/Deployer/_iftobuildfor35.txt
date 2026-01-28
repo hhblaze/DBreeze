@@ -1,0 +1,69 @@
+appveyor.yml
+
+version: 1.0.{build}
+
+configuration: Release
+
+branches:
+  only:
+    - master
+
+environment:
+  matrix:
+    - BUILD_TARGET: net35
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+
+    - BUILD_TARGET: net472
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+
+    - BUILD_TARGET: net6
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+
+    - BUILD_TARGET: net8
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+
+before_build:
+  - dotnet restore Deployment/Deployer/Deployer.csproj
+
+build_script:
+  - dotnet build Deployment/Deployer/Deployer.csproj -c Release
+
+after_build:
+  - ps: |
+      Write-Host "Running deployer for $env:BUILD_TARGET"
+      .\Deployment\Deployer\Deployer\bin\Release\Deployer.exe `
+        1.80.0 `
+        $env:BUILD_TARGET
+
+artifacts:
+  - path: DBreeze\bin\Release\*.dll
+  - path: DBreeze.Net5\bin\Release\**\*.dll
+
+
+
+-------------
+Program
+
+case "net35":
+    rc = Utils.Compile(
+        msbuildBat,
+        "TargetFrameworkVersion",
+        @"DBreeze\DBreeze.csproj",
+        "v3.5",
+        "TRACE;RELEASE;NET35",
+        @"DBreeze\bin\Release",
+        "NET35"
+    );
+    break;
+
+-----------
+notes About Images of appveyor
+
+| Image               | .NET 3.5 support |
+| ------------------- | ---------------- |
+| Visual Studio 2019  | ✅ YES            |
+| Visual Studio 2022  | ❌ NO             |
+| Windows Server 2019 | ⚠️ partial       |
+| Windows Server 2022 | ❌ NO             |
+
+

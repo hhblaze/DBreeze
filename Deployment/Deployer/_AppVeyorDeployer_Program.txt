@@ -1,0 +1,134 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+
+namespace Deployer
+{
+    internal class Program
+    {
+        static string MyPath;
+
+        static int Main(string[] args)
+        {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("Usage: Deployer <version> <net472|net6|net8>");
+                return 1;
+            }
+
+            string version = args[0];
+            string target = args[1].ToLowerInvariant();
+
+            MyPath = AssemblyDirectory + "\\";
+
+#if DEBUG
+            MyPath += @"..\..\..\..\bin\";
+#endif
+
+            string msbuildBat = Path.Combine(MyPath, "runV2_msbuild22.bat");
+
+            Console.WriteLine($"DBreeze build started");
+            Console.WriteLine($"Version : {version}");
+            Console.WriteLine($"Target  : {target}");
+
+            // ---- VERSION UPDATE ----
+            Utils.ChangeProjectVersion(version, Utils.eFileToChangeType.AssemblyInfo,
+                MyPath + @"..\..\DBreeze\Properties\AssemblyInfo.cs");
+
+            Utils.ChangeProjectVersion(version, Utils.eFileToChangeType.Project,
+                MyPath + @"..\..\DBreeze.Net5\DBreeze.Net5.csproj");
+
+            // ---- BUILD SELECTION ----
+            int rc;
+
+            switch (target)
+            {
+                case "net472":
+                    rc = BuildNet472(msbuildBat);
+                    break;
+
+                case "net6":
+                    rc = BuildNet6(msbuildBat);
+                    break;
+
+                case "net8":
+                    rc = BuildNet8(msbuildBat);
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown target: {target}");
+                    return 2;
+            }
+
+            if (rc != 0)
+            {
+                Console.WriteLine("Build failed");
+                return rc;
+            }
+
+            Console.WriteLine("Build completed successfully");
+            return 0;
+        }
+
+        // ---------------- BUILDS ----------------
+
+        static int BuildNet472(string msbuild)
+        {
+            Console.WriteLine("Building .NET Framework 4.7.2");
+
+            return Utils.Compile(
+                msbuild,
+                "TargetFrameworkVersion",
+                @"DBreeze\DBreeze.csproj",
+                "v4.7.2",
+                "TRACE;RELEASE;NET40;NET472",
+                @"DBreeze\bin\Release",
+                "NET472"
+            );
+        }
+
+        static int BuildNet6(string msbuild)
+        {
+            Console.WriteLine("Building .NET 6");
+
+            return Utils.Compile(
+                msbuild,
+                "TargetFramework",
+                @"DBreeze.Net5\DBreeze.Net5.csproj",
+                "net6.0",
+                "TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;NET6_0",
+                @"DBreeze.Net5\bin\Release\net6.0",
+                "NET6_0"
+            );
+        }
+
+        static int BuildNet8(string msbuild)
+        {
+            Console.WriteLine("Building .NET 8");
+
+            return Utils.Compile(
+                msbuild,
+                "TargetFramework",
+                @"DBreeze.Net5\DBreeze.Net5.csproj",
+                "net8.0",
+                "TRACE;RELEASE;NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;NET8_0",
+                @"DBreeze.Net5\bin\Release\net8.0",
+                "NET8_0"
+            );
+        }
+
+        // ---------------- HELPERS ----------------
+
+        static string AssemblyDirectory
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                var uri = new UriBuilder(codeBase);
+                return Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
+            }
+        }
+    }
+}
