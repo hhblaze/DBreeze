@@ -106,10 +106,22 @@ namespace DBreeze.HNSW
             {
                 if(_bucket!=null)
                 {
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.Flush() START - BucketId={this._bucket.BucketId}, Count={this.Count}");
+                    
+                    //bool nodesFlushed = this.NodeCache.Flush();
                     if (this.NodeCache.Flush())
                         this.Changed = true;
 
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.Flush() - NodesFlushed={nodesFlushed}, Changed={this.Changed}");
+
                     this.NodeCache.Clear();
+                    
+                    // Ensure bucket metadata is always saved when graph has data
+                    // This fixes the issue where Count changes weren't being persisted
+                    //if (this.Count > 0)
+                    //    this.Changed = true;
+                    
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.Flush() END - Changed={this.Changed}, entryPoint.Id={this.entryPoint?.Id ?? -1}");
                 }
             }
             
@@ -123,6 +135,8 @@ namespace DBreeze.HNSW
                 if (!items?.Any() ?? false)
                     return;
 
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.AddItems() START - BucketId={this._bucket.BucketId}, CurrentCount={this.Count}, AddingItems={items.Count}, CurrentEntryPoint={this.entryPoint?.Id ?? -1}");
+
                 Node entryPoint = this.entryPoint;
                 int ii = 0;
                 var qIter = (items.Count + this.Count);
@@ -135,6 +149,8 @@ namespace DBreeze.HNSW
                     entryPoint = this.NewNode(this.Count, lItem.externalId, lItem.item, RandomLevel(this.RandomGenerator, this.Parameters.LevelLambda), false);
                     //Adding to DB
                     this.Parameters.Storage.AddItem(lItem.externalId, this._bucket.BucketId, this.Count, lItem.item);
+
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.AddItems() - Created NEW EntryPoint: NodeId={entryPoint.Id}, ExternalId={entryPoint.ExternalId}, MaxLevel={entryPoint.MaxLevel}");
 
                     this.Count++;
                     ii++;
@@ -202,7 +218,26 @@ namespace DBreeze.HNSW
                     // zoom out to the highest level
                     if (newNode.MaxLevel > entryPoint.MaxLevel)
                     {
+                        // Ensure old entryPoint remains connected to maintain graph connectivity
+                        // When a new node becomes entryPoint due to higher level, we must ensure
+                        // the old entryPoint is reachable from the new one at level 0
+                        var oldEntryPoint = entryPoint;
                         entryPoint = newNode;
+                        
+                        // Add bidirectional connection between new and old entryPoint at level 0
+                        // to prevent graph fragmentation
+                        if (oldEntryPoint.Id != newNode.Id)
+                        {
+                            // Check if connection already exists (it might from earlier neighbor search)
+                            bool alreadyConnected = newNode.GetConnections(0).Any(n => n.Id == oldEntryPoint.Id);
+                            
+                            if (!alreadyConnected)
+                            {
+                                newNode.AddConnection(oldEntryPoint, 0);
+                                oldEntryPoint.AddConnection(newNode, 0);
+                                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.AddItems() - EntryPoint changed: Added connection between new EP {newNode.Id} and old EP {oldEntryPoint.Id} at level 0");
+                            }
+                        }
                     }
 
                     Count++;
@@ -211,6 +246,8 @@ namespace DBreeze.HNSW
 
                 // construction is done
                 this.entryPoint = entryPoint;
+
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] Graph.AddItems() END - FinalCount={this.Count}, FinalEntryPoint={this.entryPoint?.Id ?? -1}, EntryPt_MaxLevel={this.entryPoint?.MaxLevel ?? -1}");
 
                 if(clearDistanceCache)
                     this.DistanceCache.Clear();
@@ -226,13 +263,19 @@ namespace DBreeze.HNSW
             /// <returns>The list of the nearest neighbours.</returns>
             public IList<Node> KNearest(Node destination, int k)
             {
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] KNearest START - BucketId={this._bucket.BucketId}, Count={this.Count}, EntryPoint.Id={this.entryPoint?.Id ?? -1}, k={k}");
+                
                 var bestPeer = this.entryPoint;
                 for (int level = this.entryPoint.MaxLevel; level > 0; --level)
                 {
                     bestPeer = KNearestAtLevel(bestPeer, destination, 1, level).Single();
                 }
 
-                return KNearestAtLevel(bestPeer, destination, k, 0);
+                var results = KNearestAtLevel(bestPeer, destination, k, 0);
+                
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] KNearest END - Found {results.Count} nodes. NodeIds: [{string.Join(", ", results.Select(n => n.Id))}]");
+                
+                return results;
             }
                       
 

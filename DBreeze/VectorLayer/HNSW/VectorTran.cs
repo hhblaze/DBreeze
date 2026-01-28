@@ -49,6 +49,11 @@ namespace DBreeze.HNSW
                 parameters.LevelLambda = 1 / Math.Log(parameters.M);
 
                 parameters.NeighbourHeuristic = SmallWorld<float[], float>.NeighbourSelectionHeuristic.SelectSimple;
+                parameters.Storage = storage;
+
+                graph = new SmallWorld<float[], float>.Composer(parameters,
+                    instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
+                    GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
 
                 if (vectorTableParameters != null)
                 {
@@ -63,11 +68,7 @@ namespace DBreeze.HNSW
                             break;
                     }
                 }
-                parameters.Storage = storage;
-
-                graph = new SmallWorld<float[], float>.Composer(parameters, 
-                    instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
-                    GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
+               
 
 
                 dF[tableName] = graph;
@@ -97,6 +98,12 @@ namespace DBreeze.HNSW
                 parameters.LevelLambda = 1 / Math.Log(parameters.M);
                 parameters.NeighbourHeuristic = SmallWorld<double[], double>.NeighbourSelectionHeuristic.SelectSimple;
 
+                parameters.Storage = storage;
+
+                graph = new SmallWorld<double[], double>.Composer(parameters,
+                    instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
+                    GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
+
                 if (vectorTableParameters != null)
                 {
                     graph.MaxItemsInBucket = vectorTableParameters.BucketSize;
@@ -111,11 +118,7 @@ namespace DBreeze.HNSW
                     }
                 }
 
-                parameters.Storage = storage;
-
-                graph = new SmallWorld<double[], double>.Composer(parameters, 
-                    instanceQuantity: vectorTableParameters?.QuantityOfLogicalProcessorToCompute ?? 0,
-                    GetVectorbyExternalId: vectorTableParameters?.GetItem ?? null);
+                
 
 
 

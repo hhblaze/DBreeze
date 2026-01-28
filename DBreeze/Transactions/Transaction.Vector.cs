@@ -174,8 +174,8 @@ namespace DBreeze.Transactions
                 foreach (var eid in externalIds)
                     yield return (eid, (TVector)(object)graph._parameters.Storage.GetItem(eid, parameters?.GetItem ?? null));
             }
-
-            throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsGetByExternalId: Type {typeof(TVector)} is not supported.");
+            else
+                throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsGetByExternalId: Type {typeof(TVector)} is not supported.");
         }
 
         /// <summary>

@@ -434,6 +434,8 @@ namespace DBreeze.HNSW
                
                 _sync.EnterWriteLock();
 
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] LoadBuckets START - Loading from DB");
+
                 foreach (var b in _composer._parameters.Storage.GetBuckets())
                 {
                     
@@ -445,15 +447,19 @@ namespace DBreeze.HNSW
                     bucket.Graph = new Graph(_composer, bucket, b.EntryPointId);
                     bucket.Graph.Count = b.Count;
 
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] LoadBuckets - Loaded Bucket {b.BucketId}: EntryPointId={b.EntryPointId}, Count={b.Count}");
+
                     _buckets.Add(bucket);
                 }
 
                 if(_buckets.Count>0)
                 {
                     initialBucketId = _buckets.Count - 1;
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] LoadBuckets - Loaded {_buckets.Count} buckets from DB. initialBucketId={initialBucketId}");
                 }
                 else
                 {
+                    //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] LoadBuckets - No buckets in DB. Creating {_composer.InstanceManager.InstanceQuantity} new buckets");
                     for (int inst = 0; inst < _composer.InstanceManager.InstanceQuantity; inst++)
                     {
                         NewBucket();

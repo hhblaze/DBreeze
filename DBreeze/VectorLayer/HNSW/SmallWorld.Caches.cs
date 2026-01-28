@@ -130,10 +130,14 @@ namespace DBreeze.HNSW
                 if(_nodes.TryGetValue(nodeId, out var node))
                     return node;
 
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] NodeCache.GetNode({nodeId}) - Loading from DB (BucketId={this._graph._bucket.BucketId})");
+
                 var dbnode = this._graph.Parameters.Storage.GetDBNode(this._graph._bucket.BucketId, nodeId);
 
                 node = this._graph.NewNode(dbnode.Id, dbnode.ExternalId, default(TItem), dbnode.MaxLevel, true);
                 node.Connections = dbnode.Connections;
+
+                //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] NodeCache.GetNode({nodeId}) - Loaded. MaxLevel={dbnode.MaxLevel}, ConnectionsCount[0]={(dbnode.Connections.Count > 0 ? dbnode.Connections[0].Count : 0)}");
 
                 _nodes.Add(node.Id, node);  
 
