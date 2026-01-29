@@ -6897,6 +6897,12 @@
             In case if it is NULL, we also Adding vectors inside Storage.TableVectors
             </summary>
         </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.RemoveItems(System.Collections.Generic.List{System.Int64})">
+            <summary>
+            Marks items as deleted (soft delete) by their external IDs.
+            </summary>
+            <param name="externalIds"></param>
+        </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.KNNSearch(`0,System.Int32,System.Boolean)">
             <summary>
             
@@ -6906,17 +6912,27 @@
             <param name="clearDistanceCache"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.HNSW.SmallWorld`2.Composer.BucketContext">
+            <summary>
+            Per-bucket context cache for yieldable search
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.KNNSearchYieldable(`0,System.Int32,System.Boolean)">
+            <summary>
+            Yieldable KNN search that allows early termination.
+            Uses parallel bucket iterators with bounded batch processing.
+            Leverages all available buckets in parallel for efficient streaming results.
+            </summary>
+            <param name="item">The query item.</param>
+            <param name="bufferSize">Batch size for collecting results from each bucket per cycle.</param>
+            <param name="clearDistanceCache">Whether to clear distance cache after search.</param>
+            <returns>Results yielded in order of increasing distance.</returns>
+        </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.Count">
             <summary>
             Returns the count of non-deleted vectors in the database.
             </summary>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.RemoveItems(System.Collections.Generic.List{System.Int64})">
-            <summary>
-            Marks items as deleted (soft delete) by their external IDs.
-            </summary>
-            <param name="externalIds"></param>
         </member>
         <member name="T:DBreeze.HNSW.SmallWorld`2.InstanceManager">
             <summary>
@@ -7086,7 +7102,7 @@
             <param name="items"></param>
             <param name="clearDistanceCache"></param>
         </member>
-        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearest(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32)">
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearest(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32,System.Boolean)">
             <summary>
             Get k nearest items for a given one.
             Contains implementation of K-NN-SEARCH(hnsw, q, K, ef) algorithm.
@@ -7094,9 +7110,10 @@
             </summary>
             <param name="destination">The given node to get the nearest neighbourhood for.</param>
             <param name="k">The size of the neighbourhood.</param>
+            <param name="ignoreDeletedNode">FOR SEMANTIC SEARCH ONLY, not for adding, or finsing best peer</param>
             <returns>The list of the nearest neighbours.</returns>
         </member>
-        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearestAtLevel(DBreeze.HNSW.SmallWorld{`0,`1}.Node,DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32,System.Int32)">
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearestAtLevel(DBreeze.HNSW.SmallWorld{`0,`1}.Node,DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32,System.Int32,System.Boolean)">
             <summary>
             The implementaiton of SEARCH-LAYER(q, ep, ef, lc) algorithm.
             Article: Section 4. Algorithm 2.
@@ -7105,7 +7122,38 @@
             <param name="destination">The search target.</param>
             <param name="k">The number of the nearest neighbours to get from the layer.</param>
             <param name="level">Level of the layer.</param>
+            <param name="ignoreDeletedNode">FOR SEMANTIC SEARCH ONLY, not for adding, or finsing best peer</param>
             <returns>The list of the nearest neighbours at the level.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearestYieldable(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32)">
+            <summary>
+            Get k nearest items for a given one using yieldable enumeration.
+            Results are yielded as they are found in order of increasing distance.
+            </summary>
+            <param name="destination">The given node to get the nearest neighbourhood for.</param>
+            <param name="bufferSize">The size of the buffer for yielding results. Larger values reduce sorting overhead.</param>
+            <returns>The nearest neighbours yielded in order of increasing distance.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.KNearestAtLevelYieldable(DBreeze.HNSW.SmallWorld{`0,`1}.Node,DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32,System.Int32)">
+            <summary>
+            The yieldable implementation of SEARCH-LAYER(q, ep, ef, lc) algorithm.
+            Uses bounded buffer streaming to avoid excessive memory usage with large k.
+            Results are yielded in order of increasing distance.
+            </summary>
+            <param name="entryPoint">The entry point for the search.</param>
+            <param name="destination">The search target.</param>
+            <param name="bufferSize">The buffer size for batch yielding. When buffer exceeds this, results are yielded.</param>
+            <param name="level">Level of the layer.</param>
+            <returns>The nearest neighbours at the level yielded in order of increasing distance.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.YieldBufferResults(DBreeze.HNSW.BinaryHeap{DBreeze.HNSW.SmallWorld{`0,`1}.Node},DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Boolean)">
+            <summary>
+            Helper method to yield buffer results in sorted order.
+            </summary>
+            <param name="resultHeap">The result heap containing nodes.</param>
+            <param name="destination">The destination node for distance calculation.</param>
+            <param name="keepOne">If true, keeps the farthest element in the heap.</param>
+            <returns>Nodes in order of increasing distance.</returns>
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Graph.RandomLevel(DBreeze.Utils.FastRandom,System.Double)">
             <summary>

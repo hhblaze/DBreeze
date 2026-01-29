@@ -198,21 +198,18 @@ namespace DBreeze.HNSW
                                 var graph = instance.GetSearchBucket(bucketId);
 
                                 var destination = graph.NewNode(-1, uint.MaxValue, item, 0, false);
-                                var neighbourhood = graph.KNearest(destination, k);
+                                var neighbourhood = graph.KNearest(destination, k, ignoreDeletedNode: true);
                                 foreach (var n in neighbourhood)
                                 {
                                     // Skip deleted nodes in final results (soft delete filtering)
-                                    if (!n.Deleted)
+                                    var result = new KNNSearchResult
                                     {
-                                        var result = new KNNSearchResult
-                                        {
-                                            Id = n.Id,
-                                            ExternalId = n.ExternalId,
-                                            Item = n.Item,
-                                            Distance = destination.From(n),
-                                        };
-                                        localQueue.Enqueue(result, result.Distance);
-                                    }
+                                        Id = n.Id,
+                                        ExternalId = n.ExternalId,
+                                        Item = n.Item,
+                                        Distance = destination.From(n),
+                                    };
+                                    localQueue.Enqueue(result, result.Distance);
                                 }
 
                                 if (clearDistanceCache)
@@ -245,6 +242,167 @@ namespace DBreeze.HNSW
                     _lock.ExitReadLock();
                 }
                                
+            }
+
+            /// <summary>
+            /// Per-bucket context cache for yieldable search
+            /// </summary>
+            private class BucketContext
+            {
+                public int BucketId;
+                public Node Destination;
+                public Bucket Bucket;
+                public Graph Graph;
+                public IEnumerator<Node> Iterator;
+            }
+
+            /// <summary>
+            /// Yieldable KNN search that allows early termination.
+            /// Uses parallel bucket iterators with bounded batch processing.
+            /// Leverages all available buckets in parallel for efficient streaming results.
+            /// </summary>
+            /// <param name="item">The query item.</param>
+            /// <param name="bufferSize">Batch size for collecting results from each bucket per cycle.</param>
+            /// <param name="clearDistanceCache">Whether to clear distance cache after search.</param>
+            /// <returns>Results yielded in order of increasing distance.</returns>
+            public IEnumerable<SmallWorld<TItem, TDistance>.KNNSearchResult> KNNSearchYieldable(
+                TItem item, 
+                int bufferSize = 1000, 
+                bool clearDistanceCache = true)
+            {                
+                item = this._normalize(item);
+
+                _lock.EnterReadLock();
+                try
+                {
+                    // Get bucket IDs and create cached contexts
+                    var bucketIds = this.BucketManager.GetSearchBucketIDs().ToList();
+                    if (bucketIds.Count == 0)
+                    {
+                        yield break;
+                    }
+
+                    var bucketContexts = new Dictionary<int, BucketContext>();
+                    
+                    // Create and cache context for each bucket while holding read lock
+                    foreach (var bucketId in bucketIds)
+                    {
+                        var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                        var graph = bucket.Graph;
+                        var destination = graph.NewNode(-1, uint.MaxValue, item, 0, false);
+                        var iterator = graph.KNearestYieldable(destination, bufferSize).GetEnumerator();
+                        
+                        bucketContexts[bucketId] = new BucketContext
+                        {
+                            BucketId = bucketId,
+                            Destination = destination,
+                            Bucket = bucket,
+                            Graph = graph,
+                            Iterator = iterator
+                        };
+                    }
+
+                    // Track active buckets
+                    var activeBucketIds = new HashSet<int>(bucketIds);
+                    var syncLock = new object();
+
+                    try
+                    {
+                        // Main processing loop - cycles until all buckets exhausted
+                        while (activeBucketIds.Count > 0)
+                        {
+                            // Snapshot of active buckets for this iteration
+                            var bucketSnapshot = activeBucketIds.ToList();
+                            
+                            // Collect exhausted buckets to remove after parallel processing
+                            var exhaustedBucketIds = new HashSet<int>();
+                            
+                            // Parallel batch collection from all active buckets
+                            var batchResults = new ConcurrentBag<(KNNSearchResult result, TDistance distance)>();
+                            
+                            Parallel.ForEach(bucketSnapshot, bucketId =>
+                            {
+                                var context = bucketContexts[bucketId];
+                                int collected = 0;
+                                
+                                // Collect up to bufferSize results from this bucket's iterator
+                                while (collected < bufferSize)
+                                {
+                                    try
+                                    {
+                                        if (!context.Iterator.MoveNext())
+                                        {
+                                            // Iterator exhausted - mark for removal
+                                            lock (syncLock)
+                                            {
+                                                exhaustedBucketIds.Add(bucketId);
+                                            }
+                                            break;
+                                        }
+                                        
+                                        var node = context.Iterator.Current;
+                                        // Note: soft delete filtering already handled in graph.KNearestYieldable
+                                        var result = new KNNSearchResult
+                                        {
+                                            Id = node.Id,
+                                            ExternalId = node.ExternalId,
+                                            Item = node.Item,
+                                            Distance = context.Destination.From(node),
+                                        };
+                                        batchResults.Add((result, result.Distance));
+                                        collected++;
+                                    }
+                                    catch
+                                    {
+                                        // Iterator error - mark for removal
+                                        lock (syncLock)
+                                        {
+                                            exhaustedBucketIds.Add(bucketId);
+                                        }
+                                        break;
+                                    }
+                                }
+                            });
+
+                            // Remove exhausted buckets after parallel processing completes
+                            foreach (var bucketId in exhaustedBucketIds)
+                            {
+                                activeBucketIds.Remove(bucketId);
+                            }
+
+                            // Sort batch results by distance (ascending) and yield
+                            var sortedBatch = batchResults
+                                .OrderBy(x => x.distance)
+                                .Select(x => x.result);
+                            
+                            foreach (var result in sortedBatch)
+                            {
+                                yield return result;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        // Clean up: dispose all iterators and clear distance caches
+                        foreach (var context in bucketContexts.Values)
+                        {
+                            try
+                            {
+                                context.Iterator?.Dispose();
+                                
+                                if (clearDistanceCache)
+                                {
+                                    context.Graph.DistanceCache.Clear();
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
             }
 
             /// <summary>

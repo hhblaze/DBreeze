@@ -260,8 +260,9 @@ namespace DBreeze.HNSW
             /// </summary>
             /// <param name="destination">The given node to get the nearest neighbourhood for.</param>
             /// <param name="k">The size of the neighbourhood.</param>
+            /// <param name="ignoreDeletedNode">FOR SEMANTIC SEARCH ONLY, not for adding, or finsing best peer</param>
             /// <returns>The list of the nearest neighbours.</returns>
-            public IList<Node> KNearest(Node destination, int k)
+            public IList<Node> KNearest(Node destination, int k, bool ignoreDeletedNode = false)
             {
                 //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] KNearest START - BucketId={this._bucket.BucketId}, Count={this.Count}, EntryPoint.Id={this.entryPoint?.Id ?? -1}, k={k}");
                 
@@ -271,13 +272,13 @@ namespace DBreeze.HNSW
                     bestPeer = KNearestAtLevel(bestPeer, destination, 1, level).Single();
                 }
 
-                var results = KNearestAtLevel(bestPeer, destination, k, 0);
+                var results = KNearestAtLevel(bestPeer, destination, k, 0, ignoreDeletedNode: ignoreDeletedNode);
                 
                 //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] KNearest END - Found {results.Count} nodes. NodeIds: [{string.Join(", ", results.Select(n => n.Id))}]");
                 
                 return results;
             }
-                      
+
 
 
             /// <summary>
@@ -288,8 +289,9 @@ namespace DBreeze.HNSW
             /// <param name="destination">The search target.</param>
             /// <param name="k">The number of the nearest neighbours to get from the layer.</param>
             /// <param name="level">Level of the layer.</param>
+            /// <param name="ignoreDeletedNode">FOR SEMANTIC SEARCH ONLY, not for adding, or finsing best peer</param>
             /// <returns>The list of the nearest neighbours at the level.</returns>
-            private static List<Node> KNearestAtLevel(Node entryPoint, Node destination, int k, int level)
+            private static List<Node> KNearestAtLevel(Node entryPoint, Node destination, int k, int level, bool ignoreDeletedNode=false)
             {
                 /*
                  * v ← ep // set of visited elements
@@ -345,9 +347,7 @@ namespace DBreeze.HNSW
                             || DLt(destination.From(neighbour), destination.From(farthestResult)))
                             {
                                 expansionHeap.Push(neighbour);
-                                
-                                // Only add to result heap if not deleted
-                                //if (!neighbour.Deleted) //!!!NEVER CHECK IT HERE, IT IS TECHNICAL, USED TO SEARCH BEST PEER
+                                if(!(ignoreDeletedNode && neighbour.Deleted))
                                 {
                                     resultHeap.Push(neighbour);
                                     if (resultHeap.Buffer.Count > k)
@@ -355,6 +355,7 @@ namespace DBreeze.HNSW
                                         resultHeap.Pop();
                                     }
                                 }
+                                
                             }
 
                             // update visited list
