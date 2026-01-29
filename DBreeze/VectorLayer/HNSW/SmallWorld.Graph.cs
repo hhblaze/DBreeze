@@ -338,15 +338,17 @@ namespace DBreeze.HNSW
                     {
                         if (!visited.Contains(neighbour.Id))
                         {
-                            // Skip deleted nodes during graph traversal (soft delete filtering)
-                            if (!neighbour.Deleted)
+                            // Always add to expansion heap for traversal, even if deleted
+                            // (deleted nodes may have non-deleted children)
+                            farthestResult = resultHeap.Buffer.First();
+                            if (resultHeap.Buffer.Count < k
+                            || DLt(destination.From(neighbour), destination.From(farthestResult)))
                             {
-                                // enque perspective neighbours to expansion list
-                                farthestResult = resultHeap.Buffer.First();
-                                if (resultHeap.Buffer.Count < k
-                                || DLt(destination.From(neighbour), destination.From(farthestResult)))
+                                expansionHeap.Push(neighbour);
+                                
+                                // Only add to result heap if not deleted
+                                if (!neighbour.Deleted)
                                 {
-                                    expansionHeap.Push(neighbour);
                                     resultHeap.Push(neighbour);
                                     if (resultHeap.Buffer.Count > k)
                                     {
@@ -362,6 +364,147 @@ namespace DBreeze.HNSW
                 }
 
                 return resultHeap.Buffer;
+            }
+
+            /// <summary>
+            /// Get k nearest items for a given one using yieldable enumeration.
+            /// Results are yielded as they are found in order of increasing distance.
+            /// </summary>
+            /// <param name="destination">The given node to get the nearest neighbourhood for.</param>
+            /// <param name="bufferSize">The size of the buffer for yielding results. Larger values reduce sorting overhead.</param>
+            /// <returns>The nearest neighbours yielded in order of increasing distance.</returns>
+            public IEnumerable<Node> KNearestYieldable(Node destination, int bufferSize = 1000)
+            {
+                var bestPeer = this.entryPoint;
+                for (int level = this.entryPoint.MaxLevel; level > 0; --level)
+                {
+                    // For upper levels, we still need single result, use non-yieldable version
+                    bestPeer = KNearestAtLevel(bestPeer, destination, 1, level).Single();
+                }
+
+                // Use yieldable version for level 0 with bounded buffer
+                foreach (var node in KNearestAtLevelYieldable(bestPeer, destination, bufferSize, 0))
+                {
+                    yield return node;
+                }
+            }
+
+            /// <summary>
+            /// The yieldable implementation of SEARCH-LAYER(q, ep, ef, lc) algorithm.
+            /// Uses bounded buffer streaming to avoid excessive memory usage with large k.
+            /// Results are yielded in order of increasing distance.
+            /// </summary>
+            /// <param name="entryPoint">The entry point for the search.</param>
+            /// <param name="destination">The search target.</param>
+            /// <param name="bufferSize">The buffer size for batch yielding. When buffer exceeds this, results are yielded.</param>
+            /// <param name="level">Level of the layer.</param>
+            /// <returns>The nearest neighbours at the level yielded in order of increasing distance.</returns>
+            private static IEnumerable<Node> KNearestAtLevelYieldable(Node entryPoint, Node destination, int bufferSize, int level)
+            {
+                // prepare tools
+                IComparer<Node> closerIsLess = destination;
+                IComparer<Node> fartherIsLess = closerIsLess.Reverse();
+
+                // prepare heaps - use small initial capacity, grows dynamically
+                var resultHeap = new BinaryHeap<Node>(new List<Node> { entryPoint }, closerIsLess);
+                var expansionHeap = new BinaryHeap<Node>(new List<Node> { entryPoint }, fartherIsLess);
+
+                // run bfs
+                var visited = new HashSet<int> { entryPoint.Id };
+                
+                while (expansionHeap.Buffer.Any())
+                {
+                    // get next candidate to check and expand
+                    var toExpand = expansionHeap.Pop();
+                    var farthestResult = resultHeap.Buffer.First();
+                    
+                    if (DGt(destination.From(toExpand), destination.From(farthestResult)))
+                    {
+                        // the closest candidate is farther than farthest result
+                        // Yield remaining results before breaking
+                        foreach (var node in YieldBufferResults(resultHeap, destination))
+                        {
+                            yield return node;
+                        }
+                        yield break;
+                    }
+
+                    // expand candidate
+                    foreach (var neighbour in toExpand.GetConnections(level))
+                    {
+                        if (!visited.Contains(neighbour.Id))
+                        {
+                            // Always add to expansion heap for traversal, even if deleted
+                            // (deleted nodes may have non-deleted children)
+                            farthestResult = resultHeap.Buffer.First();
+                            if (DLt(destination.From(neighbour), destination.From(farthestResult)))
+                            {
+                                expansionHeap.Push(neighbour);
+                                
+                                // Only add to result heap if not deleted
+                                if (!neighbour.Deleted)
+                                {
+                                    resultHeap.Push(neighbour);
+                                    
+                                    // When buffer exceeds threshold, yield sorted results
+                                    if (resultHeap.Buffer.Count > bufferSize)
+                                    {
+                                        // Yield all but the farthest (keep it as boundary marker)
+                                        foreach (var node in YieldBufferResults(resultHeap, destination, keepOne: true))
+                                        {
+                                            yield return node;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // update visited list
+                            visited.Add(neighbour.Id);
+                        }
+                    }
+                }
+
+                // Yield any remaining results
+                foreach (var node in YieldBufferResults(resultHeap, destination))
+                {
+                    yield return node;
+                }
+            }
+
+            /// <summary>
+            /// Helper method to yield buffer results in sorted order.
+            /// </summary>
+            /// <param name="resultHeap">The result heap containing nodes.</param>
+            /// <param name="destination">The destination node for distance calculation.</param>
+            /// <param name="keepOne">If true, keeps the farthest element in the heap.</param>
+            /// <returns>Nodes in order of increasing distance.</returns>
+            private static IEnumerable<Node> YieldBufferResults(BinaryHeap<Node> resultHeap, Node destination, bool keepOne = false)
+            {
+                if (resultHeap.Buffer.Count == 0)
+                    yield break;
+
+                // Sort by distance (ascending) - extract all from heap
+                var sorted = resultHeap.Buffer
+                    .Select(n => new { Node = n, Distance = destination.From(n) })
+                    .OrderBy(x => x.Distance)
+                    .ToList();
+
+                // Clear the heap
+                resultHeap.Buffer.Clear();
+
+                int yieldCount = keepOne ? sorted.Count - 1 : sorted.Count;
+                
+                // Yield the closest ones
+                for (int i = 0; i < yieldCount; i++)
+                {
+                    yield return sorted[i].Node;
+                }
+
+                // If keeping one, push the farthest back into the heap
+                if (keepOne && sorted.Count > 0)
+                {
+                    resultHeap.Push(sorted[sorted.Count - 1].Node);
+                }
             }
 
             /// <summary>
