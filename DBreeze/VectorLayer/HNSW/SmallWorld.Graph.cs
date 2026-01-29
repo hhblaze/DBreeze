@@ -347,7 +347,7 @@ namespace DBreeze.HNSW
                                 expansionHeap.Push(neighbour);
                                 
                                 // Only add to result heap if not deleted
-                                if (!neighbour.Deleted)
+                                //if (!neighbour.Deleted) //!!!NEVER CHECK IT HERE, IT IS TECHNICAL, USED TO SEARCH BEST PEER
                                 {
                                     resultHeap.Push(neighbour);
                                     if (resultHeap.Buffer.Count > k)
