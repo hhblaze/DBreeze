@@ -164,7 +164,7 @@ namespace DBreeze.HNSW
             /// <param name="k"></param>
             /// <param name="clearDistanceCache"></param>
             /// <returns></returns>
-            public IEnumerable<SmallWorld<TItem, TDistance>.KNNSearchResult> KNNSearch(TItem item, int k, bool clearDistanceCache = true)
+            public IEnumerable<SmallWorld<TItem, TDistance>.KNNSearchResult> KNNSearch(TItem item, int k, bool clearDistanceCache = true, bool ignoreDeleted = false)
             {                
                 item = this._normalize(item);
 
@@ -198,10 +198,9 @@ namespace DBreeze.HNSW
                                 var graph = instance.GetSearchBucket(bucketId);
 
                                 var destination = graph.NewNode(-1, uint.MaxValue, item, 0, false);
-                                var neighbourhood = graph.KNearest(destination, k, ignoreDeletedNode: true);
+                                var neighbourhood = graph.KNearest(destination, k, ignoreDeletedNode: ignoreDeleted);
                                 foreach (var n in neighbourhood)
                                 {
-                                    // Skip deleted nodes in final results (soft delete filtering)
                                     var result = new KNNSearchResult
                                     {
                                         Id = n.Id,
@@ -210,6 +209,7 @@ namespace DBreeze.HNSW
                                         Distance = destination.From(n),
                                     };
                                     localQueue.Enqueue(result, result.Distance);
+
                                 }
 
                                 if (clearDistanceCache)

@@ -161,11 +161,15 @@ namespace DBreeze.HNSW
                     if (f != null)
                     {
                         item = f(externalId);
+                        if(item == null)
+                            return null;
                         itemsCache[externalId] = item;
                     }
                     else
                     {   
                         var row = tran.Select<byte[], byte[]>(this.TableName, 5.ToIndex(externalId));
+                        if (!row.Exists)
+                            return null;
                         var bt = DecompressF(row.Value);
                         itemsCache[externalId] = bt;
                         return bt;

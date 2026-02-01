@@ -33,7 +33,7 @@ namespace DBreeze.Transactions
             /// <para>Can be used when vectors self are already stored somewhere and the vector engine is used only for the indexing.</para>
             /// <para>Otherwise vectors will also be stored in the table.</para>
             /// </summary>
-            public Func<long, TVector> GetItem=null;
+            public Func<long, TVector> GetItem=null;            
             /// <summary>
             /// <para>Default is 0 - automatic, will take about 70% of available CPU's to compute buckets with HNSW graphs in parallel.</para>
             /// <para>Maximal can be used Environment.ProcessorCount</para>
@@ -237,10 +237,10 @@ namespace DBreeze.Transactions
         /// <param name="quantity">finds 'quantity' closest vectors</param>
         /// <param name="vectorTableParameters"></param>
         /// <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>
-        public IEnumerable<(long externalId, float distance)> VectorsSearchSimilar(string tableName, float[] queryVector, int quantity = 10, VectorTableParameters<float[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
+        public IEnumerable<(long externalId, float distance)> VectorsSearchSimilar(string tableName, float[] queryVector, int quantity = 10, VectorTableParameters<float[]> vectorTableParameters = null, bool ignoreDeleted = true) //, HashSet<byte[]> excludingDocuments = null
         {
             var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
-            var r1 = graph.KNNSearch(queryVector, quantity, clearDistanceCache: true);
+            var r1 = graph.KNNSearch(queryVector, quantity, clearDistanceCache: true, ignoreDeleted: ignoreDeleted);
             foreach (var br in r1)
                 yield return (br.ExternalId, br.Distance);
 
@@ -255,10 +255,10 @@ namespace DBreeze.Transactions
         /// <param name="quantity">finds 'quantity' closest vectors</param>
         /// <param name="vectorTableParameters"></param>
         /// <returns>Returns ExternalIDs of closest vectors to the queryVector and distance between them sorted ascending</returns>        
-        public IEnumerable<(long externalId, double distance)> VectorsSearchSimilar(string tableName, double[] queryVector, int quantity = 10, VectorTableParameters<double[]> vectorTableParameters = null) //, HashSet<byte[]> excludingDocuments = null
+        public IEnumerable<(long externalId, double distance)> VectorsSearchSimilar(string tableName, double[] queryVector, int quantity = 10, VectorTableParameters<double[]> vectorTableParameters = null, bool ignoreDeleted = true) //, HashSet<byte[]> excludingDocuments = null
         {
             var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
-            var r1 = graph.KNNSearch(queryVector, quantity, clearDistanceCache: true);
+            var r1 = graph.KNNSearch(queryVector, quantity, clearDistanceCache: true, ignoreDeleted: ignoreDeleted);
             foreach (var br in r1)
                 yield return (br.ExternalId, br.Distance);
 

@@ -15,6 +15,107 @@ namespace TesterNet6.TextCorpus
     internal static  class Load
     {
 
+        public static void TestVectorDBv01_remove_01()
+        {
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
+            //        {
+            //            (1, new float[] { 1f, 2f }),
+            //            (2, new float[] { 1f, 2f }),
+            //            (3, new float[] { 1f, 2f })
+            //        }
+            //    );
+
+            //    tran.Commit();
+            //}
+
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
+            //        {
+            //            (1, new float[] { 1f, 2f }),
+
+            //        }
+            //    );
+
+            //    tran.Commit();
+            //}
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
+            //        {
+
+            //            (2, new float[] { 1f, 2f }),
+
+            //        }
+            //    );
+
+            //    tran.Commit();
+            //}
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
+            //        {
+
+            //            (3, new float[] { 1f, 2f })
+            //        }
+            //    );
+
+            //    tran.Commit();
+            //}
+
+
+
+            visFlts("STEP1");
+
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    //tran.VectorsRemoveF("tblRemove", new List<long> { 1, 2 });
+            //    tran.VectorsRemoveF("tblRemove", new List<long> { 2 });
+
+            //    tran.Commit();
+            //}
+
+            //visFlts("STEP2");
+           // visFlts2("STEP2");
+
+        }
+
+        private static void visFlts(string stage)
+        {
+            Console.WriteLine(stage);
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                foreach (var el in tran.VectorsGetByExternalId<float[]>("tblRemove", new List<long> { 1, 2 }))
+                {
+                    Console.WriteLine($"id: {el.Item1}; cnt: {(el.Item2?.Count() ?? 0)}");
+                }
+
+            }
+        }
+
+        private static void visFlts2(string stage)
+        {
+            Console.WriteLine(stage);
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+
+                foreach(var el in tran.VectorsSearchSimilar("tblRemove", new float[] { 1f, 2f },quantity:10, ignoreDeleted:true))
+                {
+                    Console.WriteLine($"id: {el.Item1};");
+                }
+
+                //foreach (var el in tran.VectorsGetByExternalId<float[]>("tblRemove", new List<long> { 1, 2 }))
+                //{
+                //    Console.WriteLine($"id: {el.Item1}; cnt: {(el.Item2?.Count() ?? 0)}");
+                //}
+
+            }
+        }
+
         public static void TestVectorDBv03_insert_01()
         {
             string dirPath = @"D:\Temp\DBPedia\";
