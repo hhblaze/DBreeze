@@ -30,56 +30,60 @@ namespace TesterNet6.TextCorpus
             //    tran.Commit();
             //}
 
-            //using (var tran = Program.DBEngine.GetTransaction())
-            //{
-            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
-            //        {
-            //            (1, new float[] { 1f, 2f }),
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.VectorsInsert("tblRemove", new List<(long, float[])>
+                    {
+                        (1, new float[] { 1f, 2f }),
 
-            //        }
-            //    );
+                    }
+                );
 
-            //    tran.Commit();
-            //}
-            //using (var tran = Program.DBEngine.GetTransaction())
-            //{
-            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
-            //        {
+                tran.Commit();
+            }
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.VectorsInsert("tblRemove", new List<(long, float[])>
+                    {
 
-            //            (2, new float[] { 1f, 2f }),
+                        (2, new float[] { 1f, 2f }),
 
-            //        }
-            //    );
+                    }
+                );
 
-            //    tran.Commit();
-            //}
-            //using (var tran = Program.DBEngine.GetTransaction())
-            //{
-            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
-            //        {
+                tran.Commit();
+            }
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.VectorsInsert("tblRemove", new List<(long, float[])>
+                    {
 
-            //            (3, new float[] { 1f, 2f })
-            //        }
-            //    );
+                        (3, new float[] { 1f, 2f })
+                    }
+                );
 
-            //    tran.Commit();
-            //}
+                tran.Commit();
+            }
 
 
 
             visFlts("STEP1");
 
-            //using (var tran = Program.DBEngine.GetTransaction())
-            //{
-            //    //tran.VectorsRemoveF("tblRemove", new List<long> { 1, 2 });
-            //    tran.VectorsRemoveF("tblRemove", new List<long> { 2 });
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                //tran.VectorsRemoveF("tblRemove", new List<long> { 1, 2 });
+                tran.VectorsRemove<float[]>("tblRemove", new List<long> { 2 });
 
-            //    tran.Commit();
-            //}
+                tran.Commit();
+            }
 
-            //visFlts("STEP2");
-            //visFlts2("STEP2");
+            visFlts("STEP3");
+            visFlts2("STEP4");
 
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                Console.WriteLine($"Count: {tran.VectorsCount<float[]>("tblRemove")}; deleted: {tran.VectorsCount<float[]>("tblRemove",onlyDeletedCount:true)}");
+            }
         }
 
         private static void visFlts(string stage)

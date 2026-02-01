@@ -410,7 +410,7 @@ namespace DBreeze.HNSW
             /// Returns the count of non-deleted vectors in the database.
             /// </summary>
             /// <returns></returns>
-            public long Count()
+            public long Count(bool onlyDeletedCount=false)
             {
                 long counter = 0;
                 long deletedCounter = 0;
@@ -451,6 +451,8 @@ namespace DBreeze.HNSW
                     _lock.ExitReadLock();
                 }
 
+                if(onlyDeletedCount)
+                    return deletedCounter;
                 return counter - deletedCounter;
 
             }
@@ -490,6 +492,51 @@ namespace DBreeze.HNSW
                             if(node != null && !(ignoreDeleted && node.Deleted))
                                 yield return (externalId, node.Item);
                            
+                        }
+                    }
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
+            }
+
+            /// <summary>
+            /// Gets all items from storage by scanning the external ID index.
+            /// Useful for graph compaction and full data retrieval scenarios.
+            /// </summary>
+            /// <param name="ignoreDeleted">If true (default), only returns non-soft-deleted items</param>
+            /// <returns>Enumerable of (externalId, item) tuples for all items in storage</returns>
+            public IEnumerable<(long externalId, TItem item)> GetAllItems(bool ignoreDeleted = true)
+            {
+                _lock.EnterReadLock();
+                try
+                {
+                    // Scan all entries in the external ID index (key prefix 4)
+                    // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
+                    foreach (var row in this._parameters.Storage.tran.SelectForward<byte[], byte[]>(
+                        this._parameters.Storage.TableName))
+                    {
+                        // Extract external ID from key (skip the first byte which is the prefix)
+                        byte[] keyBytes = row.Key;
+                        if (keyBytes.Length < 9) // 1 byte prefix + 8 bytes for long
+                            continue;
+
+                        // Parse external ID from key (bytes 1-8)
+                        long externalId = keyBytes.Substring(1, 8).To_Int64_BigEndian();
+
+                        // Parse bucket and node IDs from value
+                        var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
+                        var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
+
+                        // Get the bucket and load the node
+                        var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                        var node = bucket.Graph.NodeCache.GetNode(nodeId);
+
+                        // Only return if not soft-deleted (when ignoreDeleted is true)
+                        if (node != null && !(ignoreDeleted && node.Deleted))
+                        {
+                            yield return (externalId, node.Item);
                         }
                     }
                 }

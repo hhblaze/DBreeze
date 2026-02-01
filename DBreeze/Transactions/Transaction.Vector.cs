@@ -65,6 +65,18 @@ namespace DBreeze.Transactions
 
         }
 
+        //private object InitGraph<TVector>(string tableName,VectorTableParameters<TVector> vectorTableParameters)
+        //{
+        //    if (typeof(TVector) == typeof(float[]))
+        //        return InitVectorTranF<float[]>(tableName, (VectorTableParameters<float[]>)(object)vectorTableParameters);
+
+        //    if (typeof(TVector) == typeof(double[]))
+        //        return InitVectorTranD<double[]>(tableName, (VectorTableParameters<double[]>)(object)vectorTableParameters);
+
+        //    throw new NotSupportedException(
+        //        $"DBreeze.Vectorlayer: Type {typeof(TVector)} is not supported.");
+        //}
+
         /// <summary>
         /// 
         /// </summary>
@@ -131,19 +143,19 @@ namespace DBreeze.Transactions
         /// <param name="vectorTableParameters"></param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
-        public long VectorsCount<TVector>(string tableName, VectorTableParameters<TVector> vectorTableParameters = null)
+        public long VectorsCount<TVector>(string tableName, VectorTableParameters<TVector> vectorTableParameters = null, bool onlyDeletedCount=false)
         {
             if (typeof(TVector) == typeof(float[]))
             {
                 var parameters = (VectorTableParameters<float[]>)(object)vectorTableParameters;
                 var graph = InitVectorTranF<float[]>(tableName, parameters);                
-                return graph.Count();
+                return graph.Count(onlyDeletedCount);
             }
             else if (typeof(TVector) == typeof(double[]))
             {
                 var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
                 var graph = InitVectorTranD<double[]>(tableName, parameters);
-                return graph.Count();
+                return graph.Count(onlyDeletedCount);
             }
 
             throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsCount: Type {typeof(TVector)} is not supported.");
@@ -180,6 +192,42 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// Gets all vectors from storage useful for graph compaction and batch processing.
+        /// Returns nested enumerables where each inner enumerable contains up to chunkSize items.
+        /// </summary>
+        /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
+        /// <param name="tableName">Table name where vectors are stored</param>        
+        /// <param name="vectorTableParameters">Optional vector table configuration parameters</param>
+        /// <param name="ignoreDeleted">If true (default), only returns non-soft-deleted vectors</param>
+        /// <returns>Nested enumerables: IEnumerable<IEnumerable<(long, TVector)>> for chunk-based processing</returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public IEnumerable<(long, TVector)> VectorsGetAll<TVector>(string tableName, VectorTableParameters<TVector> vectorTableParameters = null, 
+            bool ignoreDeleted = true)
+        {            
+
+            if (typeof(TVector) == typeof(float[]))
+            {
+                var parameters = (VectorTableParameters<float[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranF<float[]>(tableName, parameters);
+                
+                foreach (var item in graph.GetAllItems(ignoreDeleted: ignoreDeleted))
+                    yield return (item.externalId, (TVector)(object)item.item);
+
+            }
+            else if (typeof(TVector) == typeof(double[]))
+            {
+                var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranD<double[]>(tableName, parameters);
+
+                foreach (var item in graph.GetAllItems(ignoreDeleted: ignoreDeleted))
+                    yield return (item.externalId, (TVector)(object)item.item);
+            }
+            else
+                throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsGetAll: Type {typeof(TVector)} is not supported.");
+        }
+
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="tableName"></param>
@@ -204,31 +252,60 @@ namespace DBreeze.Transactions
             graph.AddItems(vectors, clearDistanceCache: true);
         }
 
-        /// <summary>
-        /// For float[]. Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="externalIds">List of external IDs to mark as deleted</param>
-        /// <param name="vectorTableParameters"></param>
-        public void VectorsRemoveF(string tableName, List<long> externalIds, VectorTableParameters<float[]> vectorTableParameters = null)
-        {
-            var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
-            graph.RemoveItems(externalIds);
-            graph.Flush();
-        }
 
         /// <summary>
-        /// For double[]. Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
+        /// Marks vectors as deleted (soft delete). Deleted vectors will not appear in Semantic results (regulated by parameter ignoreDeleted)
         /// </summary>
+        /// <typeparam name="TVector"></typeparam>
         /// <param name="tableName"></param>
-        /// <param name="externalIds">List of external IDs to mark as deleted</param>
+        /// <param name="externalIds"></param>
         /// <param name="vectorTableParameters"></param>
-        public void VectorsRemoveD(string tableName, List<long> externalIds, VectorTableParameters<double[]> vectorTableParameters = null)
+        /// <exception cref="NotSupportedException"></exception>
+        public void VectorsRemove<TVector>(string tableName, List<long> externalIds, VectorTableParameters<TVector> vectorTableParameters = null)
         {
-            var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
-            graph.RemoveItems(externalIds);
-            graph.Flush();
+            if (typeof(TVector) == typeof(float[]))
+            {
+                var parameters = (VectorTableParameters<float[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranF<float[]>(tableName, parameters);
+                graph.RemoveItems(externalIds);
+                graph.Flush();
+            }
+            else if (typeof(TVector) == typeof(double[]))
+            {
+                var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
+                var graph = InitVectorTranD<double[]>(tableName, parameters);
+                graph.RemoveItems(externalIds);
+                graph.Flush();
+            }
+            else
+                throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsCount: Type {typeof(TVector)} is not supported.");
         }
+
+        ///// <summary>
+        ///// For float[]. Marks vectors as deleted (soft delete). Deleted vectors will not appear in Semantic results (regulated by parameter ignoreDeleted).
+        ///// </summary>
+        ///// <param name="tableName"></param>
+        ///// <param name="externalIds">List of external IDs to mark as deleted</param>
+        ///// <param name="vectorTableParameters"></param>
+        //public void VectorsRemoveF(string tableName, List<long> externalIds, VectorTableParameters<float[]> vectorTableParameters = null)
+        //{
+        //    var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
+        //    graph.RemoveItems(externalIds);
+        //    graph.Flush();
+        //}
+
+        ///// <summary>
+        ///// For double[]. Marks vectors as deleted (soft delete). Deleted vectors will not appear in search results.
+        ///// </summary>
+        ///// <param name="tableName"></param>
+        ///// <param name="externalIds">List of external IDs to mark as deleted</param>
+        ///// <param name="vectorTableParameters"></param>
+        //public void VectorsRemoveD(string tableName, List<long> externalIds, VectorTableParameters<double[]> vectorTableParameters = null)
+        //{
+        //    var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
+        //    graph.RemoveItems(externalIds);
+        //    graph.Flush();
+        //}
 
         /// <summary>
         /// 
