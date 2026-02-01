@@ -1,0 +1,27 @@
+version: 1.0.{build}
+image: Visual Studio 2022
+branches:
+  only:
+    - master
+
+configuration: Release
+
+before_build:
+- cmd: dotnet restore DBreeze.Net5/DBreeze.Net5.csproj
+
+build_script:
+- cmd: msbuild /p:Configuration=Release DBreeze.Net5/DBreeze.Net5.csproj
+  
+artifacts:
+- path: DBreeze.Net5/bin/Release/net6.0/DBreeze.dll
+  name: DBreeze.dll 
+  
+environment:
+  SIGNPATH_SIGNING_POLICY_SLUG: release-signing
+  ARTIFACT_CONFIGURATION_SLUG: Release  
+
+deploy:
+- provider: Webhook
+  url: https://app.signpath.io/API/v1/75ba23b1-b387-4f6d-861e-f190db22f4f3/Integrations/AppVeyor?ProjectSlug=DBreeze&SigningPolicySlug=release-signing&ArtifactConfigurationSlug=Release
+  authorization:
+     secure: oRfPejC04wpVfiWyfd4RLwz4FQPfZ6SQmGnSlviHIMoePzPEpw7QMSwCBvkQoQF8lY42KFandCa1BF9E+vpUDg==

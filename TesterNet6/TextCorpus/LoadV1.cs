@@ -17,18 +17,18 @@ namespace TesterNet6.TextCorpus
 
         public static void TestVectorDBv01_remove_01()
         {
-            //using (var tran = Program.DBEngine.GetTransaction())
-            //{
-            //    tran.VectorsInsert("tblRemove", new List<(long, float[])>
-            //        {
-            //            (1, new float[] { 1f, 2f }),
-            //            (2, new float[] { 1f, 2f }),
-            //            (3, new float[] { 1f, 2f })
-            //        }
-            //    );
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.VectorsInsert("tblRemove", new List<(long, float[])>
+                    {
+                        (1, new float[] { 1f, 2f }),
+                        (2, new float[] { 1f, 2f }),
+                        (3, new float[] { 1f, 2f })
+                    }
+                );
 
-            //    tran.Commit();
-            //}
+                tran.Commit();
+            }
 
             using (var tran = Program.DBEngine.GetTransaction())
             {
