@@ -76,6 +76,20 @@ namespace DBreeze.HNSW
                 if(currentBatch.Count>0)
                     yield return currentBatch;
             }
+
+            /// <summary>
+            /// Checks if an external ID already exists in the index.
+            /// Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
+            /// </summary>
+            /// <param name="externalId">The external ID to check</param>
+            /// <returns>True if the external ID exists, false otherwise</returns>
+            private bool ExternalIdExists(long externalId)
+            {
+                var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
+                    this._parameters.Storage.TableName,
+                    4.ToIndex(externalId));
+                return row.Exists;
+            }
                        
 
             public void AddItems(IList<(long externalId, TItem item)> items, bool clearDistanceCache = true)
@@ -87,6 +101,22 @@ namespace DBreeze.HNSW
                     _lock.EnterWriteLock();
                     try
                     {
+                        // Check for duplicate externalIds and soft-delete existing ones before adding new ones
+                        var duplicateExternalIds = new List<long>();
+                        foreach (var item in batch)
+                        {
+                            if (ExternalIdExists(item.externalId))
+                            {
+                                duplicateExternalIds.Add(item.externalId);
+                            }
+                        }
+
+                        // Soft-delete existing nodes with duplicate externalIds (without lock since we already hold it)
+                        if (duplicateExternalIds.Count > 0)
+                        {
+                            RemoveItemsInternal(duplicateExternalIds);
+                        }
+
                         int totalItems = batch.Count;
                         int effectiveInstanceQuantity = Math.Min(InstanceManager.InstanceQuantity, totalItems);
                         if (effectiveInstanceQuantity <= 0) return;
@@ -113,6 +143,7 @@ namespace DBreeze.HNSW
 
             /// <summary>
             /// Marks items as deleted (soft delete) by their external IDs.
+            /// Acquires a write lock and delegates to RemoveItemsInternal for the actual deletion.
             /// </summary>
             /// <param name="externalIds"></param>
             public void RemoveItems(List<long> externalIds)
@@ -122,37 +153,50 @@ namespace DBreeze.HNSW
                 _lock.EnterWriteLock();
                 try
                 {
-                    foreach (var externalId in externalIds)
-                    {
-                        // Look up bucket and node ID for this external ID
-                        // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
-                        var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
-                            this._parameters.Storage.TableName,
-                            4.ToIndex(externalId));
-
-                        if (row.Exists)
-                        {
-                            var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
-                            var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
-
-                            // Get the bucket and load the node
-                            var bucket = this.BucketManager.GetSearchBucket(bucketId);
-                            var node = bucket.Graph.NodeCache.GetNode(nodeId);
-
-                            // Mark as deleted if not already deleted
-                            if (!node.Deleted)
-                            {
-                                node.Deleted = true;
-                                node.Changed = true;
-                                bucket.DeletedCount++;
-                                bucket.Graph.Changed = true;
-                            }
-                        }
-                    }
+                    RemoveItemsInternal(externalIds);
                 }
                 finally
                 {
                     _lock.ExitWriteLock();
+                }
+            }
+
+            /// <summary>
+            /// Internal version of RemoveItems - marks items as deleted without acquiring lock.
+            /// Assumes the caller already holds the write lock.
+            /// Used by AddItems to soft-delete duplicate externalIds.
+            /// </summary>
+            /// <param name="externalIds"></param>
+            private void RemoveItemsInternal(List<long> externalIds)
+            {
+                if (externalIds == null || externalIds.Count == 0) return;
+
+                foreach (var externalId in externalIds)
+                {
+                    // Look up bucket and node ID for this external ID
+                    // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
+                    var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
+                        this._parameters.Storage.TableName,
+                        4.ToIndex(externalId));
+
+                    if (row.Exists)
+                    {
+                        var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
+                        var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
+
+                        // Get the bucket and load the node
+                        var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                        var node = bucket.Graph.NodeCache.GetNode(nodeId);
+
+                        // Mark as deleted if not already deleted
+                        if (!node.Deleted)
+                        {
+                            node.Deleted = true;
+                            node.Changed = true;
+                            bucket.DeletedCount++;
+                            bucket.Graph.Changed = true;
+                        }
+                    }
                 }
             }
 
