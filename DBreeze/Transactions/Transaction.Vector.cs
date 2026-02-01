@@ -156,23 +156,24 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="externalIds"></param>
         /// <param name="vectorTableParameters"></param>
+        /// <param name="ignoreDeleted"></param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
-        public IEnumerable<(long, TVector)> VectorsGetByExternalId<TVector>(string tableName, List<long> externalIds, VectorTableParameters<TVector> vectorTableParameters = null)
+        public IEnumerable<(long, TVector)> VectorsGetByExternalId<TVector>(string tableName, List<long> externalIds, VectorTableParameters<TVector> vectorTableParameters = null, bool ignoreDeleted = true)
         {
             if (typeof(TVector) == typeof(float[]))
             {
                 var parameters = (VectorTableParameters<float[]>)(object)vectorTableParameters;
                 var graph = InitVectorTranF<float[]>(tableName, parameters);             
-                foreach (var eid in externalIds)
-                    yield return (eid, (TVector)(object)graph._parameters.Storage.GetItem(eid, parameters?.GetItem ?? null));
+                foreach (var item in graph.GetItems(externalIds, ignoreDeleted: ignoreDeleted))
+                    yield return (item.externalId, (TVector)(object)item.item);
             }
             else if (typeof(TVector) == typeof(double[]))
             {
                 var parameters = (VectorTableParameters<double[]>)(object)vectorTableParameters;
                 var graph = InitVectorTranD<double[]>(tableName, parameters);
-                foreach (var eid in externalIds)
-                    yield return (eid, (TVector)(object)graph._parameters.Storage.GetItem(eid, parameters?.GetItem ?? null));
+                foreach (var item in graph.GetItems(externalIds, ignoreDeleted: ignoreDeleted))
+                    yield return (item.externalId, (TVector)(object)item.item);
             }
             else
                 throw new NotSupportedException($"DBreeze.Vectorlayer.VectorsGetByExternalId: Type {typeof(TVector)} is not supported.");

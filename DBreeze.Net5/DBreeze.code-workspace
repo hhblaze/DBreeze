@@ -1,0 +1,166 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "DBreeze.Net5"
+    },
+    {
+      "path": "../DBreeze.NetStandard",
+      "name": "DBreeze.NetStandard"
+    },
+    {
+      "path": "../DBreeze",
+      "name": "DBreeze"
+    }
+  ],
+  "settings": {
+    "omnisharp.useModernNet": true,
+    "dotnet.defaultSolutionOrFolder": "DBreeze.Net5.sln",
+    "editor.formatOnSave": true,
+    "csharp.checkForPackageUpdates": false,
+    "[csharp]": {
+      "editor.defaultFormatter": "ms-dotnettools.csharp",
+      "editor.formatOnSave": true
+    },
+    "dotnet.defaultSolution": "DBreeze.Net5.sln"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build",
+        "command": "dotnet",
+        "type": "shell",
+        "args": [
+          "build",
+          "${workspaceFolder:DBreeze.Net5}/DBreeze.Net5.csproj",
+          "/property:GenerateFullPaths=true",
+          "/consoleloggerparameters:NoSummary"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "build-release",
+        "command": "dotnet",
+        "type": "shell",
+        "args": [
+          "build",
+          "${workspaceFolder:DBreeze.Net5}/DBreeze.Net5.csproj",
+          "--configuration",
+          "Release",
+          "/property:GenerateFullPaths=true",
+          "/consoleloggerparameters:NoSummary"
+        ],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "clean",
+        "command": "dotnet",
+        "type": "shell",
+        "args": [
+          "clean",
+          "${workspaceFolder:DBreeze.Net5}/DBreeze.Net5.csproj"
+        ],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "restore",
+        "command": "dotnet",
+        "type": "shell",
+        "args": [
+          "restore",
+          "${workspaceFolder:DBreeze.Net5}/DBreeze.Net5.csproj"
+        ],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "test",
+        "command": "dotnet",
+        "type": "shell",
+        "args": [
+          "test",
+          "${workspaceFolder:DBreeze.Net5}/DBreeze.Net5.csproj"
+        ],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "problemMatcher": "$msCompile"
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": ".NET Core Launch (console)",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build",
+        "program": "${workspaceFolder:DBreeze.Net5}/bin/Debug/net6.0/DBreeze.dll",
+        "args": [],
+        "cwd": "${workspaceFolder:DBreeze.Net5}",
+        "stopAtEntry": false,
+        "console": "internalConsole"
+      },
+      {
+        "name": ".NET Core Attach",
+        "type": "coreclr",
+        "request": "attach",
+        "processId": "${command:pickProcess}"
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-dotnettools.csharp",
+      "ms-dotnettools.vscode-dotnet-runtime",
+      "ms-dotnettools.dotnet-interactive-vscode",
+      "ms-vscode.makefile-tools"
+    ]
+  }
+}

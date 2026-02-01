@@ -78,7 +78,7 @@ namespace TesterNet6.TextCorpus
             //}
 
             //visFlts("STEP2");
-           // visFlts2("STEP2");
+            //visFlts2("STEP2");
 
         }
 
@@ -88,7 +88,7 @@ namespace TesterNet6.TextCorpus
 
             using (var tran = Program.DBEngine.GetTransaction())
             {
-                foreach (var el in tran.VectorsGetByExternalId<float[]>("tblRemove", new List<long> { 1, 2 }))
+                foreach (var el in tran.VectorsGetByExternalId<float[]>("tblRemove", new List<long> { 1, 2, 3 }))
                 {
                     Console.WriteLine($"id: {el.Item1}; cnt: {(el.Item2?.Count() ?? 0)}");
                 }

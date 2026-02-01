@@ -12,7 +12,7 @@ namespace DBreeze.HNSW
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary; //TODO: remove serializers
-    using System.Text;
+    using System.Text;  
 
     /// <content>
     /// The part with the implemenation of a hierarchical small world graph.
@@ -57,6 +57,7 @@ namespace DBreeze.HNSW
                 return this._composer._parameters.Storage.GetItem(externalID, this._composer.GetVectorbyExternalId);
                 
             }
+                       
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Graph"/> class.

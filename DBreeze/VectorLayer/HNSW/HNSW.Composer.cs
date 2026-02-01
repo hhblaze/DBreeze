@@ -163,6 +163,7 @@ namespace DBreeze.HNSW
             /// <param name="item"></param>
             /// <param name="k"></param>
             /// <param name="clearDistanceCache"></param>
+            /// <param name="ignoreDeleted"></param>
             /// <returns></returns>
             public IEnumerable<SmallWorld<TItem, TDistance>.KNNSearchResult> KNNSearch(TItem item, int k, bool clearDistanceCache = true, bool ignoreDeleted = false)
             {                
@@ -452,6 +453,50 @@ namespace DBreeze.HNSW
 
                 return counter - deletedCounter;
 
+            }
+
+            /// <summary>
+            /// Gets items by external IDs, returning only non-soft-deleted items.
+            /// </summary>
+            /// <param name="externalIds">List of external IDs to retrieve</param>
+            /// <param name="ignoreDeleted">default true</param>
+            /// <returns>Enumerable of (externalId, item) tuples for non-deleted items</returns>
+            public IEnumerable<(long externalId, TItem item)> GetItems(List<long> externalIds, bool ignoreDeleted = true)
+            {
+                if (externalIds == null || externalIds.Count == 0)
+                    yield break;
+
+                _lock.EnterReadLock();
+                try
+                {
+                    foreach (var externalId in externalIds)
+                    {
+                        // Look up bucket and node ID for this external ID
+                        // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
+                        var row = this._parameters.Storage.tran.Select<byte[], byte[]>(
+                            this._parameters.Storage.TableName,
+                            4.ToIndex(externalId));
+
+                        if (row.Exists)
+                        {
+                            var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
+                            var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
+
+                            // Get the bucket and load the node
+                            var bucket = this.BucketManager.GetSearchBucket(bucketId);
+                            var node = bucket.Graph.NodeCache.GetNode(nodeId);
+
+                            // Only return if not soft-deleted
+                            if(node != null && !(ignoreDeleted && node.Deleted))
+                                yield return (externalId, node.Item);
+                           
+                        }
+                    }
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
             }
 
             //public IEnumerable<SmallWorld<TItem, TDistance>.KNNSearchResult> KNNSearch(TItem item, int k, bool clearDistanceCache = true)
