@@ -7244,12 +7244,27 @@
             Gets all connections of the node on all layers.
             </summary>            
         </member>
+        <member name="P:DBreeze.HNSW.SmallWorld`2.Node.ProtectedConnections">
+            <summary>
+            Protected connections that must not be removed by SelectBestForConnecting.
+            Used to maintain graph connectivity when entryPoint changes.
+            Key: level, Value: set of protected node IDs
+            </summary>
+        </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Node.AddConnection(DBreeze.HNSW.SmallWorld{`0,`1}.Node,System.Int32)">
             <summary>
             Add connections to the node on the specific layer.
             </summary>
             <param name="newNeighbour">The node to connect with.</param>
             <param name="level">The level of the layer.</param>           
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.Node.ProtectConnection(System.Int32,System.Int32)">
+            <summary>
+            Mark a connection as protected (must not be removed by SelectBestForConnecting).
+            Used to maintain graph connectivity.
+            </summary>
+            <param name="nodeId">The ID of the node to protect</param>
+            <param name="level">The level at which to protect the connection</param>
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Node.SelectBestForConnecting(System.Collections.Generic.List{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
             <summary>

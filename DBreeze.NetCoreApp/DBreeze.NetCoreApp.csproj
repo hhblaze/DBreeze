@@ -5,10 +5,10 @@
     <AssemblyName>DBreeze</AssemblyName>
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
-    <Version>1.123.2026.0201</Version>
-    <FileVersion>1.123.2026.0201</FileVersion>
-    <AssemblyVersion>1.123.2026.0201</AssemblyVersion>
+    <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
+    <Version>1.124.2026.0211</Version>
+    <FileVersion>1.124.2026.0211</FileVersion>
+    <AssemblyVersion>1.124.2026.0211</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 

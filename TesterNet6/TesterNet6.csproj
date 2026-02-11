@@ -17,4 +17,10 @@
     <ProjectReference Include="..\DBreeze.Net5\DBreeze.Net5.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="docs\**\*.cs" />
+    <EmbeddedResource Remove="docs\**\*" />
+    <None Include="docs\**\*" />
+  </ItemGroup>
+
 </Project>

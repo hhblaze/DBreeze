@@ -42,7 +42,9 @@ namespace TesterNet6
 
             //Load.TestVectorDBv03_insert_01();
             //Load.TestVectorDBv03_select_01();
-            Load.TestVectorDBv01_remove_01();
+            //Load.TestVectorDBv01_remove_01();
+
+            DebugCase1.Run();
             return;
             //Load.LoadV1();
             //Load.SelectV1();

@@ -35,6 +35,12 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\DBreeze.XML</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs">
       <Link>Transactions\TransactionsCoordinator.cs</Link>
@@ -198,6 +204,7 @@
     <Compile Include="Utils\XmlSerializator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="jahdrosigning.snk" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />

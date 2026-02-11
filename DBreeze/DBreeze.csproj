@@ -42,7 +42,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>signature.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -166,6 +166,7 @@
     <Content Include="!!!ToDo.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="jahdrosigning.snk" />
     <None Include="signature.snk" />
   </ItemGroup>
   <ItemGroup />

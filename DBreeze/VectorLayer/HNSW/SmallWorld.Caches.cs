@@ -137,6 +137,7 @@ namespace DBreeze.HNSW
                 node = this._graph.NewNode(dbnode.Id, dbnode.ExternalId, default(TItem), dbnode.MaxLevel, true);
                 node.Connections = dbnode.Connections;
                 node.Deleted = dbnode.Deleted;
+                node.ProtectedConnections = dbnode.ProtectedConnections ?? new Dictionary<int, HashSet<int>>();
 
                 //System.Diagnostics.Debug.WriteLine($"[DBREEZE:] NodeCache.GetNode({nodeId}) - Loaded. MaxLevel={dbnode.MaxLevel}, ConnectionsCount[0]={(dbnode.Connections.Count > 0 ? dbnode.Connections[0].Count : 0)}");
 

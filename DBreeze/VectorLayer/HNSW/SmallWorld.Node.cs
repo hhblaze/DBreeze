@@ -58,6 +58,14 @@ namespace DBreeze.HNSW
                         this.Connections.Add(new List<int>(GetM(this.Graph.Parameters.M, level)));
                     }
                     
+                    // Initialize protected connections dictionary
+                    this.ProtectedConnections = new Dictionary<int, HashSet<int>>();
+                }
+                else
+                {
+                    // Initialize protected connections for nodes loaded from DB
+                    if (this.ProtectedConnections == null)
+                        this.ProtectedConnections = new Dictionary<int, HashSet<int>>();
                 }
 
             }
@@ -137,6 +145,13 @@ namespace DBreeze.HNSW
             /// </summary>            
             public List<List<int>> Connections { get; set; }
 
+            /// <summary>
+            /// Protected connections that must not be removed by SelectBestForConnecting.
+            /// Used to maintain graph connectivity when entryPoint changes.
+            /// Key: level, Value: set of protected node IDs
+            /// </summary>
+            public Dictionary<int, HashSet<int>> ProtectedConnections { get; set; }
+
             private static readonly List<Node> EmptyNodeList = new List<Node>();
             
 
@@ -165,13 +180,49 @@ namespace DBreeze.HNSW
                 {
                     var levelNeighbours = levelConnections.Select(r => this.Graph.NodeCache.GetNode(r)).ToList();
                     levelNeighbours.Add(newNeighbour);
-                    this.Connections[level] = this.SelectBestForConnecting(levelNeighbours).Select(r => r.Id).ToList();
+                    
+                    // Select best connections while preserving protected ones
+                    var selected = this.SelectBestForConnecting(levelNeighbours);
+                    
+                    // Ensure all protected connections are included - OPTIMIZED with HashSet
+                    if (this.ProtectedConnections.TryGetValue(level, out var protectedSet) && protectedSet.Count > 0)
+                    {
+                        // Create HashSet for O(1) lookup instead of O(M) with Any()
+                        var selectedIds = new HashSet<int>(selected.Select(n => n.Id));
+                        
+                        // Single pass through levelNeighbours - O(N) instead of O(P×N)
+                        foreach (var neighbour in levelNeighbours)
+                        {
+                            if (protectedSet.Contains(neighbour.Id) && !selectedIds.Contains(neighbour.Id))
+                            {
+                                selected.Add(neighbour);
+                            }
+                        }
+                    }
+                    
+                    this.Connections[level] = selected.Select(r => r.Id).ToList();
                 }
                 else
                 {
                     this.Connections[level].Add(newNeighbour.Id);
                 }
 
+                this.Changed = true;
+            }
+            
+            /// <summary>
+            /// Mark a connection as protected (must not be removed by SelectBestForConnecting).
+            /// Used to maintain graph connectivity.
+            /// </summary>
+            /// <param name="nodeId">The ID of the node to protect</param>
+            /// <param name="level">The level at which to protect the connection</param>
+            public void ProtectConnection(int nodeId, int level)
+            {
+                if (!this.ProtectedConnections.ContainsKey(level))
+                {
+                    this.ProtectedConnections[level] = new HashSet<int>();
+                }
+                this.ProtectedConnections[level].Add(nodeId);
                 this.Changed = true;
             }
            

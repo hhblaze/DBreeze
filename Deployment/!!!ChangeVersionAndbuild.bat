@@ -1,4 +1,4 @@
-"%~dp0Deployer\Deployer\bin\Debug\Deployer.exe" "1.123.2026.0201"
+"%~dp0Deployer\Deployer\bin\Debug\Deployer.exe" "1.124.2026.0211"
 "%~dp0Nuspec\!!!Build.bat"
 
 echo Done...
