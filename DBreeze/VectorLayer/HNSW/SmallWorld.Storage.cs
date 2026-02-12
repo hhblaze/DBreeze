@@ -363,15 +363,15 @@ namespace DBreeze.HNSW
                 encoder.Add(Id);
                 encoder.Add(ExternalId);
                 encoder.Add(Deleted);
-                
-                // Encode ProtectedConnections - convert Dictionary to  List for serialization
-                var protectedList = ProtectedConnections?.Select(kvp => new { Level = kvp.Key, Nodes = kvp.Value?.ToList() }).ToList();
-                encoder.Add(protectedList, (item) => {
-                    encoder.Add(item.Level);
-                    encoder.Add(item.Nodes, (nodeId) => {
-                        encoder.Add(nodeId);
+
+                // Encode ProtectedConnections
+                encoder.Add(ProtectedConnections, (r3) => {
+                    encoder.Add(r3.Key);
+                    encoder.Add(r3.Value, (r4) => {
+                        encoder.Add(r4);
                     });
                 });
+               
 
                 return encoder;
             }
@@ -415,37 +415,31 @@ namespace DBreeze.HNSW
                 m.Id = decoder.GetInt();
                 m.ExternalId = decoder.GetLong();
                 m.Deleted = decoder.GetBool();
-                
+
                 // Decode ProtectedConnections
-                var protectedList = decoder.CheckNull() ? null : new System.Collections.Generic.List<(int Level, System.Collections.Generic.List<int> Nodes)>();
-                if (protectedList != null)
+                m.ProtectedConnections = decoder.CheckNull() ? null : new System.Collections.Generic.Dictionary<System.Int32, System.Collections.Generic.HashSet<System.Int32>>();
+                if (m.ProtectedConnections != null)
                 {
-                    decoder.GetCollection(() => {
-                        var level = decoder.GetInt();
-                        var nodesList = decoder.CheckNull() ? null : new System.Collections.Generic.List<int>();
-                        if (nodesList != null)
-                        {
-                            decoder.GetCollection(() => {
-                                return decoder.GetInt();
-                            }, nodesList, true);
-                        }
-                        return (Level: level, Nodes: nodesList);
-                    }, protectedList, true);
-                    
-                    // Convert list back to Dictionary<int, HashSet<int>>
-                    m.ProtectedConnections = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.HashSet<int>>();
-                    foreach (var item in protectedList)
+                    decoder.GetCollection(() =>
                     {
-                        if (item.Nodes != null)
-                        {
-                            m.ProtectedConnections[item.Level] = new System.Collections.Generic.HashSet<int>(item.Nodes);
-                        }
-                    }
-                }
-                else
+                        var pvar3 = decoder.GetInt();
+                        return pvar3;
+                    },
+                () =>
                 {
-                    m.ProtectedConnections = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.HashSet<int>>();
+                    var pvar4 = decoder.CheckNull() ? null : new System.Collections.Generic.HashSet<System.Int32>();
+                    if (pvar4 != null)
+                    {
+                        decoder.GetCollection(() =>
+                        {
+                            var pvar5 = decoder.GetInt();
+                            return pvar5;
+                        }, pvar4, true);
+                    }
+                    return pvar4;
+                }, m.ProtectedConnections, true);
                 }
+
 
                 return m;
             }

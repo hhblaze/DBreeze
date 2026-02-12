@@ -238,7 +238,7 @@ namespace DBreeze.HNSW
                             
                             if (!alreadyConnected)
                             {
-                                // CRITICAL FIX: Protect bidirectional connection to maintain graph connectivity
+                                // Protect bidirectional connection to maintain graph connectivity
                                 // When entryPoint changes, we must ensure the old entryPoint remains reachable.
                                 // Mark this connection as protected so SelectBestForConnecting won't remove it.
                                 
