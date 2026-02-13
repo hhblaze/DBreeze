@@ -38,6 +38,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using DBreeze.Utils;
@@ -228,6 +229,144 @@ namespace DBreeze.Utils.Hash
         }
 
 
+        /// <summary>
+        /// BIt compatible with MixedMurMurHash3_128.
+        /// <para>Usage: </para>
+        /// <para>using var memoryStream = new MemoryStream(byteArray);</para>
+        /// <para>MixedMurMurHash3_128_Stream(memoryStream)</para>
+        /// <para>using var fileStream = File.OpenRead("bigfile");</para>
+        /// <para>MixedMurMurHash3_128_Stream(fileStream)</para>
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public static byte[] MixedMurMurHash3_128_Stream(Stream stream)
+        {
+            const uint c1 = 3432918353u;
+            const uint c2 = 461845907u;
 
+            uint h1 = 42u;
+            uint h2 = 37u;
+            uint h3 = 26u;
+            uint h4 = 7u;
+
+            long totalLength = 0;
+
+            byte[] buffer = new byte[1024 * 1024];
+            byte[] tail = new byte[4];
+            int tailLength = 0;
+
+            int bytesRead;
+
+            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                totalLength += bytesRead;
+                int offset = 0;
+
+                if (tailLength > 0)
+                {
+                    while (tailLength < 4 && offset < bytesRead)
+                        tail[tailLength++] = buffer[offset++];
+
+                    if (tailLength == 4)
+                    {
+                        ProcessBlockAll(tail, 0, ref h1, ref h2, ref h3, ref h4, c1, c2);
+                        tailLength = 0;
+                    }
+                }
+
+                while (offset + 4 <= bytesRead)
+                {
+                    ProcessBlockAll(buffer, offset, ref h1, ref h2, ref h3, ref h4, c1, c2);
+                    offset += 4;
+                }
+
+                while (offset < bytesRead)
+                    tail[tailLength++] = buffer[offset++];
+            }
+
+            if (tailLength > 0)
+            {
+                uint k1 = 0;
+
+                switch (tailLength)
+                {
+                    case 3: k1 ^= (uint)(tail[2] << 16); goto case 2;
+                    case 2: k1 ^= (uint)(tail[1] << 8); goto case 1;
+                    case 1:
+                        k1 ^= tail[0];
+                        k1 *= c1;
+                        k1 = Rotl32(k1, 15);
+                        k1 *= c2;
+
+                        h1 ^= k1;
+                        h2 ^= k1;
+                        h3 ^= k1;
+                        h4 ^= k1;
+                        break;
+                }
+            }
+
+            h1 ^= (uint)totalLength;
+            h2 ^= (uint)totalLength;
+            h3 ^= (uint)totalLength;
+            h4 ^= (uint)totalLength;
+
+            h1 = Fmix(h1);
+            h2 = Fmix(h2);
+            h3 = Fmix(h3);
+            h4 = Fmix(h4);
+
+            ulong part1 = ((ulong)h1 << 32) | h2;
+            ulong part2 = ((ulong)h3 << 32) | h4;
+
+            return part1.ToBytes(part2);
+
+        }
+
+        private static void ProcessBlockAll(
+            byte[] data,
+            int offset,
+            ref uint h1,
+            ref uint h2,
+            ref uint h3,
+            ref uint h4,
+            uint c1,
+            uint c2)
+        {
+            uint k1 =
+                (uint)(data[offset]
+                | (data[offset + 1] << 8)
+                | (data[offset + 2] << 16)
+                | (data[offset + 3] << 24));
+
+            k1 *= c1;
+            k1 = Rotl32(k1, 15);
+            k1 *= c2;
+
+            h1 ^= k1;
+            h2 ^= k1;
+            h3 ^= k1;
+            h4 ^= k1;
+
+            h1 = Rotl32(h1, 13); h1 = h1 * 5 + 3864292196u;
+            h2 = Rotl32(h2, 13); h2 = h2 * 5 + 3864292196u;
+            h3 = Rotl32(h3, 13); h3 = h3 * 5 + 3864292196u;
+            h4 = Rotl32(h4, 13); h4 = h4 * 5 + 3864292196u;
+        }
+
+        private static uint Rotl32(uint x, int r)
+        {
+            return (x << r) | (x >> (32 - r));
+        }
+
+        private static uint Fmix(uint h)
+        {
+            h ^= h >> 16;
+            h *= 2246822507u;
+            h ^= h >> 13;
+            h *= 3266489909u;
+            h ^= h >> 16;
+            return h;
+        }
     }
 }
