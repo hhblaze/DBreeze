@@ -60,6 +60,9 @@ Key features:
 - High Availability, Redundancy and Fault Tolerance via [Raft.NET](https://github.com/hhblaze/Raft.Net)
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
-All NuGet DLLs are digitally signed with anti-tampering protection.
+Special thanx:
+
+"Free code signing provided by SignPath.io, certificate by SignPath Foundation"
+[Signed DLLs](https://github.com/hhblaze/DBreeze/tree/master/Deployment/bin/SignedDLL) are located separately. 
 
 hhblaze@gmail.com
