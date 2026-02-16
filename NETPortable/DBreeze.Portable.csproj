@@ -186,6 +186,7 @@
     <Compile Include="Storage\RemoteInstance\RemoteInstanceCommander.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
+    <Compile Include="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="Transactions\ITransactable.cs" />
     <Compile Include="Transactions\TransactionsJournal.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />

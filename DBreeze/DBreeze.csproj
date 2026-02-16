@@ -93,6 +93,7 @@
     <Compile Include="TextSearch\WABI.cs" />
     <Compile Include="Objects\DBreezeIndex.cs" />
     <Compile Include="Objects\DBreezeObject.cs" />
+    <Compile Include="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="Transactions\RandomKeySorter.cs" />
     <Compile Include="Transactions\Transaction.Vector.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />

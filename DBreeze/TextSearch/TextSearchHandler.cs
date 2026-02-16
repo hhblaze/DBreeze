@@ -32,6 +32,8 @@ namespace DBreeze.TextSearch
         /// </summary>
         public Dictionary<string, HashSet<uint>> DeferredVectors = new Dictionary<string, HashSet<uint>>();
 
+        public DBreeze.TextSearch.WabiStreamCrypto Encryptor = null;
+
         public TextSearchHandler(Transaction tran)
         {
             this.tran = tran;
@@ -126,7 +128,18 @@ namespace DBreeze.TextSearch
                 {                   
                     //Getting searchables for this document                
                     byte[] oldSrch = its.srch.Select<byte[], byte[]>(r1.Value.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
-                    rdocuments[documentID] = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
+                    //rdocuments[documentID] = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
+                    var hs = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
+                    if (Encryptor == null)
+                        rdocuments[documentID] = hs;
+                    else
+                    {
+                        var nhs = new HashSet<string>();                        
+                        foreach(var el in hs)
+                            nhs.Add(Encryptor.TextEncryptor(el,false));
+                        
+                        rdocuments[documentID] = nhs;
+                    }
                 }
             }
 
@@ -145,7 +158,8 @@ namespace DBreeze.TextSearch
         /// <param name="deferredIndexing"></param>
         /// <param name="containsMinimalLength"></param>
         /// <param name="iMode"></param>
-        public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords, bool deferredIndexing, int containsMinimalLength, eInsertMode iMode)
+        public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords, 
+            bool deferredIndexing, int containsMinimalLength, eInsertMode iMode)
         {
 
             //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.
@@ -769,6 +783,8 @@ namespace DBreeze.TextSearch
                 foreach (var nswrd in fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= containsMinimalLength))
                 {                  
                     word = nswrd.ToLower();
+                    if(Encryptor!=null)
+                        word = Encryptor.TextEncryptor(word,true);
                     wordDefinition = new WordDefinition() { CountInDocu = 1 };
                     wordsCounter[word] = wordDefinition;
                 }
@@ -778,18 +794,28 @@ namespace DBreeze.TextSearch
 
                 Action processWord = () =>
                 {
+                    string subWord = null;
                     //We take all words, so we can later find even by email address jj@gmx.net ... we will need jj and gmx.net
                     if (sb.Length > 0 && sb.Length >= containsMinimalLength)
                     {
-                        word = sb.ToString().ToLower();
-
+                        word = sb.ToString().ToLower();                        
                         List<string> wrds = new List<string>();
-                        wrds.Add(word);
+                        
+
+                        if (Encryptor != null)
+                            wrds.Add(Encryptor.TextEncryptor(word, true));
+                        else
+                            wrds.Add(word);
+
                         int i = 1;
 
                         while (word.Length - i >= containsMinimalLength)
                         {
-                            wrds.Add(word.Substring(i));
+                            subWord = word.Substring(i);
+                            if (Encryptor != null)
+                                wrds.Add(Encryptor.TextEncryptor(subWord, true));
+                            else
+                                wrds.Add(subWord);
                             i++;
                         }
 

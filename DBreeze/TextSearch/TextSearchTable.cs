@@ -427,15 +427,19 @@ namespace DBreeze.TextSearch
         internal void WordsPrepare(IEnumerable<string> searchKeywords, bool fullMatch, ref Dictionary<string,bool> wordsList)
         {
             string word = "";
-
+            
             if (searchKeywords == null || searchKeywords.Count() == 0)
                 return;
 
             foreach (var wrd in searchKeywords)
             {   
                 word = wrd.ToLower();
+
                 if (word.Trim().Length < 2 || word.Contains(" "))
                     continue;
+
+                if (this._tran.tsh.Encryptor != null)
+                    word = this._tran.tsh.Encryptor.TextEncryptor(word, true);
 
                 //this.PureWords.Add(word, new TextSearchTable.PureWordDef() { FullMatch = fullMatch, Processed = false });
                 ////Adding also words to blocks

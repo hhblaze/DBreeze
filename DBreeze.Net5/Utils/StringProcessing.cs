@@ -16,6 +16,23 @@ namespace DBreeze.Utils
     public static class StringProcessing
     {
         /// <summary>
+        /// Reverses string
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string ReverseString(this string input)
+        {
+            Span<char> buffer = stackalloc char[input.Length];
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                buffer[i] = input[input.Length - 1 - i];
+            }
+
+            return new string(buffer);
+        }
+
+        /// <summary>
         /// Encoding.ASCII.GetBytes
         /// </summary>
         /// <param name="text"></param>

@@ -4143,7 +4143,7 @@
             <param name="tableName"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
+        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.WabiStreamCrypto)">
             <summary>
             Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
             </summary>
@@ -4156,8 +4156,9 @@
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
             <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
+            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
+        <member name="M:DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.WabiStreamCrypto)">
             <summary>
             Appends words to the searchable set of the external documentID
             </summary>
@@ -4169,8 +4170,9 @@
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
             <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
+            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
+        <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32,DBreeze.TextSearch.WabiStreamCrypto)">
             <summary>
             Removes FULL-MATCH words from the searchable set of the external documentID 
             </summary>
@@ -4181,8 +4183,9 @@
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
             <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
+            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[],System.Boolean,DBreeze.TextSearch.WabiStreamCrypto)">
             <summary>
             Removes external documentID from the search index
             </summary>
@@ -4191,21 +4194,24 @@
             <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
+            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextGetDocumentsSearchables(System.String,System.Collections.Generic.HashSet{System.Byte[]})">
+        <member name="M:DBreeze.Transactions.Transaction.TextGetDocumentsSearchables(System.String,System.Collections.Generic.HashSet{System.Byte[]},DBreeze.TextSearch.WabiStreamCrypto)">
             <summary>
             Returns existng searchables for the given documents external IDs
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
             <param name="documentIds"></param>
+            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String)">
+        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String,DBreeze.TextSearch.WabiStreamCrypto)">
             <summary>
             Returns TextSearchTable (word aligned bitmap index manager for the search-index table). 
             Allows to make logical block based comparative operations.
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
+            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextSearchHandlerCommit">
@@ -5798,6 +5804,18 @@
             <param name="seed"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128_Stream(System.IO.Stream)">
+            <summary>
+            BIt compatible with MixedMurMurHash3_128.
+            <para>Usage: </para>
+            <para>using var memoryStream = new MemoryStream(byteArray);</para>
+            <para>MixedMurMurHash3_128_Stream(memoryStream)</para>
+            <para>using var fileStream = File.OpenRead("bigfile");</para>
+            <para>MixedMurMurHash3_128_Stream(fileStream)</para>
+            </summary>
+            <param name="stream"></param>
+            <returns></returns>
+        </member>
         <member name="T:DBreeze.Utils.StringProcessing">
             <summary>
             Set of string processing extensions
@@ -6386,6 +6404,13 @@
         <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.MaximalWordSize">
             <summary>
             Maximal word size separated by the space. Default is 50 symbols
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.TextEncryptor">
+            <summary>
+            Default is null. Has lower priority than teh Encryptor directly supplied to the TextXXX functions. Read docu TextSearchEncryptor
+            <para>Only for the new systems, where text encryptor was not yet used on any. Simplifies coding</para>
+            <para>For the mixed system, better explicitely to supply Encoder to new Text functions (for the new TextSearch Tables)</para>
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeConfiguration.VectorlayerConfiguration">

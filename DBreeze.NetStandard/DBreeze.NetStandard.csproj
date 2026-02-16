@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.124.2026.0212</Version>
-    <AssemblyVersion>1.124.2026.0212</AssemblyVersion>
-    <FileVersion>1.124.2026.0212</FileVersion>
+    <Version>1.125.2026.0216</Version>
+    <AssemblyVersion>1.125.2026.0216</AssemblyVersion>
+    <FileVersion>1.125.2026.0216</FileVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -47,7 +47,6 @@
     <Compile Remove="Storage\1RISR.cs" />
     <Compile Remove="Storage\1StorageLayer.cs" />
     <Compile Remove="Storage\1TrieSettings.cs" />
-    <Compile Remove="TextSearch\1TextDeferredIndexer.cs" />
     <Compile Remove="Transactions\1Transaction.cs" />
     <Compile Remove="Utils\Biser2.cs" />
   </ItemGroup>
@@ -80,6 +79,7 @@
     <Compile Include="..\DBreeze\TextSearch\TextSearchOptions.cs" Link="TextSearch\TextSearchOptions.cs" />
     <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs" Link="TextSearch\TextSearchTable.cs" />
     <Compile Include="..\DBreeze\TextSearch\WABI.cs" Link="TextSearch\WABI.cs" />
+    <Compile Include="..\DBreeze\TextSearch\WabiStreamCrypto.cs" Link="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs" Link="Transactions\RandomKeySorter.cs" />
     <Compile Include="..\DBreeze\Transactions\Transaction.cs" Link="Transactions\Transaction.cs" />
     <Compile Include="..\DBreeze\Transactions\Transaction.Vector.cs" Link="Transactions\Transaction.Vector.cs" />

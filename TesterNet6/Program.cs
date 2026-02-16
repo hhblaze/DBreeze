@@ -43,8 +43,9 @@ namespace TesterNet6
             //Load.TestVectorDBv03_insert_01();
             //Load.TestVectorDBv03_select_01();
             //Load.TestVectorDBv01_remove_01();
+            TestEncryptedTextSearch.TestEncryption();
 
-            DebugCase1.Run();
+            //DebugCase1.Run();
             return;
             //Load.LoadV1();
             //Load.SelectV1();
@@ -72,6 +73,9 @@ namespace TesterNet6
         static void InitDB()
         {
             string DBPath = PathToDatabase;
+            DBreeze.TextSearch.WabiStreamCrypto wsc = new DBreeze.TextSearch.WabiStreamCrypto
+               ("D47A20DDB561C0D0964960738DE8647EB8D5179FAF9472B118AEB4548FC0B3B6", "066A9BF9AC98706DFC74198AA5553419");
+
             DBreezeConfiguration conf = new DBreezeConfiguration()
             {
                 DBreezeDataFolderName = DBPath,
@@ -79,7 +83,11 @@ namespace TesterNet6
                 VectorLayerConfig = new DBreezeConfiguration.VectorlayerConfiguration()
                 {
                     Dense = 1000
-                }
+                },
+                //TextSearchConfig =new DBreezeConfiguration.TextSearchConfiguration()
+                //{
+                //     //TextEncryptor = wsc
+                //}
             };
             conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
             DBEngine = new DBreezeEngine(conf);

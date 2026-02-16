@@ -15,6 +15,26 @@ namespace DBreeze.Utils
     /// </summary>
     public static class StringProcessing
     {
+
+#if NET35 || NETr40
+#else
+        /// <summary>
+        /// Reverses string
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string ReverseString(this string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return input;
+
+            char[] chars = input.ToCharArray();
+            Array.Reverse(chars);
+            return new string(chars);
+        }
+#endif
+
+
         /// <summary>
         /// Encoding.ASCII.GetBytes
         /// </summary>

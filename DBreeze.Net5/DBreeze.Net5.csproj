@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
-    <Version>1.124.2026.0212</Version>
-    <FileVersion>1.124.2026.0212</FileVersion>
-    <AssemblyVersion>1.124.2026.0212</AssemblyVersion>
+    <Version>1.125.2026.0216</Version>
+    <FileVersion>1.125.2026.0216</FileVersion>
+    <AssemblyVersion>1.125.2026.0216</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -108,6 +108,7 @@
     <Compile Include="..\DBreeze\TextSearch\WABI.cs">
       <Link>TextSearch\WABI.cs</Link>
     </Compile>
+    <Compile Include="..\DBreeze\TextSearch\WabiStreamCrypto.cs" Link="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs">
       <Link>Transactions\RandomKeySorter.cs</Link>
     </Compile>
