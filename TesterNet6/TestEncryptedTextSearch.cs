@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using DBreeze.Utils;
 
 namespace TesterNet6
 {
@@ -16,7 +17,18 @@ namespace TesterNet6
             //PathToDatabase = @"D:\Temp\DBVector";
             string _tblText = "tbltextSearch";
 
-            
+            //////Testing MurMur stream
+            ////string fn = @"D:\Temp\PdfKnowledgebase\initPdfs\Pro_C#_10_with_NET_6_Foundational_Principles_and_Practices_in_Programming.pdf";
+            ////var fbt = File.ReadAllBytes(fn);
+            ////var hash1 = DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128(fbt);
+
+            ////using var memoryStream = new MemoryStream(fbt);
+            ////var HashMem = DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128_Stream(memoryStream);
+            ////using var fileStream = File.OpenRead(fn);
+            ////var HashFile = DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128_Stream(fileStream);
+            ////Debug.WriteLine(hash1._ByteArrayEquals(HashMem));//<-TRUE
+            ////Debug.WriteLine(hash1._ByteArrayEquals(HashFile));//<-TRUE
+
             //var a = DBreeze.TextSearch.WabiStreamCrypto.GenerateKey();
             //e.g. a = ("D47A20DDB561C0D0964960738DE8647EB8D5179FAF9472B118AEB4548FC0B3B6", "066A9BF9AC98706DFC74198AA5553419")
             DBreeze.TextSearch.WabiStreamCrypto wsc = new DBreeze.TextSearch.WabiStreamCrypto
