@@ -1097,10 +1097,11 @@ namespace DBreeze.DataTypes
         /// <param name="includeStartKey"></param>
         /// <param name="stopKey"></param>
         /// <param name="includeStopKey"></param>
+        /// <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, int grabSomeLeadingRecords = 0)
         {
-            return SelectForwardFromTo<TKey, TValue>(startKey, includeStartKey, stopKey, includeStopKey, false);
+            return SelectForwardFromTo<TKey, TValue>(startKey, includeStartKey, stopKey, includeStopKey, false,grabSomeLeadingRecords: grabSomeLeadingRecords);
 
         }
 
@@ -1118,8 +1119,9 @@ namespace DBreeze.DataTypes
         /// <para>If this parameter set to true, enumerator will return key/value,</para>
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
         /// </param>
+        /// <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectForwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope, int grabSomeLeadingRecords = 0)
         {
             if (this._tableExists)
             {
@@ -1137,6 +1139,23 @@ namespace DBreeze.DataTypes
 
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
                 byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
+
+                if(grabSomeLeadingRecords > 0 )
+                {
+                    Dictionary<int, Row<TKey, TValue>> rRows = new Dictionary<int, Row<TKey, TValue>>();
+                    int j = 0;
+                    foreach (var xrow in _tbl.table.IterateBackwardStartFrom(btStartKey, false, useCache, this._valuesLazyLoadingIsOn).Take(grabSomeLeadingRecords))
+                    {
+                        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);                        
+                        rw.nestedTable = this;
+
+                        rRows.Add(j, rw);
+                        j++;
+                    }
+
+                    foreach (var xrow in rRows.OrderByDescending(r => r.Key))
+                        yield return xrow.Value;
+                }
 
                 foreach (var xrow in _tbl.table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache, this._valuesLazyLoadingIsOn))
                 {
@@ -1157,10 +1176,11 @@ namespace DBreeze.DataTypes
         /// <param name="includeStartKey"></param>
         /// <param name="stopKey"></param>
         /// <param name="includeStopKey"></param>
+        /// <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, int grabSomeLeadingRecords = 0)
         {
-            return SelectBackwardFromTo<TKey, TValue>(startKey, includeStartKey, stopKey, includeStopKey, false);
+            return SelectBackwardFromTo<TKey, TValue>(startKey, includeStartKey, stopKey, includeStopKey, false,grabSomeLeadingRecords: grabSomeLeadingRecords);
            
         }
 
@@ -1177,9 +1197,10 @@ namespace DBreeze.DataTypes
         /// <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
         /// <para>If this parameter set to true, enumerator will return key/value,</para>
         /// <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+        /// <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
         /// </param>
         /// <returns></returns>
-        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope)
+        public IEnumerable<Row<TKey, TValue>> SelectBackwardFromTo<TKey, TValue>(TKey startKey, bool includeStartKey, TKey stopKey, bool includeStopKey, bool AsReadVisibilityScope, int grabSomeLeadingRecords = 0)
         {
             if (this._tableExists)
             {
@@ -1196,6 +1217,23 @@ namespace DBreeze.DataTypes
 
                 byte[] btStartKey = DataTypesConvertor.ConvertKey<TKey>(startKey);
                 byte[] btStopKey = DataTypesConvertor.ConvertKey<TKey>(stopKey);
+
+                if (grabSomeLeadingRecords > 0)
+                {
+                    Dictionary<int, Row<TKey, TValue>> rRows = new Dictionary<int, Row<TKey, TValue>>();
+                    int j = 0;
+                    foreach (var xrow in _tbl.table.IterateForwardStartFrom(btStartKey, false, useCache, this._valuesLazyLoadingIsOn).Take(grabSomeLeadingRecords))
+                    {
+                        rw = new Row<TKey, TValue>(xrow, _tbl._masterTrie, useCache);
+                        rw.nestedTable = this;
+
+                        rRows.Add(j, rw);
+                        j++;
+                    }
+
+                    foreach (var xrow in rRows.OrderByDescending(r => r.Key))
+                        yield return xrow.Value;
+                }
 
                 foreach (var xrow in _tbl.table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, useCache, this._valuesLazyLoadingIsOn))
                 {

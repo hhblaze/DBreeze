@@ -815,7 +815,7 @@
             </param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean)">
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Int32)">
             <summary>
             
             </summary>
@@ -825,9 +825,10 @@
             <param name="includeStartKey"></param>
             <param name="stopKey"></param>
             <param name="includeStopKey"></param>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean)">
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean,System.Int32)">
             <summary>
             
             </summary>
@@ -842,9 +843,10 @@
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
             </param>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean)">
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Int32)">
             <summary>
             
             </summary>
@@ -854,9 +856,10 @@
             <param name="includeStartKey"></param>
             <param name="stopKey"></param>
             <param name="includeStopKey"></param>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean)">
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean,System.Int32)">
             <summary>
             
             </summary>
@@ -870,6 +873,7 @@
             <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
             <para>If this parameter set to true, enumerator will return key/value,</para>
             <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
             </param>
             <returns></returns>
         </member>
