@@ -29,18 +29,44 @@ namespace DBreeze.TextSearch
             IV = iv;
         }
 
-#if NET35 || NETr40 || NET40
-#else
+        //#if NET35 || NETr40
+        //public class AesKeyInfo
+        //        {
+        //            public string Key { get; set; }
+        //            public string IV { get; set; }
+        //        }
 
-        public static (string key, string IV) GenerateKey()
+        //        public static AesKeyInfo GenerateKey()
+        //        {
+        //            using (Aes aes = Aes.Create())
+        //            {
+        //                return new AesKeyInfo { IV = aes.IV.ToHexFromByteArray(), Key = aes.Key.ToHexFromByteArray() };
+        //            }
+        //        }
+        //#else
+        //        public static (string key, string IV) GenerateKey()
+        //        {
+        //            using (Aes aes = Aes.Create())
+        //            {
+        //                return (aes.Key.ToHexFromByteArray(), aes.IV.ToHexFromByteArray());
+        //            }
+        //        }
+
+        //#endif
+
+        public class AesKeyInfo
+        {
+            public string Key { get; set; }
+            public string IV { get; set; }
+        }
+
+        public static AesKeyInfo GenerateKey()
         {
             using (Aes aes = Aes.Create())
             {
-                return (aes.Key.ToHexFromByteArray(), aes.IV.ToHexFromByteArray());
+                return new AesKeyInfo { IV = aes.IV.ToHexFromByteArray(), Key = aes.Key.ToHexFromByteArray() };
             }
         }
-
-#endif
 
 
         public string TextEncryptor(string input, bool encrypt = true)

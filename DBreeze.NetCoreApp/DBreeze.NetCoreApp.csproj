@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
-    <Version>1.126.2026.0219</Version>
-    <FileVersion>1.126.2026.0219</FileVersion>
-    <AssemblyVersion>1.126.2026.0219</AssemblyVersion>
+    <Version>1.128.2026.0220</Version>
+    <FileVersion>1.128.2026.0220</FileVersion>
+    <AssemblyVersion>1.128.2026.0220</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
