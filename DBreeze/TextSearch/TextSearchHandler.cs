@@ -40,6 +40,158 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
+        /// Migrates text search data from an old table to a new table with optional encryption.
+        /// Used for migrating un-encrypted search terms to encrypted storage.
+        /// Document ID mappings are preserved (both internal and external IDs stay the same).
+        /// </summary>
+        /// <param name="oldTableName">Source table name containing existing text search data</param>
+        /// <param name="newTableName">Destination table name for the migrated data</param>
+        /// <param name="textEncryptor">Optional encryptor to encrypt search terms during migration. 
+        /// If null, search terms are copied as-is (no encryption transformation).
+        /// If provided, search terms will be encrypted before storing in the new table.</param>
+        public void MigrateTextSearchTableToEncrypted(
+            string oldTableName, 
+            string newTableName, 
+            DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+        {
+            if (string.IsNullOrEmpty(oldTableName) || string.IsNullOrEmpty(newTableName))
+                throw new ArgumentException("oldTableName and newTableName must be specified");
+
+            if (oldTableName.Equals(newTableName, StringComparison.Ordinal))
+                throw new ArgumentException("oldTableName and newTableName must be different");
+
+            // Set up encryptor for the migration
+            if (textEncryptor != null)
+                this.Encryptor = textEncryptor;
+
+            // Get old table nested tables for reading
+            NestedTable oldE2i = tran.SelectTable<byte>(oldTableName, 1, 0);
+            NestedTable oldI2e = tran.SelectTable<byte>(oldTableName, 2, 0);
+            NestedTable oldSrch = tran.SelectTable<byte>(oldTableName, 3, 0);
+            NestedTable oldBlocks = tran.SelectTable<byte>(oldTableName, 10, 0);
+            NestedTable oldWords = tran.SelectTable<byte>(oldTableName, 20, 0);
+
+            oldE2i.ValuesLazyLoadingIsOn = false;
+            oldI2e.ValuesLazyLoadingIsOn = false;
+            oldSrch.ValuesLazyLoadingIsOn = false;
+            oldBlocks.ValuesLazyLoadingIsOn = false;
+            oldWords.ValuesLazyLoadingIsOn = false;
+
+            // Get old table configuration
+            var oldLastIndexed = tran.Select<byte, byte[]>(oldTableName, 4);
+            var oldCurrentBlock = tran.Select<int, uint>(oldTableName, 11);
+            var oldNumberInBlock = tran.Select<int, uint>(oldTableName, 12);
+
+            // Get new table nested tables for writing
+            NestedTable newE2i = tran.InsertTable<byte>(newTableName, 1, 0);
+            NestedTable newI2e = tran.InsertTable<byte>(newTableName, 2, 0);
+            NestedTable newSrch = tran.InsertTable<byte>(newTableName, 3, 0);
+            NestedTable newBlocks = tran.InsertTable<byte>(newTableName, 10, 0);
+            NestedTable newWords = tran.InsertTable<byte>(newTableName, 20, 0);
+
+            newE2i.ValuesLazyLoadingIsOn = false;
+            newI2e.ValuesLazyLoadingIsOn = false;
+            newSrch.ValuesLazyLoadingIsOn = false;
+            newBlocks.ValuesLazyLoadingIsOn = false;
+            newWords.ValuesLazyLoadingIsOn = false;
+
+            // 1. Copy document ID mappings (e2i and i2e)
+            foreach (var row in oldE2i.SelectForward<byte[], int>())
+            {
+                newE2i.Insert<byte[], int>(row.Key, row.Value);
+            }
+
+            foreach (var row in oldI2e.SelectForward<int, byte[]>())
+            {
+                newI2e.Insert<int, byte[]>(row.Key, row.Value);
+            }
+
+            // 2. Copy configuration
+            if (oldLastIndexed.Exists)
+                tran.Insert<byte, byte[]>(newTableName, 4, oldLastIndexed.Value);
+            else
+                tran.Insert<byte, byte[]>(newTableName, 4, DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian());
+
+            if (oldCurrentBlock.Exists)
+                tran.Insert<int, uint>(newTableName, 11, oldCurrentBlock.Value);
+            else
+                tran.Insert<int, uint>(newTableName, 11, 1);
+
+            if (oldNumberInBlock.Exists)
+                tran.Insert<int, uint>(newTableName, 12, oldNumberInBlock.Value);
+            else
+                tran.Insert<int, uint>(newTableName, 12, 0);
+
+            // 3. Migrate searchables (srch - index 3)
+            // Key format: internalDocId (4 bytes) + marker byte (0 for current, 1 for new)
+            foreach (var row in oldSrch.SelectForward<byte[], byte[]>())
+            {
+                if (textEncryptor != null)
+                {
+                    // Decompress and get old searchables
+                    HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(row.Value);
+
+                    //HashSet<string> tempSearchables = new HashSet<string>();
+                    //foreach (var os in oldSearchables)
+                    //{
+                    //    var tsw = textEncryptor.TextEncryptor(os, true);
+                    //    if(tempSearchables.Contains(tsw))
+                    //    {
+
+                    //    }
+                    //    tempSearchables.Add(tsw);
+                    //}
+
+                    //if(oldSearchables.Count != tempSearchables.Count)
+                    //{
+
+                    //}
+
+                    StringBuilder sbNewSearchables = new StringBuilder();
+
+                    foreach (var word in oldSearchables)
+                    {
+                        // Encrypt each word with the new encryptor
+                        string encryptedWord = textEncryptor.TextEncryptor(word, true);
+                        sbNewSearchables.Append(encryptedWord);
+                        sbNewSearchables.Append(" ");
+                    }
+
+                    // Store re-encrypted searchables
+                    newSrch.Insert<byte[], byte[]>(row.Key, GetByteArrayFromSearchbles(sbNewSearchables.ToString()));
+                }
+                else
+                {
+                    // No encryption transformation, copy as-is
+                    newSrch.Insert<byte[], byte[]>(row.Key, row.Value);
+                }
+            }
+
+            // 4. Rebuild word index (words - index 20) and copy blocks (blocks - index 10)
+            // Since internal doc IDs are preserved, WABI bitmap blocks can be copied directly
+            
+            // Copy blocks directly (bitmap data stays the same)
+            foreach (var row in oldBlocks.SelectForward<uint, byte[]>())
+            {
+                newBlocks.Insert<uint, byte[]>(row.Key, row.Value);
+            }
+
+            // Migrate word index with optional encryption
+            foreach (var row in oldWords.SelectForward<string, byte[]>())
+            {
+                string wordKey = row.Key;
+                
+                if (textEncryptor != null)
+                {
+                    // Encrypt the word key
+                    wordKey = textEncryptor.TextEncryptor(row.Key, true);
+                }
+
+                newWords.Insert<string, byte[]>(wordKey, row.Value);
+            }
+        }
+
+        /// <summary>
         /// Internal search-table structure.       
         /// </summary>
         internal class ITS

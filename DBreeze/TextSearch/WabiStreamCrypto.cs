@@ -88,8 +88,8 @@ namespace DBreeze.TextSearch
             {
                 // Must use Hex (or raw bytes) for WABI StartsWith to work. 
                 // Base64 distorts prefixes.
-                return resultBytes.ToUTF8String();
-                //return resultBytes.ToHexFromByteArray();
+                //return resultBytes.ToUTF8String();
+                return resultBytes.ToHexFromByteArray();
                 //return Convert.ToHexString(resultBytes);
             }
             else
@@ -106,8 +106,8 @@ namespace DBreeze.TextSearch
                 inputBytes = Encoding.UTF8.GetBytes(input);
             else
             {
-                inputBytes = input.To_UTF8Bytes();
-                //inputBytes = input.ToByteArrayFromHex();
+                //inputBytes = input.To_UTF8Bytes();
+                inputBytes = input.ToByteArrayFromHex();
                 //inputBytes = Convert.FromHexString(input);
             }
 

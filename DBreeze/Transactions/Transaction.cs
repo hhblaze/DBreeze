@@ -2038,6 +2038,43 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// Migrates text search data from an old table to a new table with optional encryption.
+        /// Used for migrating un-encrypted search terms to encrypted storage.
+        /// Document ID mappings are preserved (both internal and external IDs stay the same).
+        /// <para>Usage example:</para>
+        /// <para>using (var tran = engine.GetTransaction())</para>
+        /// <para>{</para>
+        /// <para>    tran.SynchronizeTables("OldTable", "NewTable");</para>
+        /// <para>    var encryptor = new DBreeze.TextSearch.WabiStreamCrypto(key, iv);</para>
+        /// <para>    tran.Support_Migration_TextSearchMigrateTable("OldTable", "NewTable", encryptor);</para>
+        /// <para>    tran.Commit();</para>
+        /// <para>}</para>
+        /// <para>engine.Scheme.DeleteTable("OldTable")</para>
+        /// <para>engine.Scheme.RenameTable("OldTable","NewTable")</para>
+        /// </summary>
+        /// <param name="oldTableName">Source table name containing existing text search data</param>
+        /// <param name="newTableName">Destination table name for the migrated data</param>
+        /// <param name="textEncryptor">Optional encryptor to encrypt search terms during migration. 
+        /// If null, search terms are copied as-is (no encryption transformation).
+        /// If provided, search terms will be encrypted before storing in the new table.</param>
+        public void Support_Migration_TextSearchMigrateTable(
+            string oldTableName, 
+            string newTableName, 
+            DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+        {
+            if (tsh == null)
+            {
+                tsh = new TextSearchHandler(this);
+                if (textEncryptor != null)
+                    tsh.Encryptor = textEncryptor;
+                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
+                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+            }
+
+            tsh.MigrateTextSearchTableToEncrypted(oldTableName, newTableName, textEncryptor);
+        }
+
+        /// <summary>
         /// Is called before COMMIT only
         /// </summary>
         void TextSearchHandlerCommit()
