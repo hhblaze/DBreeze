@@ -53,18 +53,29 @@ namespace TesterNet6
 
             Program.DBEngine.Scheme.DeleteTable(_tblText);
 
+            bool deffered = false;
+            bool encrypted = true;
+
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer, feel at home on the edge of the forest",
-                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: true,  encryptedTable: false);
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered,  encryptedTable: encrypted);
 
                 tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень, чувствуй себя как дома на опушке леса",
-                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: true, encryptedTable: false);
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered, encryptedTable: encrypted);
 
                 tran.Commit();
             }
 
-            Task.Run(async () => { await Task.Delay(3000); }).Wait();
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    foreach (var el in tran.TextGetDocumentsSearchables(_tblText, new HashSet<byte[]> { ((long)1).ToBytes(), ((long)2).ToBytes() }))
+            //    {
+
+            //    }
+            //}
+
+            //Task.Run(async () => { await Task.Delay(3000); }).Wait();
 
             using (var tran = Program.DBEngine.GetTransaction())
             {
@@ -88,6 +99,74 @@ namespace TesterNet6
 
             }
 
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.TextAppend(_tblText, ((long)1).ToBytes(), "Prime minister",
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered, encryptedTable: encrypted);
+
+                tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень",
+                   fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered, encryptedTable: encrypted);
+
+                //tran.TextRemove(_tblText, ((long)2).ToBytes(), "чувствуй себя",
+                //    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered);
+
+                tran.Commit();
+            }
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                var ts = tran.TextSearch(_tblText);
+                //var ts = tran.TextSearch(_tblText, textEncryptor: null);
+
+                foreach (var el in ts.Block("deer Prime", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+                foreach (var el in ts.Block("дорог пушке", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+
+                foreach (var el in ts.Block("дорог оле", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+            }
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.TextRemove(_tblText, ((long)1).ToBytes(), 
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered);
+
+
+                tran.Commit();
+            }
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                var ts = tran.TextSearch(_tblText);
+                //var ts = tran.TextSearch(_tblText, textEncryptor: null);
+
+                foreach (var el in ts.Block("deer Prime", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+                foreach (var el in ts.Block("дорог пушке", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+
+                foreach (var el in ts.Block("дорог оле", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+            }
 
             return;
 

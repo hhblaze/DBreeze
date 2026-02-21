@@ -1170,7 +1170,7 @@ namespace DBreeze.TextSearch
                     newSrch.Insert<byte[], byte[]>(row.Key, row.Value);
                     continue;
                 }
-
+                 
                 // Decompress and decrypt from plain UTF-8, then re-encrypt
                 string plainText = row.Value.GZip_Decompress().ToUTF8String();
                 byte[] reEncrypted = encryptor.TextEncrypt(plainText).GZip_Compress();
