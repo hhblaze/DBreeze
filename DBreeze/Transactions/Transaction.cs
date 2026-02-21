@@ -2035,16 +2035,12 @@ namespace DBreeze.Transactions
             string newTableName, 
             DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
         {
-            //if (tsh == null)
-            //{
-            //    tsh = new TextSearchHandler(this);
-            //    if (textEncryptor != null)
-            //        tsh.Encryptor = textEncryptor;
-            //    else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-            //        tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
-            //}
+            if (tsh == null)
+            {
+                tsh = new TextSearchHandler(this);               
+            }
 
-            //tsh.MigrateTextSearchTableToEncrypted(oldTableName, newTableName, textEncryptor);
+            tsh.MigrateTextSearchTableToEncrypted(oldTableName, newTableName);
         }
 
         /// <summary>

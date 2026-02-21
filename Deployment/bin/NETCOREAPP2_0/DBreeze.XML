@@ -4147,7 +4147,7 @@
             <param name="tableName"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.WabiStreamCrypto)">
+        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,System.Boolean)">
             <summary>
             Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
             </summary>
@@ -4160,9 +4160,9 @@
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
             <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+            <param name="encryptedTable">Default: false. ...read docu...</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.WabiStreamCrypto)">
+        <member name="M:DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,System.Boolean)">
             <summary>
             Appends words to the searchable set of the external documentID
             </summary>
@@ -4173,10 +4173,10 @@
             <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param> 
+            <param name="encryptedTable">Default: false. ...read docu...</param>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32,DBreeze.TextSearch.WabiStreamCrypto)">
+        <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
             <summary>
             Removes FULL-MATCH words from the searchable set of the external documentID 
             </summary>
@@ -4186,10 +4186,9 @@
             <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>        
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[],System.Boolean,DBreeze.TextSearch.WabiStreamCrypto)">
+        <member name="M:DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[],System.Boolean)">
             <summary>
             Removes external documentID from the search index
             </summary>
@@ -4197,25 +4196,22 @@
             <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>  
             <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
             It's good for the fast Commits while inserting relatively large searchables-set .
-            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+            Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>        
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextGetDocumentsSearchables(System.String,System.Collections.Generic.HashSet{System.Byte[]},DBreeze.TextSearch.WabiStreamCrypto)">
+        <member name="M:DBreeze.Transactions.Transaction.TextGetDocumentsSearchables(System.String,System.Collections.Generic.HashSet{System.Byte[]})">
             <summary>
             Returns existng searchables for the given documents external IDs
             </summary>
             <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
-            <param name="documentIds"></param>
-            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+            <param name="documentIds"></param>        
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String,DBreeze.TextSearch.WabiStreamCrypto)">
+        <member name="M:DBreeze.Transactions.Transaction.TextSearch(System.String)">
             <summary>
             Returns TextSearchTable (word aligned bitmap index manager for the search-index table). 
             Allows to make logical block based comparative operations.
             </summary>
-            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
-            <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+            <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>        
             <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Support_Migration_TextSearchMigrateTable(System.String,System.String,DBreeze.TextSearch.WabiStreamCrypto)">
@@ -7349,18 +7345,6 @@
             TextSearch handler becomes universal for other entites
             </summary>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.MigrateTextSearchTableToEncrypted(System.String,System.String,DBreeze.TextSearch.WabiStreamCrypto)">
-            <summary>
-            Migrates text search data from an old table to a new table with optional encryption.
-            Used for migrating un-encrypted search terms to encrypted storage.
-            Document ID mappings are preserved (both internal and external IDs stay the same).
-            </summary>
-            <param name="oldTableName">Source table name containing existing text search data</param>
-            <param name="newTableName">Destination table name for the migrated data</param>
-            <param name="textEncryptor">Optional encryptor to encrypt search terms during migration. 
-            If null, search terms are copied as-is (no encryption transformation).
-            If provided, search terms will be encrypted before storing in the new table.</param>
-        </member>
         <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">
             <summary>
             Internal search-table structure.       
@@ -7368,17 +7352,17 @@
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.e2i">
             <summary>
-            External document index to internal - 1. Key byte[], Value int
+            External document index to internal - 1. Key byte, Value NestedTable
             </summary>
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.i2e">
             <summary>
-            Internal document index to external - 2. Key int, Value byte[]
+            Internal document index to external - 2. Key byte, Value NestedTable
             </summary>
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.srch">
             <summary>
-            Searchables to insert - 3. internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
+            Searchables to insert - 3 (byte). internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
             Insert always compares newly intended with current and if no changes exits. 
             Indexer replaces new with current.
             itbls.Value.ChangedDocIds contains IDs of changed docs per search table
@@ -7391,12 +7375,12 @@
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.currentBlock">
             <summary>
-            Key 11: [int] - current blockNumber
+            Key 11: [int]-[0,0,0,11], Value uint; - current blockNumber
             </summary>
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.numberInBlock">
             <summary>
-            Key 12: [int] used number in the block
+            Key 12: [int][0,0,0,12], Value uint; used number in the block
             </summary>
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.words">
@@ -7404,6 +7388,11 @@
             Key 20 : [string,byte[]] NestedTable(Index to search by words)
             <para>Where Key: string - word</para>
             <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.Encryption">
+            <summary>
+            Key 14 (byte): Value: int, where 0 - legacy, non-encrypted; Otherwise encryption type. 1 - ITextStreamCrypto bound to TextConfiguration.
             </summary>
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchHandler.itbls">
@@ -7420,7 +7409,7 @@
             <param name="documentIDs"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode,System.Boolean)">
             <summary>
             
             </summary>
@@ -7432,6 +7421,7 @@
             <param name="deferredIndexing"></param>
             <param name="containsMinimalLength"></param>
             <param name="iMode"></param>
+            <param name="encryptedTable"></param>
         </member>
         <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.BlockId">
             <summary>
@@ -7468,7 +7458,7 @@
             itbls and transaction must be supplied, to make it working from outside
             </summary>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[])">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
             <summary>
             This function accepts old value of searchables for one document and new value,
             decides what must be Removed (par1) and what should be Added (par2)
@@ -7477,21 +7467,21 @@
             <param name="newtext"></param>
             <returns>List 2remove, List 2add</returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String)">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String,DBreeze.TextSearch.ITextStreamCrypto)">
             <summary>
             Converter from searchbales to byte[]
             </summary>
             <param name="searchables"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[])">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
             <summary>
             Converter from byte[] searchables.
             </summary>
             <param name="searchables"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[])">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
             <summary>
             
             </summary>
@@ -7512,6 +7502,16 @@
             <param name="containsMinimalLength"></param>
             <param name="maxWordSize">Taken from configuration. Default is 50. word separated by spaces</param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.MigrateTextSearchTableToEncrypted(System.String,System.String)">
+            <summary>
+            Migrates a non-encrypted TextSearch table to a new encrypted TextSearch table.
+            <para>The encryptor must be configured in Configuration.TextSearchConfig.TextEncryptor before calling.</para>
+            <para>After migration the new table is immediately usable in encrypted mode.</para>
+            <para>The old table is left untouched — the caller may drop it if no longer needed.</para>
+            </summary>
+            <param name="oldTableName">Source non-encrypted table name.</param>
+            <param name="newTableName">Destination encrypted table name (must differ from oldTableName).</param>
         </member>
         <member name="T:DBreeze.TextSearch.TextSearchTable">
             <summary>
