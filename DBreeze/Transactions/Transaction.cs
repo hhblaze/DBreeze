@@ -1897,10 +1897,9 @@ namespace DBreeze.Transactions
         /// will be available a bit later after commit. 
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-        /// <param name="encryptedTable">Default: false. ...read docu...</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>        
         public void TextInsert(string tableName, byte[] documentId, string containsWords="", string fullMatchWords="", bool deferredIndexing=false, 
-            int containsMinimalLength=3, bool encryptedTable = false)
+            int containsMinimalLength=3)
         {            
             if (tsh == null)
             {
@@ -1909,7 +1908,7 @@ namespace DBreeze.Transactions
                 
             
             tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, 
-                TextSearchHandler.eInsertMode.Insert, encryptedTable: encryptedTable);
+                TextSearchHandler.eInsertMode.Insert);
         }
 
         /// <summary>
@@ -1922,8 +1921,7 @@ namespace DBreeze.Transactions
         /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param> 
-        /// <param name="encryptedTable">Default: false. ...read docu...</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>         
         public void TextAppend(string tableName, byte[] documentId, string containsWords="", string fullMatchWords="", bool deferredIndexing = false, 
             int containsMinimalLength = 3, bool encryptedTable = false)
         {
@@ -1933,7 +1931,7 @@ namespace DBreeze.Transactions
             }
 
             tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, 
-                TextSearchHandler.eInsertMode.Append, encryptedTable: encryptedTable);
+                TextSearchHandler.eInsertMode.Append);
         }
 
         /// <summary>

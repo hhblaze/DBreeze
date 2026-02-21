@@ -175,10 +175,9 @@ namespace DBreeze.TextSearch
         /// <param name="fullMatchWords"></param>
         /// <param name="deferredIndexing"></param>
         /// <param name="containsMinimalLength"></param>
-        /// <param name="iMode"></param>
-        /// <param name="encryptedTable"></param>
+        /// <param name="iMode"></param>        
         public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords, 
-            bool deferredIndexing, int containsMinimalLength, eInsertMode iMode, bool encryptedTable = false)
+            bool deferredIndexing, int containsMinimalLength, eInsertMode iMode)
         {
 
             //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.
@@ -206,6 +205,7 @@ namespace DBreeze.TextSearch
                     srch = tran.InsertTable<byte>(tableName, 3, 0),
                 };
 
+
                 its.e2i.ValuesLazyLoadingIsOn = false;
                 its.i2e.ValuesLazyLoadingIsOn = false;
                 its.srch.ValuesLazyLoadingIsOn = false;
@@ -216,18 +216,30 @@ namespace DBreeze.TextSearch
                 {
                     its.Encryption = rowEncryption.Value;
                 }
-                else
-                {
-                    if (encryptedTable)
-                        its.Encryption = 1; //Fixed mode 1 - ITextStreamCrypto
-                }    
 
+                if (its.Encryption == 0 && its.e2i.Count() == 0 && its.srch.Count() == 0)
+                {
+                    //only for empty tables
+                    if (tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.UseTextEncryptor)
+                    {
+                        //We want to use encryptor for this table
+                        its.Encryption = 1; //Fixed mode 1 - ITextStreamCrypto
+                    }
+
+                    //Duplicating is ok. Early stage notification about absense of the encryptor
+                    if (its.Encryption > 0 && tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
+                        throw new Exception($"Encryptor for the text search table {tableName} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
+
+                    //Inserting the fact, table is encrypted
+                    if(its.Encryption > 0)
+                        tran.Insert<byte, int>(tableName, 14, its.Encryption); //Fixed mode 1 - ITextStreamCrypto
+                }
 
                 itbls.Add(tableName, its);
             }
 
-            //On the early stage notfication about absense of the encryptor
-            if ((its.Encryption > 0 || encryptedTable) && tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
+            //Duplicating is ok. Early stage notification about absense of the encryptor
+            if (its.Encryption > 0 && tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
                 throw new Exception($"Encryptor for the text search table {tableName} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
 
             //Internal document ID
@@ -298,10 +310,6 @@ namespace DBreeze.TextSearch
                     iMode = eInsertMode.Insert;
                 else if (iMode == eInsertMode.Remove)
                     return; //Going out
-
-                //Inserting the fact, table is encrypted
-                if(encryptedTable)
-                    tran.Insert<byte, int>(tableName, 14, 1); //Fixed mode 1 - ITextStreamCrypto
 
                 iId = its.i2e.Max<int, byte[]>().Key;
                 iId++;

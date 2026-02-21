@@ -86,6 +86,7 @@ namespace TesterNet6
                 },
                 TextSearchConfig = new DBreezeConfiguration.TextSearchConfiguration()
                 {
+                    UseTextEncryptor = true,
                     TextEncryptor = wsc
                 }
             };

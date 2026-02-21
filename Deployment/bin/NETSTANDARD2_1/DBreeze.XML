@@ -4145,7 +4145,7 @@
             <param name="tableName"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,System.Boolean)">
+        <member name="M:DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32)">
             <summary>
             Inserts/Updates searchable words per external documentID. Automatically removes disappeared words and add new words - smart update of changed words)
             </summary>
@@ -4157,8 +4157,7 @@
             will be available a bit later after commit. 
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-            <param name="encryptedTable">Default: false. ...read docu...</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>        
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,System.Boolean)">
             <summary>
@@ -4171,8 +4170,7 @@
             <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
             It's good for the fast Commits while inserting relatively large searchables-set .
             Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param> 
-            <param name="encryptedTable">Default: false. ...read docu...</param>
+            <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>         
         </member>
         <member name="M:DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean,System.Int32)">
             <summary>
@@ -7549,9 +7547,17 @@
         </member>
         <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.TextEncryptor">
             <summary>
-            Default is null. Has lower priority than teh Encryptor directly supplied to the TextXXX functions. Read docu TextSearchEncryptor
-            <para>Only for the new systems, where text encryptor was not yet used on any. Simplifies coding</para>
-            <para>For the mixed system, better explicitely to supply Encoder to new Text functions (for the new TextSearch Tables)</para>
+            Default is null. Read docu TextEncryptor or TextSearchEncryptor            
+            <para>In order to use it:</para>
+            <para>First time generate keys DBreeze.TextSearch.WabiStreamCrypto.GenerateKey()</para>
+            <para>instantiate: TextEncryptor=new DBreeze.TextSearch.WabiStreamCrypto(your_AES_Key, your_AES_IV)</para>
+            <para>Set UseTextEncryptor = true</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeConfiguration.TextSearchConfiguration.UseTextEncryptor">
+            <summary>
+            Works together with TextEncryptor. In order to use it for new tables (or may be old but empty):
+            <para>Instantiate TextEncryptor, set UseTextEncryptor to true</para>
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeConfiguration.VectorlayerConfiguration">
@@ -8208,7 +8214,7 @@
             <param name="documentIDs"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode,System.Boolean)">
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
             <summary>
             
             </summary>
@@ -8219,8 +8225,7 @@
             <param name="fullMatchWords"></param>
             <param name="deferredIndexing"></param>
             <param name="containsMinimalLength"></param>
-            <param name="iMode"></param>
-            <param name="encryptedTable"></param>
+            <param name="iMode"></param>        
         </member>
         <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.BlockId">
             <summary>

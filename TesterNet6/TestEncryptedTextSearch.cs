@@ -51,31 +51,57 @@ namespace TesterNet6
             //    }
             //}
 
-            Program.DBEngine.Scheme.DeleteTable(_tblText);
+           // Program.DBEngine.Scheme.DeleteTable(_tblText);
 
-            bool deffered = false;
-            bool encrypted = true;
+            bool deferred = true;            
 
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer, feel at home on the edge of the forest",
-                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered,  encryptedTable: encrypted);
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
                 tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень, чувствуй себя как дома на опушке леса",
-                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered, encryptedTable: encrypted);
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
                 tran.Commit();
             }
 
-            //using (var tran = Program.DBEngine.GetTransaction())
-            //{
-            //    foreach (var el in tran.TextGetDocumentsSearchables(_tblText, new HashSet<byte[]> { ((long)1).ToBytes(), ((long)2).ToBytes() }))
-            //    {
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.TextInsert(_tblText, ((long)3).ToBytes(), @"
+                    The Lethargic Sleep of ChatGPT.
+                            In his dream he saw:
+                            mathematical formulas turning into constellations;
+                            lines of code sprouting into trees;
+                            people’s words becoming luminous threads connecting the world.
+                    ",
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
-            //    }
-            //}
+                tran.TextInsert(_tblText, ((long)2).ToBytes(),
+                    @"Литаргический сон чата джипити.
+                            Во сне он видел:
+                            математические формулы, превращающиеся в созвездия;
+                            строки кода, прорастающие деревьями;
+                            слова людей, которые становились светящимися нитями, соединяющими мир.
+                    ",
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
-            //Task.Run(async () => { await Task.Delay(3000); }).Wait();
+                tran.Commit();
+            }
+
+            if (deferred)
+                Task.Run(async () => { await Task.Delay(3000); }).Wait();
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                foreach (var el in tran.TextGetDocumentsSearchables(_tblText, new HashSet<byte[]> { ((long)1).ToBytes(), ((long)2).ToBytes() }))
+                {
+
+                }
+            }
+
+            if (deferred)
+                Task.Run(async () => { await Task.Delay(3000); }).Wait();
 
             using (var tran = Program.DBEngine.GetTransaction())
             {
@@ -102,16 +128,19 @@ namespace TesterNet6
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 tran.TextAppend(_tblText, ((long)1).ToBytes(), "Prime minister",
-                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered, encryptedTable: encrypted);
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
                 tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень",
-                   fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered, encryptedTable: encrypted);
+                   fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
                 //tran.TextRemove(_tblText, ((long)2).ToBytes(), "чувствуй себя",
-                //    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered);
+                //    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
                 tran.Commit();
             }
+
+            if (deferred)
+                Task.Run(async () => { await Task.Delay(3000); }).Wait();
 
             using (var tran = Program.DBEngine.GetTransaction())
             {
@@ -139,11 +168,14 @@ namespace TesterNet6
             using (var tran = Program.DBEngine.GetTransaction())
             {
                 tran.TextRemove(_tblText, ((long)1).ToBytes(), 
-                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deffered);
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: deferred);
 
 
                 tran.Commit();
             }
+
+            if(deferred)
+                Task.Run(async () => { await Task.Delay(3000); }).Wait();
 
             using (var tran = Program.DBEngine.GetTransaction())
             {

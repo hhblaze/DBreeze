@@ -122,11 +122,18 @@ namespace DBreeze
             //public int MaxCharsToBeProcessedPerRound = 10000000;
 
             /// <summary>
-            /// Default is null. Has lower priority than teh Encryptor directly supplied to the TextXXX functions. Read docu TextSearchEncryptor
-            /// <para>Only for the new systems, where text encryptor was not yet used on any. Simplifies coding</para>
-            /// <para>For the mixed system, better explicitely to supply Encoder to new Text functions (for the new TextSearch Tables)</para>
+            /// Default is null. Read docu TextEncryptor or TextSearchEncryptor            
+            /// <para>In order to use it:</para>
+            /// <para>First time generate keys DBreeze.TextSearch.WabiStreamCrypto.GenerateKey()</para>
+            /// <para>instantiate: TextEncryptor=new DBreeze.TextSearch.WabiStreamCrypto(your_AES_Key, your_AES_IV)</para>
+            /// <para>Set UseTextEncryptor = true</para>
             /// </summary>
-            public DBreeze.TextSearch.WabiStreamCrypto TextEncryptor = null;
+            public DBreeze.TextSearch.ITextStreamCrypto TextEncryptor = null;
+            /// <summary>
+            /// Works together with TextEncryptor. In order to use it for new tables (or may be old but empty):
+            /// <para>Instantiate TextEncryptor, set UseTextEncryptor to true</para>
+            /// </summary>
+            public bool UseTextEncryptor = false;
         }
 
         /// <summary>
