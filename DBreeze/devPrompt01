@@ -13,7 +13,10 @@ We have:
     in DoIndexing() - its.Encryption > 0; 
     in TextSearchTable - Encryption / ITextStreamCrypto properties
 
-What we are missing is correctly to but encrypted words in key 20 (ITS) while DoIndexing 
+What we are missing is correctly to but encrypted words in key 20 (ITS) while DoIndexing (creaNew Action must be handled) - bec very precised with the implementation.
 and correctly retrieve words (decrypt when encrypted) from Words in TextSearchTable.
+
+
+We have to use ITextStreamCrypto functions in case of encrypted table we don't want to store HEX in table, but byte[], it resides twice less space.
 
 

@@ -558,6 +558,7 @@ namespace DBreeze.TextSearch
             byte[] newSrch = null;
             byte[] oldSrch = null;
             Row<string, byte[]> rWord = null;
+            Row<byte[], byte[]> rWordBytes = null;
             //Dictionary<string, WordInDocs> wds = new Dictionary<string, WordInDocs>();
             WordInDocs wd = null;
 
@@ -622,17 +623,36 @@ namespace DBreeze.TextSearch
                 //Dictionary<string, byte[]> tmpWrds = new Dictionary<string, byte[]>(StringComparison.Ordinal);
                 var tmpWrds = new SortedDictionary<string, byte[]>(StringComparer.Ordinal);
 
+                // Capture encryptor once per table (null when table is not encrypted)
+                ITextStreamCrypto encryptor = its.Encryption > 0
+                    ? itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor
+                    : null;
+
                 Action<string> createNew = (word) =>
                 {
                     if (!tmpWrds.ContainsKey(word))
                     {
-                        rWord = its.words.Select<string, byte[]>(word, true);
+                        // Look up the word in key-20 table.
+                        // For encrypted tables the key is stored as byte[] (encrypted), not as string.
+                        bool wordExists = false;
+                        byte[] wordValue = null;
+                        if (encryptor != null)
+                        {
+                            rWordBytes = its.words.Select<byte[], byte[]>(encryptor.TextEncrypt(word), true);
+                            if (rWordBytes.Exists) { wordExists = true; wordValue = rWordBytes.Value; }
+                        }
+                        else
+                        {
+                            rWord = its.words.Select<string, byte[]>(word, true);
+                            if (rWord.Exists) { wordExists = true; wordValue = rWord.Value; }
+                        }
+
                         wd = new WordInDocs();
 
-                        if (rWord.Exists)
+                        if (wordExists)
                         {
-                            wd.BlockId = rWord.Value.Substring(0, 4).To_UInt32_BigEndian();
-                            wd.NumberInBlock = rWord.Value.Substring(4, 4).To_UInt32_BigEndian();
+                            wd.BlockId = wordValue.Substring(0, 4).To_UInt32_BigEndian();
+                            wd.NumberInBlock = wordValue.Substring(4, 4).To_UInt32_BigEndian();
                         }
                         else
                         {
@@ -651,31 +671,16 @@ namespace DBreeze.TextSearch
                             tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
                             if (tmpWrds.Count > 100000)
                             {
+                                // Flush batch to DB. For encrypted tables use byte[] key.
                                 foreach (var tmpwrd in tmpWrds)
                                 {
-                                    its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
-
+                                    if (encryptor != null)
+                                        its.words.Insert<byte[], byte[]>(encryptor.TextEncrypt(tmpwrd.Key), tmpwrd.Value);
+                                    else
+                                        its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
                                 }
                                 tmpWrds.Clear();
                             }
-
-                            //// its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
-                            //if (tmpWrds.Count < 100000)
-                            //    tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
-                            //else
-                            //{
-                            //    // its.words.Insert<string, byte[]>(word, wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian()));
-                            //    if (tmpWrds.Count > 100000)
-                            //    {
-                            //        foreach (var tmpwrd in tmpWrds)
-                            //        {
-                            //            its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
-
-                            //        }
-                            //        tmpWrds.Clear();
-                            //    }
-                            //}
-
                         }
                         tpl = new Tuple<HashSet<int>, HashSet<int>, WordInDocs>(new HashSet<int>(), new HashSet<int>(), wd);
                         ds[word] = tpl;
@@ -741,10 +746,14 @@ namespace DBreeze.TextSearch
                 //foreach (var eeel in its.srch.SelectForward<byte[], byte[]>(false).Take(50))
                 //    Console.WriteLine(eeel.Key.ToBytesString());
 
+                // Final flush of pending words to key-20 table.
+                // For encrypted tables the key is stored as byte[] (encrypted).
                 foreach (var tmpwrd in tmpWrds)
                 {
-                    its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
-
+                    if (encryptor != null)
+                        its.words.Insert<byte[], byte[]>(encryptor.TextEncrypt(tmpwrd.Key), tmpwrd.Value);
+                    else
+                        its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
                 }
                 tmpWrds.Clear();
 

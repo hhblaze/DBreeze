@@ -171,15 +171,29 @@ namespace DBreeze.TextSearch
                 {
                     if (this.RealWords.ContainsKey(wrd.Key))
                         continue;
-                    var row2 = this.tbWords.Select<string, byte[]>(wrd.Key);
-                    if (row2.Exists)
+
+                    byte[] rowVal = null;
+                    if (this.Encryption > 0 && this.Encryptor != null)
+                    {
+                        // Encrypted table: key-20 stores byte[] keys (encrypted word)
+                        var row2 = this.tbWords.Select<byte[], byte[]>(this.Encryptor.TextEncrypt(wrd.Key));
+                        if (row2.Exists)
+                            rowVal = row2.Value;
+                    }
+                    else
+                    {
+                        var row2 = this.tbWords.Select<string, byte[]>(wrd.Key);
+                        if (row2.Exists)
+                            rowVal = row2.Value;
+                    }
+
+                    if (rowVal != null)
                     {
                         wid = new TextSearchHandler.WordInDocs()
                         {
-                            BlockId = row2.Value.Substring(0, 4).To_UInt32_BigEndian(),
-                            NumberInBlock = row2.Value.Substring(4, 4).To_UInt32_BigEndian()
+                            BlockId = rowVal.Substring(0, 4).To_UInt32_BigEndian(),
+                            NumberInBlock = rowVal.Substring(4, 4).To_UInt32_BigEndian()
                         };
-
                         this.RealWords[wrd.Key] = wid;
                     }
                 }
@@ -188,23 +202,58 @@ namespace DBreeze.TextSearch
                     //Contains
                     containsFound = 0;
                     startsWithEchoes = new HashSet<string>();
-                    foreach (var row1 in this.tbWords.SelectForwardStartsWith<string, byte[]>(wrd.Key).Take(this.NoisyQuantity))
+
+                    if (this.Encryption > 0 && this.Encryptor != null)
                     {
-                        containsFound++;
-
-                        if (wrd.Key != row1.Key)
-                            startsWithEchoes.Add(row1.Key);
-
-                        if (this.RealWords.ContainsKey(row1.Key))
-                            continue;
-
-                        wid = new TextSearchHandler.WordInDocs()
+                        // Encrypted table: key-20 stores byte[] keys (encrypted word).
+                        // AES-CTR with fixed IV is prefix-preserving, so StartsWith works on encrypted byte[] keys.
+                        byte[] encryptedSearchKey = this.Encryptor.TextEncrypt(wrd.Key);
+                        foreach (var row1 in this.tbWords.SelectForwardStartsWith<byte[], byte[]>(encryptedSearchKey).Take(this.NoisyQuantity))
                         {
-                            BlockId = row1.Value.Substring(0, 4).To_UInt32_BigEndian(),
-                            NumberInBlock = row1.Value.Substring(4, 4).To_UInt32_BigEndian()
-                        };
+                            containsFound++;
 
-                        this.RealWords.Add(row1.Key, wid);
+                            // Determine whether this row is the exact match or an echo.
+                            // Use the HEX of the encrypted byte[] key as the internal string key for echoes,
+                            // and the original plain-text word key for the exact match (so GetPureBlockArrays
+                            // can access it via wrd.Key directly).
+                            bool isExact = row1.Key.Length == encryptedSearchKey.Length
+                                           && row1.Key.SequenceEqual(encryptedSearchKey);
+                            string dictKey = isExact ? wrd.Key : row1.Key.ToHexFromByteArray();
+
+                            if (!isExact)
+                                startsWithEchoes.Add(dictKey);
+
+                            if (this.RealWords.ContainsKey(dictKey))
+                                continue;
+
+                            wid = new TextSearchHandler.WordInDocs()
+                            {
+                                BlockId = row1.Value.Substring(0, 4).To_UInt32_BigEndian(),
+                                NumberInBlock = row1.Value.Substring(4, 4).To_UInt32_BigEndian()
+                            };
+                            this.RealWords.Add(dictKey, wid);
+                        }
+                    }
+                    else
+                    {
+                        foreach (var row1 in this.tbWords.SelectForwardStartsWith<string, byte[]>(wrd.Key).Take(this.NoisyQuantity))
+                        {
+                            containsFound++;
+
+                            if (wrd.Key != row1.Key)
+                                startsWithEchoes.Add(row1.Key);
+
+                            if (this.RealWords.ContainsKey(row1.Key))
+                                continue;
+
+                            wid = new TextSearchHandler.WordInDocs()
+                            {
+                                BlockId = row1.Value.Substring(0, 4).To_UInt32_BigEndian(),
+                                NumberInBlock = row1.Value.Substring(4, 4).To_UInt32_BigEndian()
+                            };
+
+                            this.RealWords.Add(row1.Key, wid);
+                        }
                     }
 
                     if (startsWithEchoes.Count > 0)
