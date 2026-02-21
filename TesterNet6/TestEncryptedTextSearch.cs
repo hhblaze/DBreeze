@@ -41,24 +41,88 @@ namespace TesterNet6
                 return new string(a.ToLower().Reverse().ToArray());
             };
 
-            //Testing encrpytion:
-            //
-            string h1 = encryptorF("Hello", true);
-            string h2 = encryptorF("ello", true);
-            string h3 = encryptorF("aHal", true);
+            ////Testing encrpytion:
+            ////
+            //string h1 = encryptorF("Hello", true);
+            //string h2 = encryptorF("ello", true);
+            //string h3 = encryptorF("aHal", true);
 
-            string h4 = encryptorF("Deer", true);
-            string h5 = encryptorF("Deer,", true);
+            //string h4 = encryptorF("Deer", true);
+            //string h5 = encryptorF("Deer,", true);
 
-            string a = encryptorF(reverseString("Привет"), true);
-            string b = encryptorF(reverseString("ривет"), true);
+            //string a = encryptorF(reverseString("Привет"), true);
+            //string b = encryptorF(reverseString("ривет"), true);
 
-            string c = reverseString(encryptorF(a, false));
-            string d = reverseString(encryptorF(b, false));
+            //string c = reverseString(encryptorF(a, false));
+            //string d = reverseString(encryptorF(b, false));
 
-            //return;
+            ////return;
+            ///
+            //Task.Run(async () => { await Task.Delay(3000); }).Wait();
+
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    var ts = tran.TextSearch(_tblText, textEncryptor: wsc);
+            //    //var ts = tran.TextSearch(_tblText, textEncryptor: null);
+
+            //    foreach (var el in ts.Block("deer", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+            //    {
+            //        Debug.WriteLine(el.To_Int64_BigEndian());
+            //    }
+
+            //}
+
+            //byte[] ik = ((uint)11).To_4_bytes_array_BigEndian();
+
+            //byte[] encrtext = wsc.TextEncrypt("Hello my dear deer, feel at home on the edge of the forest, Привет, мой дорогой олень, чувствуй себя как дома на опушке леса");
+            //string restoredtext = wsc.TextDecrypt(encrtext);
 
             Program.DBEngine.Scheme.DeleteTable(_tblText);
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer, feel at home on the edge of the forest",
+                    fullMatchWords: "[GROUP_SAAB]", deferredIndexing: false,  encryptedTable: true);
+
+                //tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень, чувствуй себя как дома на опушке леса", 
+                //    fullMatchWords: "[GROUP_SAAB]");
+
+                tran.Commit();
+            }
+
+            //Task.Run(async () => { await Task.Delay(3000); }).Wait();
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                var ts = tran.TextSearch(_tblText);
+                //var ts = tran.TextSearch(_tblText, textEncryptor: null);
+
+                foreach (var el in ts.Block("deer", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+                {
+                    Debug.WriteLine(el.To_Int64_BigEndian());
+                }
+
+            }
+
+            //Task.Run(async () => {
+
+            //    await Task.Delay(2000);
+            //    using (var tran = Program.DBEngine.GetTransaction())
+            //    {
+            //        var ts = tran.TextSearch(_tblText, textEncryptor: wsc);
+            //        //var ts = tran.TextSearch(_tblText, textEncryptor: null);
+
+            //        foreach (var el in ts.Block("deer", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+            //        {
+            //            Debug.WriteLine(el.To_Int64_BigEndian());
+            //        }
+
+            //    }
+
+
+            //});
+
+            return;
 
             //using (var tran = Program.DBEngine.GetTransaction())
             //{
@@ -92,25 +156,25 @@ namespace TesterNet6
             //}
 
 
-            using (var tran = Program.DBEngine.GetTransaction())
-            {
-                tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer, feel at home on the edge of the forest", fullMatchWords: "[GROUP_SAAB]",
-                    textEncryptor: wsc);
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer, feel at home on the edge of the forest", fullMatchWords: "[GROUP_SAAB]",
+            //        textEncryptor: wsc);
 
-                //tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer ,", fullMatchWords: "[GROUP_SAAB]",
-                //   textEncryptor: wsc);
+            //    //tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear deer ,", fullMatchWords: "[GROUP_SAAB]",
+            //    //   textEncryptor: wsc);
 
-                //tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear ,deer,", fullMatchWords: "[GROUP_SAAB]",
-                //  textEncryptor: null);
+            //    //tran.TextInsert(_tblText, ((long)1).ToBytes(), "Hello my dear ,deer,", fullMatchWords: "[GROUP_SAAB]",
+            //    //  textEncryptor: null);
 
 
-                //tran.TextAppend
+            //    //tran.TextAppend
 
-                tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень, чувствуй себя как дома на опушке леса", fullMatchWords: "[GROUP_SAAB]",
-                    textEncryptor: wsc);
+            //    tran.TextInsert(_tblText, ((long)2).ToBytes(), "Привет, мой дорогой олень, чувствуй себя как дома на опушке леса", fullMatchWords: "[GROUP_SAAB]",
+            //        textEncryptor: wsc);
 
-                tran.Commit();
-            }
+            //    tran.Commit();
+            //}
 
             //encryptorF = null;
 
@@ -136,27 +200,27 @@ namespace TesterNet6
 
 
 
-            using (var tran = Program.DBEngine.GetTransaction())
-            {
-                var ts = tran.TextSearch(_tblText, textEncryptor: wsc);
-                //var ts = tran.TextSearch(_tblText, textEncryptor: null);
+            //using (var tran = Program.DBEngine.GetTransaction())
+            //{
+            //    var ts = tran.TextSearch(_tblText, textEncryptor: wsc);
+            //    //var ts = tran.TextSearch(_tblText, textEncryptor: null);
 
-                foreach (var el in ts.Block("deer", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
-                {
-                    Debug.WriteLine(el.To_Int64_BigEndian());
-                }
+            //    foreach (var el in ts.Block("deer", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+            //    {
+            //        Debug.WriteLine(el.To_Int64_BigEndian());
+            //    }
 
-                foreach (var el in ts.Block("deer home ello", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
-                {
-                    Debug.WriteLine(el.To_Int64_BigEndian());
-                }
+            //    foreach (var el in ts.Block("deer home ello", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+            //    {
+            //        Debug.WriteLine(el.To_Int64_BigEndian());
+            //    }
 
-                foreach (var el in ts.Block("дорог пушке", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
-                {
-                    Debug.WriteLine(el.To_Int64_BigEndian());
-                }
+            //    foreach (var el in ts.Block("дорог пушке", fullMatchWords: "[GROUP_SAAB]").GetDocumentIDs())
+            //    {
+            //        Debug.WriteLine(el.To_Int64_BigEndian());
+            //    }
 
-            }
+            //}
 
             //using (var tran = Program.DBEngine.GetTransaction())
             //{

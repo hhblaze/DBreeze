@@ -124,7 +124,8 @@ namespace DBreeze
             /// <para>Only for the new systems, where text encryptor was not yet used on any. Simplifies coding</para>
             /// <para>For the mixed system, better explicitely to supply Encoder to new Text functions (for the new TextSearch Tables)</para>
             /// </summary>
-            public DBreeze.TextSearch.WabiStreamCrypto TextEncryptor = null;
+            public DBreeze.TextSearch.ITextStreamCrypto TextEncryptor = null;            
+
 
         }
 

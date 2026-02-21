@@ -84,10 +84,10 @@ namespace TesterNet6
                 {
                     Dense = 1000
                 },
-                //TextSearchConfig =new DBreezeConfiguration.TextSearchConfiguration()
-                //{
-                //     //TextEncryptor = wsc
-                //}
+                TextSearchConfig = new DBreezeConfiguration.TextSearchConfiguration()
+                {
+                    TextEncryptor = wsc
+                }
             };
             conf.AlternativeTablesLocations.Add("mem_*", String.Empty);
             DBEngine = new DBreezeEngine(conf);

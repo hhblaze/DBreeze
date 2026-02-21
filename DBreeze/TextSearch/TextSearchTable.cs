@@ -62,6 +62,9 @@ namespace DBreeze.TextSearch
         internal NestedTable i2e = null;
         internal NestedTable e2i = null;
 
+        int Encryption = 0;
+        ITextStreamCrypto Encryptor = null;
+
         internal Dictionary <string, TextSearchHandler.WordInDocs> RealWords = new Dictionary<string, TextSearchHandler.WordInDocs>();
         /// <summary>
         /// Second preparation layer after parsing. After this layer we grab words from db and put into real words
@@ -132,6 +135,20 @@ namespace DBreeze.TextSearch
             {
                 e2i = this._tran.SelectTable<byte>(this._tableName, 1, 0);
                 e2i.ValuesLazyLoadingIsOn = false;
+            }
+
+            var encrRow = this._tran.Select<byte, int>(this._tableName, 14);
+            if (encrRow.Exists)
+            {
+                this.Encryption = encrRow.Value;
+                if (this.Encryption > 0)
+                {
+                    this.Encryptor = this._tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor;
+
+                    if (this.Encryptor == null)
+                        throw new Exception($"Encryptor for the text search table {this._tableName} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
+                }
+                 
             }
 
             ////DEBUG
@@ -438,9 +455,7 @@ namespace DBreeze.TextSearch
                 if (word.Trim().Length < 2 || word.Contains(" "))
                     continue;
 
-                if (this._tran.tsh.Encryptor != null)
-                    word = this._tran.tsh.Encryptor.TextEncryptor(word, true);
-
+                
                 //this.PureWords.Add(word, new TextSearchTable.PureWordDef() { FullMatch = fullMatch, Processed = false });
                 ////Adding also words to blocks
                 //wordsList.Add(word, fullMatch);

@@ -1,0 +1,19 @@
+
+# Working assests
+/Transactions/Transaction.cs
+/TextSearch/*
+
+We are finilizing integrating encryption (WabiStreamCrypto) into TextSearch tables.
+We supply/or not Encryptor in Transaction.TextInsert and TextAppendFunction and saving that info into table, 
+assuming the other text functions will use "whether encrypted" information from the table.
+We store and retrieve Searchable blocks - GetSearchablesFromByteArray_AsHashSet(), GetByteArrayFromSearchbles() in encrypted manner.
+
+We have: 
+    in ITS Encryption property; 
+    in DoIndexing() - its.Encryption > 0; 
+    in TextSearchTable - Encryption / ITextStreamCrypto properties
+
+What we are missing is correctly to but encrypted words in key 20 (ITS) while DoIndexing 
+and correctly retrieve words (decrypt when encrypted) from Words in TextSearchTable.
+
+

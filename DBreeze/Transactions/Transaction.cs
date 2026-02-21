@@ -1898,21 +1898,18 @@ namespace DBreeze.Transactions
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
         /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-        /// <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+        /// <param name="encryptedTable">Default: false. ...read docu...</param>
         public void TextInsert(string tableName, byte[] documentId, string containsWords="", string fullMatchWords="", bool deferredIndexing=false, 
-            int containsMinimalLength=3, DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+            int containsMinimalLength=3, bool encryptedTable = false)
         {            
             if (tsh == null)
             {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+                tsh = new TextSearchHandler(this);                
             }
                 
             
-            tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, TextSearchHandler.eInsertMode.Insert);
+            tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, 
+                TextSearchHandler.eInsertMode.Insert, encryptedTable: encryptedTable);
         }
 
         /// <summary>
@@ -1925,21 +1922,18 @@ namespace DBreeze.Transactions
         /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-        /// <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param> 
+        /// <param name="encryptedTable">Default: false. ...read docu...</param>
         public void TextAppend(string tableName, byte[] documentId, string containsWords="", string fullMatchWords="", bool deferredIndexing = false, 
-            int containsMinimalLength = 3, DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+            int containsMinimalLength = 3, bool encryptedTable = false)
         {
             if (tsh == null)
             {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+                tsh = new TextSearchHandler(this);                
             }
 
-            tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, TextSearchHandler.eInsertMode.Append);
+            tsh.InsertDocumentText(this, tableName, documentId, containsWords, fullMatchWords, deferredIndexing, containsMinimalLength, 
+                TextSearchHandler.eInsertMode.Append, encryptedTable: encryptedTable);
         }
 
         /// <summary>
@@ -1951,18 +1945,13 @@ namespace DBreeze.Transactions
         /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
         /// It's good for the fast Commits while inserting relatively large searchables-set .
         /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>
-        /// <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+        /// <param name="containsMinimalLength"> Minimal lenght of the word to be searched using "contains" logic. Default is 3. </param>        
         public void TextRemove(string tableName, byte[] documentId, string fullMatchWords, bool deferredIndexing = false, 
-            int containsMinimalLength = 3, DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+            int containsMinimalLength = 3)
         {
             if (tsh == null)
             {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+                tsh = new TextSearchHandler(this);                
             }
 
             tsh.InsertDocumentText(this, tableName, documentId, "", fullMatchWords, deferredIndexing, containsMinimalLength, TextSearchHandler.eInsertMode.Remove);
@@ -1975,39 +1964,28 @@ namespace DBreeze.Transactions
         /// <param name="documentId">External document id, it will be returned after executing TextSearch.block.GetDocumentIDs</param>  
         /// <param name="deferredIndexing"> Means that document will be indexed in parallel thread and possible search will be available a bit later after commit. 
         /// It's good for the fast Commits while inserting relatively large searchables-set .
-        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>
-        /// <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
-        public void TextRemoveAll(string tableName, byte[] documentId, bool deferredIndexing = false, DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+        /// Default value is false, means that searchables will be indexed together with Commit and will be available at the same time.</param>        
+        public void TextRemoveAll(string tableName, byte[] documentId, bool deferredIndexing = false)
         {
             if (tsh == null)
             {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+                tsh = new TextSearchHandler(this);                
             }
 
-            tsh.InsertDocumentText(this, tableName, documentId, String.Empty,String.Empty, deferredIndexing,3, TextSearchHandler.eInsertMode.Insert);
+            tsh.InsertDocumentText(this, tableName, documentId, String.Empty,String.Empty, deferredIndexing,3, TextSearchHandler.eInsertMode.Remove);
         }
 
         /// <summary>
         /// Returns existng searchables for the given documents external IDs
         /// </summary>
         /// <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
-        /// <param name="documentIds"></param>
-        /// <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+        /// <param name="documentIds"></param>        
         /// <returns></returns>
-        public Dictionary<byte[],HashSet<string>> TextGetDocumentsSearchables(string tableName, HashSet<byte[]> documentIds, 
-            DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+        public Dictionary<byte[],HashSet<string>> TextGetDocumentsSearchables(string tableName, HashSet<byte[]> documentIds)
         {
             if (tsh == null)
             {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+                tsh = new TextSearchHandler(this);                
             }
 
             return tsh.GetDocumentsSearchables(this, tableName, documentIds);
@@ -2018,18 +1996,13 @@ namespace DBreeze.Transactions
         /// Returns TextSearchTable (word aligned bitmap index manager for the search-index table). 
         /// Allows to make logical block based comparative operations.
         /// </summary>
-        /// <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>
-        /// <param name="textEncryptor">Encrypts search terms in DB file, overrides TextEncryptor in the DBreezeConfiguration.TextSearchConfig, read usage instructions in TextSearchEncryptor</param>
+        /// <param name="tableName">Real DBreeze table name, used to store text index for the group of documents. Must be added to tran.SynchronizeTables by programmer.</param>        
         /// <returns></returns>
-        public TextSearchTable TextSearch(string tableName, DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+        public TextSearchTable TextSearch(string tableName)
         {
             if (tsh == null)
             {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+                tsh = new TextSearchHandler(this);               
             }
 
             TextSearchTable w = new TextSearchTable(this,tableName);            
@@ -2062,16 +2035,16 @@ namespace DBreeze.Transactions
             string newTableName, 
             DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
         {
-            if (tsh == null)
-            {
-                tsh = new TextSearchHandler(this);
-                if (textEncryptor != null)
-                    tsh.Encryptor = textEncryptor;
-                else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
-                    tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
-            }
+            //if (tsh == null)
+            //{
+            //    tsh = new TextSearchHandler(this);
+            //    if (textEncryptor != null)
+            //        tsh.Encryptor = textEncryptor;
+            //    else if (_transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor != null)
+            //        tsh.Encryptor = _transactionUnit.TransactionsCoordinator.GetSchema.Engine.Configuration.TextSearchConfig.TextEncryptor;
+            //}
 
-            tsh.MigrateTextSearchTableToEncrypted(oldTableName, newTableName, textEncryptor);
+            //tsh.MigrateTextSearchTableToEncrypted(oldTableName, newTableName, textEncryptor);
         }
 
         /// <summary>

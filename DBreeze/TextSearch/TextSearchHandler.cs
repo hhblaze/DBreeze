@@ -31,165 +31,164 @@ namespace DBreeze.TextSearch
         /// TextSearch handler becomes universal for other entites
         /// </summary>
         public Dictionary<string, HashSet<uint>> DeferredVectors = new Dictionary<string, HashSet<uint>>();
-
-        public DBreeze.TextSearch.WabiStreamCrypto Encryptor = null;
+       
 
         public TextSearchHandler(Transaction tran)
         {
             this.tran = tran;
         }
 
-        /// <summary>
-        /// Migrates text search data from an old table to a new table with optional encryption.
-        /// Used for migrating un-encrypted search terms to encrypted storage.
-        /// Document ID mappings are preserved (both internal and external IDs stay the same).
-        /// </summary>
-        /// <param name="oldTableName">Source table name containing existing text search data</param>
-        /// <param name="newTableName">Destination table name for the migrated data</param>
-        /// <param name="textEncryptor">Optional encryptor to encrypt search terms during migration. 
-        /// If null, search terms are copied as-is (no encryption transformation).
-        /// If provided, search terms will be encrypted before storing in the new table.</param>
-        public void MigrateTextSearchTableToEncrypted(
-            string oldTableName, 
-            string newTableName, 
-            DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
-        {
-            if (string.IsNullOrEmpty(oldTableName) || string.IsNullOrEmpty(newTableName))
-                throw new ArgumentException("oldTableName and newTableName must be specified");
+        ///// <summary>
+        ///// Migrates text search data from an old table to a new table with optional encryption.
+        ///// Used for migrating un-encrypted search terms to encrypted storage.
+        ///// Document ID mappings are preserved (both internal and external IDs stay the same).
+        ///// </summary>
+        ///// <param name="oldTableName">Source table name containing existing text search data</param>
+        ///// <param name="newTableName">Destination table name for the migrated data</param>
+        ///// <param name="textEncryptor">Optional encryptor to encrypt search terms during migration. 
+        ///// If null, search terms are copied as-is (no encryption transformation).
+        ///// If provided, search terms will be encrypted before storing in the new table.</param>
+        //public void MigrateTextSearchTableToEncrypted(
+        //    string oldTableName, 
+        //    string newTableName, 
+        //    DBreeze.TextSearch.WabiStreamCrypto textEncryptor = null)
+        //{
+        //    if (string.IsNullOrEmpty(oldTableName) || string.IsNullOrEmpty(newTableName))
+        //        throw new ArgumentException("oldTableName and newTableName must be specified");
 
-            if (oldTableName.Equals(newTableName, StringComparison.Ordinal))
-                throw new ArgumentException("oldTableName and newTableName must be different");
+        //    if (oldTableName.Equals(newTableName, StringComparison.Ordinal))
+        //        throw new ArgumentException("oldTableName and newTableName must be different");
 
-            // Set up encryptor for the migration
-            if (textEncryptor != null)
-                this.Encryptor = textEncryptor;
+        //    // Set up encryptor for the migration
+        //    if (textEncryptor != null)
+        //        this.Encryptor = textEncryptor;
 
-            // Get old table nested tables for reading
-            NestedTable oldE2i = tran.SelectTable<byte>(oldTableName, 1, 0);
-            NestedTable oldI2e = tran.SelectTable<byte>(oldTableName, 2, 0);
-            NestedTable oldSrch = tran.SelectTable<byte>(oldTableName, 3, 0);
-            NestedTable oldBlocks = tran.SelectTable<byte>(oldTableName, 10, 0);
-            NestedTable oldWords = tran.SelectTable<byte>(oldTableName, 20, 0);
+        //    // Get old table nested tables for reading
+        //    NestedTable oldE2i = tran.SelectTable<byte>(oldTableName, 1, 0);
+        //    NestedTable oldI2e = tran.SelectTable<byte>(oldTableName, 2, 0);
+        //    NestedTable oldSrch = tran.SelectTable<byte>(oldTableName, 3, 0);
+        //    NestedTable oldBlocks = tran.SelectTable<byte>(oldTableName, 10, 0);
+        //    NestedTable oldWords = tran.SelectTable<byte>(oldTableName, 20, 0);
 
-            oldE2i.ValuesLazyLoadingIsOn = false;
-            oldI2e.ValuesLazyLoadingIsOn = false;
-            oldSrch.ValuesLazyLoadingIsOn = false;
-            oldBlocks.ValuesLazyLoadingIsOn = false;
-            oldWords.ValuesLazyLoadingIsOn = false;
+        //    oldE2i.ValuesLazyLoadingIsOn = false;
+        //    oldI2e.ValuesLazyLoadingIsOn = false;
+        //    oldSrch.ValuesLazyLoadingIsOn = false;
+        //    oldBlocks.ValuesLazyLoadingIsOn = false;
+        //    oldWords.ValuesLazyLoadingIsOn = false;
 
-            // Get old table configuration
-            var oldLastIndexed = tran.Select<byte, byte[]>(oldTableName, 4);
-            var oldCurrentBlock = tran.Select<int, uint>(oldTableName, 11);
-            var oldNumberInBlock = tran.Select<int, uint>(oldTableName, 12);
+        //    // Get old table configuration
+        //    var oldLastIndexed = tran.Select<byte, byte[]>(oldTableName, 4);
+        //    var oldCurrentBlock = tran.Select<int, uint>(oldTableName, 11);
+        //    var oldNumberInBlock = tran.Select<int, uint>(oldTableName, 12);
 
-            // Get new table nested tables for writing
-            NestedTable newE2i = tran.InsertTable<byte>(newTableName, 1, 0);
-            NestedTable newI2e = tran.InsertTable<byte>(newTableName, 2, 0);
-            NestedTable newSrch = tran.InsertTable<byte>(newTableName, 3, 0);
-            NestedTable newBlocks = tran.InsertTable<byte>(newTableName, 10, 0);
-            NestedTable newWords = tran.InsertTable<byte>(newTableName, 20, 0);
+        //    // Get new table nested tables for writing
+        //    NestedTable newE2i = tran.InsertTable<byte>(newTableName, 1, 0);
+        //    NestedTable newI2e = tran.InsertTable<byte>(newTableName, 2, 0);
+        //    NestedTable newSrch = tran.InsertTable<byte>(newTableName, 3, 0);
+        //    NestedTable newBlocks = tran.InsertTable<byte>(newTableName, 10, 0);
+        //    NestedTable newWords = tran.InsertTable<byte>(newTableName, 20, 0);
 
-            newE2i.ValuesLazyLoadingIsOn = false;
-            newI2e.ValuesLazyLoadingIsOn = false;
-            newSrch.ValuesLazyLoadingIsOn = false;
-            newBlocks.ValuesLazyLoadingIsOn = false;
-            newWords.ValuesLazyLoadingIsOn = false;
+        //    newE2i.ValuesLazyLoadingIsOn = false;
+        //    newI2e.ValuesLazyLoadingIsOn = false;
+        //    newSrch.ValuesLazyLoadingIsOn = false;
+        //    newBlocks.ValuesLazyLoadingIsOn = false;
+        //    newWords.ValuesLazyLoadingIsOn = false;
 
-            // 1. Copy document ID mappings (e2i and i2e)
-            foreach (var row in oldE2i.SelectForward<byte[], int>())
-            {
-                newE2i.Insert<byte[], int>(row.Key, row.Value);
-            }
+        //    // 1. Copy document ID mappings (e2i and i2e)
+        //    foreach (var row in oldE2i.SelectForward<byte[], int>())
+        //    {
+        //        newE2i.Insert<byte[], int>(row.Key, row.Value);
+        //    }
 
-            foreach (var row in oldI2e.SelectForward<int, byte[]>())
-            {
-                newI2e.Insert<int, byte[]>(row.Key, row.Value);
-            }
+        //    foreach (var row in oldI2e.SelectForward<int, byte[]>())
+        //    {
+        //        newI2e.Insert<int, byte[]>(row.Key, row.Value);
+        //    }
 
-            // 2. Copy configuration
-            if (oldLastIndexed.Exists)
-                tran.Insert<byte, byte[]>(newTableName, 4, oldLastIndexed.Value);
-            else
-                tran.Insert<byte, byte[]>(newTableName, 4, DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian());
+        //    // 2. Copy configuration
+        //    if (oldLastIndexed.Exists)
+        //        tran.Insert<byte, byte[]>(newTableName, 4, oldLastIndexed.Value);
+        //    else
+        //        tran.Insert<byte, byte[]>(newTableName, 4, DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian());
 
-            if (oldCurrentBlock.Exists)
-                tran.Insert<int, uint>(newTableName, 11, oldCurrentBlock.Value);
-            else
-                tran.Insert<int, uint>(newTableName, 11, 1);
+        //    if (oldCurrentBlock.Exists)
+        //        tran.Insert<int, uint>(newTableName, 11, oldCurrentBlock.Value);
+        //    else
+        //        tran.Insert<int, uint>(newTableName, 11, 1);
 
-            if (oldNumberInBlock.Exists)
-                tran.Insert<int, uint>(newTableName, 12, oldNumberInBlock.Value);
-            else
-                tran.Insert<int, uint>(newTableName, 12, 0);
+        //    if (oldNumberInBlock.Exists)
+        //        tran.Insert<int, uint>(newTableName, 12, oldNumberInBlock.Value);
+        //    else
+        //        tran.Insert<int, uint>(newTableName, 12, 0);
 
-            // 3. Migrate searchables (srch - index 3)
-            // Key format: internalDocId (4 bytes) + marker byte (0 for current, 1 for new)
-            foreach (var row in oldSrch.SelectForward<byte[], byte[]>())
-            {
-                if (textEncryptor != null)
-                {
-                    // Decompress and get old searchables
-                    HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(row.Value);
+        //    // 3. Migrate searchables (srch - index 3)
+        //    // Key format: internalDocId (4 bytes) + marker byte (0 for current, 1 for new)
+        //    foreach (var row in oldSrch.SelectForward<byte[], byte[]>())
+        //    {
+        //        if (textEncryptor != null)
+        //        {
+        //            // Decompress and get old searchables
+        //            HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(row.Value);
 
-                    //HashSet<string> tempSearchables = new HashSet<string>();
-                    //foreach (var os in oldSearchables)
-                    //{
-                    //    var tsw = textEncryptor.TextEncryptor(os, true);
-                    //    if(tempSearchables.Contains(tsw))
-                    //    {
+        //            //HashSet<string> tempSearchables = new HashSet<string>();
+        //            //foreach (var os in oldSearchables)
+        //            //{
+        //            //    var tsw = textEncryptor.TextEncryptor(os, true);
+        //            //    if(tempSearchables.Contains(tsw))
+        //            //    {
 
-                    //    }
-                    //    tempSearchables.Add(tsw);
-                    //}
+        //            //    }
+        //            //    tempSearchables.Add(tsw);
+        //            //}
 
-                    //if(oldSearchables.Count != tempSearchables.Count)
-                    //{
+        //            //if(oldSearchables.Count != tempSearchables.Count)
+        //            //{
 
-                    //}
+        //            //}
 
-                    StringBuilder sbNewSearchables = new StringBuilder();
+        //            StringBuilder sbNewSearchables = new StringBuilder();
 
-                    foreach (var word in oldSearchables)
-                    {
-                        // Encrypt each word with the new encryptor
-                        string encryptedWord = textEncryptor.TextEncryptor(word, true);
-                        sbNewSearchables.Append(encryptedWord);
-                        sbNewSearchables.Append(" ");
-                    }
+        //            foreach (var word in oldSearchables)
+        //            {
+        //                // Encrypt each word with the new encryptor
+        //                string encryptedWord = textEncryptor.TextEncryptor(word, true);
+        //                sbNewSearchables.Append(encryptedWord);
+        //                sbNewSearchables.Append(" ");
+        //            }
 
-                    // Store re-encrypted searchables
-                    newSrch.Insert<byte[], byte[]>(row.Key, GetByteArrayFromSearchbles(sbNewSearchables.ToString()));
-                }
-                else
-                {
-                    // No encryption transformation, copy as-is
-                    newSrch.Insert<byte[], byte[]>(row.Key, row.Value);
-                }
-            }
+        //            // Store re-encrypted searchables
+        //            newSrch.Insert<byte[], byte[]>(row.Key, GetByteArrayFromSearchbles(sbNewSearchables.ToString()));
+        //        }
+        //        else
+        //        {
+        //            // No encryption transformation, copy as-is
+        //            newSrch.Insert<byte[], byte[]>(row.Key, row.Value);
+        //        }
+        //    }
 
-            // 4. Rebuild word index (words - index 20) and copy blocks (blocks - index 10)
-            // Since internal doc IDs are preserved, WABI bitmap blocks can be copied directly
+        //    // 4. Rebuild word index (words - index 20) and copy blocks (blocks - index 10)
+        //    // Since internal doc IDs are preserved, WABI bitmap blocks can be copied directly
             
-            // Copy blocks directly (bitmap data stays the same)
-            foreach (var row in oldBlocks.SelectForward<uint, byte[]>())
-            {
-                newBlocks.Insert<uint, byte[]>(row.Key, row.Value);
-            }
+        //    // Copy blocks directly (bitmap data stays the same)
+        //    foreach (var row in oldBlocks.SelectForward<uint, byte[]>())
+        //    {
+        //        newBlocks.Insert<uint, byte[]>(row.Key, row.Value);
+        //    }
 
-            // Migrate word index with optional encryption
-            foreach (var row in oldWords.SelectForward<string, byte[]>())
-            {
-                string wordKey = row.Key;
+        //    // Migrate word index with optional encryption
+        //    foreach (var row in oldWords.SelectForward<string, byte[]>())
+        //    {
+        //        string wordKey = row.Key;
                 
-                if (textEncryptor != null)
-                {
-                    // Encrypt the word key
-                    wordKey = textEncryptor.TextEncryptor(row.Key, true);
-                }
+        //        if (textEncryptor != null)
+        //        {
+        //            // Encrypt the word key
+        //            wordKey = textEncryptor.TextEncryptor(row.Key, true);
+        //        }
 
-                newWords.Insert<string, byte[]>(wordKey, row.Value);
-            }
-        }
+        //        newWords.Insert<string, byte[]>(wordKey, row.Value);
+        //    }
+        //}
 
         /// <summary>
         /// Internal search-table structure.       
@@ -199,15 +198,15 @@ namespace DBreeze.TextSearch
             public HashSet<int> ChangedDocIds = new HashSet<int>();
 
             /// <summary>
-            /// External document index to internal - 1. Key byte[], Value int
+            /// External document index to internal - 1. Key byte, Value NestedTable
             /// </summary>
             public NestedTable e2i = null;
             /// <summary>
-            /// Internal document index to external - 2. Key int, Value byte[]
+            /// Internal document index to external - 2. Key byte, Value NestedTable
             /// </summary>
             public NestedTable i2e = null;
             /// <summary>
-            /// Searchables to insert - 3. internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
+            /// Searchables to insert - 3 (byte). internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
             /// Insert always compares newly intended with current and if no changes exits. 
             /// Indexer replaces new with current.
             /// itbls.Value.ChangedDocIds contains IDs of changed docs per search table
@@ -222,12 +221,12 @@ namespace DBreeze.TextSearch
             public NestedTable blocks = null;
 
             /// <summary>
-            /// Key 11: [int] - current blockNumber
+            /// Key 11: [int]-[0,0,0,11], Value uint; - current blockNumber
             /// </summary>
             public uint currentBlock = 0;
 
             /// <summary>
-            /// Key 12: [int] used number in the block
+            /// Key 12: [int][0,0,0,12], Value uint; used number in the block
             /// </summary>
             public uint numberInBlock = 0;
             /// <summary>
@@ -236,6 +235,11 @@ namespace DBreeze.TextSearch
             /// <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
             /// </summary>
             public NestedTable words = null;
+
+            /// <summary>
+            /// Key 14 (byte): Value: int, where 0 - legacy, non-encrypted; Otherwise encryption type. 1 - ITextStreamCrypto bound to TextConfiguration.
+            /// </summary>
+            public int Encryption = 0;
         }
 
         /// <summary>
@@ -247,7 +251,8 @@ namespace DBreeze.TextSearch
         {
             Insert,
             Append,
-            Remove
+            Remove,
+            //RemoveAll
         }
 
         
@@ -267,6 +272,13 @@ namespace DBreeze.TextSearch
                 srch = tran.SelectTable<byte>(tableName, 3, 0),
             };
 
+            var encRow = tran.Select<byte, int>(tableName, 14);
+            if (encRow.Exists)
+                its.Encryption = encRow.Value;
+
+            if (its.Encryption > 0 && tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
+                throw new Exception($"Encryptor for the text search table {tableName} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
+
             its.e2i.ValuesLazyLoadingIsOn = false;
             its.srch.ValuesLazyLoadingIsOn = false;
 
@@ -281,17 +293,22 @@ namespace DBreeze.TextSearch
                     //Getting searchables for this document                
                     byte[] oldSrch = its.srch.Select<byte[], byte[]>(r1.Value.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
                     //rdocuments[documentID] = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
-                    var hs = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
-                    if (Encryptor == null)
-                        rdocuments[documentID] = hs;
-                    else
-                    {
-                        var nhs = new HashSet<string>();                        
-                        foreach(var el in hs)
-                            nhs.Add(Encryptor.TextEncryptor(el,false));
-                        
-                        rdocuments[documentID] = nhs;
-                    }
+
+                    var hs = GetSearchablesFromByteArray_AsHashSet(oldSrch,
+                        its.Encryption > 0 ? tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
+                        ); //always instantiated hashset
+
+                    rdocuments[documentID] = hs;
+                    //if (Encryptor == null)
+                    //    rdocuments[documentID] = hs;
+                    //else
+                    //{
+                    //    var nhs = new HashSet<string>();                        
+                    //    foreach(var el in hs)
+                    //        nhs.Add(Encryptor.TextEncryptor(el,false));
+
+                    //    rdocuments[documentID] = nhs;
+                    //}
                 }
             }
 
@@ -310,8 +327,9 @@ namespace DBreeze.TextSearch
         /// <param name="deferredIndexing"></param>
         /// <param name="containsMinimalLength"></param>
         /// <param name="iMode"></param>
+        /// <param name="encryptedTable"></param>
         public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords, 
-            bool deferredIndexing, int containsMinimalLength, eInsertMode iMode)
+            bool deferredIndexing, int containsMinimalLength, eInsertMode iMode, bool encryptedTable = false)
         {
 
             //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.
@@ -329,6 +347,7 @@ namespace DBreeze.TextSearch
 
             //Registering all tables for text-search in current transaction
             ITS its = null;
+
             if (!itbls.TryGetValue(tableName, out its))
             {
                 its = new ITS()
@@ -342,8 +361,25 @@ namespace DBreeze.TextSearch
                 its.i2e.ValuesLazyLoadingIsOn = false;
                 its.srch.ValuesLazyLoadingIsOn = false;
 
+                //Getting table encryption information
+                var rowEncryption = tran.Select<byte, int>(tableName, 14);
+                if (rowEncryption.Exists)
+                {
+                    its.Encryption = rowEncryption.Value;
+                }
+                else
+                {
+                    if (encryptedTable)
+                        its.Encryption = 1; //Fixed mode 1 - ITextStreamCrypto
+                }    
+
+
                 itbls.Add(tableName, its);
             }
+
+            //On the early stage notfication about absense of the encryptor
+            if ((its.Encryption > 0 || encryptedTable) && tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
+                throw new Exception($"Encryptor for the text search table {tableName} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
 
             //Internal document ID
             int iId = 0;
@@ -357,7 +393,9 @@ namespace DBreeze.TextSearch
 
                 //Getting old searchables for this document                
                 byte[] oldSrch = its.srch.Select<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
-                HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
+                HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(oldSrch,
+                    its.Encryption > 0 ? tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
+                    ); //always instantiated hashset
 
                 switch (iMode)
                 {
@@ -411,6 +449,11 @@ namespace DBreeze.TextSearch
                     iMode = eInsertMode.Insert;
                 else if (iMode == eInsertMode.Remove)
                     return; //Going out
+
+                //Inserting the fact, table is encrypted
+                if(encryptedTable)
+                    tran.Insert<byte, int>(tableName, 14, 1); //Fixed mode 1 - ITextStreamCrypto
+
                 iId = its.i2e.Max<int, byte[]>().Key;
                 iId++;
 
@@ -438,7 +481,10 @@ namespace DBreeze.TextSearch
             }
 
             //Inserting searchables to be indexed            
-            its.srch.Insert<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), GetByteArrayFromSearchbles(sbPs.ToString()));
+            its.srch.Insert<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), 
+                GetByteArrayFromSearchbles(sbPs.ToString(),
+                its.Encryption > 0 ? tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
+                ));
         }
 
 
@@ -539,7 +585,17 @@ namespace DBreeze.TextSearch
                 its.blocks = itran.InsertTable<byte>(tbl.Key, 10, 0);
                 its.words = itran.InsertTable<byte>(tbl.Key, 20, 0);
                 its.currentBlock = itran.Select<int, uint>(tbl.Key, 11).Value;
-                its.numberInBlock = itran.Select<int, uint>(tbl.Key, 12).Value;                
+                its.numberInBlock = itran.Select<int, uint>(tbl.Key, 12).Value;
+
+                //wheather table is encrypted
+                itran.ValuesLazyLoadingIsOn = false;
+                var encRow = itran.Select<byte, int>(tbl.Key, 14);
+                if(encRow.Exists)
+                {
+                    its.Encryption = encRow.Value;
+                    if (its.Encryption > 0 && itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
+                        throw new Exception($"Encryptor for the text search table {tbl} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
+                }
 
                 its.blocks.ValuesLazyLoadingIsOn = false;
                 its.words.ValuesLazyLoadingIsOn = false;
@@ -641,7 +697,8 @@ namespace DBreeze.TextSearch
 
                     diff = WordsDiff(
                                 oldSrch, //Current searchables 
-                                newSrch //new
+                                newSrch, //new
+                                its.Encryption > 0 ? itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
                                 );
 
                     //diff = WordsDiff(
@@ -831,15 +888,15 @@ namespace DBreeze.TextSearch
         /// <param name="oldtext"></param>
         /// <param name="newtext"></param>
         /// <returns>List 2remove, List 2add</returns>
-        Tuple<HashSet<string>, HashSet<string>> WordsDiff(byte[] oldtext, byte[] newtext)
+        Tuple<HashSet<string>, HashSet<string>> WordsDiff(byte[] oldtext, byte[] newtext, ITextStreamCrypto encryptor)
         {
             HashSet<string> toRemove = new HashSet<string>();
             HashSet<string> toAdd = new HashSet<string>();
 
             //Debug.WriteLine(word);
 
-            HashSet<string> nt = GetSearchablesFromByteArray_AsHashSet(newtext);
-            HashSet<string> ot = GetSearchablesFromByteArray_AsHashSet(oldtext);
+            HashSet<string> nt = GetSearchablesFromByteArray_AsHashSet(newtext, encryptor);
+            HashSet<string> ot = GetSearchablesFromByteArray_AsHashSet(oldtext, encryptor);
 
             foreach (var word in nt)
             {
@@ -863,8 +920,11 @@ namespace DBreeze.TextSearch
         /// </summary>
         /// <param name="searchables"></param>
         /// <returns></returns>
-        byte[] GetByteArrayFromSearchbles(string searchables)
+        byte[] GetByteArrayFromSearchbles(string searchables, ITextStreamCrypto encryptor)
         {
+            if(encryptor != null)
+                return encryptor.TextEncrypt(searchables).GZip_Compress();
+
             return searchables.To_UTF8Bytes().GZip_Compress();
         }
 
@@ -873,10 +933,14 @@ namespace DBreeze.TextSearch
         /// </summary>
         /// <param name="searchables"></param>
         /// <returns></returns>
-        string GetSearchablesFromByteArray(byte[] searchables)
+        string GetSearchablesFromByteArray(byte[] searchables, ITextStreamCrypto encryptor)
         {
             if (searchables == null)
                 return String.Empty;
+
+            if (encryptor != null)
+                return encryptor.TextDecrypt(searchables.GZip_Decompress());
+
             return searchables.GZip_Decompress().ToUTF8String();
         }
         
@@ -885,11 +949,11 @@ namespace DBreeze.TextSearch
         /// </summary>
         /// <param name="searchables"></param>
         /// <returns></returns>
-        HashSet<string> GetSearchablesFromByteArray_AsHashSet(byte[] searchables)
+        HashSet<string> GetSearchablesFromByteArray_AsHashSet(byte[] searchables, ITextStreamCrypto encryptor)
         {
             HashSet<string> res = new HashSet<string>(StringComparer.Ordinal);
 
-            string r = GetSearchablesFromByteArray(searchables);
+            string r = GetSearchablesFromByteArray(searchables, encryptor);
             if (r == String.Empty)
                 return res;
             foreach (var word in r.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
@@ -935,8 +999,7 @@ namespace DBreeze.TextSearch
                 foreach (var nswrd in fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= containsMinimalLength))
                 {                  
                     word = nswrd.ToLower();
-                    if(Encryptor!=null)
-                        word = Encryptor.TextEncryptor(word,true);
+                    
                     wordDefinition = new WordDefinition() { CountInDocu = 1 };
                     wordsCounter[word] = wordDefinition;
                 }
@@ -954,20 +1017,16 @@ namespace DBreeze.TextSearch
                         List<string> wrds = new List<string>();
                         
 
-                        if (Encryptor != null)
-                            wrds.Add(Encryptor.TextEncryptor(word, true));
-                        else
-                            wrds.Add(word);
+                        
+                        wrds.Add(word);
 
                         int i = 1;
 
                         while (word.Length - i >= containsMinimalLength)
                         {
                             subWord = word.Substring(i);
-                            if (Encryptor != null)
-                                wrds.Add(Encryptor.TextEncryptor(subWord, true));
-                            else
-                                wrds.Add(subWord);
+                            
+                            wrds.Add(subWord);
                             i++;
                         }
 
