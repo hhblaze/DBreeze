@@ -298,8 +298,59 @@ using (var tran = engine.GetTransaction())
 
 Nested tables use the same bytes utilities for their keys and can hold objects or raw bytes. You can also call `InsertTable` with an object payload that contains its own internal tables, so the entire structure is serialized atomically.
 
+## 11. Text Search Layer
 
-## 11. Summary
+DBreeze ships a full-text engine that relies on word-aligned bitmap indexes (WABI). Use `TextInsert`, `TextAppend`, and `TextRemove` from within transactions to maintain analyzable text.
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    tran.SynchronizeTables("docs");
+    var blocks = new BlockOr();
+    blocks.Add(tran.TextInsert("docs", "doc1", "The quick brown fox jumps over the lazy dog"));
+    tran.Commit();
+}
+
+using (var tran = engine.GetTransaction())
+{
+    var block = new BlockAnd();
+    block.Add(ValueBlock.Is("quick"));
+    block.Add(ValueBlock.Is("lazy"));
+    var results = tran.TextSearch("docs", block);
+    foreach (var docId in results)
+        Console.WriteLine(docId);
+}
+```
+
+`BlockAnd`, `BlockOr`, and `BlockNot` let you compose complex filters. `TextSearch` returns document identifiers previously inserted via `TextInsert`. You can mix `Contains` and `FullMatch` semantics inside a single query by combining blocks.
+
+## 12. Vector Layer (HNSW similarity)
+
+DBreeze includes an HNSW-based vector index. Use `VectorsInsert` to store embeddings and `VectorsSearchSimilar` to run similarity queries.
+
+```csharp
+float[] embedding = new float[] {0.1f, 0.3f, 0.2f};
+var vectorMeta = new VectorLayerMeta("products_embeddings");
+
+using (var tran = engine.GetTransaction())
+{
+    tran.SynchronizeTables("vectors");
+    tran.VectorsInsert("vectors", "p123", embedding, vectorMeta);
+    tran.Commit();
+}
+
+using (var tran = engine.GetTransaction())
+{
+    vectorMeta.Normalize(embedding);
+    var similar = tran.VectorsSearchSimilar("vectors", embedding, 3);
+    foreach (var hit in similar)
+        Console.WriteLine($"{hit.Key}: {hit.Score:F3}");
+}
+```
+
+`VectorsRemove` softly deletes entries from the HNSW graph; they can be reinserted later. The vector layer automatically normalizes vectors unless you opt out.
+
+## 13. Summary
 
 This document covers every required focus area:
 1. Public `Transaction` and `Scheme` APIs.
