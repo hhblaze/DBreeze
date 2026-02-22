@@ -1,20 +1,6 @@
-Having intro /Documentation /LLM/DBreeze.LLM.Intro.md and access to sources in /DBreeze folder
-you have to write comprehansive documentation for the agent LLM that want to work with DBreeze and place it into 
-"/Documentation/LLM/DBreeze4LLM_003.md".
+We want to enhance LLM agent document for DBreeze "/Documentation/LLM/DBreeze4LLM_003.md", having access to sources in /DBreeze folder.
 
-Those agents will use DBreeze as a library and doesn't know nuances of DBreeze.
-That's why all techniques must be described with examples.
-
-Extra focus:
-  - all public functions of Transaction and Scheme.
-  - pattern system for table names
-  - tran.SynchronizeTables
-  - ValueLazyLoadingIsOn
-  - low level keys and values as byte[] and Dbreeze.Utils public functions of conversions byte[]<->data.
-  - Working with memory tables
-  - .ToIndex() .ToByte()
-  
-
-Make your documentation comprehensive and with examples.
+We are missing usage C# examples for
+ "InsertPart", `InsertDataBlock`, `InsertDataBlockWithFixedAddress`,`RemoveKey`, `RemoveAllKeys`, "ChangeKey"
 
 

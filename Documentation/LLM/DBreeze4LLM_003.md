@@ -50,6 +50,105 @@ Special pattern symbols:
 - `ObjectInsert`, `ObjectRemove`: Store entities with multiple indexes, use `DBreeze.Objects.DBreezeObject` + `DBreezeIndex`.
 - `TextInsert`, `TextSearch`: Manage text search indexes supporting logical blocks.
 
+### Partial updates with `InsertPart`
+
+`InsertPart` lets you patch the bytes of an existing value without re-writing the entire value. Supply the table name, key, the bytes you want to copy in, and the zero-based offset where the patch should begin. You can optionally receive the raw pointer to the key/value pair and a `WasUpdated` flag to know if the call overwrote an existing row.
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    byte[] ptr = null;
+    bool updated;
+
+    tran.InsertPart<int, byte[]>(
+        "files",
+        42,
+        new byte[] { 0x01, 0x02, 0x03 },
+        startIndex: 16,
+        out ptr,
+        out updated);
+
+    if (updated)
+        Console.WriteLine("Row existed and was patched");
+
+    tran.Commit();
+}
+```
+
+If the original value is shorter than the `startIndex`, DBreeze will grow it and fill the gap with zeros before copying the new bytes. Use `ptr` with `SelectDirect` when you need to re-read the exact location you just modified.
+
+### Data block helpers (`InsertDataBlock`, `InsertDataBlockWithFixedAddress`)
+
+Large or dynamically sized blobs can live outside the usual table values via data blocks. `InsertDataBlock` returns a 16-byte handle that you persist inside your value and later pass to `SelectDataBlock`.
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    byte[] dataBlockPointer = null;
+    var chunk = Encoding.UTF8.GetBytes("large text goes here");
+
+    dataBlockPointer = tran.InsertDataBlock("docs", dataBlockPointer, chunk);
+    tran.Insert<int, byte[]>("docs", 1, dataBlockPointer);
+    tran.Commit();
+}
+
+using (var tran = engine.GetTransaction())
+{
+    var pointer = tran.Select<int, byte[]>("docs", 1).Value;
+    byte[] payload = tran.SelectDataBlock("docs", pointer);
+    Console.WriteLine(Encoding.UTF8.GetString(payload));
+}
+```
+
+Use `InsertDataBlockWithFixedAddress<T>` when you need a stable reference that never moves, even after updates. It stores your serialized `T` via `DataTypesConvertor` and returns the same pointer every time.
+
+### Removing keys (`RemoveKey`, `RemoveAllKeys`)
+
+Removal helpers give you feedback about whether the key existed and what bytes were deleted. `RemoveKey` comes in several overloads that let you capture the deleted value.
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    bool wasRemoved;
+    byte[] deletedValue;
+
+    tran.RemoveKey<int>("events", 99, out wasRemoved, out deletedValue);
+    if (wasRemoved)
+        Console.WriteLine($"Deleted payload length: {deletedValue?.Length}");
+
+    tran.RemoveAllKeys("events", withFileRecreation: false);
+    tran.Commit();
+}
+```
+
+`RemoveAllKeys` clears a table and optionally recreates the underlying file to release disk space (pass `true` to `withFileRecreation`). Always call it from within a transaction before `Commit()`.
+
+### Renaming keys with `ChangeKey`
+
+`ChangeKey` lets you rename an existing key while preserving its payload. The overloads return the new pointer (8 bytes) and a `WasChanged` flag so you can verify the operation.
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    byte[] ptrToNewKey;
+    bool wasChanged;
+
+    tran.ChangeKey<int>(
+        "events",
+        oldKey: 42,
+        newKey: 100,
+        out ptrToNewKey,
+        out wasChanged);
+
+    if (wasChanged)
+        Console.WriteLine($"Key relocated with pointer {ptrToNewKey.ToBytesString()}");
+
+    tran.Commit();
+}
+```
+
+`ChangeKey` is especially useful when key composition changes but the stored record remains identical.
+
 ### Iteration Example Matrix
 
 ```
