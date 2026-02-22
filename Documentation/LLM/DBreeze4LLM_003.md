@@ -425,7 +425,7 @@ Here is the highly refined and expanded chapter. I have extracted the exact byte
 
 ## 6. Byte[] Conversions & Manipulations (`using DBreeze.Utils;`)
 
-**Context for LLM:** DBreeze stores all keys and values as `byte[]`. To maintain **lexicographical sorting** (where `byte[]` comparisons match the logical ordering of the underlying data type), standard `.NET BitConverter` is strictly prohibited. You **must** use the `DBreeze.Utils.BytesProcessing` extensions. 
+DBreeze stores all keys and values as `byte[]`. To maintain **lexicographical sorting** (where `byte[]` comparisons match the logical ordering of the underlying data type), standard `.NET BitConverter` is strictly prohibited. You **must** `using DBreeze.Utils;`. 
 
 By default, always use the **`_BigEndian`** variants for keys to ensure correct ascending/descending tree traversal.
 
