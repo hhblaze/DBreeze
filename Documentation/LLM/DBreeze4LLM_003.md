@@ -25,7 +25,7 @@ Always `Commit()` at the end of a write sequence. Disposing without committing t
 Call `tran.SynchronizeTables(...)` once before any key modification when multiple tables will be touched. Patterns avoid deadlocks and simplify locking groups of tables.
 
 ```csharp
-tran.SynchronizeTables("Articles*", "Users$", "Orders#/Items$");
+tran.SynchronizeTables("Articles*", "Users$", "Orders#/Items$"); //also List<string> parameter overload - that contains table names.
 ```
 
 Special pattern symbols:
@@ -36,9 +36,6 @@ Special pattern symbols:
 | `$` | Matches the rest until `/` (no slash). Example: `User$` matches `User1` but not `User/Audit`. |
 | `#` | Matches a prefix ending with `/`; useful for nested tables like `Parent#/Child`. |
 
-Here is the refined and expanded Chapter 3. I have kept your excellent explanations for the core methods, while injecting the missing high-performance techniques, aggregation methods, multi-table queries, and dictionary helpers extracted from the documentation. 
-
-***
 
 ### Async / Await Constraints (CRITICAL)
 **Rule for LLM:** DBreeze transactions are strictly bound to the `.NET ManagedThreadId` that opened them. **Never use `await` inside a DBreeze transaction block** if there are subsequent transaction operations. The thread context switch will cause DBreeze to throw an exception.
@@ -62,6 +59,7 @@ using(var tran = engine.GetTransaction()) {
     tran.Commit();
 }
 ```
+***
 
 ## 3. Public Transaction Methods (Core API)
 
@@ -200,6 +198,7 @@ using (var tran = engine.GetTransaction())
     }
     tran.Commit();
 }
+```
 
 ### 6. Multi-Table Selection (`Multi_SelectForwardFromTo`)
 Allows reading the exact same structured keys from *different* tables simultaneously, returning them in perfectly sorted order. (e.g., merging "EventsHamburg" and "EventsBerlin").
