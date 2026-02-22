@@ -1,6 +1,0 @@
-We want to enhance LLM agent document for DBreeze "/Documentation/LLM/DBreeze4LLM_003.md", having access to sources in /DBreeze folder.
-
-We are missing usage C# examples for
- "InsertPart", `InsertDataBlock`, `InsertDataBlockWithFixedAddress`,`RemoveKey`, `RemoveAllKeys`, "ChangeKey"
-
-
