@@ -225,6 +225,12 @@ Memory tables never hit disk; they exist for fast temporary work and follow the 
 
 `.ToIndex()` lets you prepend an index identifier byte and append converted values, enabling object storage with secondary keys. `.To_Byte()` extracts that index.
 
+### Notes on index byte usage
+
+- The very first byte of every key created via `.ToIndex()` is reserved for the index ID (0–254). That means you can model *up to 255 logical indexes per table* by assigning a unique byte and reusing the remaining bytes for the value fields.
+- When you retrieve a row, call `row.Key.To_Byte()` or `row.Key.First()` to determine whether you are looking at the primary index, a secondary index, or a metadata entry.
+- Keeping the index byte consistent across `Insert`/`Select` calls is critical; change it only when intentionally switching the logical index you are addressing.
+
 ```csharp
 byte[] compound = 5.ToIndex((long)invoiceId, DateTime.UtcNow);
 byte index = compound.To_Byte(); // 5
@@ -232,7 +238,68 @@ byte index = compound.To_Byte(); // 5
 
 Use this pattern to distinguish table regions (primary indexes, secondary indexes, metadata snapshot keys).
 
-## 9. Summary
+## 9. Object Layer with `ToIndex`
+
+DBreeze’s object helpers (`ObjectInsert`, `ObjectRemove`, `ObjectSelect`, etc.) build on `ToIndex` internally. Each `DBreezeObject<T>` contains up to 255 logical indexes, so you map each index to a distinct byte.
+
+```csharp
+using var tran = engine.GetTransaction();
+var customer = new Customer { Id = 42, Email = "alice@example.com", City = "Berlin" };
+
+tran.SynchronizeTables("customers");
+tran.ValuesLazyLoadingIsOn = false;
+
+tran.ObjectInsert("customers", customer, overwriteIfExists: true);
+
+// Secondary index by email
+byte[] emailIndex = 2.ToIndex(customer.Email);
+tran.Insert<byte[], int>("customers_indexes", emailIndex, customer.Id);
+
+tran.Commit();
+```
+
+When you read back the object, inspect the first byte to know which index you are hitting:
+
+```csharp
+var iterator = tran.SelectForward<byte[], byte[]>("customers_indexes");
+foreach (var row in iterator)
+{
+    byte index = row.Key.To_Byte();
+    if (index == 2)
+    {
+        string email = row.Key.Substring(1).To_UTF8String();
+        Console.WriteLine($"Email hit index 2: {email}");
+    }
+}
+```
+
+When building your own `DBreezeObject<T>` definitions, call `.ToIndex()` in the `GetRow()` overrides to serialize each secondary index consistently.
+
+## 10. Nested Tables
+
+Nested tables store additional tables inside a value, enabling hierarchical storage. Use `InsertTable`/`SelectTable` to work with them.
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    var subTable = tran.InsertTable("orders", "line_items");
+    subTable.Insert<int, decimal>("items", 1, 99.99m);
+    subTable.Insert<int, decimal>("items", 2, 49.49m);
+    tran.Commit();
+}
+
+using (var tran = engine.GetTransaction())
+{
+    var subTable = tran.SelectTable("orders", "line_items");
+    foreach (var row in subTable.SelectForward<int, decimal>("items"))
+        Console.WriteLine(row.Value);
+}
+```
+
+Nested tables use the same bytes utilities for their keys and can hold objects or raw bytes. You can also call `InsertTable` with an object payload that contains its own internal tables, so the entire structure is serialized atomically.
+
+
+## 11. Summary
 
 This document covers every required focus area:
 1. Public `Transaction` and `Scheme` APIs.
