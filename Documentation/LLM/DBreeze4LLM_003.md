@@ -175,6 +175,32 @@ Utilities to know:
 - `.To_X_bytes_array_*`: Convert primitives with deterministic endianness.
 - `.Concat()` / `.ConcatMany()` / `.Substring()` / `.CopyInsideArrayCanGrow()` for raw byte manipulation.
 
+### Comprehensive Conversion Table
+
+| Data Type | To Byte[] | Back From Byte[] | Notes |
+| --- | --- | --- | --- |
+| `byte`, `byte?` | `value.To_1_byte_array()` / `value.To_2_byte_array()` | `valueBytes.To_Byte()` / `To_Byte_NULL()` | Nullable versions include flag bytes. |
+| `short`, `ushort` | `To_2_bytes_array_BigEndian()` / `_LittleEndian()` | `To_Int16_BigEndian()` / `To_UInt16_BigEndian()` | Nullable variants add leading flag byte (3 bytes). |
+| `int`, `uint` | `To_4_bytes_array_BigEndian()` / `_LittleEndian()` | `To_Int32_BigEndian()` / `To_UInt32_BigEndian()` | Nullable: `To_5_bytes_array_*`, `To_Int32_BigEndian_NULL()`. |
+| `long`, `ulong` | `To_8_bytes_array_BigEndian()` / `_LittleEndian()` | `To_Int64_BigEndian()` / `To_UInt64_BigEndian()` | Nullable versions use 9 bytes. |
+| `DateTime`, `DateTime?` | `To_8_bytes_array()`, `To_DateTime()` | `.To_DateTime()` / `.To_DateTime_NULL()` | Compatibility methods `To_8_bytes_array_zCompatibility` exist for legacy conversions. |
+| `float`, `float?` | `To_4_bytes_array_BigEndian()` / `To_5_bytes_array_BigEndian()` | `To_Float_BigEndian()` / `_NULL()` | Converts using sortable representation with sign/exponent. |
+| `double`, `double?` | `To_9_bytes_array_BigEndian()` / `To_10_bytes_array_BigEndian()` | `To_Double_BigEndian()` / `_NULL()` | Uses custom mantissa/exponent formatting. |
+| `decimal`, `decimal?` | `To_15_bytes_array_BigEndian()` / `To_16_bytes_array_BigEndian()` | `To_Decimal_BigEndian()` / `_NULL()` | Handles scale and sign for precise ordering. |
+
+### Example: Manual conversion flow
+
+```csharp
+int score = 250;
+byte[] key = score.To_4_bytes_array_BigEndian();
+tran.Insert<byte[], string>("scores", key, "moderate");
+
+var selection = tran.Select<byte[], string>("scores", key);
+int restored = selection.Key.To_Int32_BigEndian();
+```
+
+For nullable data you will see extra bytes: the first byte is 0 when the value is `null`, and 1 when valid followed by the fixed-size payload.
+
 ## 7. Working with Memory Tables
 
 Configure `AlternativeTablesLocations` to force specific tables into memory/alternative folders. An empty string indicates in-memory storage.
