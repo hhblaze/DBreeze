@@ -26,7 +26,7 @@ Call `tran.SynchronizeTables(...)` once before any key modification when multipl
 
 ```csharp
 tran.SynchronizeTables("Articles*", "Users$", "Orders#/Items$");
-//or
+// or
 List<string> tables2sync = new List<string> {"Articles*", "Users$", "Orders#/Items$"};
 tran.SynchronizeTables(tables2sync);
 ```
@@ -53,7 +53,7 @@ using(var tran = engine.GetTransaction()) {
 }
 ```
 **GOOD:** 
-(Use .Wait() or .GetAwaiter().GetResult() to block the thread, or move the async call outside the transaction):
+Make all preparational operations before opening transaction; in worst case - (Use .Wait() or .GetAwaiter().GetResult() to block the thread, or move the async call outside the transaction):
 ```csharp
 using(var tran = engine.GetTransaction()) {
     tran.Insert("t1", 1, "A");
@@ -381,6 +381,7 @@ foreach (var item in engine.Resources.SelectStartsWith<string>("AppConfig_")) {
 
 // Delete
 engine.Resources.Remove("AppConfig_Theme");
+```
 
 ### 10. Advanced Utilities: Deep Copy & Streaming Hashes (Add to Chapter 6)
 
