@@ -1,4 +1,4 @@
-# DBreeze for LLM Agents (version 1.132)
+# DBreeze for LLM Agents (version 1.132 - 12366 tokens)
 
 LLM agents that consume DBreeze expect complete details about working with transactions, scheme operations, byte-level representations, memory tables, and the utility helpers in `DBreeze.Utils`. The examples use `using DBreeze;` and `using DBreeze.Utils;`.
 
@@ -559,6 +559,7 @@ DBreeze provides built-in utilities designed for extreme speed and memory effici
 ## 7. Working with Memory Tables
 
 Configure `AlternativeTablesLocations` to force specific tables into memory/alternative folders. An empty string indicates in-memory storage.
+Table names may obey `Special pattern symbols`.
 
 ```csharp
 var conf = new DBreezeConfiguration();
