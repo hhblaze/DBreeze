@@ -25,7 +25,10 @@ Always `Commit()` at the end of a write sequence. Disposing without committing t
 Call `tran.SynchronizeTables(...)` once before any key modification when multiple tables will be touched. Patterns avoid deadlocks and simplify locking groups of tables.
 
 ```csharp
-tran.SynchronizeTables("Articles*", "Users$", "Orders#/Items$"); //also List<string> parameter overload - that contains table names.
+tran.SynchronizeTables("Articles*", "Users$", "Orders#/Items$");
+//or
+List<string> tables2sync = new List<string> {"Articles*", "Users$", "Orders#/Items$"};
+tran.SynchronizeTables(tables2sync);
 ```
 
 Special pattern symbols:
