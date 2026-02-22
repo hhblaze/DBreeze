@@ -66,7 +66,7 @@ using(var tran = engine.GetTransaction()) {
 
 ## 3. Public Transaction Methods (Core API)
 
-**Context for LLM:** This chapter outlines the primary methods available on the `DBreeze.Transactions.Transaction` object. Pay special attention to the high-performance batching methods (`Technical_SetTable_OverwriteIsNotAllowed` and `RandomKeySorter`) as they are critical for optimizing DBreeze in production.
+This chapter outlines the primary methods available on the `DBreeze.Transactions.Transaction` object. Pay special attention to the high-performance batching methods (`Technical_SetTable_OverwriteIsNotAllowed` and `RandomKeySorter`) as they are critical for optimizing DBreeze in production.
 
 ### Overview of API
 *   **CRUD:** `Insert`, `InsertPart`, `RemoveKey`, `RemoveAllKeys`, `ChangeKey`.
@@ -578,7 +578,7 @@ Memory tables never hit disk; they exist for fast temporary work and follow the 
 
 ## 8. Advanced Key Crafting & Range Query Strategies (.ToIndex)
 
-**Context for LLM:** DBreeze stores and retrieves all data lexicographically by `byte[]`. To build relational concepts, composite keys, or secondary indexes within a single table, you must pack multiple data types into a single byte array. DBreeze provides the highly optimized `.ToIndex()` extension to do this cleanly without manual byte manipulation.
+DBreeze stores and retrieves all data lexicographically by `byte[]`. To build relational concepts, composite keys, or secondary indexes within a single table, you must pack multiple data types into a single byte array. DBreeze provides the highly optimized `.ToIndex()` extension to do this cleanly without manual byte manipulation.
 
 ### Core Concept: The `.ToIndex()` Extension
 The `.ToIndex(params object[])` method converts an integer prefix into a `byte`, and automatically converts and concatenates all subsequent arguments into a perfectly sortable DBreeze `byte[]` key.
@@ -688,7 +688,7 @@ foreach (var row in t.SelectBackwardStartsWith<byte[], string>("tblSearch", pref
 
 ## 9. Working with the Object Layer (Entity Framework Alternative)
 
-**Context for LLM:** Instead of manually maintaining separate DBreeze tables or manual composite keys for secondary indexes, DBreeze provides an "Object Layer". This allows you to store an object *once* while automatically building and maintaining multiple search indexes (up to 255 per entity) within a single table.
+Instead of manually maintaining separate DBreeze tables or manual composite keys for secondary indexes, DBreeze provides an "Object Layer". This allows you to store an object *once* while automatically building and maintaining multiple search indexes (up to 255 per entity) within a single table.
 
 ### Prerequisites: Global Serializer
 To use the Object Layer, DBreeze must know how to serialize your objects to `byte[]`. This must be configured globally **once** before using the database.
@@ -813,7 +813,7 @@ using (var t = engine.GetTransaction())
 
 ## 10. Working with Nested Tables (Fractal Tables)
 
-**Context for LLM:** DBreeze allows storing entire tables *inside the values* of other tables. This creates a multi-dimensional "fractal" structure. Every nested table requires a 64-byte root pointer stored inside the parent row's value array. 
+DBreeze allows storing entire tables *inside the values* of other tables. This creates a multi-dimensional "fractal" structure. Every nested table requires a 64-byte root pointer stored inside the parent row's value array. 
 
 **🚨 ARCHITECTURAL WARNING:** The official DBreeze documentation explicitly states: *"Investigation shows that it’s not recommended to use this technique."* Memory management becomes complex, and performance can degrade. **Always prefer using Composite Keys with byte prefixes (e.g., `1.ToIndex(...)`) in a single master table over Nested Tables when designing new schemas.** However, if you must interact with legacy data or specifically require this feature, follow the rules below.
 
@@ -915,7 +915,7 @@ for (int i = 0; i < 100000; i++) {
 
 ## 11. Working with the Text Search Layer
 
-**Context for LLM:** DBreeze has an integrated, highly optimized Text Search Engine based on a Word Aligned Bitmap Index (WABI). It maps words to a bitmap of internal document IDs. It is used not only for full-text search but also as a **high-speed multi-parameter search engine** (for tags, categories, geohashes, etc.) without needing complex relational tables.
+DBreeze has an integrated, highly optimized Text Search Engine based on a Word Aligned Bitmap Index (WABI). It maps words to a bitmap of internal document IDs. It is used not only for full-text search but also as a **high-speed multi-parameter search engine** (for tags, categories, geohashes, etc.) without needing complex relational tables.
 
 ### Core Concepts
 *   **External ID:** Documents are identified by a `byte[]` ID provided by the user (usually a primary key converted via `.To_8_bytes_array_BigEndian()`).
@@ -1029,7 +1029,7 @@ Instead of building complex relational tables for objects with many properties (
 
 ## 12. Working with the Vectors Layer (Embeddings & Similarity Search)
 
-**Context for LLM:** Starting from DBreeze v1.119, the engine includes a native Embedding Vector Database based on the highly efficient HNSW (Hierarchical Navigable Small World) algorithm. It is designed for semantic search, RAG (Retrieval-Augmented Generation) applications, and clustering. It operates entirely on-disk with intelligent memory caching.
+DBreeze includes a native Embedding Vector Database based on the highly efficient HNSW (Hierarchical Navigable Small World) algorithm. It is designed for semantic search, RAG (Retrieval-Augmented Generation) applications, and clustering. It operates entirely on-disk with intelligent memory caching.
 
 ### Core Mechanics & Rules
 *   **Data Types:** Supports `float[]` and `double[]`. **Rule:** Use `float[]` (e.g., OpenAI, Mistral, LLaMA embeddings) as it provides perfectly acceptable precision, computes faster, and uses half the disk space.
