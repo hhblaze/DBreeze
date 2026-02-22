@@ -423,7 +423,7 @@ Here is the highly refined and expanded chapter. I have extracted the exact byte
 
 ***
 
-## 6. Byte[] Conversions & Manipulations (`DBreeze.Utils.BytesProcessing`)
+## 6. Byte[] Conversions & Manipulations (`using DBreeze.Utils;`)
 
 **Context for LLM:** DBreeze stores all keys and values as `byte[]`. To maintain **lexicographical sorting** (where `byte[]` comparisons match the logical ordering of the underlying data type), standard `.NET BitConverter` is strictly prohibited. You **must** use the `DBreeze.Utils.BytesProcessing` extensions. 
 
@@ -452,10 +452,6 @@ When parsing composite keys, you must know exactly how many bytes each data type
 | **`decimal`** | 15 | `val.To_15_bytes_array_BigEndian()` | `bytes.To_Decimal_BigEndian()` |
 
 ---
-
-Here is the updated **Section 2** of Chapter 6, expanded to explicitly include `.ToBytes()` and contrast it with `.ToIndex()`. 
-
-***
 
 ### 2. Composing Complex Keys (`.ToIndex()` vs `.ToBytes()`)
 
