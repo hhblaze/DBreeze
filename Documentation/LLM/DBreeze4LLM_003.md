@@ -1,4 +1,4 @@
-# DBreeze for LLM Agents (Version 003)
+# DBreeze for LLM Agents (version 1.132)
 
 LLM agents that consume DBreeze expect complete details about working with transactions, scheme operations, byte-level representations, memory tables, and the utility helpers in `DBreeze.Utils`. The examples use `using DBreeze;` and `using DBreeze.Utils;`.
 
