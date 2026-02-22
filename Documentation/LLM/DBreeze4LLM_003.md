@@ -383,22 +383,6 @@ foreach (var item in engine.Resources.SelectStartsWith<string>("AppConfig_")) {
 engine.Resources.Remove("AppConfig_Theme");
 ```
 
-### 10. Advanced Utilities: Deep Copy & Streaming Hashes (Add to Chapter 6)
-
-### 5. High-Performance Utilities (`DBreeze.Utils`)
-DBreeze provides built-in utilities designed for extreme speed and memory efficiency:
-
-*   **Deep Cloning Objects:** Standard C# serialization for cloning is slow. Use `.CloneByExpressionTree()` for blazing-fast deep copies of objects (skips delegates/events/COM objects).
-    ```csharp
-    var prototype = new ComplexObject();
-    var newInstance = prototype.CloneByExpressionTree();
-    ```
-*   **Streaming Hashing:** For deduplication or ID generation of massive files, use DBreeze's 128-bit MurMurHash implementation.
-    ```csharp
-    using var fileStream = File.OpenRead("large_video.mp4");
-    byte[] hash = DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128_Stream(fileStream);
-    ```
-
 ## 4. Scheme API Reference (public functions)
 
 | Method | Purpose |
@@ -561,6 +545,20 @@ byte[] columnBytes = username.To_FixedSizeColumn(50, isASCII: true);
 // Retrieve it later
 string restored = columnBytes.From_FixedSizeColumn(isASCII: true);
 ```
+
+### 5. High-Performance Utilities (`DBreeze.Utils`)
+DBreeze provides built-in utilities designed for extreme speed and memory efficiency:
+
+*   **Deep Cloning Objects:** Standard C# serialization for cloning is slow. Use `.CloneByExpressionTree()` for blazing-fast deep copies of objects (skips delegates/events/COM objects).
+    ```csharp
+    var prototype = new ComplexObject();
+    var newInstance = prototype.CloneByExpressionTree();
+    ```
+*   **Streaming Hashing:** For deduplication or ID generation of massive files, use DBreeze's 128-bit MurMurHash implementation.
+    ```csharp
+    using var fileStream = File.OpenRead("large_video.mp4");
+    byte[] hash = DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128_Stream(fileStream);
+    ```
 
 ## 7. Working with Memory Tables
 
