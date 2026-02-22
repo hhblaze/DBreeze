@@ -1,0 +1,16 @@
+Having /Documentation/LLM/DBreezeDocu_20260222.md and access to sources in /DBreeze folder
+you have to write comprehansive documentation for the agent LLM that want to work with DBreeze and place it into /Documentation/LLM/DBreeze4LLM_002.md.
+This agent will use DBreeze as a library and doesn't know nuances of DBreeze.
+That's why all techniques must be described with examples.
+
+Extra focus (agents don't know how to use them correctly):
+  - all public functions of Transaction and Scheme.
+  - use pattern system for table names
+  - tran.SynchronizeTables
+  - ValueLazyLoadingIsOn
+  - Dbreeze.Utils where different byte[]<->data types conversion functions are presented (public functions must be explained).
+  - Working with memory tables
+
+Make your documentation big and comprehensive (later we may compress it).
+
+

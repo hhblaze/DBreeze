@@ -1,0 +1,22 @@
+In /Documentation/LLM/DBreeze.LLM.Intro.md
+resides basic prompt for agentic LLMs to work with DBreeze - don't change this file. 
+
+But read it, and based on those intials create /Documentation/LLM/DBreeze4LLM_001.md - more comprehensive prompt for LLM agent about how to use DBreeze.
+
+- You have to refer to the source code of the DBreeze project in /DBreeze folder (e.g. transactions are DBreeze.Transactions, TextSearch in /DBreeze/TextSearch)
+- Official DBreeze documentation in /Documentation/DBreezeDocu_20260222.md
+
+You must stay token friendly from one side and uncover full DBreeze potential from the another.
+
+All mentioned topics is DBreeze.LLM.Intro.md are highly important. They must be uncovered completely with examples.
+User usually works with Scheme or Transactions. 
+All operations which are available in Transaction and scheme must be uncovered for the agentic LLM.
+
+LLMs don't really understand (when not enough information is supplied) how to :
+  - use pattern system for table names
+  - tran.SynchronizeTables
+  - ValueLazyLoadingIsOn
+  - Dbreeze.Utils where different byte[]<->data types conversion functions are presented (public functions must be explained).
+  - Working with memory tables
+
+
