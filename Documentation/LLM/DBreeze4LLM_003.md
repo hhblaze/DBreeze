@@ -815,7 +815,7 @@ using (var t = engine.GetTransaction())
 
 DBreeze allows storing entire tables *inside the values* of other tables. This creates a multi-dimensional "fractal" structure. Every nested table requires a 64-byte root pointer stored inside the parent row's value array. 
 
-**🚨 ARCHITECTURAL WARNING:** The official DBreeze documentation explicitly states: *"Investigation shows that it’s not recommended to use this technique."* Memory management becomes complex, and performance can degrade. **Always prefer using Composite Keys with byte prefixes (e.g., `1.ToIndex(...)`) in a single master table over Nested Tables when designing new schemas.** However, if you must interact with legacy data or specifically require this feature, follow the rules below.
+**🚨 ARCHITECTURAL WARNING:** The official documentation does highlight potential memory management issues and increased complexity when using a large number of nested tables within a single transaction. **Always prefer using Composite Keys with byte prefixes (e.g., `1.ToIndex(...)`) in a single master table over Nested Tables when designing new schemas.** However, if you must interact with legacy data or specifically require this feature, follow the rules below.
 
 ### Core Mechanics & Rules
 *   **Table Index:** Because a row's value can hold multiple nested tables, you must specify an `index` (0, 1, 2, etc.). 
