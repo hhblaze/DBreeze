@@ -29,7 +29,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="DataTypes\DbXML.cs" />
     <Compile Remove="Storage\_FSR.cs" />
     <Compile Remove="VectorLayer\VectorMath.cs" />
   </ItemGroup>

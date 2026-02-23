@@ -150,11 +150,11 @@ using (var tran = engine.GetTransaction())
 
 *`grabSomeLeadingRecords: X` on `SelectForwardFromTo` fetches records slightly before start key (useful for overlapping time-series).*
 
-**Modifying during iteration:** Pass `true` as `AsReadVisibilityScope` to read from snapshot prior to modifications.
+**Modifying during iteration:** Pass `true` as `AsReadVisibilityScope` to read from snapshot prior to modifications (available for Select and Interational selections).
 
 ```csharp
 tran.SynchronizeTables("events");
-foreach (var row in tran.SelectForward<int, string>("events", true)) {
+foreach (var row in tran.SelectForward<int, string>("events", AsReadVisibilityScope: true)) {
     if (row.Value == "EXPIRED")
         tran.RemoveKey<int>("events", row.Key);
 }

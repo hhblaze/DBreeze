@@ -130,7 +130,7 @@ namespace DBreeze.Transactions
                 {
                     btCommittedTablesNames = row.GetFullValue(true);
 
-                    committedTablesNames = System.Text.Encoding.UTF8.GetString(btCommittedTablesNames).DeserializeXml<List<string>>();
+                    committedTablesNames = System.Text.Encoding.UTF8.GetString(btCommittedTablesNames).DeserializeXml_List<List<string>>();
 
                     foreach (var fn in committedTablesNames)
                     {                       
@@ -249,7 +249,7 @@ namespace DBreeze.Transactions
                     }
 
 
-                    string serTbls = committedTablesNames.SerializeXml();
+                    string serTbls = committedTablesNames.SerializeXml_List();
                     byte[] btSerTbls = System.Text.Encoding.UTF8.GetBytes(serTbls);
 
                     byte[] key = tranNumber.To_8_bytes_array_BigEndian();

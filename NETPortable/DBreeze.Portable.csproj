@@ -22,7 +22,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NETPORTABLE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NETPORTABLE;NETPORTABLE_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -42,6 +42,12 @@
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\DBreeze.Net5\DataTypes\DbXML.cs">
+      <Link>DataTypes\DbXML.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze.Net5\Utils\XmlSerializator.cs">
+      <Link>Utils\XmlSerializator.cs</Link>
+    </Compile>
     <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs">
       <Link>Transactions\TransactionsCoordinator.cs</Link>
     </Compile>
@@ -156,7 +162,6 @@
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
     <Compile Include="DataTypes\DbUnicode.cs" />
     <Compile Include="DataTypes\DbUTF8.cs" />
-    <Compile Include="DataTypes\DbXML.cs" />
     <Compile Include="DataTypes\IDBConvertable.cs" />
     <Compile Include="Diagnostic\SpeedStatistic.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
@@ -202,7 +207,6 @@
     <Compile Include="Utils\DbThreadsGator.cs" />
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\StringProcessing.cs" />
-    <Compile Include="Utils\XmlSerializator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="jahdrosigning.snk" />

@@ -1,4 +1,4 @@
-﻿#if NET472 || NETSTANDARD2_1 || NETCOREAPP2_0 || NETCOREAPP
+﻿#if (NET472 || NETSTANDARD2_1 || NETCOREAPP2_0 || NETCOREAPP)
 using System;
 using System.Collections.Generic;
 using System.Linq;

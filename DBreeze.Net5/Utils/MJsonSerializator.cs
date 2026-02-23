@@ -3,13 +3,15 @@
   It's free software for those who think that it should be free.
 */
 
+#if NETFRAMEWORK || NETCOREAPP3_1 || NETSTANDARD2_1 || NET6FUNC
+
 using System;
 using DBreeze.Exceptions;
 using System.Text.Json;
 
 namespace DBreeze.Utils
 {
-    public static class JavascriptSerializator
+    public static class JsonSerializator
     {
         private static readonly JsonSerializerOptions _defaultSerializerOptions = new JsonSerializerOptions
         {
@@ -77,3 +79,5 @@ namespace DBreeze.Utils
         }
     }
 }
+
+#endif

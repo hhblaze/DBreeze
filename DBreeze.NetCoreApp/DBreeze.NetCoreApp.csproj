@@ -15,11 +15,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\net5.0\DBreeze.xml</DocumentationFile>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>$(DefineConstants);NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NET6FUNC</DefineConstants>
+    <DefineConstants>$(DefineConstants);NET40;NET6FUNC;NETCOREAPP1_0;NETCOREAPP2_0;NETCOREAPP3_1;NETPORTABLE;NETCOREAPP</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);NET6FUNC</DefineConstants>
+    <DefineConstants>$(DefineConstants);NET6FUNC;NETCOREAPP1_0;NET40;NETPORTABLE;NETCOREAPP2_0;NETCOREAPP;NETCOREAPP3_1</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,8 +34,11 @@
   </ItemGroup>
 
   <ItemGroup>
+        <Compile Include="..\DBreeze.Net5\DataTypes\DbMJSON.cs" Link="DataTypes\DbMJSON.cs" />
+        <Compile Include="..\DBreeze.Net5\DataTypes\DbXML.cs" Link="DataTypes\DbXML.cs" />
         <Compile Include="..\DBreeze.Net5\Utils\CompressionBrotli.cs" Link="Utils\CompressionBrotli.cs" />
         <Compile Include="..\DBreeze.Net5\Utils\MJsonSerializator.cs" Link="Utils\MJsonSerializator.cs" />
+        <Compile Include="..\DBreeze.Net5\Utils\XmlSerializator.cs" Link="Utils\XmlSerializator.cs" />
         <Compile Include="..\DBreeze.Net5\VectorLayer\HNSW\CosineDistance.cs" Link="VectorLayer\HNSW\CosineDistance.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />

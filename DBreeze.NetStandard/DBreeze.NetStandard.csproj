@@ -22,7 +22,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard1.6\DBreeze.xml</DocumentationFile>
-    <DefineConstants>$(DefineConstants);NET6FUNC</DefineConstants>
+    <DefineConstants>$(DefineConstants);NET6FUNC;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,10 +49,13 @@
     <Compile Remove="Storage\1TrieSettings.cs" />
     <Compile Remove="Transactions\1Transaction.cs" />
     <Compile Remove="Utils\Biser2.cs" />
+    <Compile Remove="Utils\XmlSerializatorOld.cs" />
   </ItemGroup>
  
   <ItemGroup>
+    <Compile Include="..\DBreeze.Net5\DataTypes\DbXML.cs" Link="DataTypes\DbXML.cs" />
     <Compile Include="..\DBreeze.Net5\Utils\CompressionBrotli.cs" Link="Utils\CompressionBrotli.cs" />
+    <Compile Include="..\DBreeze.Net5\Utils\XmlSerializator.cs" Link="Utils\XmlSerializator.cs" />
     <Compile Include="..\DBreeze.Net5\VectorLayer\HNSW\CosineDistance.cs" Link="VectorLayer\HNSW\CosineDistance.cs" />
     <Compile Include="..\DBreeze\DataTypes\Row.cs" Link="DataTypes\Row.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeConfiguration.cs" Link="Engine\DBreezeConfiguration.cs" />

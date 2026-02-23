@@ -3,6 +3,8 @@
   It's a free software for those, who think that it should be free.
 */
 
+#if NETFRAMEWORK || NETCOREAPP3_1 || NETSTANDARD2_1 || NET6FUNC || NETPORTABLE_1
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,3 +92,4 @@ namespace DBreeze.DataTypes
         }
     }
 }
+#endif

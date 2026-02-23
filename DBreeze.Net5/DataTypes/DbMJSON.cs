@@ -3,6 +3,8 @@
   It's free software for those who think that it should be free.
 */
 
+#if NETFRAMEWORK || NETCOREAPP3_1 || NETSTANDARD2_1 || NET6FUNC
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,17 +15,7 @@ using DBreeze.Utils;
 namespace DBreeze.DataTypes
 {
     /// <summary>
-    /// <para>Microsoft JSON</para>
-    /// <para></para>
-    /// <para>Possible to make like this, without class instantiating:</para>
-    /// <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
-    /// <para>aa.Add("test1")</para>
-    /// <para>aa.Add("test2")</para>
-    /// <para>-----inside of transaction---------</para>
-    /// <para>tran.Insert&lt;uint, DbMJSON&lt;List&lt;string&gt;&gt;&gt;("t1", i, aa);</para>
-    /// <para>-----------------------------------</para>
-    /// <para>foreach (var row in tran.SelectForward&lt;uint, DbMJSON&lt;List&lt;string&gt;&gt;&gt;("t1"))</para>
-    /// <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
+    /// <para>System.Text.Json wrapper for the DBreeze object storage</para>
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class DbMJSON<T>:IDBConvertable
@@ -89,3 +81,4 @@ namespace DBreeze.DataTypes
         }
     }
 }
+#endif
