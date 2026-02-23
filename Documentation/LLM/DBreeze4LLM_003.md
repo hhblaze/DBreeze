@@ -470,7 +470,7 @@ When parsing composite keys, you must know exactly how many bytes each data type
 | `DbUTF8` | Variable | `.GetBytes()` | `new DbUTF8(dt)` |
 | `DbAscii` | Variable | `.GetBytes()` | `new DbAscii(dt)` |
 | `DbUnicode`| Variable | `.GetBytes()` | `new DbUnicode(dt)` |
-| `byte[]` | Variable | *(cast)* `(byte[])data` | *(cast)* `(object)dt` |
+| `byte[]` | Variable | no cast | no cast |
 
 *Extra supported DataTypes:
 
@@ -488,12 +488,12 @@ foreach (var row in tran.SelectForward<uint, DbMJSON<Article>>("Articles"))
 ```
 
 - `DbCustomSerializer` acts the same as `DbMJSON`, when once specified:
-    DBreeze.Utils.CustomSerializator.Serializator = any Func<object, string>
-    DBreeze.Utils.CustomSerializator.Deserializator = any Func<string, Type, object>
+    DBreeze.Utils.CustomSerializator.Serializator = any Func<object, string>;
+    DBreeze.Utils.CustomSerializator.Deserializator = any Func<string, Type, object>;
 
 - when once specified:
     DBreeze.Utils.CustomSerializator.ByteArraySerializator = any Func<object, byte[]>;
-    DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = any Func<byte[], Type, object>
+    DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = any Func<byte[], Type, object>;
 ```csharp
 tran.Insert<uint, Article>("Articles", 1, new Article());
 var row = tran.Select<uint, Article>("Articles", 1);

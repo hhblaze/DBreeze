@@ -342,7 +342,7 @@ When parsing composite keys, you must know exactly how many bytes each data type
 | `DbUTF8` | Variable | `.GetBytes()` | `new DbUTF8(dt)` |
 | `DbAscii` | Variable | `.GetBytes()` | `new DbAscii(dt)` |
 | `DbUnicode`| Variable | `.GetBytes()` | `new DbUnicode(dt)` |
-| `byte[]` | Variable | *(cast)* `(byte[])data` | *(cast)* `(object)dt` |
+| `byte[]` | Variable | no cast | no cast |
 
 *Extra supported DataTypes:
 
