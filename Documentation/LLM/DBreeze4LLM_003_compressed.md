@@ -346,21 +346,6 @@ When parsing composite keys, you must know exactly how many bytes each data type
 
 *Extra supported DataTypes:
 
-`DbMJSON` (.NET Json serializer), `DbXML` (.NET Xml serializer):
-```csharp
-tran.Insert<uint, DbMJSON<Article>>("Articles", 1, new Article());
-tran.Insert<uint, DbXML<Article>>("Articles2", 1, new Article());
-foreach (var row in tran.SelectForward<uint, DbMJSON<Article>>("Articles"))
-{
-    // row.Value will return us DbMJSON<Article>                                   
-    Article a = row.Value.Get
-    // Or its serialized representation
-    string aSerialized = row.Value.SerializedObject
-}
-```
-
-*Extra supported DataTypes:
-
 - `DbMJSON` (Json serializer), `DbXML` (Xml serializer):
 ```csharp
 tran.Insert<uint, DbMJSON<Article>>("Articles", 1, new Article());
