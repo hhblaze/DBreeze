@@ -173,13 +173,33 @@ foreach (var el in tran.Multi_SelectForwardFromTo<int, string>(tables, int.MinVa
 
 ### 7. Dictionary & HashSet Helpers
 
-Stores `Dictionary`/`HashSet` in ordinal or nested tables. `withValuesRemove` (last param) deletes missing keys.
+Stores `Dictionary`/`HashSet` in ordinary or nested tables. `withValuesRemove` (last param) deletes missing keys.
 
 ```csharp
-var dict = new Dictionary<uint, string> { { 10, "A" }, { 11, "B" } };
-tran.InsertDictionary<int, uint, string>("tblDicts", 1, dict, 0, true);
-var loadedDict = tran.SelectDictionary<int, uint, string>("tblDicts", 1, 0);
-tran.Commit();
+var dict = new Dictionary<uint, string> { 
+    { 10, "Hello, my friends" }, 
+    { 11, "Sehr gut!" } 
+};
+
+using (var tran = engine.GetTransaction())
+{
+    // 1. Insert into a Master Table Row
+    // Signature: InsertDictionary<MasterKeyType, DictKeyType, DictValueType>("tableName", masterKey, dictionary, nestedTableIndex, withValuesRemove)
+    tran.InsertDictionary<int, uint, string>("t1", 1, dict, 0, true);
+    
+    // 2. Insert into a Nested Table (Chained)
+    tran.InsertTable<int>("t1", 15, 0)
+        .InsertDictionary<int, uint, string>(10, dict, 0, true);
+
+    tran.Commit();
+
+    // 3. Select from Master table
+    Dictionary<uint, string> masterDict = tran.SelectDictionary<int, uint, string>("t1", 1, 0);
+
+    // 4. Select from Nested table
+    Dictionary<uint, string> nestedDict = tran.SelectTable<int>("t1", 15, 0)
+                                              .SelectDictionary<int, uint, string>(10, 0);
+}
 ```
 
 ### 8. High-Performance Batching (CRITICAL)
