@@ -200,6 +200,9 @@ using (var tran = engine.GetTransaction())
     Dictionary<uint, string> nestedDict = tran.SelectTable<int>("t1", 15, 0)
                                               .SelectDictionary<int, uint, string>(10, 0);
 }
+
+tran.InsertHashSet<int, uint>("tableName", 1, myHashSet, 0, true);
+tran.SelectHashSet<int, uint>("tableName", 1, 0);
 ```
 
 ### 8. High-Performance Batching (CRITICAL)
