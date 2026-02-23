@@ -150,7 +150,7 @@ using (var tran = engine.GetTransaction())
 
 *`grabSomeLeadingRecords: X` on `SelectForwardFromTo` fetches records slightly before start key (useful for overlapping time-series).*
 
-**Modifying during iteration:** Pass `true` as `AsReadVisibilityScope` to read from snapshot prior to modifications (available for Select and Interational selections).
+**Modifying during iteration:** Pass `true` as `AsReadVisibilityScope` to read from snapshot prior to modifications (available for all selection/iteration types via AsReadVisibilityScope: true, default is false).
 
 ```csharp
 tran.SynchronizeTables("events");
@@ -173,7 +173,7 @@ foreach (var el in tran.Multi_SelectForwardFromTo<int, string>(tables, int.MinVa
 
 ### 7. Dictionary & HashSet Helpers
 
-Stores `Dictionary`/`HashSet` as nested tables. `withValuesRemove` (last param) deletes missing keys.
+Stores `Dictionary`/`HashSet` in ordinal or nested tables. `withValuesRemove` (last param) deletes missing keys.
 
 ```csharp
 var dict = new Dictionary<uint, string> { { 10, "A" }, { 11, "B" } };
@@ -303,21 +303,90 @@ Set `false` when using `row.Value` outside iterator or when every row needs its 
 
 ### Data Type Byte Lengths
 
+When parsing composite keys, you must know exactly how many bytes each data type consumes to calculate your `.Substring()` offsets correctly.
+
+*Note on Nullables:* Most nullable types prepend a `1-byte` flag (`0` = null, `1` = has value), increasing the total length by 1 byte. 
+
 | Type | Bytes | To `byte[]` | From `byte[]` |
 |:-----|:------|:------------|:--------------|
 | `byte` | 1 | `.To_1_byte_array()` | `.To_Byte()` |
 | `byte?` | 2 | `.To_2_byte_array()` | `.To_Byte_NULL()` |
+| `sbyte` | 1 | `.To_1_byte_array()` | `.To_SByte()` |
+| `sbyte?` | 2 | `.To_2_byte_array()` | `.To_SByte_NULL()` |
 | `bool` | 1 | `.To_1_byte_array()` | `.To_Bool()` |
-| `bool?` | 1 | `.To_1_byte_array()` *(2=null,1=true,0=false)* | `.To_Bool_NULL()` |
+| `bool?` | 1 | `.To_1_byte_array()` *(2=null, 1=true, 0=false)* | `.To_Bool_NULL()` |
 | `char` | 2 | `.To_2_byte_array()` | `.To_Char()` |
-| `short`/`ushort` | 2 | `.To_2_bytes_array_BigEndian()` | `.To_Int16_BigEndian()` |
-| `int`/`uint` | 4 | `.To_4_bytes_array_BigEndian()` | `.To_Int32_BigEndian()` |
-| `int?`/`uint?` | 5 | `.To_5_bytes_array_BigEndian()` | `.To_Int32_BigEndian_NULL()` |
+| `char?` | 3 | `.To_3_byte_array()` | `.To_Char_NULL()` |
+| `short` | 2 | `.To_2_bytes_array_BigEndian()` | `.To_Int16_BigEndian()` |
+| `short?` | 3 | `.To_3_bytes_array_BigEndian()` | `.To_Int16_BigEndian_NULL()` |
+| `ushort` | 2 | `.To_2_bytes_array_BigEndian()` | `.To_UInt16_BigEndian()` |
+| `ushort?` | 3 | `.To_3_bytes_array_BigEndian()` | `.To_UInt16_BigEndian_NULL()` |
+| `int` | 4 | `.To_4_bytes_array_BigEndian()` | `.To_Int32_BigEndian()` |
+| `int?` | 5 | `.To_5_bytes_array_BigEndian()` | `.To_Int32_BigEndian_NULL()` |
+| `uint` | 4 | `.To_4_bytes_array_BigEndian()` | `.To_UInt32_BigEndian()` |
+| `uint?` | 5 | `.To_5_bytes_array_BigEndian()` | `.To_UInt32_BigEndian_NULL()` |
+| `long` | 8 | `.To_8_bytes_array_BigEndian()` | `.To_Int64_BigEndian()` |
+| `long?` | 9 | `.To_9_bytes_array_BigEndian()` | `.To_Int64_BigEndian_NULL()` |
+| `ulong` | 8 | `.To_8_bytes_array_BigEndian()` | `.To_UInt64_BigEndian()` |
+| `ulong?` | 9 | `.To_9_bytes_array_BigEndian()` | `.To_UInt64_BigEndian_NULL()` |
 | `float` | 4 | `.To_4_bytes_array_BigEndian()` | `.To_Float_BigEndian()` |
-| `long`/`ulong` | 8 | `.To_8_bytes_array_BigEndian()` | `.To_Int64_BigEndian()` |
-| `DateTime` | 8 | `.To_8_bytes_array()` | `.To_DateTime()` |
+| `float?` | 5 | `.To_5_bytes_array_BigEndian()` | `.To_Float_BigEndian_NULL()` |
 | `double` | 9 | `.To_9_bytes_array_BigEndian()` | `.To_Double_BigEndian()` |
+| `double?` | 10 | `.To_10_bytes_array_BigEndian()` | `.To_Double_BigEndian_NULL()` |
 | `decimal` | 15 | `.To_15_bytes_array_BigEndian()` | `.To_Decimal_BigEndian()` |
+| `decimal?` | 16 | `.To_16_bytes_array_BigEndian()` | `.To_Decimal_BigEndian_NULL()` |
+| `DateTime` | 8 | `.To_8_bytes_array()` | `.To_DateTime()` |
+| `DateTime?`| 9 | `.To_9_bytes_array()` | `.To_DateTime_NULL()` |
+| `Guid` | 16 | `.ToByteArray()` | `new Guid(dt)` |
+| `string` | Variable | `new DbUTF8(data).GetBytes()` | `new DbUTF8(dt).Get` |
+| `DbUTF8` | Variable | `.GetBytes()` | `new DbUTF8(dt)` |
+| `DbAscii` | Variable | `.GetBytes()` | `new DbAscii(dt)` |
+| `DbUnicode`| Variable | `.GetBytes()` | `new DbUnicode(dt)` |
+| `byte[]` | Variable | *(cast)* `(byte[])data` | *(cast)* `(object)dt` |
+
+*Extra supported DataTypes:
+
+`DbMJSON` (.NET Json serializer), `DbXML` (.NET Xml serializer):
+```csharp
+tran.Insert<uint, DbMJSON<Article>>("Articles", 1, new Article());
+tran.Insert<uint, DbXML<Article>>("Articles2", 1, new Article());
+foreach (var row in tran.SelectForward<uint, DbMJSON<Article>>("Articles"))
+{
+    // row.Value will return us DbMJSON<Article>                                   
+    Article a = row.Value.Get
+    // Or its serialized representation
+    string aSerialized = row.Value.SerializedObject
+}
+```
+
+*Extra supported DataTypes:
+
+- `DbMJSON` (Json serializer), `DbXML` (Xml serializer):
+```csharp
+tran.Insert<uint, DbMJSON<Article>>("Articles", 1, new Article());
+tran.Insert<uint, DbXML<Article>>("Articles2", 1, new Article());
+foreach (var row in tran.SelectForward<uint, DbMJSON<Article>>("Articles"))
+{
+    // row.Value will return us DbMJSON<Article>                                   
+    Article a = row.Value.Get
+    // Or its serialized representation
+    string aSerialized = row.Value.SerializedObject
+}
+```
+
+- `DbCustomSerializer` acts the same as `DbMJSON`, when once specified:
+    DBreeze.Utils.CustomSerializator.Serializator = any Func<object, string>
+    DBreeze.Utils.CustomSerializator.Deserializator = any Func<string, Type, object>
+
+- when once specified:
+    DBreeze.Utils.CustomSerializator.ByteArraySerializator = any Func<object, byte[]>;
+    DBreeze.Utils.CustomSerializator.ByteArrayDeSerializator = any Func<byte[], Type, object>
+```csharp
+tran.Insert<uint, Article>("Articles", 1, new Article());
+var row = tran.Select<uint, Article>("Articles", 1);
+if(row.Exists)
+    Article a = row.Value;
+```
 
 ### `.ToIndex()` vs `.ToBytes()`
 
