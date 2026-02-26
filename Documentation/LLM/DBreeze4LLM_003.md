@@ -73,7 +73,7 @@ This chapter outlines the primary methods available on the `DBreeze.Transactions
 *   **DataBlocks:** `InsertDataBlock`, `InsertDataBlockWithFixedAddress`.
 *   **Retrieval:** `Select`, `SelectDirect`.
 *   **Aggregations:** `Count`, `Min`, `Max`.
-*   **Iterators:** `SelectForward`, `SelectBackward`, `SelectForwardFromTo`, `SelectForwardStartsWith`, `SelectForwardSkip`.
+*   **Iterators:** `Select...`.
 *   **Advanced:** `Multi_SelectForwardFromTo`, `InsertDictionary`, `RandomKeySorter`, `Technical_SetTable_OverwriteIsNotAllowed`.
 
 ---
@@ -167,21 +167,30 @@ Because DBreeze keys are sorted lexicographically, iterators are extremely fast.
 ```csharp
 using (var tran = engine.GetTransaction())
 {
-    // 1. Default forward: ascending keys
+    // Default forward: ascending keys
     foreach (var row in tran.SelectForward<int, string>("events")) { }
-
-    // 2. Backward iteration (descending order)
-    foreach (var row in tran.SelectBackward<int, string>("events")) { }
-
-    // 3. From-to range. includeStartKey=true, includeStopKey=false
+    IEnumerable<Row<TKey, TValue>> SelectForwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey, bool AsReadVisibilityScope = false){}
+    // From-to range. includeStartKey=true, includeStopKey=false
     foreach (var row in tran.SelectForwardFromTo<int, string>("events", 1, true, 3, false)) { }
-
-    // 4. StartsWith over byte[] keys or composite sequences
+    // StartsWith over byte[] keys or composite sequences
     byte[] prefix = 2.To_4_bytes_array_BigEndian();
     foreach (var row in tran.SelectForwardStartsWith<byte[], string>("events", prefix)) { }
-    
-    // 5. Skip pagination (Skips first 100 records)
+    // Skip pagination (Skips first 100 records)
     foreach (var row in tran.SelectForwardSkip<int, string>("events", 100)) { }
+
+    IEnumerable<Row<TKey, TValue>> SelectForwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity, bool AsReadVisibilityScope = false){}    
+    // If we have in a table keys: "check", "sam", "slash", "what"; our search prefix is "slap", we will get: "slam", "slash"
+    IEnumerable<Row<TKey, TValue>> SelectForwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix, bool AsReadVisibilityScope = false){}
+
+    IEnumerable<Row<TKey, TValue>> SelectBackward<TKey, TValue>(string tableName, bool AsReadVisibilityScope = false){}    
+    foreach (var row in tran.SelectBackwardFromTo<int, string>("events", 3, true, 1, false)) { }
+    // SelectBackwardStartFrom
+    // SelectBackwardSkip
+    // SelectBackwardStartsWith    
+    // SelectBackwardStartsWithClosestToPrefix
+    // SelectBackwardSkipFrom
+
+    // all have AsReadVisibilityScope
 }
 ```
 *Note: `grabSomeLeadingRecords: X` can be added to `SelectForwardFromTo` to fetch records slightly before the start key (useful for overlapping time-series data).*
@@ -194,7 +203,7 @@ using (var tran = engine.GetTransaction())
 {
     tran.SynchronizeTables("events");
     // The 'true' parameter freezes the visibility scope for the enumerator
-    foreach (var row in tran.SelectForward<int, string>("events", true)) {
+    foreach (var row in tran.SelectForward<int, string>("events", AsReadVisibilityScope: true)) {
         if (row.Value == "EXPIRED") {
             tran.RemoveKey<int>("events", row.Key); // Safe to do inside the loop
         }
@@ -433,8 +442,6 @@ foreach (var row in tran.SelectForward<int, byte[]>("users"))
 
 Switch to `false` when you plan to use `row.Value` outside the iterator, or when you know every row requires its full value.
 
-Here is the highly refined and expanded chapter. I have extracted the exact byte sizes and specialized behaviors (like `bool?` being 1 byte, but `int?` being 5 bytes) directly from the `BytesProcessing.cs` source code. This level of detail is critical for an LLM to accurately calculate `Substring` offsets when parsing composite keys.
-
 ***
 
 ## 6. Byte[] Conversions & Manipulations (`using DBreeze.Utils;`)
@@ -569,7 +576,7 @@ if (row.Exists)
 
 ### 3. Raw Byte Manipulation Helpers
 
-If you are dealing with raw payloads, secondary indexes, or modifying values directly, DBreeze provides highly optimized array manipulation tools:
+If you are dealing with raw payloads, secondary indexes, or modifying values directly, DBreeze provides highly optimized array manipulation tools (DBreeze.Utils):
 
 *   **`ConcatMany`**: Much faster than chaining LINQ `.Concat()` when merging multiple arrays.
     ```csharp
@@ -583,6 +590,12 @@ If you are dealing with raw payloads, secondary indexes, or modifying values dir
     // Result: { 1, 5, 6, 7 }
     ```
 *   **`ToBytesString()` / `ToByteArrayFromHex()`**: The fastest way to convert a `byte[]` to a pure HEX string (e.g., `1F0000000020`) and back. Excellent for logging, debugging, or converting pointers to JSON string properties.
+*   **`Substring(from, to)`**: get a byte[] slice from - to index (starts from 0)
+ ```csharp
+    byte[] original = new byte[] { 1, 2, 3 };
+    byte[] slice = original.Substring(1, 2); 
+    // Result: { 2, 3 }
+    ```
 
 ---
 

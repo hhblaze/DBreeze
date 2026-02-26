@@ -136,15 +136,30 @@ tran.Commit();
 ```csharp
 using (var tran = engine.GetTransaction())
 {
+    // Default forward: ascending keys
     foreach (var row in tran.SelectForward<int, string>("events")) { }
-    foreach (var row in tran.SelectBackward<int, string>("events")) { }
-    // Range: includeStartKey=true, includeStopKey=false
+    IEnumerable<Row<TKey, TValue>> SelectForwardStartFrom<TKey, TValue>(string tableName, TKey key, bool includeStartFromKey, bool AsReadVisibilityScope = false){}
+    // From-to range. includeStartKey=true, includeStopKey=false
     foreach (var row in tran.SelectForwardFromTo<int, string>("events", 1, true, 3, false)) { }
-    // Prefix match
+    // StartsWith over byte[] keys or composite sequences
     byte[] prefix = 2.To_4_bytes_array_BigEndian();
     foreach (var row in tran.SelectForwardStartsWith<byte[], string>("events", prefix)) { }
-    // Skip first 100
+    // Skip pagination (Skips first 100 records)
     foreach (var row in tran.SelectForwardSkip<int, string>("events", 100)) { }
+
+    IEnumerable<Row<TKey, TValue>> SelectForwardSkipFrom<TKey, TValue>(string tableName, TKey key, ulong skippingQuantity, bool AsReadVisibilityScope = false){}    
+    // If we have in a table keys: "check", "sam", "slash", "what"; our search prefix is "slap", we will get: "slam", "slash"
+    IEnumerable<Row<TKey, TValue>> SelectForwardStartsWithClosestToPrefix<TKey, TValue>(string tableName, TKey startWithClosestPrefix, bool AsReadVisibilityScope = false){}
+
+    IEnumerable<Row<TKey, TValue>> SelectBackward<TKey, TValue>(string tableName, bool AsReadVisibilityScope = false){}    
+    foreach (var row in tran.SelectBackwardFromTo<int, string>("events", 3, true, 1, false)) { }
+    // SelectBackwardStartFrom
+    // SelectBackwardSkip
+    // SelectBackwardStartsWith    
+    // SelectBackwardStartsWithClosestToPrefix
+    // SelectBackwardSkipFrom
+
+    // all have AsReadVisibilityScope
 }
 ```
 
