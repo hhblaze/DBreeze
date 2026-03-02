@@ -854,4 +854,15 @@ using (var tran = engine.GetTransaction())
 ```csharp
 using (var tran = engine.GetTransaction())
 {
-    var vectors = tran.VectorsGetByExternalId<float
+    var idsToFetch = new List<long> { 1L };
+    
+    var vectors = tran.VectorsGetByExternalId<float[]>("KnowledgeBaseVectors", idsToFetch, ignoreDeleted: true);
+    
+    foreach(var v in vectors)
+    {
+        // v.Item1 is the externalId (long)
+        // v.Item2 is the vector data (float[])
+        Console.WriteLine($"ID: {v.Item1} has {v.Item2.Length} dimensions.");
+    }
+}
+```
