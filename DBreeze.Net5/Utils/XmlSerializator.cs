@@ -144,7 +144,7 @@ public class OrderItem
         //    return (T)result!;
         //}
 
-        internal static T DeserializeXml<T>(this string xml)
+        public static T DeserializeXml<T>(this string xml)
         {
             if (string.IsNullOrWhiteSpace(xml))
                 throw new ArgumentException("XML input is null or empty.", nameof(xml));

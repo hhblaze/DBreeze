@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using DBreeze.Utils;
 
 namespace DBreeze.DataTypes
@@ -56,7 +55,12 @@ namespace DBreeze.DataTypes
         //Explicit implementation, only visible via IDBConvertable
         void IDBConvertable.SetBytes(byte[] bt)
         {
+#if NETPORTABLE_1
+            serialized = System.Text.Encoding.UTF8.GetString(bt, 0, bt.Length);
+#else
             serialized = System.Text.Encoding.UTF8.GetString(bt);
+#endif
+
         }
 
         /// <summary>
