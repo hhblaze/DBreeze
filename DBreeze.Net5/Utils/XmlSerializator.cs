@@ -80,7 +80,7 @@ public class OrderItem
         /// <summary>
         /// High-performance XML serialization
         /// </summary>
-        public static string SerializeXml(this object obj)
+        internal static string SerializeXml(this object obj)
         {
             if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
@@ -144,7 +144,7 @@ public class OrderItem
         //    return (T)result!;
         //}
 
-        public static T DeserializeXml<T>(this string xml)
+        internal static T DeserializeXml<T>(this string xml)
         {
             if (string.IsNullOrWhiteSpace(xml))
                 throw new ArgumentException("XML input is null or empty.", nameof(xml));
