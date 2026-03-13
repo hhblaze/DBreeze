@@ -4767,15 +4767,6 @@
             Identifies any type of RootNode in different tries
             </summary>
         </member>
-        <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
-            <summary>
-            Executes async, then calls Callback function
-            </summary>
-            <typeparam name="TInput"></typeparam>
-            <param name="f"></param>
-            <param name="arg"></param>
-            <param name="callback"></param>
-        </member>
         <member name="T:DBreeze.Utils.BloomFilter.Filter`1.HashFunction">
             <summary>
             A function that can be used to hash input.

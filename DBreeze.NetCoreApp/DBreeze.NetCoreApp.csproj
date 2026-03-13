@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
-    <Version>1.134.2026.0304</Version>
-    <FileVersion>1.134.2026.0304</FileVersion>
-    <AssemblyVersion>1.134.2026.0304</AssemblyVersion>
+    <Version>1.135.2026.0313</Version>
+    <FileVersion>1.135.2026.0313</FileVersion>
+    <AssemblyVersion>1.135.2026.0313</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -31,6 +31,7 @@
   <ItemGroup>
     <Compile Remove="DataTypes\DbXML.cs" />
     <Compile Remove="Storage\_FSR.cs" />
+    <Compile Remove="Utils\AsyncOperations.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.134.2026.0304</Version>
-    <AssemblyVersion>1.134.2026.0304</AssemblyVersion>
-    <FileVersion>1.134.2026.0304</FileVersion>
+    <Version>1.135.2026.0313</Version>
+    <AssemblyVersion>1.135.2026.0313</AssemblyVersion>
+    <FileVersion>1.135.2026.0313</FileVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -48,6 +48,7 @@
     <Compile Remove="Storage\1StorageLayer.cs" />
     <Compile Remove="Storage\1TrieSettings.cs" />
     <Compile Remove="Transactions\1Transaction.cs" />
+    <Compile Remove="Utils\AsyncOperations.cs" />
     <Compile Remove="Utils\Biser2.cs" />
     <Compile Remove="Utils\XmlSerializatorOld.cs" />
   </ItemGroup>

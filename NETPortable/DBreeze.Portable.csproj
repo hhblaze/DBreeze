@@ -198,7 +198,6 @@
     <Compile Include="Transactions\TransactionUnit.cs" />
     <Compile Include="Tries\ITrie.cs" />
     <Compile Include="Tries\ITrieRootNode.cs" />
-    <Compile Include="Utils\AsyncOperations.cs" />
     <Compile Include="Utils\BloomFilter.cs" />
     <Compile Include="Utils\BytesProcessing.cs" />
     <Compile Include="Utils\CustomSerializator.cs" />
