@@ -380,8 +380,9 @@ namespace DBreeze.Utils
 
             if (pars == null || pars.Length < 1)
                 return new byte[] { indexNumber };
-            List<byte[]> xbts = new List<byte[]>();
-            xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(indexNumber, typeof(byte)));
+            //List<byte[]> xbts = new List<byte[]>();
+            //xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(indexNumber, typeof(byte)));
+            List<byte[]> xbts = [DataTypes.DataTypesConvertor.ConvertValue(indexNumber, typeof(byte))];
             foreach (var prop in pars)
                 xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
 
@@ -398,7 +399,7 @@ namespace DBreeze.Utils
         {
             if (pars == null || pars.Length < 1)
                 return null;
-            List<byte[]> xbts = new List<byte[]>();
+            List<byte[]> xbts = [];// new List<byte[]>();
             foreach (var prop in pars)
                 xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
 
@@ -417,8 +418,9 @@ namespace DBreeze.Utils
             if (par1 == null)
                 return null;
 
-            List<byte[]> xbts = new List<byte[]>();
-            xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(par1, par1.GetType()));
+            //List<byte[]> xbts = new List<byte[]>();
+            //xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(par1, par1.GetType()));
+            List<byte[]> xbts = [DataTypes.DataTypesConvertor.ConvertValue(par1, par1.GetType())];
             if (pars != null)
                 foreach (var prop in pars)
                     xbts.Add(DataTypes.DataTypesConvertor.ConvertValue(prop, prop.GetType()));
@@ -599,36 +601,67 @@ namespace DBreeze.Utils
         #endregion
 
         #region "Char"
-        /// <summary>
-        /// Converts 2 bytes byte[] into Unicode char
-        /// </summary>
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char To_Char(this byte[] value) => To_Char(value.AsSpan());
 
         /// <summary>
         /// Converts 2 bytes byte[] into Unicode char
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static char To_Char(this ReadOnlySpan<byte> value) => MemoryMarshal.Cast<byte, char>(value)[0];
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static char To_Char(this byte[] value)
+        {
+            return (System.Text.Encoding.Unicode.GetChars(value)[0]);
+
+        }
         #endregion
 
         #region "Char ?"
-        /// <summary>
-        /// Converts 3 bytes byte[] into Unicode char?
-        /// </summary>   
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char? To_Char_NULL(this byte[] value) => (value == null) ? null : To_Char_NULL(value.AsSpan());
 
         /// <summary>
         /// Converts 3 bytes byte[] into Unicode char?
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static char? To_Char_NULL(this ReadOnlySpan<byte> value)
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static char? To_Char_NULL(this byte[] value)
         {
-            if (value.Length != 3 || value[0] == 0) return null;
-            return MemoryMarshal.Cast<byte, char>(value.Slice(1, 2))[0];
+            if (value == null || value.Length != 3 || value[0] == 0)
+                return null;
+
+            return (System.Text.Encoding.Unicode.GetChars(new byte[] { value[1], value[2] })[0]);
+
         }
         #endregion
+
+        //#region "Char"
+        ///// <summary>
+        ///// Converts 2 bytes byte[] into Unicode char
+        ///// </summary>
+        ////[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static char To_Char(this byte[] value) => To_Char(value.AsSpan());
+
+        ///// <summary>
+        ///// Converts 2 bytes byte[] into Unicode char
+        ///// </summary>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private static char To_Char(this ReadOnlySpan<byte> value) => MemoryMarshal.Cast<byte, char>(value)[0];
+        //#endregion
+
+        //#region "Char ?"
+        ///// <summary>
+        ///// Converts 3 bytes byte[] into Unicode char?
+        ///// </summary>   
+        ////[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static char? To_Char_NULL(this byte[] value) => (value == null) ? null : To_Char_NULL(value.AsSpan());
+
+        ///// <summary>
+        ///// Converts 3 bytes byte[] into Unicode char?
+        ///// </summary>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private static char? To_Char_NULL(this ReadOnlySpan<byte> value)
+        //{
+        //    if (value.Length != 3 || value[0] == 0) return null;
+        //    return MemoryMarshal.Cast<byte, char>(value.Slice(1, 2))[0];
+        //}
+        //#endregion
 
         #region "SByte"
         /// <summary>
@@ -1366,13 +1399,14 @@ namespace DBreeze.Utils
                 (int)((blIsPositive ? 0 : (1 << 31)) + (scale << 16))
             });
         }
-      
+
         /// <summary>
         /// Converts sortable byte[15] to decimal
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static decimal To_Decimal_BigEndian(this ReadOnlySpan<byte> input)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static decimal To_Decimal_BigEndian(this ReadOnlySpan<byte> input)
         {
             // is Value positive
             bool blIsPositive = ((input[0] & 128) > 0);
@@ -1441,13 +1475,14 @@ namespace DBreeze.Utils
         /// <summary>
         /// Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal? To_Decimal_BigEndian_NULL(this byte[] input) => (input == null) ? null : To_Decimal_BigEndian_NULL(input.AsSpan());
 
         /// <summary>
         /// Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
         /// </summary>
-        public static decimal? To_Decimal_BigEndian_NULL(this ReadOnlySpan<byte> input)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static decimal? To_Decimal_BigEndian_NULL(this ReadOnlySpan<byte> input)
         {
             if (input.Length != 16 || input[0] == 0)
                 return null;
@@ -1480,13 +1515,14 @@ namespace DBreeze.Utils
         /// <summary>
         /// Converts sortable byte[9] to double
         /// </summary>    
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double To_Double_BigEndian(this byte[] input) => To_Double_BigEndian(input.AsSpan());
 
         /// <summary>
         /// Converts sortable byte[9] to double
         /// </summary>
-        public static double To_Double_BigEndian(this ReadOnlySpan<byte> input)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double To_Double_BigEndian(this ReadOnlySpan<byte> input)
         {
             bool isPositive = (input[0] & 0x80) != 0;
             int exp = ((input[0] & 0x7F) << 8) | input[1];
@@ -1552,13 +1588,14 @@ namespace DBreeze.Utils
         /// <summary>
         /// Converts sortable byte[10] to double?
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double? To_Double_BigEndian_NULL(this byte[] input) => (input == null) ? null : To_Double_BigEndian_NULL(input.AsSpan());
 
         /// <summary>
         /// Converts sortable byte[10] to double?
         /// </summary>
-        public static double? To_Double_BigEndian_NULL(this ReadOnlySpan<byte> input)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double? To_Double_BigEndian_NULL(this ReadOnlySpan<byte> input)
         {
             if (input.Length != 10 || input[0] == 0)
                 return null;
@@ -1592,14 +1629,14 @@ namespace DBreeze.Utils
 
         /// <summary>
         /// Converts sortable byte[4] to float
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// </summary>        
         public static float To_Float_BigEndian(this byte[] input) => To_Float_BigEndian(input.AsSpan());
 
         /// <summary>
         /// Converts sortable byte[4] to float
         /// </summary>
-        public static float To_Float_BigEndian(this ReadOnlySpan<byte> input)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float To_Float_BigEndian(this ReadOnlySpan<byte> input)
         {
             bool isPositive = (input[0] & 128) > 0;
             int exp = input[0] & 127;
@@ -1662,14 +1699,14 @@ namespace DBreeze.Utils
 
         /// <summary>
         /// Converts sortable byte[5] to float?
-        /// </summary>  
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// </summary>          
         public static float? To_Float_BigEndian_NULL(this byte[] input) => (input == null) ? null : To_Float_BigEndian_NULL(input.AsSpan());
 
         /// <summary>
         /// Converts sortable byte[5] to float?
         /// </summary>
-        public static float? To_Float_BigEndian_NULL(this ReadOnlySpan<byte> input)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float? To_Float_BigEndian_NULL(this ReadOnlySpan<byte> input)
         {
             if (input.Length != 5 || input[0] == 0) return null;           
 
@@ -1685,11 +1722,19 @@ namespace DBreeze.Utils
         /// </summary>
         /// <param name="byteArray"></param>
         /// <returns></returns>
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double[] ByteArrayToDoubleArray(this byte[] byteArray)
         {
-            return MemoryMarshal.Cast<byte, double>(byteArray).ToArray();
+            int doubleArrayLength = byteArray.Length / sizeof(double);
+            double[] doubleArray = new double[doubleArrayLength];
+            Buffer.BlockCopy(byteArray, 0, doubleArray, 0, byteArray.Length);
+            return doubleArray;
         }
+
+        ////[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static double[] ByteArrayToDoubleArray(this byte[] byteArray)
+        //{
+        //    return MemoryMarshal.Cast<byte, double>(byteArray).ToArray();
+        //}
         #endregion
 
         #endregion  //End of byte[] to others
@@ -1703,11 +1748,18 @@ namespace DBreeze.Utils
         /// </summary>
         /// <param name="doubleArray"></param>
         /// <returns></returns>
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] DoubleArrayToByteArray(this double[] doubleArray)
         {
-            return MemoryMarshal.Cast<double, byte>(doubleArray).ToArray();
+            int byteArrayLength = doubleArray.Length * sizeof(double);
+            byte[] byteArray = new byte[byteArrayLength];
+            Buffer.BlockCopy(doubleArray, 0, byteArray, 0, byteArrayLength);
+            return byteArray;
         }
+        ////[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static byte[] DoubleArrayToByteArray(this double[] doubleArray)
+        //{
+        //    return MemoryMarshal.Cast<double, byte>(doubleArray).ToArray();
+        //}
         #endregion
 
         #region "Single byte"
@@ -2878,14 +2930,17 @@ namespace DBreeze.Utils
         /// <returns></returns>
         private static byte[] TruncateUTF8(string text, int maxSizeInBytes)
         {
-            if (text == null) return null;
+            if (text == null)
+                return null;
 
             byte[] bt = System.Text.Encoding.UTF8.GetBytes(text);
-            if (bt.Length <= maxSizeInBytes) return bt;
+
+            if (bt.Length <= maxSizeInBytes)
+                return bt;
 
             //Last byte is represented with 1 byte (ASCII range character)
             if (bt[maxSizeInBytes - 1] < 128)
-                return bt.AsSpan(0, maxSizeInBytes).ToArray();
+                return bt.Substring(0, maxSizeInBytes);
 
             int toRemove = 0;
 
@@ -2911,14 +2966,59 @@ namespace DBreeze.Utils
                             break;
                     }
 
+
                     if (toRemove == qb)
                         toRemove = 0;
 
                     break;
                 }
             }
-            return bt.AsSpan(0, maxSizeInBytes - toRemove).ToArray();
+            return bt.Substring(0, maxSizeInBytes - toRemove);
         }
+
+        //private static byte[] TruncateUTF8(string text, int maxSizeInBytes)
+        //{
+        //    if (text == null) return null;
+
+        //    byte[] bt = System.Text.Encoding.UTF8.GetBytes(text);
+        //    if (bt.Length <= maxSizeInBytes) return bt;
+
+        //    //Last byte is represented with 1 byte (ASCII range character)
+        //    if (bt[maxSizeInBytes - 1] < 128)
+        //        return bt.AsSpan(0, maxSizeInBytes).ToArray();
+
+        //    int toRemove = 0;
+
+        //    //computing how much to remove
+        //    for (int i = maxSizeInBytes - 1; i >= 0; i--)
+        //    {
+        //        toRemove++;
+
+        //        if ((bt[i] & 64) == 64)
+        //        {
+        //            //Calculating quantity of higher bits
+        //            int qb = 2;
+        //            int b = 0x20;
+
+        //            for (int j = 1; j < 5; j++)
+        //            {
+        //                if ((bt[i] & b) == b)
+        //                {
+        //                    qb++;
+        //                    b >>= 1;
+        //                }
+        //                else
+        //                    break;
+        //            }
+
+        //            if (toRemove == qb)
+        //                toRemove = 0;
+
+        //            break;
+        //        }
+        //    }
+        //    return bt.AsSpan(0, maxSizeInBytes - toRemove).ToArray();
+        //}
 
         #region "DB columns compatible strings"
 

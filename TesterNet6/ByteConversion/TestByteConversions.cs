@@ -16,6 +16,9 @@ namespace TesterNet6
 
         public static void RunTestConcatMany()
         {
+            byte[] btemp = Array.Empty<byte>();
+            btemp = null;
+            byte[] btemp2 = DBreeze.Utils.BytesProcessing.Concat(btemp, new byte[] { 1, 2 });
             byte[] sa1 = System.Text.Encoding.UTF8.GetBytes("AB");
             byte[] sa2 = System.Text.Encoding.UTF8.GetBytes("AAAA");
 
@@ -449,6 +452,7 @@ NEW ToDouble speed: 1,62 seconds.
             double[] edgeCases = new double[]
             {
                 //double.NaN, double.PositiveInfinity, double.NegativeInfinity,
+                1e308d, -1e308d, 1e-308d, -1e-308d,
                 1234567789789878745.12345d,
                 0.0d, -0.0d,
                 1.0d, -1.0d, 42.0d, -42.0d,
