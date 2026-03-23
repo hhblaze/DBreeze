@@ -4,6 +4,977 @@
         <name>DBreeze</name>
     </assembly>
     <members>
+        <member name="T:DBreeze.DataTypes.DbXML`1">
+            <summary>
+            <para>Microsoft XML</para>
+            <para></para>
+            <para>Possible to make like this, without class instantiating:</para>
+            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
+            <para>aa.Add("test1")</para>
+            <para>aa.Add("test2")</para>
+            <para>-----inside of transaction---------</para>
+            <para>tran.Insert&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1", i, aa);</para>
+            <para>-----------------------------------</para>
+            <para>foreach (var row in tran.SelectForward&lt;uint, DbXML&lt;List&lt;string&gt;&gt;&gt;("t1"))</para>
+            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbXML`1.SerializedObject">
+            <summary>
+            Returns serialized string representing the internal object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbXML`1.Get">
+            <summary>
+            Gets deserialized object
+            </summary>
+        </member>
+        <member name="T:DBreeze.DataTypes.Row`2">
+            <summary>
+            Row
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+        </member>
+        <member name="P:DBreeze.DataTypes.Row`2.TableName">
+            <summary>
+            Default null. Returns table name this row belongs to in case of Multi_SelectForward etc requests
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.Row`2.Exists">
+            <summary>
+            Exists
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.Row`2.Key">
+            <summary>
+            Key
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.GetTable(System.UInt32)">
+            <summary>
+            We are inside of the row.
+            <para>This Method will give you ability to the nested tables which can be stored inside of table by tableIndex</para>
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.GetValuePart(System.UInt32,System.UInt32)">
+            <summary>
+            Returns partial value representation starting from specif index and specified length.
+            <para>To get full value as byte[] use GetValuePart(0)</para>
+            </summary>
+            <param name="startIndex"></param>
+            <param name="length"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.GetValuePart(System.UInt32)">
+            <summary>
+            Returns partial value representation starting from specif index till and till the end of value.
+            </summary>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.DataTypes.Row`2.LinkToValue">
+            <summary>
+            Returns physical link to key/value if it exists, otherwise null,
+            this link can be used by SelectDirect (always returns 8 bytes)
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.GetDataBlock(System.UInt32)">
+            <summary>
+            Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
+            <para></para>
+            can return null.
+            </summary>
+            <param name="startIndex"></param>
+            <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.GetDataBlockWithFixedAddress``1(System.UInt32)">
+            <summary>
+            Returns datablock which fixed address, which identifier is stored in this row from specified index.
+            </summary>
+            <typeparam name="TVal"></typeparam>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.ObjectGet``1">
+            <summary>
+            Concept of the objects storage (read docu from 20170321)
+            Get object from a datablock with a fixed address, 
+            having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.  
+            Returns null if object is not found.
+            </summary>
+            <typeparam name="TVal"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.DataTypes.Row`2.Value">
+            <summary>
+            Returns full value and converts it to the value data type.
+            <para>To take full value or part of the value as byte[] use GetValuePart or GetBytes (for string types like DbAscii etc.)</para>
+            <para>If your value contains serialized object inside or it's a string type (like DbAscii etc.), use Value.Get property.</para>
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.Row`2.PrintOut(System.String)">
+            <summary>
+            Experimantal Console PrintOut
+            </summary>
+        </member>
+        <member name="T:DBreeze.DataTypes.NestedTable">
+            <summary>
+            NestedTable
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.#ctor(DBreeze.DataTypes.NestedTableInternal,System.Boolean,System.Boolean)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="nt"></param>
+            <param name="insertTablesAllowed"></param>
+            <param name="tableExists"></param>
+        </member>
+        <member name="P:DBreeze.DataTypes.NestedTable.ValuesLazyLoadingIsOn">
+            <summary>
+            When it's on iterators return Row with the key and a pointer to the value.
+            <par>Value will be read out when we call it Row.Value.</par>
+            <pa>When it's off we read value together with the key in one round</pa>
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.GetTable``1(``0,System.UInt32)">
+            <summary>
+            You are already in the table
+            <para>This function will help to access another table by parent table key and its value index</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="key"></param>
+            <param name="tableIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Dispose">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.CloseTable">
+            <summary>
+            Tries to close the table if no other threads are using it.
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertDataBlock(System.Byte[],System.Byte[])">
+            <summary>
+            Insert a dynamic size data block in the table storage, returns fixed 16 bytes length identifier
+            <para></para>
+            which can be stored in a table value from specified index.
+            <para></para>
+            Retrieve such DataBlock we can using Row.GetDataBlock.
+            <para>The same statement is used to update datablock, received value must update row value who holds reference to it.</para>
+            <para>Must be used as row column with dynamic length</para>
+            </summary>
+            <param name="initialPointer">if null creates new data block, if not null tries to overwrite existing data block</param>
+            <param name="data"></param>
+            <returns>returns created data block parameters of fixed 16 bytes length, which can be stored in the row value
+            <para>and later reused for getting data block back</para>
+            </returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectDataBlock(System.Byte[])">
+            <summary>
+            Another way (second is via row by index where pointer is stored) to get stored data block
+            </summary>
+            <param name="initialPointer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1)">
+            <summary>
+            Inserts or updates the key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1,System.Byte[]@)">
+            <summary>
+            Inserts or updates the key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1,System.Byte[]@,System.Boolean@)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1,System.Byte[]@,System.Boolean@,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then value exists, if false - we have inserted new one</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Technical_SetTable_OverwriteIsNotAllowed">
+            <summary>
+            <para>After the end of transaction overwrite will be allowed again.</para>
+            <para>Concerns overwriting of values, trie search nodes and dataBlocks.</para>
+            <para>ref. documentation from [20130412]</para>
+            </summary>
+            <param name="isAllowed"></param>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertDictionary``3(``0,System.Collections.Generic.Dictionary{``1,``2},System.UInt32,System.Boolean)">
+            <summary>
+            Inserts a dictionary into nested-table row.
+            <para></para>
+            Designed for simple dictionary data types.
+            <para></para>
+            Actually creates a new table inside of nested table row and handles it like dictionary.
+            <para></para>
+            If new Dictionary is supplied then non-existing keys in supplied DB will be removed from db
+            <para>new values will be inserted, changed values will be updated</para>
+            <para>To get dictionary use SelectDictionary</para>
+            </summary>
+            <typeparam name="TTableKey"></typeparam>
+            <typeparam name="TDictionaryKey"></typeparam>
+            <typeparam name="TDictionaryValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="tableIndex"></param>
+            <param name="withValuesRemove">if true, then values which are not in supplied dictionary will be removed from db, otherwise only appended and updated</param>
+            <returns>Returns Nested Table where insert was made</returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertDictionary``2(System.Collections.Generic.Dictionary{``0,``1},System.Boolean)">
+            <summary>
+            Inserts dictionary into current nested table.
+            </summary>
+            <typeparam name="TDictionaryKey"></typeparam>
+            <typeparam name="TDictionaryValue"></typeparam>
+            <param name="value"></param>
+            <param name="withValuesRemove">if true, then values which are not in supplied dictionary will be removed from db, otherwise only appended and updated</param>
+            <returns>current nested table</returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectDictionary``3(``0,System.UInt32)">
+            <summary>
+            Selects complete table from nested-table row nested table, by row nested-table index as Dictionary.
+            </summary>
+            <typeparam name="TTableKey"></typeparam>
+            <typeparam name="TDictionaryKey"></typeparam>
+            <typeparam name="TDictionaryValue"></typeparam>
+            <param name="key"></param>
+            <param name="tableIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectDictionary``2">
+            <summary>
+            Selects completely current nested-table as a Dictionary.
+            </summary>
+            <typeparam name="TDictionaryKey"></typeparam>
+            <typeparam name="TDictionaryValue"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertHashSet``2(``0,System.Collections.Generic.HashSet{``1},System.UInt32,System.Boolean)">
+            <summary>
+            Inserts a HashSet (unique list of Keys) into nested-table row.
+            <para></para>
+            Actually creates a new table inside of nested table row and handles it like table with THashSetKey key any byte[] == null value.
+            <para></para>
+            If new HashSet is supplied then non-existing keys in supplied DB will be removed from db (withValuesRemove=true)
+            <para>new values will be inserted, changed values will be updated</para>
+            <para>To get HashSet use SelectHashSet</para>
+            </summary>
+            <typeparam name="TTableKey"></typeparam>
+            <typeparam name="THashSetKey"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="tableIndex"></param>
+            <param name="withValuesRemove">if true, then values which are not in supplied HashSet will be removed from db, otherwise only appended and updated</param>
+            <returns>Returns Nested Table where insert was made</returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertHashSet``1(System.Collections.Generic.HashSet{``0},System.Boolean)">
+            <summary>
+            Inserts HashSet into current nested-table
+            </summary>
+            <typeparam name="THashSetKey"></typeparam>
+            <param name="value"></param>
+            <param name="withValuesRemove">if true, then values which are not in supplied HashSet will be removed from db, otherwise only appended and updated</param>
+            <returns>current nested table</returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectHashSet``2(``0,System.UInt32)">
+            <summary>
+            Selects complete table from nested-table row nested table, by row nested-table index as HashSet (unique list of Keys).
+            </summary>
+            <typeparam name="TTableKey"></typeparam>
+            <typeparam name="THashSetKey"></typeparam>
+            <param name="tableName"></param>
+            <param name="key"></param>
+            <param name="tableIndex"></param>
+            <returns>HashSet</returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectHashSet``1">
+            <summary>
+            Returns completely current nested-table as a HashSet (unique list of Keys).
+            </summary>
+            <typeparam name="THashSetKey"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertPart``2(``0,``1,System.UInt32)">
+            <summary>
+            Inserts or updates the key value starting from startIndex.
+            <para>If there were no value before, value byte[] array till startindex wll be filled with byte[] {0}</para>
+            <para>If value is smaller then startIndex, value will be expanded.</para> 
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertPart``2(``0,``1,System.UInt32,System.Byte[]@)">
+            <summary>
+            Inserts or updates the key value starting from startIndex.
+            <para>If there were no value before, value byte[] array till startindex wll be filled with byte[] {0}</para>
+            <para>If value is smaller then startIndex, value will be expanded.</para> 
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.InsertPart``2(``0,``1,System.UInt32,System.Byte[]@,System.Boolean@)">
+            <summary>
+            Inserts or updates the key value starting from startIndex.
+            <para>If there were no value before, value byte[] array till startindex wll be filled with byte[] {0}</para>
+            <para>If value is smaller then startIndex, value will be expanded.</para> 
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="value"></param>
+            <param name="startIndex"></param>
+            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
+            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Select``2(``0)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.DataTypes.NestedTable.readRootNode">
+            <summary>
+            TO be used in Select with ReadVisibilityScope as True. Is created only once per instantiated nested table. 
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Select``2(``0,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, select will return key/value,</para>
+            <para>like it was before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectDirect``2(System.Byte[])">
+            <summary>
+            <para>EXPERIMENTAL</para>
+            Returns Row by supplying direct pointer to key/value in the file.
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="refToInsertedValue"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.RemoveAllKeys">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0)">
+            <summary>
+            Removes a key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="key"></param>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0,System.Boolean@)">
+            <summary>
+            Removes a key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="key"></param>
+            <param name="WasRemoved">indicates that key existed in the system</param>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0,System.Boolean@,System.Byte[]@)">
+            <summary>
+            Removes a key
+            </summary>
+            <typeparam name="TKey">type of the key</typeparam>
+            <param name="key">key to delete</param>
+            <param name="WasRemoved">indicates that key existed in the system</param>
+            <param name="deletedValue">Will hold deleted value if WasRemoved is true</param>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0,System.Boolean@,System.Boolean,System.Byte[]@)">
+            <summary>
+            Removes a key
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="key"></param>
+            <param name="WasRemoved">indicates that key existed in the system</param>
+            <param name="retrieveDeletedValue">indicates if system should retrieve deleted value</param>
+            <param name="deletedValue"></param>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.ChangeKey``1(``0,``0)">
+            <summary>
+            Renames old key on the new one
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="oldKey"></param>
+            <param name="newKey"></param>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.ChangeKey``1(``0,``0,System.Byte[]@)">
+            <summary>
+            Renames old key on the new one
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="oldKey"></param>
+            <param name="newKey"></param>
+            <param name="ptrToNewKey">return pointer to the new value in the file (always 8 bytes)</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.ChangeKey``1(``0,``0,System.Byte[]@,System.Boolean@)">
+            <summary>
+            Renames old key on the new one
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <param name="oldKey"></param>
+            <param name="newKey"></param>
+            <param name="ptrToNewKey">return pointer to the new value in the file (always 8 bytes)</param>
+            <param name="WasChanged">indicates that oldKey existed and was succesfully changed</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Count">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Max``2">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.Min``2">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForward``2">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForward``2(System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackward``2">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackward``2(System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartFrom``2(``0,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="includeStartFromKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartFrom``2(``0,System.Boolean,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="includeStartFromKey"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartFrom``2(``0,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="includeStartFromKey"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartFrom``2(``0,System.Boolean,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="includeStartFromKey"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Int32)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startKey"></param>
+            <param name="includeStartKey"></param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey"></param>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean,System.Int32)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startKey"></param>
+            <param name="includeStartKey"></param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Int32)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startKey"></param>
+            <param name="includeStartKey"></param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey"></param>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean,System.Int32)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startKey"></param>
+            <param name="includeStartKey"></param>
+            <param name="stopKey"></param>
+            <param name="includeStopKey"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWith``2(``0)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithKeyPart"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWith``2(``0,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithKeyPart"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWithClosestToPrefix``2(``0)">
+            <summary>
+            <para>Mostly can be used for string or byte[] keys</para>
+            <para>Iterates table forward (ordered by key ascending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
+            <para>If we have in a table keys:</para>
+            <para>"check"</para>
+            <para>"sam"</para>
+            <para>"slam"</para>
+            <para>"slash"</para>
+            <para>"what"</para>
+            <para>our search prefix is "slap", we will get:</para>
+            <para>"slam"</para>
+            <para>"slash"</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithClosestPrefix"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWithClosestToPrefix``2(``0,System.Boolean)">
+            <summary>
+            <para>Mostly can be used for string or byte[] keys</para>
+            <para>Iterates table forward (ordered by key ascending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
+            <para>If we have in a table keys:</para>
+            <para>"check"</para>
+            <para>"sam"</para>
+            <para>"slam"</para>
+            <para>"slash"</para>
+            <para>"what"</para>
+            <para>our search prefix is "slap", we will get:</para>
+            <para>"slam"</para>
+            <para>"slash"</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithClosestPrefix"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWithClosestToPrefix``2(``0)">
+            <summary>
+            <para>Mostly can be used for string or byte[] keys</para>
+            <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
+            <para>If we have in a table keys:</para>
+            <para>"check"</para>
+            <para>"sam"</para>
+            <para>"slam"</para>
+            <para>"slash"</para>
+            <para>"what"</para>
+            <para>our search prefix is "slap", we will get:</para>
+            <para>"slash"</para>
+            <para>"slam"</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithClosestPrefix"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWithClosestToPrefix``2(``0,System.Boolean)">
+            <summary>
+            <para>Mostly can be used for string or byte[] keys</para>
+            <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
+            <para>If we have in a table keys:</para>
+            <para>"check"</para>
+            <para>"sam"</para>
+            <para>"slam"</para>
+            <para>"slash"</para>
+            <para>"what"</para>
+            <para>our search prefix is "slap", we will get:</para>
+            <para>"slash"</para>
+            <para>"slam"</para>
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithClosestPrefix"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWith``2(``0)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithKeyPart"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWith``2(``0,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="startWithKeyPart"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkip``2(System.UInt64)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="skippingQuantity"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkip``2(System.UInt64,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="skippingQuantity"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkip``2(System.UInt64)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="skippingQuantity"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkip``2(System.UInt64,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="skippingQuantity"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkipFrom``2(``0,System.UInt64)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="skippingQuantity"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkipFrom``2(``0,System.UInt64,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="skippingQuantity"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkipFrom``2(``0,System.UInt64)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="skippingQuantity"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkipFrom``2(``0,System.UInt64,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TValue"></typeparam>
+            <param name="key"></param>
+            <param name="skippingQuantity"></param>
+            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
+            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
+            <para>If this parameter set to true, enumerator will return key/value,</para>
+            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
+            </param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.DataTypes.NestedTableInternal">
+            <summary>
+            In developing, will represent a table inside of the other table
+            </summary>
+        </member>
+        <member name="F:DBreeze.DataTypes.NestedTableInternal.TableExists">
+            <summary>
+            Identifies that table is fake, because we always want to return data even default (count - 0, select - row with .Exists= false etc...)
+            </summary>
+        </member>
+        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertValue``1(``0)">
+            <summary>
+            Converts type to a byte[] 
+            </summary>
+            <typeparam name="TData"></typeparam>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertKey``1(``0)">
+            <summary>
+            Converts key type to a byte[] 
+            </summary>
+            <typeparam name="TData"></typeparam>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertBack``1(System.Byte[])">
+            <summary>
+            CONVERTING FROM byte[] to the generic type
+            </summary>
+            <typeparam name="TData"></typeparam>
+            <param name="dt"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.DataTypes.DbAscii">
+            <summary>
+            String.Empty is will return NULL
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbAscii.Get">
+            <summary>
+            Returns string from the object
+            </summary>
+        </member>
+        <member name="T:DBreeze.DataTypes.DbCustomSerializer`1">
+            <summary>
+            <para>Custom Serializer</para>
+            <para></para>
+            <para>To support JSON.NET, make a reference to their library and then somewhere before engine init add 2 lines:</para>
+            <para>CustomSerializator.Serializator = JsonConvert.SerializeObject;</para>
+            <para>CustomSerializator.Deserializator = JsonConvert.DeserializeObject;</para>
+            <para></para>
+            <para>Possible to make like this, without class instantiating:</para>
+            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
+            <para>aa.Add("test1")</para>
+            <para>aa.Add("test2")</para>
+            <para>-----inside of transaction---------</para>
+            <para>tran.Insert&lt;uint, DbCustomSerializer&lt;List&lt;string&gt;&gt; &gt;("t1", i, aa);</para>
+            <para>-----------------------------------</para>
+            <para>foreach (var row in tran.SelectForward&lt;uint, DbCustomSerializer&lt;List&lt;string&gt;&gt; &gt;("t1"))</para>
+            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbCustomSerializer`1.SerializedObject">
+            <summary>
+            Returns serialized string representing the internal object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbCustomSerializer`1.Get">
+            <summary>
+            Gets deserialized object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbUnicode.Get">
+            <summary>
+            Returns string from the object
+            </summary>
+        </member>
+        <member name="P:DBreeze.DataTypes.DbUTF8.Get">
+            <summary>
+            Returns string from the object
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml(System.Object)">
+            <summary>
+            High-performance XML serialization
+            </summary>
+        </member>
         <member name="M:DBreeze.Utils.XmlSerializator.SerializeXml_List(System.Collections.Generic.List{System.String})">
             <summary>
             Special support old DBreeze schemas
@@ -2866,946 +3837,6 @@
         <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
             <summary>
             
-            </summary>
-        </member>
-        <member name="T:DBreeze.DataTypes.Row`2">
-            <summary>
-            Row
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.TableName">
-            <summary>
-            Default null. Returns table name this row belongs to in case of Multi_SelectForward etc requests
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.Exists">
-            <summary>
-            Exists
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.Key">
-            <summary>
-            Key
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.GetTable(System.UInt32)">
-            <summary>
-            We are inside of the row.
-            <para>This Method will give you ability to the nested tables which can be stored inside of table by tableIndex</para>
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.GetValuePart(System.UInt32,System.UInt32)">
-            <summary>
-            Returns partial value representation starting from specif index and specified length.
-            <para>To get full value as byte[] use GetValuePart(0)</para>
-            </summary>
-            <param name="startIndex"></param>
-            <param name="length"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.GetValuePart(System.UInt32)">
-            <summary>
-            Returns partial value representation starting from specif index till and till the end of value.
-            </summary>
-            <param name="startIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.LinkToValue">
-            <summary>
-            Returns physical link to key/value if it exists, otherwise null,
-            this link can be used by SelectDirect (always returns 8 bytes)
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.GetDataBlock(System.UInt32)">
-            <summary>
-            Insert dynamic length datablock is possible via tran.InsertDataBlock or NestedTable.InsertDataBlock.
-            <para></para>
-            can return null.
-            </summary>
-            <param name="startIndex"></param>
-            <returns>Returns datablock which identifier is stored in this row from specified index.</returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.GetDataBlockWithFixedAddress``1(System.UInt32)">
-            <summary>
-            Returns datablock which fixed address, which identifier is stored in this row from specified index.
-            </summary>
-            <typeparam name="TVal"></typeparam>
-            <param name="startIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.ObjectGet``1">
-            <summary>
-            Concept of the objects storage (read docu from 20170321)
-            Get object from a datablock with a fixed address, 
-            having that the pointer to the object (16 byte) is saved from the startIndex inside of a row's value.  
-            Returns null if object is not found.
-            </summary>
-            <typeparam name="TVal"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.DataTypes.Row`2.Value">
-            <summary>
-            Returns full value and converts it to the value data type.
-            <para>To take full value or part of the value as byte[] use GetValuePart or GetBytes (for string types like DbAscii etc.)</para>
-            <para>If your value contains serialized object inside or it's a string type (like DbAscii etc.), use Value.Get property.</para>
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.Row`2.PrintOut(System.String)">
-            <summary>
-            Experimantal Console PrintOut
-            </summary>
-        </member>
-        <member name="T:DBreeze.DataTypes.NestedTable">
-            <summary>
-            NestedTable
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.#ctor(DBreeze.DataTypes.NestedTableInternal,System.Boolean,System.Boolean)">
-            <summary>
-            Constructor
-            </summary>
-            <param name="nt"></param>
-            <param name="insertTablesAllowed"></param>
-            <param name="tableExists"></param>
-        </member>
-        <member name="P:DBreeze.DataTypes.NestedTable.ValuesLazyLoadingIsOn">
-            <summary>
-            When it's on iterators return Row with the key and a pointer to the value.
-            <par>Value will be read out when we call it Row.Value.</par>
-            <pa>When it's off we read value together with the key in one round</pa>
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.GetTable``1(``0,System.UInt32)">
-            <summary>
-            You are already in the table
-            <para>This function will help to access another table by parent table key and its value index</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="key"></param>
-            <param name="tableIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Dispose">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.CloseTable">
-            <summary>
-            Tries to close the table if no other threads are using it.
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertDataBlock(System.Byte[],System.Byte[])">
-            <summary>
-            Insert a dynamic size data block in the table storage, returns fixed 16 bytes length identifier
-            <para></para>
-            which can be stored in a table value from specified index.
-            <para></para>
-            Retrieve such DataBlock we can using Row.GetDataBlock.
-            <para>The same statement is used to update datablock, received value must update row value who holds reference to it.</para>
-            <para>Must be used as row column with dynamic length</para>
-            </summary>
-            <param name="initialPointer">if null creates new data block, if not null tries to overwrite existing data block</param>
-            <param name="data"></param>
-            <returns>returns created data block parameters of fixed 16 bytes length, which can be stored in the row value
-            <para>and later reused for getting data block back</para>
-            </returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectDataBlock(System.Byte[])">
-            <summary>
-            Another way (second is via row by index where pointer is stored) to get stored data block
-            </summary>
-            <param name="initialPointer"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1)">
-            <summary>
-            Inserts or updates the key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1,System.Byte[]@)">
-            <summary>
-            Inserts or updates the key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1,System.Byte[]@,System.Boolean@)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
-            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Insert``2(``0,``1,System.Byte[]@,System.Boolean@,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
-            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
-            <param name="dontUpdateIfExists">When true - if value exists, we dont update it. If WasUpdated = true then value exists, if false - we have inserted new one</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Technical_SetTable_OverwriteIsNotAllowed">
-            <summary>
-            <para>After the end of transaction overwrite will be allowed again.</para>
-            <para>Concerns overwriting of values, trie search nodes and dataBlocks.</para>
-            <para>ref. documentation from [20130412]</para>
-            </summary>
-            <param name="isAllowed"></param>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertDictionary``3(``0,System.Collections.Generic.Dictionary{``1,``2},System.UInt32,System.Boolean)">
-            <summary>
-            Inserts a dictionary into nested-table row.
-            <para></para>
-            Designed for simple dictionary data types.
-            <para></para>
-            Actually creates a new table inside of nested table row and handles it like dictionary.
-            <para></para>
-            If new Dictionary is supplied then non-existing keys in supplied DB will be removed from db
-            <para>new values will be inserted, changed values will be updated</para>
-            <para>To get dictionary use SelectDictionary</para>
-            </summary>
-            <typeparam name="TTableKey"></typeparam>
-            <typeparam name="TDictionaryKey"></typeparam>
-            <typeparam name="TDictionaryValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="tableIndex"></param>
-            <param name="withValuesRemove">if true, then values which are not in supplied dictionary will be removed from db, otherwise only appended and updated</param>
-            <returns>Returns Nested Table where insert was made</returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertDictionary``2(System.Collections.Generic.Dictionary{``0,``1},System.Boolean)">
-            <summary>
-            Inserts dictionary into current nested table.
-            </summary>
-            <typeparam name="TDictionaryKey"></typeparam>
-            <typeparam name="TDictionaryValue"></typeparam>
-            <param name="value"></param>
-            <param name="withValuesRemove">if true, then values which are not in supplied dictionary will be removed from db, otherwise only appended and updated</param>
-            <returns>current nested table</returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectDictionary``3(``0,System.UInt32)">
-            <summary>
-            Selects complete table from nested-table row nested table, by row nested-table index as Dictionary.
-            </summary>
-            <typeparam name="TTableKey"></typeparam>
-            <typeparam name="TDictionaryKey"></typeparam>
-            <typeparam name="TDictionaryValue"></typeparam>
-            <param name="key"></param>
-            <param name="tableIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectDictionary``2">
-            <summary>
-            Selects completely current nested-table as a Dictionary.
-            </summary>
-            <typeparam name="TDictionaryKey"></typeparam>
-            <typeparam name="TDictionaryValue"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertHashSet``2(``0,System.Collections.Generic.HashSet{``1},System.UInt32,System.Boolean)">
-            <summary>
-            Inserts a HashSet (unique list of Keys) into nested-table row.
-            <para></para>
-            Actually creates a new table inside of nested table row and handles it like table with THashSetKey key any byte[] == null value.
-            <para></para>
-            If new HashSet is supplied then non-existing keys in supplied DB will be removed from db (withValuesRemove=true)
-            <para>new values will be inserted, changed values will be updated</para>
-            <para>To get HashSet use SelectHashSet</para>
-            </summary>
-            <typeparam name="TTableKey"></typeparam>
-            <typeparam name="THashSetKey"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="tableIndex"></param>
-            <param name="withValuesRemove">if true, then values which are not in supplied HashSet will be removed from db, otherwise only appended and updated</param>
-            <returns>Returns Nested Table where insert was made</returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertHashSet``1(System.Collections.Generic.HashSet{``0},System.Boolean)">
-            <summary>
-            Inserts HashSet into current nested-table
-            </summary>
-            <typeparam name="THashSetKey"></typeparam>
-            <param name="value"></param>
-            <param name="withValuesRemove">if true, then values which are not in supplied HashSet will be removed from db, otherwise only appended and updated</param>
-            <returns>current nested table</returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectHashSet``2(``0,System.UInt32)">
-            <summary>
-            Selects complete table from nested-table row nested table, by row nested-table index as HashSet (unique list of Keys).
-            </summary>
-            <typeparam name="TTableKey"></typeparam>
-            <typeparam name="THashSetKey"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="tableIndex"></param>
-            <returns>HashSet</returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectHashSet``1">
-            <summary>
-            Returns completely current nested-table as a HashSet (unique list of Keys).
-            </summary>
-            <typeparam name="THashSetKey"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertPart``2(``0,``1,System.UInt32)">
-            <summary>
-            Inserts or updates the key value starting from startIndex.
-            <para>If there were no value before, value byte[] array till startindex wll be filled with byte[] {0}</para>
-            <para>If value is smaller then startIndex, value will be expanded.</para> 
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertPart``2(``0,``1,System.UInt32,System.Byte[]@)">
-            <summary>
-            Inserts or updates the key value starting from startIndex.
-            <para>If there were no value before, value byte[] array till startindex wll be filled with byte[] {0}</para>
-            <para>If value is smaller then startIndex, value will be expanded.</para> 
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.InsertPart``2(``0,``1,System.UInt32,System.Byte[]@,System.Boolean@)">
-            <summary>
-            Inserts or updates the key value starting from startIndex.
-            <para>If there were no value before, value byte[] array till startindex wll be filled with byte[] {0}</para>
-            <para>If value is smaller then startIndex, value will be expanded.</para> 
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="value"></param>
-            <param name="startIndex"></param>
-            <param name="refToInsertedValue">returns ptr in the file to the value and key (always 8 bytes)</param>
-            <param name="WasUpdated">indicates that key we insert, already existed in the system and was updated</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Select``2(``0)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.DataTypes.NestedTable.readRootNode">
-            <summary>
-            TO be used in Select with ReadVisibilityScope as True. Is created only once per instantiated nested table. 
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Select``2(``0,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, select will return key/value,</para>
-            <para>like it was before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectDirect``2(System.Byte[])">
-            <summary>
-            <para>EXPERIMENTAL</para>
-            Returns Row by supplying direct pointer to key/value in the file.
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="refToInsertedValue"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.RemoveAllKeys">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0)">
-            <summary>
-            Removes a key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="key"></param>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0,System.Boolean@)">
-            <summary>
-            Removes a key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="key"></param>
-            <param name="WasRemoved">indicates that key existed in the system</param>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0,System.Boolean@,System.Byte[]@)">
-            <summary>
-            Removes a key
-            </summary>
-            <typeparam name="TKey">type of the key</typeparam>
-            <param name="key">key to delete</param>
-            <param name="WasRemoved">indicates that key existed in the system</param>
-            <param name="deletedValue">Will hold deleted value if WasRemoved is true</param>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.RemoveKey``1(``0,System.Boolean@,System.Boolean,System.Byte[]@)">
-            <summary>
-            Removes a key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="key"></param>
-            <param name="WasRemoved">indicates that key existed in the system</param>
-            <param name="retrieveDeletedValue">indicates if system should retrieve deleted value</param>
-            <param name="deletedValue"></param>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.ChangeKey``1(``0,``0)">
-            <summary>
-            Renames old key on the new one
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="oldKey"></param>
-            <param name="newKey"></param>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.ChangeKey``1(``0,``0,System.Byte[]@)">
-            <summary>
-            Renames old key on the new one
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="oldKey"></param>
-            <param name="newKey"></param>
-            <param name="ptrToNewKey">return pointer to the new value in the file (always 8 bytes)</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.ChangeKey``1(``0,``0,System.Byte[]@,System.Boolean@)">
-            <summary>
-            Renames old key on the new one
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="oldKey"></param>
-            <param name="newKey"></param>
-            <param name="ptrToNewKey">return pointer to the new value in the file (always 8 bytes)</param>
-            <param name="WasChanged">indicates that oldKey existed and was succesfully changed</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Count">
-            <summary>
-            
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Max``2">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.Min``2">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForward``2">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForward``2(System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackward``2">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackward``2(System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartFrom``2(``0,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="includeStartFromKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartFrom``2(``0,System.Boolean,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="includeStartFromKey"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartFrom``2(``0,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="includeStartFromKey"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartFrom``2(``0,System.Boolean,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="includeStartFromKey"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Int32)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startKey"></param>
-            <param name="includeStartKey"></param>
-            <param name="stopKey"></param>
-            <param name="includeStopKey"></param>
-            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean,System.Int32)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startKey"></param>
-            <param name="includeStartKey"></param>
-            <param name="stopKey"></param>
-            <param name="includeStopKey"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Int32)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startKey"></param>
-            <param name="includeStartKey"></param>
-            <param name="stopKey"></param>
-            <param name="includeStopKey"></param>
-            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardFromTo``2(``0,System.Boolean,``0,System.Boolean,System.Boolean,System.Int32)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startKey"></param>
-            <param name="includeStartKey"></param>
-            <param name="stopKey"></param>
-            <param name="includeStopKey"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            <param name="grabSomeLeadingRecords">default is 0. helps to grab several leading records before statrKey</param>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWith``2(``0)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithKeyPart"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWith``2(``0,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithKeyPart"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWithClosestToPrefix``2(``0)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table forward (ordered by key ascending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-            <para>If we have in a table keys:</para>
-            <para>"check"</para>
-            <para>"sam"</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            <para>"what"</para>
-            <para>our search prefix is "slap", we will get:</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithClosestPrefix"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardStartsWithClosestToPrefix``2(``0,System.Boolean)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table forward (ordered by key ascending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-            <para>If we have in a table keys:</para>
-            <para>"check"</para>
-            <para>"sam"</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            <para>"what"</para>
-            <para>our search prefix is "slap", we will get:</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithClosestPrefix"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWithClosestToPrefix``2(``0)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-            <para>If we have in a table keys:</para>
-            <para>"check"</para>
-            <para>"sam"</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            <para>"what"</para>
-            <para>our search prefix is "slap", we will get:</para>
-            <para>"slash"</para>
-            <para>"slam"</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithClosestPrefix"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWithClosestToPrefix``2(``0,System.Boolean)">
-            <summary>
-            <para>Mostly can be used for string or byte[] keys</para>
-            <para>Iterates table backward (ordered by key descending). Starting from the prefix or closest to the prefix part (big-endian from byte[] point of view)</para>
-            <para>If we have in a table keys:</para>
-            <para>"check"</para>
-            <para>"sam"</para>
-            <para>"slam"</para>
-            <para>"slash"</para>
-            <para>"what"</para>
-            <para>our search prefix is "slap", we will get:</para>
-            <para>"slash"</para>
-            <para>"slam"</para>
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithClosestPrefix"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWith``2(``0)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithKeyPart"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardStartsWith``2(``0,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="startWithKeyPart"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkip``2(System.UInt64)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="skippingQuantity"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkip``2(System.UInt64,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="skippingQuantity"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkip``2(System.UInt64)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="skippingQuantity"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkip``2(System.UInt64,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="skippingQuantity"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkipFrom``2(``0,System.UInt64)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="skippingQuantity"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectForwardSkipFrom``2(``0,System.UInt64,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="skippingQuantity"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkipFrom``2(``0,System.UInt64)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="skippingQuantity"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.NestedTable.SelectBackwardSkipFrom``2(``0,System.UInt64,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <typeparam name="TValue"></typeparam>
-            <param name="key"></param>
-            <param name="skippingQuantity"></param>
-            <param name="AsReadVisibilityScope">Metters only for transactions where this table is in modification list
-            <para>(by SynchronizeTables or just insert, remove.. any key modification command).</para>
-            <para>If this parameter set to true, enumerator will return key/value,</para>
-            <para>like they were, before transaction started (and parallel reading threds can see it).</para>
-            </param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.DataTypes.NestedTableInternal">
-            <summary>
-            In developing, will represent a table inside of the other table
-            </summary>
-        </member>
-        <member name="F:DBreeze.DataTypes.NestedTableInternal.TableExists">
-            <summary>
-            Identifies that table is fake, because we always want to return data even default (count - 0, select - row with .Exists= false etc...)
-            </summary>
-        </member>
-        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertValue``1(``0)">
-            <summary>
-            Converts type to a byte[] 
-            </summary>
-            <typeparam name="TData"></typeparam>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertKey``1(``0)">
-            <summary>
-            Converts key type to a byte[] 
-            </summary>
-            <typeparam name="TData"></typeparam>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DataTypes.DataTypesConvertor.ConvertBack``1(System.Byte[])">
-            <summary>
-            CONVERTING FROM byte[] to the generic type
-            </summary>
-            <typeparam name="TData"></typeparam>
-            <param name="dt"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.DataTypes.DbAscii">
-            <summary>
-            String.Empty is will return NULL
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbAscii.Get">
-            <summary>
-            Returns string from the object
-            </summary>
-        </member>
-        <member name="T:DBreeze.DataTypes.DbCustomSerializer`1">
-            <summary>
-            <para>Custom Serializer</para>
-            <para></para>
-            <para>To support JSON.NET, make a reference to their library and then somewhere before engine init add 2 lines:</para>
-            <para>CustomSerializator.Serializator = JsonConvert.SerializeObject;</para>
-            <para>CustomSerializator.Deserializator = JsonConvert.DeserializeObject;</para>
-            <para></para>
-            <para>Possible to make like this, without class instantiating:</para>
-            <para>List&lt;string&gt; aa = new List&lt;string&gt;();</para>
-            <para>aa.Add("test1")</para>
-            <para>aa.Add("test2")</para>
-            <para>-----inside of transaction---------</para>
-            <para>tran.Insert&lt;uint, DbCustomSerializer&lt;List&lt;string&gt;&gt; &gt;("t1", i, aa);</para>
-            <para>-----------------------------------</para>
-            <para>foreach (var row in tran.SelectForward&lt;uint, DbCustomSerializer&lt;List&lt;string&gt;&gt; &gt;("t1"))</para>
-            <para>Console.WriteLine("K: {0}; V: {1}", row.Key.ToString(), (row.Value == null) ? "NULL" : row.Value.Get.Count().ToString());</para>
-            </summary>
-            <typeparam name="T"></typeparam>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbCustomSerializer`1.SerializedObject">
-            <summary>
-            Returns serialized string representing the internal object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbCustomSerializer`1.Get">
-            <summary>
-            Gets deserialized object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbUnicode.Get">
-            <summary>
-            Returns string from the object
-            </summary>
-        </member>
-        <member name="P:DBreeze.DataTypes.DbUTF8.Get">
-            <summary>
-            Returns string from the object
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeResources">

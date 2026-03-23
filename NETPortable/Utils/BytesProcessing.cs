@@ -1574,8 +1574,11 @@ namespace DBreeze.Utils
         {
             bool blIsPositive = ((input[0] & 128) > 0);
             int exp = input[0] & 127;
-            input[0] = 0;
-            uint floatNumber = (uint)(input[0] << 24 | input[1] << 16 | input[2] << 8 | input[3]);
+
+            // REMOVED: input[0] = 0;
+
+            // FIX: Just ignore input[0] entirely and shift the remaining 3 bytes
+            uint floatNumber = (uint)(input[1] << 16 | input[2] << 8 | input[3]);
 
             if (blIsPositive)
             {
@@ -1589,6 +1592,14 @@ namespace DBreeze.Utils
 
             // as value allways must be 7 digits, then string allways will be 7 symbols long
             string floatString = floatNumber.ToString();
+
+            // Pad left with zeros if floatString is shorter than 7 characters, 
+            // which happens sometimes depending on the stored mantissa.
+            // (Note: Optional, but highly recommended, otherwise .Substring(1) can throw an exception if length is 1)
+            if (floatString.Length < 7)
+            {
+                floatString = floatString.PadLeft(7, '0');
+            }
 
             string resultFloat = String.Concat
                 (
@@ -1606,6 +1617,42 @@ namespace DBreeze.Utils
 
             return result;
         }
+        //public static float To_Float_BigEndian(this byte[] input)
+        //{
+        //    bool blIsPositive = ((input[0] & 128) > 0);
+        //    int exp = input[0] & 127;
+        //    input[0] = 0;
+        //    uint floatNumber = (uint)(input[0] << 24 | input[1] << 16 | input[2] << 8 | input[3]);
+
+        //    if (blIsPositive)
+        //    {
+        //        exp = exp - ENEG_FLOAT;
+        //    }
+        //    else
+        //    {
+        //        floatNumber = (uint)((~floatNumber) & 0xFFFFFF);
+        //        exp = EPOS_FLOAT - exp;
+        //    }
+
+        //    // as value allways must be 7 digits, then string allways will be 7 symbols long
+        //    string floatString = floatNumber.ToString();
+
+        //    string resultFloat = String.Concat
+        //        (
+        //            blIsPositive ? string.Empty : "-",
+        //            floatString.Substring(0, 1),
+        //            ".",
+        //            floatString.Substring(1),
+        //            "E",
+        //            (exp >= 0) ? "+" : string.Empty,
+        //            exp
+        //        );
+
+        //    float result = float.NaN;
+        //    float.TryParse(resultFloat, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out result);
+
+        //    return result;
+        //}
 
         #endregion
 
