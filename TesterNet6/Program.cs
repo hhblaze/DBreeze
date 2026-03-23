@@ -21,8 +21,9 @@ namespace TesterNet6
       
         static async Task Main(string[] args)
         {
+            //TestbyteConversions.RunDeepCopyTests();
             //TestbyteConversions.RunTestConcatMany();
-            TestbyteConversions.RunTestDoubles();            
+            //TestbyteConversions.RunTestDoubles();            
             //TestbyteConversions.RunTestFloats();
             //TestbyteConversions.RunTestDecimals();
             return;

@@ -580,5 +580,120 @@ NEW ToDouble speed: 1,62 seconds.
         -12345678901234.5487986546874d,
             };
         }
+
+
+
+        public static void RunDeepCopyTests()
+        {
+            Debug.WriteLine("--- Setting up test object ---");
+
+            // 1. Setup Original Object
+            var original = new Employee(id: "EMP-12345", rank: 1)
+            {
+                Name = "John Doe",
+                Location = new Address { City = "New York", ZipCode = 10001 },
+                Scores = [95, 87, 92], // C# 12 collection expression
+                Matrix = new[,] { { 1, 2 }, { 3, 4 } },
+                OnWorkCompleted = () => Debug.WriteLine("Done!"),
+                StructData = new MetadataStruct(99, new Address { City = "Metadata City", ZipCode = 55555 })
+            };
+
+            // Create a circular reference
+            original.Manager = original;
+
+            // 2. Perform Deep Copy
+            Debug.WriteLine("--- Performing Deep Copy ---");
+            var copy = DBreeze.Utils.DeepCopyByExpressionTrees.CloneByExpressionTree(original);//.DeepCopyByExpressionTrees(original);
+
+            // 3. Assertions & Validations
+            Debug.WriteLine("\n--- Validating Results ---");
+
+            // Reference Check
+            Debug.WriteLine($"Is copy a different object reference? {!ReferenceEquals(original, copy)} (Expected: True)");
+
+            // Primitive & String check
+            Debug.WriteLine($"Name matches? {copy.Name == original.Name} (Expected: True)");
+
+            // Readonly field check
+            Debug.WriteLine($"Readonly ID matches? {copy.Id == original.Id} (Expected: True)");
+            Debug.WriteLine($"Readonly Struct field matches? {copy.StructData.Id == original.StructData.Id} (Expected: True)");
+
+            // Circular Reference Check
+            Debug.WriteLine($"Does copy's manager point to the copy itself? {ReferenceEquals(copy.Manager, copy)} (Expected: True)");
+            Debug.WriteLine($"Is original's manager still original? {ReferenceEquals(original.Manager, original)} (Expected: True)");
+
+            // Delegate Check (Should be null as per your code's logic)
+            Debug.WriteLine($"Is delegate stripped (null)? {copy.OnWorkCompleted is null} (Expected: True)");
+
+            // Array Check (1D)
+            copy.Scores[0] = 999;
+            Debug.WriteLine($"Original array unaffected by copy mutation? {original.Scores[0] == 95} (Expected: True)");
+
+            // Array Check (2D)
+            copy.Matrix[0, 0] = 999;
+            Debug.WriteLine($"Original 2D array unaffected? {original.Matrix[0, 0] == 1} (Expected: True)");
+
+            // Nested Class Check
+            copy.Location.City = "Los Angeles";
+            Debug.WriteLine($"Original nested class unaffected? {original.Location.City == "New York"} (Expected: True)");
+
+            // Struct Containing Class Check
+            copy.StructData.AssociatedAddress.City = "Changed City";
+            Debug.WriteLine($"Original struct's nested class unaffected? {original.StructData.AssociatedAddress.City == "Metadata City"} (Expected: True)");
+
+            Debug.WriteLine("\nAll tests ran successfully!");
+        }
+
+        // ==========================================
+        // TEST MODELS
+        // ==========================================
+
+        public class Employee
+        {
+            // Readonly field to test Reflection SetValue fallback
+            public readonly string Id;
+
+            // Readonly property with a hidden readonly backing field
+            public int Rank { get; }
+
+            public string Name { get; set; } = string.Empty;
+            public Address Location { get; set; } = new();
+
+            // Circular reference test
+            public Employee? Manager { get; set; }
+
+            public int[] Scores { get; set; } = [];
+            public int[,] Matrix { get; set; } = new int[0, 0];
+
+            // Delegate to test skipping logic
+            public Action? OnWorkCompleted { get; set; }
+
+            // Struct that requires deep copying because it contains a class
+            public MetadataStruct StructData { get; set; }
+
+            public Employee(string id, int rank)
+            {
+                Id = id;
+                Rank = rank;
+            }
+        }
+
+        public class Address
+        {
+            public string City { get; set; } = string.Empty;
+            public int ZipCode { get; set; }
+        }
+
+        public struct MetadataStruct
+        {
+            public readonly int Id;
+            public Address AssociatedAddress; // Class inside a struct
+
+            public MetadataStruct(int id, Address associatedAddress)
+            {
+                Id = id;
+                AssociatedAddress = associatedAddress;
+            }
+        }
     }
 }
