@@ -14,6 +14,25 @@ namespace TesterNet6
 
         private static readonly Random _rand = new Random(42); // fixed seed for reproducibility
 
+
+        public static void RunTestMemory()
+        {
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                
+                
+                tran.Insert<int, int>("mem_Customer", 1, 1);
+                tran.Commit();
+            }
+
+            using (var tran = Program.DBEngine.GetTransaction())
+            {
+                var ers = tran.Select<int, int>("mem_Customer", 1);
+                Debug.WriteLine(ers.Value);
+            }
+
+        }
+
         public static void RunTestConcatMany()
         {
             byte[] btemp = Array.Empty<byte>();

@@ -26,9 +26,15 @@ namespace TesterNet6
             //TestbyteConversions.RunTestDoubles();            
             //TestbyteConversions.RunTestFloats();
             //TestbyteConversions.RunTestDecimals();
-            return;
+            
 
             InitDB();
+
+
+            TestbyteConversions.RunTestMemory();
+
+            return;
+
             OpenAI.Init(PathToOpenAIKey);
 
             //Examples
