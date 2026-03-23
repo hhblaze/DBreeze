@@ -4,31 +4,30 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
 
 namespace DBreeze.Utils
 {
-    public class DbThreadsGator:IDisposable
-    {
+    /*
+     .NET 8 optimized
+     */
 
-        System.Threading.ManualResetEvent gate = null;
+    internal class DbThreadsGator : IDisposable
+    {
+        // Replaced ManualResetEvent with ManualResetEventSlim for significantly better performance
+        private readonly ManualResetEventSlim _gate;
 
         /// <summary>
         /// Creates open Gate
         /// </summary>
         public DbThreadsGator()
         {
-            gate = new System.Threading.ManualResetEvent(true);
+            _gate = new ManualResetEventSlim(true);
         }
 
         public DbThreadsGator(bool gateIsOpen)
         {
-            if (gateIsOpen)
-                gate = new System.Threading.ManualResetEvent(true);
-            else
-                gate = new System.Threading.ManualResetEvent(false);
+            _gate = new ManualResetEventSlim(gateIsOpen);
         }
 
         /// <summary>
@@ -37,7 +36,8 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public bool PutGateHere()
         {
-            return gate.WaitOne();
+            _gate.Wait();
+            return true; // WaitOne() without timeout always returns true when it completes
         }
 
         /// <summary>
@@ -47,33 +47,24 @@ namespace DBreeze.Utils
         /// <returns></returns>
         public bool PutGateHere(int milliseconds)
         {
-            return gate.WaitOne(milliseconds);
+            return _gate.Wait(milliseconds);
         }
-
-        ///// <summary>
-        ///// If gate is closed then it will be closed timeout time in milliseconds
-        ///// </summary>
-        ///// <param name="milliseconds"></param>
-        ///// <param name="milliseconds">exitContext</param>
-        ///// <returns></returns>
-        //public bool PutGateHere(int milliseconds, bool exitContext)
-        //{
-        //    return gate.WaitOne(milliseconds, exitContext);
-        //}
 
         public bool OpenGate()
         {
-            return gate.Set();
+            _gate.Set();
+            return true; // EventWaitHandle.Set() for unnamed/local events always returns true
         }
 
         public bool CloseGate()
         {
-            return gate.Reset();
+            _gate.Reset();
+            return true; // EventWaitHandle.Reset() for unnamed/local events always returns true
         }
 
         public void Dispose()
         {
-            gate.Dispose();            
+            _gate.Dispose();
         }
     }
 }
