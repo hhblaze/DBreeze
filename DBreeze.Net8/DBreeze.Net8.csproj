@@ -36,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+        <Compile Include="..\DBreeze.Net5\Utils\MultiKeyConcurrentSortedDictionary.cs" Link="Utils\MultiKeyConcurrentSortedDictionary.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />

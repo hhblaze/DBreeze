@@ -632,7 +632,39 @@ DBreeze provides built-in utilities designed for extreme speed and memory effici
     using var fileStream = File.OpenRead("large_video.mp4");
     byte[] hash = DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128_Stream(fileStream);
     ```
+* **`MultiKeyConcurrentSortedDictionary<TKey, TValue>` and `MultiKeySortedDictionary<TKey, TValue>` (ReaderWriteLockSlim self-used, same API)**
+	`MultiKeyConcurrentSortedDictionary<TKey, TValue>` (in `DBreeze.Utils`) is a thread-safe, disposable dictionary optimized for multi-part keys (using `ValueTuple`) and partial key range searches. It is backed by `ReaderWriterLockSlim` and allows safe concurrent reads/writes.
 
+	```csharp
+	// 1. Instantiation (Must be wrapped in 'using' or manually Disposed)
+	using var inventory = new MultiKeyConcurrentSortedDictionary<(string, int, int), string>();
+
+	// 2. Add / Update (Thread-safe)
+	inventory.Add(("Electronics", 1, 1), "Smartphone");
+	inventory[("Groceries", 5, 1)] = "Apples";
+	inventory[("Groceries", 5, 2)] = "Bananas";
+
+	// 3. Retrieval
+	string phone = inventory.Get(("Electronics", 1, 1));
+	bool exists = inventory.TryGetValue(("Groceries", 5, 1), out string fruit);
+	bool hasApples = inventory.Contains(("Groceries", 5, 1));
+
+	// 4. Partial Key Search (GetByKeyStart)
+	// Matches the first N components of the tuple (acts like a prefix search)
+	var allElectronics = inventory.GetByKeyStart("Electronics"); 
+	var groceriesAisle5 = inventory.GetByKeyStart("Groceries", 5); // Matches (Groceries, 5, X)
+
+	// 5. Thread-Safe Iteration (GetAll)
+	// Returns a materialized snapshot List; safe to execute while other threads are writing
+	var snapshot = inventory.GetAll();
+
+	// 6. Removal (Exact or Partial)
+	inventory.Remove(("Electronics", 1, 1)); // Exact match removal
+	inventory.Remove("Groceries", 5);        // Partial match removal (removes ALL groceries in aisle 5)
+
+	// 7. Clearing
+	inventory.Clear();
+	```
 ## 7. Working with Memory Tables
 
 Configure `AlternativeTablesLocations` to force specific tables into memory/alternative folders. An empty string indicates in-memory storage.

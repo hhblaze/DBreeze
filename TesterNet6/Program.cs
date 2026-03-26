@@ -6,6 +6,7 @@ using static TesterNet6.OpenAI;
 using System.Text.Json;
 using TesterNet6.TextCorpus;
 using DBreeze.Tries;
+using TesterNet6.ByteConversion;
 
 
 namespace TesterNet6 
@@ -21,12 +22,13 @@ namespace TesterNet6
       
         static async Task Main(string[] args)
         {
+            TestMultiKeyDictionary.RunTestMultiKeyConcurrent();
             //TestbyteConversions.RunDeepCopyTests();
             //TestbyteConversions.RunTestConcatMany();
             //TestbyteConversions.RunTestDoubles();            
             //TestbyteConversions.RunTestFloats();
             //TestbyteConversions.RunTestDecimals();
-            
+
 
             InitDB();
 
