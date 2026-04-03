@@ -20,7 +20,7 @@ using DBreeze.Utils;
 namespace DBreeze.LianaTrie
 {
     /// <summary>
-    /// Liana Trie
+    /// Liana Trie. Thread safe
     /// </summary>
     public class LTrie : ITrie, ITransactable, IDisposable
     {
