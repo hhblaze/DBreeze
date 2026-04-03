@@ -1356,6 +1356,102 @@
             Returns DBreeze schema object
             </summary>
         </member>
+        <member name="T:DBreeze.DBreezeResources">
+            <summary>
+            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
+            Key is a string, Value any standard DBreeze.DataType (or serialized object, when custom serializer is supplied).
+            Can be called from anywhere, even from other transactions. There is no need to add into sync table
+            </summary>
+        </member>
+        <member name="F:DBreeze.DBreezeResources._urp">
+            <summary>
+            UserResourcePrefix. Having prefixes gives us ability to reuse the table for smth. else
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.#ctor(DBreeze.DBreezeEngine)">
+            <summary>
+            constructor
+            </summary>
+            <param name="engine"></param>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Dispose">
+            <summary>
+            Disposing
+            </summary>
+        </member>
+        <member name="T:DBreeze.DBreezeResources.Settings">
+            <summary>
+            Settings regulating resources behaviour
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
+            <summary>
+            Resource will be stored in-memory, for the fast access. Default is true
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.HoldOnDisk">
+            <summary>
+            Resource will be stored on-disk. Default is true
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.FastUpdates">
+            <summary>            
+            Sets OverWriteIsAllowed = false. Toggle only if it's not enough the speed of the update. Default is false.
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.InsertWithVerification">
+            <summary>
+            Prevents disk insert of the identical value of the existing key. Default is true.
+            </summary>
+        </member>
+        <member name="P:DBreeze.DBreezeResources.Settings.SortingAscending">
+            <summary>
+            Needed for getting resources via SelectStartsWith. Default is true.
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,DBreeze.DBreezeResources.Settings)">
+            <summary>
+            Insert resource
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Insert``1(System.Collections.Generic.IDictionary{System.String,``0},DBreeze.DBreezeResources.Settings)">
+            <summary>
+            Batch insert of resources where value is a defined DBreeze or DBreeze.CustomSerializer type
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},DBreeze.DBreezeResources.Settings)">
+            <summary>
+            Batch insert of resources where value is a byte[]
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
+            <summary>
+            Removes resources from database and In-Memory dictionary 
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Remove(System.String)">
+            <summary>
+            Removes resource from database and 
+            </summary>        
+        </member>
+        <member name="M:DBreeze.DBreezeResources.SelectStartsWith``1(System.String,DBreeze.DBreezeResources.Settings)">
+            <summary>
+            SelectStartsWith.
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
+            <summary>
+            Gets resources of the same type as a batch from memory or database (if not yet loaded).
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+            </summary>
+        </member>
+        <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
+            <summary>
+            Gets resource from memory or database (if not yet loaded)
+            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+            </summary>
+        </member>
         <member name="T:DBreeze.Exceptions.TableNotOperableException">
             <summary>
             This is a specific Exception which will bring to DB is not opearable state, we need to analyze this type of exception separately,
@@ -1857,7 +1953,7 @@
         </member>
         <member name="T:DBreeze.LianaTrie.LTrie">
             <summary>
-            Liana Trie
+            Liana Trie. Thread safe
             </summary>
         </member>
         <member name="F:DBreeze.LianaTrie.LTrie.Cache">
@@ -2289,6 +2385,243 @@
         <member name="M:DBreeze.Storage.BackupRestorer.StartRestoration">
             <summary>
             Starts backup restore routine
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.MemoryStorage">
+            <summary>
+            Memory storage
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.#ctor(System.Int32,System.Int32,DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy)">
+            <summary>
+            
+            </summary>
+            <param name="initialCapacity">Initial Memory Capacity in bytes</param>
+            <param name="increaseOnBytes">Rules is strategy is FIXED_LENGTH_INCREASE, quantity of bytes to increse memory</param>
+            <param name="strategy">Memory expand strategy</param>
+        </member>
+        <member name="P:DBreeze.Storage.MemoryStorage.RawBuffer">
+            <summary>
+            Gives an ability to access field itself. Must use external logical lock.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.Clear(System.Boolean)">
+            <summary>
+            Sets EOF pointer to 0.
+            <para>USE withInternalArrayResize by necessity. If it's true then array will be re-initialized to initial capacity</para>
+            <para>this also will call GC and the whole process will take some time.</para>
+            <para>If false, only pointer EOF will be set to 0, capacity of the array will not be changed - very fast</para>
+            </summary>
+            <param name="withInternalArrayResize"></param>
+        </member>
+        <member name="P:DBreeze.Storage.MemoryStorage.EOF">
+            <summary>
+            End of file
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.GetFullData">
+            <summary>
+            Can return null
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.Storage.MemoryStorage.MemorySize">
+            <summary>
+            Total reserved field length. EOF shows the end of useful information.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.Read(System.Int32,System.Int32)">
+            <summary>
+            If length = 0 returns new byte[0]
+            </summary>
+            <param name="offset"></param>
+            <param name="length"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.Write(System.Byte[],System.Int32)">
+            <summary>
+            Must be called from lock
+            </summary>
+            <param name="data"></param>
+            <param name="offset"></param>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.Write_ToTheEnd(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.Write_ByOffset(System.Int32,System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="offset"></param>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Storage.MemoryStorage.Writes_ByOffsets(System.Collections.Generic.Dictionary{System.Int64,System.Byte[]})">
+            <summary>
+            
+            </summary>
+            <param name="datas"></param>
+        </member>
+        <member name="T:DBreeze.Storage.MSR">
+            <summary>
+            DBreeze random and sequential disk IO buffers implementation.
+            Specially designed for DBreeze specific storage format.
+            Not for common usage.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR.IsOperable">
+            <summary>
+            Indicates subsystem vitality
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR._randBuf">
+            <summary>
+            Random buffer
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.MSR.r">
+            <summary>
+            Record in rollback is characterized with 
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.r.o">
+            <summary>
+            offset in rollback file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.r.l">
+            <summary>
+            Length in rollback file
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR._rollbackCache">
+            <summary>
+            Rollback cache
+            Key is offset in data file, value is corresponding offset and length in rollback file
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR.maxRandomBufferSize">
+            <summary>
+            Random buffer maximal size before flush
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR.MaxRollbackFileSize">
+            <summary>
+            Rollback file re-creation after initialization
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR.eofData">
+            <summary>
+            Pointer to the end of file
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR._storageFixTime">
+            <summary>
+            DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
+            If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
+            LTrieRow will have different version and will return exception.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.Length">
+            <summary>
+            Physical length of the storage file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.MSR.StorageFixTime">
+            <summary>
+            Returns time of file initiation, ead remarks on 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Table_Dispose">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.RecreateFiles">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Table_WriteToTheEnd(System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Table_WriteByOffset(System.Byte[],System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="offset"></param>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Table_WriteByOffset(System.Int64,System.Byte[])">
+            <summary>
+            
+            </summary>
+            <param name="offset"></param>
+            <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.FlushRandomBuffer">
+            <summary>
+            Is called only from lock_fs and must be finished by calling NET_Flush
+            </summary>
+            <param name="commit"></param>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Table_Read(System.Boolean,System.Byte[],System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="useCache">if actual overwritten data must be used</param>
+            <param name="offset"></param>
+            <param name="count"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Table_Read(System.Boolean,System.Int64,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="readActual">if actual overwritten data must be used</param>
+            <param name="offset"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Commit">
+            <summary>
+            Cleans all buffers and flushes data to the disk
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.MSR.TransactionalCommitIsStarted">
+            <summary>
+            Transactional Commit is started
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.TransactionalCommit">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.TransactionalCommitIsFinished">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.TransactionalRollback">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.MSR.Rollback">
+            <summary>
+            Standard and transactional rollback
             </summary>
         </member>
         <member name="T:DBreeze.Storage.RemoteInstance.IRemoteInstanceCommander">
@@ -2844,257 +3177,6 @@
         <member name="P:DBreeze.Storage.IStorage.Length">
             <summary>
             Length of the Storage
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.MemoryStorage">
-            <summary>
-            Memory storage
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.#ctor(System.Int32,System.Int32,DBreeze.Storage.MemoryStorage.eMemoryExpandStartegy)">
-            <summary>
-            
-            </summary>
-            <param name="initialCapacity">Initial Memory Capacity in bytes</param>
-            <param name="increaseOnBytes">Rules is strategy is FIXED_LENGTH_INCREASE, quantity of bytes to increse memory</param>
-            <param name="strategy">Memory expand strategy</param>
-        </member>
-        <member name="P:DBreeze.Storage.MemoryStorage.RawBuffer">
-            <summary>
-            Gives an ability to access field itself. Must use external logical lock.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Clear(System.Boolean)">
-            <summary>
-            Sets EOF pointer to 0.
-            <para>USE withInternalArrayResize by necessity. If it's true then array will be re-initialized to initial capacity</para>
-            <para>this also will call GC and the whole process will take some time.</para>
-            <para>If false, only pointer EOF will be set to 0, capacity of the array will not be changed - very fast</para>
-            </summary>
-            <param name="withInternalArrayResize"></param>
-        </member>
-        <member name="P:DBreeze.Storage.MemoryStorage.EOF">
-            <summary>
-            End of file
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.GetFullData">
-            <summary>
-            Can return null
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.Storage.MemoryStorage.MemorySize">
-            <summary>
-            Total reserved field length. EOF shows the end of useful information.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Read(System.Int32,System.Int32)">
-            <summary>
-            If length = 0 returns new byte[0]
-            </summary>
-            <param name="offset"></param>
-            <param name="length"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Write(System.Byte[]@,System.Int32)">
-            <summary>
-            Must be called from lock
-            </summary>
-            <param name="data"></param>
-            <param name="offset"></param>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Write_ToTheEnd(System.Byte[]@)">
-            <summary>
-            
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Write_ToTheEnd(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Write_ByOffset(System.Int32,System.Byte[]@)">
-            <summary>
-            
-            </summary>
-            <param name="offset"></param>
-            <param name="data"></param>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Write_ByOffset(System.Int32,System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="offset"></param>
-            <param name="data"></param>
-        </member>
-        <member name="M:DBreeze.Storage.MemoryStorage.Writes_ByOffsets(System.Collections.Generic.Dictionary{System.Int64,System.Byte[]})">
-            <summary>
-            
-            </summary>
-            <param name="datas"></param>
-        </member>
-        <member name="T:DBreeze.Storage.MSR">
-            <summary>
-            DBreeze random and sequential disk IO buffers implementation.
-            Specially designed for DBreeze specific storage format.
-            Not for common usage.
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR.IsOperable">
-            <summary>
-            Indicates subsystem vitality
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR._randBuf">
-            <summary>
-            Random buffer
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.MSR.r">
-            <summary>
-            Record in rollback is characterized with 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.r.o">
-            <summary>
-            offset in rollback file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.r.l">
-            <summary>
-            Length in rollback file
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR._rollbackCache">
-            <summary>
-            Rollback cache
-            Key is offset in data file, value is corresponding offset and length in rollback file
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR.maxRandomBufferSize">
-            <summary>
-            Random buffer maximal size before flush
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR.MaxRollbackFileSize">
-            <summary>
-            Rollback file re-creation after initialization
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR.eofData">
-            <summary>
-            Pointer to the end of file
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR._storageFixTime">
-            <summary>
-            DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
-            If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
-            LTrieRow will have different version and will return exception.
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.Length">
-            <summary>
-            Physical length of the storage file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.MSR.StorageFixTime">
-            <summary>
-            Returns time of file initiation, ead remarks on 
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Table_Dispose">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.RecreateFiles">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Table_WriteToTheEnd(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Table_WriteByOffset(System.Byte[],System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="offset"></param>
-            <param name="data"></param>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Table_WriteByOffset(System.Int64,System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="offset"></param>
-            <param name="data"></param>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.FlushRandomBuffer">
-            <summary>
-            Is called only from lock_fs and must be finished by calling NET_Flush
-            </summary>
-            <param name="commit"></param>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Table_Read(System.Boolean,System.Byte[],System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="useCache">if actual overwritten data must be used</param>
-            <param name="offset"></param>
-            <param name="count"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Table_Read(System.Boolean,System.Int64,System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="readActual">if actual overwritten data must be used</param>
-            <param name="offset"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Commit">
-            <summary>
-            Cleans all buffers and flushes data to the disk
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.MSR.TransactionalCommitIsStarted">
-            <summary>
-            Transactional Commit is started
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.TransactionalCommit">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.TransactionalCommitIsFinished">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.TransactionalRollback">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.MSR.Rollback">
-            <summary>
-            Standard and transactional rollback
             </summary>
         </member>
         <member name="T:DBreeze.Storage.RISR">
@@ -4997,7 +5079,7 @@
             Also: ((byte[])null).ConcatMany(new byte[] { 2, 3, 4 }, new byte[] { 3, 7, 8 }, new byte[] { 9, 10, 11 });
             </summary>
             <param name="ar1"></param>
-            <param name="ar2"></param>
+            <param name="arrays"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.ConcatMany(System.Byte[],System.Collections.Generic.IList{System.Byte[]})">
@@ -5059,9 +5141,8 @@
             <param name="en"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Utils.BytesProcessing.IndexOfByteArray(System.Byte[],System.Byte[])">
+        <member name="M:DBreeze.Utils.BytesProcessing.IndexOfStringInByteArray(System.Byte[],System.String,System.Text.Encoding)">
             <summary>
-            Searches Start index of the byte[] pattern inside of the byte array
             If not found returns -1
             </summary>
             <param name="ar"></param>
@@ -5069,40 +5150,55 @@
             <param name="en"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IndexOfByteArray(System.Byte[],System.Byte[])">
+            <summary>
+            Searches Start index of the byte[] pattern inside of the byte array
+            If not found returns -1
+            </summary>
+            <param name="ar"></param>
+            <param name="search"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.IndexOfByteArray(System.ReadOnlySpan{System.Byte},System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Searches Start index of the byte[] pattern inside of the byte array
+            If not found returns -1
+            </summary>
+            <param name="ar"></param>
+            <param name="search"></param>
+            <returns></returns>
+        </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Byte(System.Byte[])">
             <summary>
             From 1 byte array returns byte
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
+            </summary>        
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Byte_NULL(System.Byte[])">
             <summary>
             From 2 bytes array returns byte?
             If array length is not equal to 2 bytes returns null
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
+            </summary>        
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime(System.Byte[])">
             <summary>
             8-byte array tries to convert to DateTime
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
+            </summary>        
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime_zCompatibility(System.Byte[])">
             <summary>
-            DON't use it (only for compatibility reasons described in docu from [20120922])
+            DON'T use it (only for compatibility reasons described in docu from [20120922])
             BigEndian 8 bytes tries to convert to Ticks
-            </summary>
-            <param name="value"></param>
-            <returns></returns>
+            </summary>        
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_DateTime_NULL(System.Byte[])">
             <summary>
             Returns DateTime? from 9-byte array
             If array is not equal 9 bytes returns null
+            </summary>  
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Bool(System.Byte[])">
+            <summary>
+            Returns bool from 1-byte array
             </summary>
             <param name="value"></param>
             <returns></returns>
@@ -5112,8 +5208,6 @@
             Returns bool? from 1-byte array
             if value length != 1 returns null.
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Char(System.Byte[])">
             <summary>
@@ -5133,217 +5227,178 @@
             <summary>
             Converts 1 byte array into sbyte
             </summary>
-            <param name="value"></param>
-            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_SByte(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts 1 byte array into sbyte
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_SByte_NULL(System.Byte[])">
             <summary>
             Converts 2 bytes array into sbyte?
             </summary>
-            <param name="value"></param>
-            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_SByte_NULL(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts 2 bytes array into sbyte?
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_BigEndian(System.Byte[])">
             <summary>
             From 2 bytes array which is in BigEndian order (highest byte first, lowest last) makes short.
             If array not equal 2 bytes throws exception. (-32,768 to 32,767)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_LittleEndian(System.Byte[])">
             <summary>
             From 2 bytes array which is in LittleEndian order (lowest byte first, highest last) makes short.
             If array not equal 2 bytes throws exception. (-32,768 to 32,767)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_BigEndian_NULL(System.Byte[])">
             <summary>
             From 3 bytes array which is in BigEndian order (highest byte first, lowest last) makes short?.
             If array not equal 3 bytes returns null. (-32,768 to 32,767)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int16_LittleEndian_NULL(System.Byte[])">
             <summary>
             From 3 bytes array which is in LittleEndian order (lowest byte first, highest last) makes short.
             If array not equal 3 bytes returns null. (-32,768 to 32,767)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_BigEndian(System.Byte[])">
             <summary>
             From 2 bytes array which is in BigEndian order (highest byte first, lowest last) makes ushort.
             If array not equal 2 bytes throws exception. (0 to 65,535)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_LittleEndian(System.Byte[])">
             <summary>
             From 2 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ushort.
             If array not equal 2 bytes throws exception. (0 to 65,535)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_BigEndian_NULL(System.Byte[])">
             <summary>
             From 3 bytes array which is in BigEndian order (highest byte first, lowest last) makes ushort?.
             If array not equal 3 bytes returns null. (0 to 65,535)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt16_LittleEndian_NULL(System.Byte[])">
             <summary>
             From 3 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ushort?.
             If array not equal 3 bytes returns null. (0 to 65,535)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_BigEndian(System.Byte[])">
             <summary>
             From 4 bytes array which is in BigEndian order (highest byte first, lowest last) makes int.
             If array not equal 4 bytes throws exception. (-2,147,483,648 to 2,147,483,647)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_LittleEndian(System.Byte[])">
             <summary>
             From 4 bytes array which is in LittleEndian order (lowest byte first, highest last) makes int.
             If array not equal 4 bytes throws exception. (-2,147,483,648 to 2,147,483,647)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_BigEndian_NULL(System.Byte[])">
             <summary>
             From 5 bytes array which is in BigEndian order (highest byte first, lowest last) makes int.
             If array is not equal 5 bytes returns null. Range is (-2,147,483,648 to 2,147,483,647)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int32_LittleEndian_NULL(System.Byte[])">
             <summary>
             From 5 bytes array which is in LittleEndian order (lowest byte first, highest last) makes int.
             If array not equal 5 bytes returns null. (-2,147,483,648 to 2,147,483,647)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_BigEndian(System.Byte[])">
             <summary>
             From 4 bytes array which is in BigEndian order (highest byte first, lowest last) makes uint.
             If array not equal 4 bytes throws exception. (0 to 4.294.967.295)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_LittleEndian(System.Byte[])">
             <summary>
             From 4 bytes array which is in LittleEndian order (lowest byte first, highest last) makes uint.
             If array not equal 4 bytes throws exception. (0 to 4.294.967.295)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_BigEndian_NULL(System.Byte[])">
             <summary>
             From 5 bytes array which is in BigEndian order (highest byte first, lowest last) makes uint?.
             If array not equal 5 bytes returns null. (0 to 4.294.967.295)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt32_LittleEndian_NULL(System.Byte[])">
             <summary>
             From 5 bytes array which is in LittleEndian order (lowest byte first, highest last) makes uint?.
             If array not equal 5 bytes returns null. (0 to 4.294.967.295)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_BigEndian(System.Byte[])">
             <summary>
             From 8 bytes array which is in BigEndian order (highest byte first, lowest last) makes long.
             If array not equal 8 bytes throws exception. (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_LittleEndian(System.Byte[])">
             <summary>
             From 8 bytes array which is in LittleEndian order (lowest byte first, highest last) makes long.
             If array not equal 8 bytes throws exception. (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_BigEndian_NULL(System.Byte[])">
             <summary>
             From 9 bytes array which is in BigEndian order (highest byte first, lowest last) makes long.
             If array not equal 9 bytes return null. Range (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Int64_LittleEndian_NULL(System.Byte[])">
             <summary>
             From 9 bytes array which is in LittleEndian order (lowest byte first, highest last) makes long.
             If array not equal 9 bytes returns null. Range (-9.223.372.036.854.775.808 bis 9.223.372.036.854.775.807)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.DynamicLength_To_UInt64_BigEndian(System.Byte[])">
             <summary>
             From dynamic byte array (up to 8 bytes) stored in BigEndian format creates ulong value, 
             note if given byte array bigger then 8 bytes - then calcualtion will start from 0
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_BigEndian(System.Byte[])">
             <summary>
             From 8 bytes array which is in BigEndian order (highest byte first, lowest last) makes ulong.
             If array not equal 8 bytes throws exception. (0 to 18,446,744,073,709,551,615)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_LittleEndian(System.Byte[])">
             <summary>
             From 8 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ulong.
             If array not equal 8 bytes throws exception. (0 to 18,446,744,073,709,551,615)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_BigEndian_NULL(System.Byte[])">
             <summary>
             From 9 bytes array which is in BigEndian order (highest byte first, lowest last) makes ulong?.
             If array is not equal 9 bytes returns null. (0 to 18,446,744,073,709,551,615)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_UInt64_LittleEndian_NULL(System.Byte[])">
             <summary>
             From 9 bytes array which is in LittleEndian order (lowest byte first, highest last) makes ulong?.
             If array is not equal 9 bytes returns null. (0 to 18,446,744,073,709,551,615)
             </summary>
-            <param name="value"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian(System.Byte[])">
+            <summary>
+            Converts sortable byte[15] to decimal
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian(System.ReadOnlySpan{System.Byte})">
             <summary>
             Converts sortable byte[15] to decimal
             </summary>
@@ -5354,36 +5409,51 @@
             <summary>
             Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
             </summary>
-            <param name="input"></param>
-            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Decimal_BigEndian_NULL(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts sortable byte[16] to decimal? if byte array length is not 16 returns null
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian(System.Byte[])">
             <summary>
             Converts sortable byte[9] to double
+            </summary>    
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts sortable byte[9] to double
             </summary>
-            <param name="input"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian_NULL(System.Byte[])">
             <summary>
             Converts sortable byte[10] to double?
             </summary>
-            <param name="input"></param>
-            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Double_BigEndian_NULL(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts sortable byte[10] to double?
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian(System.Byte[])">
             <summary>
             Converts sortable byte[4] to float
+            </summary>        
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts sortable byte[4] to float
             </summary>
-            <param name="input"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian_NULL(System.Byte[])">
             <summary>
             Converts sortable byte[5] to float?
+            </summary>          
+        </member>
+        <member name="M:DBreeze.Utils.BytesProcessing.To_Float_BigEndian_NULL(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Converts sortable byte[5] to float?
             </summary>
-            <param name="input"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.ByteArrayToDoubleArray(System.Byte[])">
             <summary>
@@ -5396,7 +5466,7 @@
             <summary>
             Converts byte[] to double[]. Reversed ByteArrayToDoubleArray
             </summary>
-            <param name="byteArray"></param>
+            <param name="doubleArray"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_2_byte_array(System.Nullable{System.Byte})">
@@ -5404,7 +5474,7 @@
             Returns 2 byte array which represents byte?
             </summary>
             <param name="value"></param>
-            <returns></returns>
+            <returns></returns>        
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing.To_8_bytes_array(System.DateTime)">
             <summary>
@@ -5716,11 +5786,6 @@
             <param name="replaceWith"></param>
             <returns></returns>
         </member>
-        <member name="F:DBreeze.Utils.BytesProcessing._hexDigits">
-            <summary>
-            Used by ToBytesString
-            </summary>
-        </member>
         <member name="M:DBreeze.Utils.BytesProcessing.ToByteArrayFromHex(System.String)">
             <summary>
             Generates byte[] from given Hex 1F0000000020. Backward function is ToHexFromByteArray
@@ -5814,13 +5879,13 @@
             <para>Returns: had {120, 115, 147} -> {120, 116, 0}</para>
             </summary>
             <param name="bt"></param>
+            <param name="index"></param>
             <returns></returns>
         </member>
         <!-- Badly formed XML comment ignored for member "M:DBreeze.Utils.BytesProcessing.BytesAction_GoDownNextByteStart_NoArrayGrow_BigEndian(System.Byte[],System.Int32)" -->
         <member name="M:DBreeze.Utils.BytesProcessing._Equals(System.Byte[],System.Byte[])">
             <summary>
-            <para>USE _ByteArrayEquals</para>
-            If both arrays are null, returns true. Checks nulls also. Uses SequenceEqual
+            Compares 2 byte arrays
             </summary>
             <param name="ar"></param>
             <param name="compareArray"></param>
@@ -5828,7 +5893,7 @@
         </member>
         <member name="M:DBreeze.Utils.BytesProcessing._ByteArrayEquals(System.Byte[],System.Byte[])">
             <summary>
-            Managed way compares 2 bytes array. Uses for loop and extra checks like null, length before
+            Compares 2 byte arrays
             </summary>
             <param name="b1"></param>
             <param name="b2"></param>
@@ -5953,6 +6018,25 @@
             </summary>
             <param name="milliseconds"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.DeepCopyByExpressionTrees">
+            <summary>
+            return (new MyObject()).CloneByExpressionTree();
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.DeepCopyByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
+            <summary>
+            Creates a deep copy of an object.
+            </summary>
+            <typeparam name="T">Object type.</typeparam>
+            <param name="original">Object to copy.</param>
+            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.CloneByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
+            <summary>
+            Creates a deep copy of an object (Works 3 times faster than ProtobufClone).
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.JsonSerializator.SerializeMJSON(System.Object)">
             <summary>
@@ -6089,6 +6173,30 @@
             <typeparam name="T"></typeparam>
             <param name="str"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2">
+            <summary>
+            Thread-Safe Concurrent MultiKeySortedDictionary where key is a Tuple with more than one key.
+            Optimized for .NET 8. Uses ReaderWriterLockSlim for concurrent reads and exclusive writes.
+            </summary>
+            <typeparam name="TKey">Must be an ITuple (ValueTuple)</typeparam>
+            <typeparam name="TValue">The value type</typeparam>
+        </member>
+        <member name="P:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2.Count">
+            <summary>
+            Total count of elements in the dictionary.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2.GetAll">
+            <summary>
+            Returns a snapshot of all elements. 
+            Materialized to a List to prevent locking the dictionary during external iteration.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2.GetByKeyStart(System.Object[])">
+            <summary>
+            Returns a snapshot of elements matching the start keys.
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.Compression.GZip_Compress(System.Byte[])">
             <summary>
@@ -6417,29 +6525,6 @@
             <summary>
             Each local time must be converted into UTC and then represented as ISO
             </summary>
-        </member>
-        <member name="T:DBreeze.Utils.DeepCopyByExpressionTrees">
-            <summary>
-            Superfast deep copier class, which uses Expression trees.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.DeepCopyByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
-            <summary>
-            Creates a deep copy of an object.
-            </summary>
-            <typeparam name="T">Object type.</typeparam>
-            <param name="original">Object to copy.</param>
-            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Utils.DeepCopyByExpressionTrees.CloneByExpressionTree``1(``0,System.Collections.Generic.Dictionary{System.Object,System.Object})">
-            <summary>
-            Creates a deep copy of an object (Works 3 times faster than ProtobufClone).
-            </summary>
-            <typeparam name="T">Object type.</typeparam>
-            <param name="original">Object to copy.</param>
-            <param name="copiedReferencesDict">Dictionary of already copied objects (Keys: original objects, Values: their copies).</param>
-            <returns></returns>
         </member>
         <member name="T:DBreeze.Utils.FastRandom">
              <summary>
@@ -7637,135 +7722,6 @@
             <summary>
             Configuration 
             </summary>
-        </member>
-        <member name="T:DBreeze.DBreezeResources">
-            <summary>
-            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
-            Key is a string, Value any standard DBreeze.DataType (or serialized object, when custom serializer is supplied).
-            Can be called from anywhere, even from other transactions. There is no need to add into sync table
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeResources._urp">
-            <summary>
-            UserResourcePrefix. Having prefixes gives us ability to reuse the table for smth. else
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.#ctor(DBreeze.DBreezeEngine)">
-            <summary>
-            constructor
-            </summary>
-            <param name="engine"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Dispose">
-            <summary>
-            Disposing
-            </summary>
-        </member>
-        <member name="T:DBreeze.DBreezeResources.Settings">
-            <summary>
-            Settings regulating resources behaviour
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Settings.#ctor">
-            <summary>
-            Constructor
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
-            <summary>
-            Resource will be stored in-memory, for the fast access.
-            Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.HoldOnDisk">
-            <summary>
-            Resource will be stored on-disk
-            Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.FastUpdates">
-            <summary>            
-            Sets OverWriteIsAllowed = false.
-            Toggle only if it's not enough the speed of the update.
-            Default is false.
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.InsertWithVerification">
-            <summary>
-            Prevents disk insert of the identical value of the existing key.
-            Is interesting in case of intensive writes.
-            Default is true.
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.SortingAscending">
-            <summary>
-            Needed for getting resources via SelectStartsWith.
-            Default is true.
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Insert resource
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourceName"></param>
-            <param name="resourceObject"></param>
-            <param name="resourceSettings">resource extra behaviour</param>        
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Insert``1(System.Collections.Generic.IDictionary{System.String,``0},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Batch insert of resources where value is a defined DBreeze or DBreeze.CustomSerializer type
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resources"></param>
-            <param name="resourceSettings"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Batch insert of resources where value is a byte[]
-            </summary>
-            <param name="resources"></param>
-            <param name="resourceSettings">resource extra behaviour</param>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
-            <summary>
-            Removes resources from database and In-Memory dictionary 
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Remove(System.String)">
-            <summary>
-            Removes resource from database and 
-            </summary>        
-        </member>
-        <member name="M:DBreeze.DBreezeResources.SelectStartsWith``1(System.String,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            SelectStartsWith.
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourceNameStartsWith"></param>
-            <param name="resourceSettings"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Gets resources of the same type as a batch from memory or database (if not yet loaded).
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourcesNames"></param>
-            <param name="resourceSettings">resource extra behaviour</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Gets resource from memory or database (if not yet loaded)
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourceName"></param>
-            <param name="resourceSettings">resource extra behaviour</param>
-            <returns></returns>
         </member>
         <member name="F:DBreeze.Scheme.AutoCloseOpenTables">
             <summary>

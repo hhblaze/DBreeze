@@ -1723,7 +1723,7 @@
         </member>
         <member name="T:DBreeze.LianaTrie.LTrie">
             <summary>
-            Liana Trie
+            Liana Trie. Thread safe
             </summary>
         </member>
         <member name="F:DBreeze.LianaTrie.LTrie.Cache">

@@ -1857,7 +1857,7 @@
         </member>
         <member name="T:DBreeze.LianaTrie.LTrie">
             <summary>
-            Liana Trie
+            Liana Trie. Thread safe
             </summary>
         </member>
         <member name="F:DBreeze.LianaTrie.LTrie.Cache">
@@ -5968,6 +5968,30 @@
             <typeparam name="T"></typeparam>
             <param name="str"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2">
+            <summary>
+            Thread-Safe Concurrent MultiKeySortedDictionary where key is a Tuple with more than one key.
+            Optimized for .NET 8. Uses ReaderWriterLockSlim for concurrent reads and exclusive writes.
+            </summary>
+            <typeparam name="TKey">Must be an ITuple (ValueTuple)</typeparam>
+            <typeparam name="TValue">The value type</typeparam>
+        </member>
+        <member name="P:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2.Count">
+            <summary>
+            Total count of elements in the dictionary.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2.GetAll">
+            <summary>
+            Returns a snapshot of all elements. 
+            Materialized to a List to prevent locking the dictionary during external iteration.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Utils.MultiKeyConcurrentSortedDictionary`2.GetByKeyStart(System.Object[])">
+            <summary>
+            Returns a snapshot of elements matching the start keys.
+            </summary>
         </member>
         <member name="M:DBreeze.Utils.Hash.MurMurHash.MixedMurMurHash3_128(System.Byte[])">
             <summary>
