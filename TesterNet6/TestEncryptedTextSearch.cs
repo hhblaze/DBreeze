@@ -12,6 +12,38 @@ namespace TesterNet6
 {
     internal static class TestEncryptedTextSearch
     {
+
+        public static void TestFullMatch()
+        {
+//            string tsTableName = "dtextSearch";
+
+
+//            var dictionary = new Dictionary<int, List<int>>
+//{
+// {1, new List<int> {1,2,3} },
+// {2, new List<int> {4,5,6} },
+// {3, new List<int> {1,3,5} },
+// {4, new List<int> {2,5,8} },
+//};
+
+//            using (var tran1 = Program.DBEngine.GetTransaction())
+//            {
+//                for (int i = 1; i <= 8; i++)
+//                {
+//                    var itemsContains = dictionary.Where(x => x.Value.Contains(i)).Select(x => x.Key).ToList();
+//                    var fm = string.Join(" ", itemsContains.Select(x => "IDX#" + x.ToString()));
+//                    Debug.WriteLine(fm);
+//                    tran1.TextInsert(tsTableName, i.To_4_bytes_array_BigEndian(), fullMatchWords: fm);
+//                }
+//                tran1.Commit();
+//            }
+
+//            using (var tran1 = Program.DBEngine.GetTransaction())
+//            {
+//                var docIds = tran1.TextSearch(tsTableName).Block(fullMatchWords: "IDX#4").GetDocumentIDs().ToList();
+//            }
+        }
+
         public static void TestEncryption()
         {
             //PathToDatabase = @"D:\Temp\DBVector";

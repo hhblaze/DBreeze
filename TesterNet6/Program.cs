@@ -22,7 +22,7 @@ namespace TesterNet6
       
         static async Task Main(string[] args)
         {
-            TestMultiKeyDictionary.RunTestMultiKeyConcurrent();
+            //TestMultiKeyDictionary.RunTestMultiKeyConcurrent();
             //TestbyteConversions.RunDeepCopyTests();
             //TestbyteConversions.RunTestConcatMany();
             //TestbyteConversions.RunTestDoubles();            
@@ -32,8 +32,13 @@ namespace TesterNet6
 
             InitDB();
 
+            TestEncryptedTextSearch.TestFullMatch();
+            return;
 
-            TestbyteConversions.RunTestMemory();
+            TestEncryptedTextSearch.TestEncryption();
+
+
+            //TestbyteConversions.RunTestMemory();
 
             return;
 
@@ -58,7 +63,7 @@ namespace TesterNet6
             //Load.TestVectorDBv03_insert_01();
             //Load.TestVectorDBv03_select_01();
             //Load.TestVectorDBv01_remove_01();
-            TestEncryptedTextSearch.TestEncryption();
+            
 
             //DebugCase1.Run();
             return;
