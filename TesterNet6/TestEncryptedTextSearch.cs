@@ -15,33 +15,67 @@ namespace TesterNet6
 
         public static void TestFullMatch()
         {
-//            string tsTableName = "dtextSearch";
+            var tsTableName = "ts";
+            Program.DBEngine.Scheme.DeleteTable(tsTableName);
 
+            var dictionary = new Dictionary<int, List<int>>
+            {
+                {1, new List<int> {11,12,13} },
+                {2, new List<int> {14,15,16} },
+                {3, new List<int> {11,13,15} },
+                {4, new List<int> {12,15,18,13} },
+            };
 
-//            var dictionary = new Dictionary<int, List<int>>
-//{
-// {1, new List<int> {1,2,3} },
-// {2, new List<int> {4,5,6} },
-// {3, new List<int> {1,3,5} },
-// {4, new List<int> {2,5,8} },
-//};
+            using (var tran1 = Program.DBEngine.GetTransaction())
+            {
+                foreach (var item in dictionary)
+                {
+                    var fm = string.Join(" ", item.Value.Select(x => "IDX#" + x.ToString()));
+                    tran1.TextInsert(tsTableName, item.Key.To_4_bytes_array_BigEndian(), fullMatchWords: fm);
+                    Debug.WriteLine($"[{item.Key}] = [{fm}]");
+                }
+                tran1.Commit();
+                Debug.WriteLine($"Data prepared");
+            }
 
-//            using (var tran1 = Program.DBEngine.GetTransaction())
-//            {
-//                for (int i = 1; i <= 8; i++)
-//                {
-//                    var itemsContains = dictionary.Where(x => x.Value.Contains(i)).Select(x => x.Key).ToList();
-//                    var fm = string.Join(" ", itemsContains.Select(x => "IDX#" + x.ToString()));
-//                    Debug.WriteLine(fm);
-//                    tran1.TextInsert(tsTableName, i.To_4_bytes_array_BigEndian(), fullMatchWords: fm);
-//                }
-//                tran1.Commit();
-//            }
+            var idxToSearch = 13;
 
-//            using (var tran1 = Program.DBEngine.GetTransaction())
-//            {
-//                var docIds = tran1.TextSearch(tsTableName).Block(fullMatchWords: "IDX#4").GetDocumentIDs().ToList();
-//            }
+            using (var tran1 = Program.DBEngine.GetTransaction())
+            {
+                tran1.ValuesLazyLoadingIsOn = false;
+               
+                var docIds = tran1.TextSearch(tsTableName).Block(fullMatchWords: $"IDX#{idxToSearch}").GetDocumentIDs().ToList();
+                Debug.WriteLine("Result: " + string.Join(", ", docIds.Select(x => x.To_Int32_BigEndian().ToString())) + $", idx: {idxToSearch}");
+            }
+
+            using (var tran1 = Program.DBEngine.GetTransaction())
+            {
+                var docIdToRemove = 4;
+                tran1.TextRemoveAll(tsTableName, docIdToRemove.To_4_bytes_array_BigEndian());
+                //tran1.TextRemove(tsTableName, docIdToRemove.To_4_bytes_array_BigEndian(), "IDX#13");
+                tran1.Commit();
+                Debug.WriteLine($"Removed all idx for docId: {docIdToRemove}");
+            }
+
+            using (var tran1 = Program.DBEngine.GetTransaction())
+            {
+                var docIds = tran1.TextSearch(tsTableName).Block(fullMatchWords: $"IDX#{idxToSearch}").GetDocumentIDs().ToList();
+                Debug.WriteLine("Result: " + string.Join(", ", docIds.Select(x => x.To_Int32_BigEndian().ToString())) + $", idx: {idxToSearch}");
+            }
+
+            using (var tran1 = Program.DBEngine.GetTransaction())
+            {
+                var idxToRemove = 4;
+                tran1.TextInsert(tsTableName, idxToRemove.To_4_bytes_array_BigEndian(), containsWords:"", fullMatchWords: null);
+                tran1.Commit();
+                Debug.WriteLine($"Clean FMW for idx: {idxToRemove}");
+            }
+
+            using (var tran1 = Program.DBEngine.GetTransaction())
+            {
+                var docIds = tran1.TextSearch(tsTableName).Block(fullMatchWords: $"IDX#{idxToSearch}").GetDocumentIDs().ToList();
+                Debug.WriteLine("Result: " + string.Join(", ", docIds.Select(x => x.To_Int32_BigEndian().ToString())) + $", idx: {idxToSearch}");
+            }
         }
 
         public static void TestEncryption()

@@ -1970,7 +1970,8 @@ namespace DBreeze.Transactions
                 tsh = new TextSearchHandler(this);                
             }
 
-            tsh.InsertDocumentText(this, tableName, documentId, String.Empty,String.Empty, deferredIndexing,3, TextSearchHandler.eInsertMode.Remove);
+            //tsh.InsertDocumentText(this, tableName, documentId, String.Empty,String.Empty, deferredIndexing,3, TextSearchHandler.eInsertMode.Remove);
+            tsh.InsertDocumentText(this, tableName, documentId, String.Empty, String.Empty, deferredIndexing, 3, TextSearchHandler.eInsertMode.Insert);
         }
 
         /// <summary>

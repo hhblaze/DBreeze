@@ -185,7 +185,7 @@ namespace DBreeze.TextSearch
                 return;
 
             if ((iMode == eInsertMode.Append || iMode == eInsertMode.Remove) && (String.IsNullOrEmpty(containsWords) && String.IsNullOrEmpty(fullMatchWords)))
-                return;
+                return;           
 
             //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock
             SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(containsWords, fullMatchWords, containsMinimalLength,
@@ -820,7 +820,7 @@ namespace DBreeze.TextSearch
             HashSet<string> res = new HashSet<string>(StringComparer.Ordinal);
 
             string r = GetSearchablesFromByteArray(searchables, encryptor);
-            if (r == String.Empty)
+            if (String.IsNullOrEmpty(r))
                 return res;
             foreach (var word in r.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
                 res.Add(word);

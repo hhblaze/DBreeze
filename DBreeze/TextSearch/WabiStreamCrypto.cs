@@ -60,12 +60,17 @@ namespace DBreeze.TextSearch
         public string TextDecrypt(byte[] encryptedText)
         {
             byte[] resultBytes = TransformBytes(encryptedText, false);
+            if (resultBytes == null)
+                return null;
             return Encoding.UTF8.GetString(resultBytes);
         }
 
 
         private byte[] TransformBytes(byte[] input, bool isEncrypting)
         {
+            if (input == null)
+                return null;
+
             byte[] inputBytes;
 
             if (isEncrypting)
