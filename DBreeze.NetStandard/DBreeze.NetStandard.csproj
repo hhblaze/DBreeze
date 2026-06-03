@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.137.2026.0422</Version>
-    <AssemblyVersion>1.137.2026.0422</AssemblyVersion>
-    <FileVersion>1.137.2026.0422</FileVersion>
+    <Version>1.138.2026.0603</Version>
+    <AssemblyVersion>1.138.2026.0603</AssemblyVersion>
+    <FileVersion>1.138.2026.0603</FileVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -58,6 +58,8 @@
     <Compile Include="..\DBreeze.Net5\Utils\CompressionBrotli.cs" Link="Utils\CompressionBrotli.cs" />
     <Compile Include="..\DBreeze.Net5\Utils\XmlSerializator.cs" Link="Utils\XmlSerializator.cs" />
     <Compile Include="..\DBreeze.Net5\VectorLayer\HNSW\CosineDistance.cs" Link="VectorLayer\HNSW\CosineDistance.cs" />
+    <Compile Include="..\DBreeze.Net8\VectorLayer\HNSW\TurboQuantConfig.cs" Link="VectorLayer\HNSW\TurboQuantConfig.cs" />
+    <Compile Include="..\DBreeze.Net8\VectorLayer\HNSW\TurboQuantMath.cs" Link="VectorLayer\HNSW\TurboQuantMath.cs" />
     <Compile Include="..\DBreeze\DataTypes\Row.cs" Link="DataTypes\Row.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeConfiguration.cs" Link="Engine\DBreezeConfiguration.cs" />
     <Compile Include="..\DBreeze\Engine\DBreezeResources.cs" Link="Engine\DBreezeResources.cs" />
@@ -109,6 +111,7 @@
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Node.cs" Link="VectorLayer\HNSW\SmallWorld.Node.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Storage.cs" Link="VectorLayer\HNSW\SmallWorld.Storage.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Utils.cs" Link="VectorLayer\HNSW\SmallWorld.Utils.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\TurboQuantParams.cs" Link="VectorLayer\HNSW\TurboQuantParams.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\VectorTran.cs" Link="VectorLayer\HNSW\VectorTran.cs" />
   </ItemGroup>
 

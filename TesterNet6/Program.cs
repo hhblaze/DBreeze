@@ -32,6 +32,9 @@ namespace TesterNet6
 
             InitDB();
 
+            TurboQuantTest.Run();
+            return;
+
             TestEncryptedTextSearch.TestFullMatch();
             return;
 

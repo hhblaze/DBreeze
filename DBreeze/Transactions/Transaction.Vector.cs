@@ -4,7 +4,6 @@
 */
 #if NET6FUNC || NET472
 
-//using DBreeze.VectorLayer;
 using DBreeze.Utils;
 using System;
 using System.Collections.Generic;
@@ -63,6 +62,14 @@ namespace DBreeze.Transactions
             }            
             //automatically - clearDistanceCache: true
 
+            /// <summary>
+            /// <para>TurboQuant quantization configuration.</para>
+            /// <para>Default (BitWidth=0): disabled, full precision, backward compatible.</para>
+            /// <para>Set BitWidth to 1..8 to enable TurboQuant quantization for memory-efficient vector storage.</para>
+            /// <para>Mode.MSE: Optimized for minimizing L2 reconstruction error. Use for general compression.</para>
+            /// <para>Mode.InnerProduct: Unbiased inner product estimation via two-stage MSE+QJL. Use for KNN search.</para>
+            /// </summary>
+            public TurboQuantParams TurboQuant = new TurboQuantParams();
         }
 
         //private object InitGraph<TVector>(string tableName,VectorTableParameters<TVector> vectorTableParameters)

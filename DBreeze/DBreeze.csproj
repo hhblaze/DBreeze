@@ -159,6 +159,9 @@
     <Compile Include="VectorLayer\HNSW\SmallWorld.Node.cs" />
     <Compile Include="VectorLayer\HNSW\SmallWorld.Storage.cs" />
     <Compile Include="VectorLayer\HNSW\SmallWorld.Utils.cs" />
+    <Compile Include="VectorLayer\HNSW\TurboQuantConfig.cs" />
+    <Compile Include="VectorLayer\HNSW\TurboQuantMath.cs" />
+    <Compile Include="VectorLayer\HNSW\TurboQuantParams.cs" />
     <Compile Include="VectorLayer\HNSW\VectorTran.cs" />
   </ItemGroup>
   <ItemGroup>

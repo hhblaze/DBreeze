@@ -67,8 +67,15 @@ namespace DBreeze.HNSW
                             graph._parameters.NeighbourHeuristic = SmallWorld<float[], float>.NeighbourSelectionHeuristic.SelectHeuristic;
                             break;
                     }
+
+                    // Pass TurboQuant configuration to storage
+                    if (vectorTableParameters.TurboQuant.IsEnabled)
+                    {
+                        graph.TurboQuantParams = vectorTableParameters.TurboQuant;
+                        storage.SetTurboQuantParams(vectorTableParameters.TurboQuant);
+                    }
                 }
-               
+
 
 
                 dF[tableName] = graph;

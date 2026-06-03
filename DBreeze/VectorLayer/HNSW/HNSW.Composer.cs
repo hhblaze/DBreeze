@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using DBreeze.Utils;
 
 
+
 namespace DBreeze.HNSW
 {
     internal partial class SmallWorld<TItem, TDistance>
@@ -39,6 +40,12 @@ namespace DBreeze.HNSW
             /// In case if it is NULL, we also Adding vectors inside Storage.TableVectors
             /// </summary>
             internal Func<long, TItem> GetVectorbyExternalId;
+
+            /// <summary>
+            /// TurboQuant configuration for quantized storage.
+            /// Null or BitWidth=0 means full precision (backward compatible).
+            /// </summary>
+            internal TurboQuantParams TurboQuantParams = null;
 
 
 

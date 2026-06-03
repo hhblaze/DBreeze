@@ -4668,6 +4668,15 @@
             
             </summary>
         </member>
+        <member name="F:DBreeze.Transactions.Transaction.VectorTableParameters`1.TurboQuant">
+            <summary>
+            <para>TurboQuant quantization configuration.</para>
+            <para>Default (BitWidth=0): disabled, full precision, backward compatible.</para>
+            <para>Set BitWidth to 1..8 to enable TurboQuant quantization for memory-efficient vector storage.</para>
+            <para>Mode.MSE: Optimized for minimizing L2 reconstruction error. Use for general compression.</para>
+            <para>Mode.InnerProduct: Unbiased inner product estimation via two-stage MSE+QJL. Use for KNN search.</para>
+            </summary>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.InitVectorTranF``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
             <summary>
             
@@ -6889,6 +6898,24 @@
             <param name="vector"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.HNSW.TurboQuantCodebooks">
+            <summary>
+            Precomputed Lloyd-Max optimal codebooks for Beta distribution (scaled/shifted).
+            Centroids stored as multiples of 1/sqrt(d) for fast scaling.
+            Automatically generates complete 2^b length arrays upon initialization to avoid truncated boundaries.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.TurboQuantCodebooks.ComputeLloydMaxEmpirical(System.Int32)">
+            <summary>
+            Computes exact optimal continuous Lloyd-Max centroids for N(0,1) via K-Means
+            ensuring length is perfectly 2^b for high bit-widths.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.XorShiftRng">
+            <summary>
+            Deterministic xorshift64* PRNG optimized to cache normal generations natively.
+            </summary>
+        </member>
         <member name="T:DBreeze.HNSW.BinaryHeap`1">
             <summary>
             Binary heap wrapper around the <see cref="T:System.Collections.Generic.IList`1"/>
@@ -6978,6 +7005,12 @@
             <summary>
             Function to get embeddings from outer table by ExternalId.
             In case if it is NULL, we also Adding vectors inside Storage.TableVectors
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.Composer.TurboQuantParams">
+            <summary>
+            TurboQuant configuration for quantized storage.
+            Null or BitWidth=0 means full precision (backward compatible).
             </summary>
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.Composer.ExternalIdExists(System.Int64)">
@@ -7415,6 +7448,11 @@
         <member name="M:DBreeze.HNSW.SmallWorld`2.NodeAlg4.SelectBestForConnecting(System.Collections.Generic.List{DBreeze.HNSW.SmallWorld{`0,`1}.Node})">
             <inheritdoc />
         </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.IStorage`2.SetTurboQuantParams(DBreeze.HNSW.TurboQuantParams)">
+            <summary>
+            Sets TurboQuant configuration for quantized storage.
+            </summary>
+        </member>
         <member name="P:DBreeze.HNSW.SmallWorld`2.DBStorage.TableName">
             <summary>
             
@@ -7428,6 +7466,24 @@
             <param name="nodes"></param>
             <returns></returns>
         </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2._tqp">
+            <summary>
+            TurboQuant configuration, set by Composer.
+            When null, standard full-precision storage is used.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageF._tqp">
+            <summary>
+            TurboQuant configuration for this storage instance.
+            Set by Composer during initialization.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageF.TryDequantizeF(System.Int64)">
+            <summary>
+            Tries to dequantize a float[] vector from quantized storage.
+            Tries key prefix 6 (MSE) or 7 (InnerProduct) based on TurboQuant mode.
+            </summary>
+        </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageF.AddItem(System.Int64,System.Int32,System.Int32,System.Single[])">
             <summary>
             item should be already normalized
@@ -7437,9 +7493,57 @@
             <param name="id"></param>
             <param name="item"></param>           
         </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.PackBits(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Packs an array of byte values (each bounded by 'bits') into a dense bit-stream.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.UnpackBits(System.Byte[],System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Unpacks a dense bit-stream back into an array of bytes.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.PackQjlSigns(System.SByte[],System.Int32)">
+            <summary>
+            Packs an array of -1/+1 signs into exactly 1 bit per element.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.UnpackQjlSigns(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Unpacks 1-bit flags back into an array of -1/+1 sbytes.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.CompressQuantizedMseBitPackF(System.Single[],DBreeze.HNSW.TurboQuantParams)">
+            <summary>
+            Compresses a float[] vector into MSE quantized and bit-packed byte format.
+            Format: [dim:2 bytes LE][bitWidth:1 byte][norm:4 bytes float LE][packedIndices]
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.DecompressQuantizedMseBitPackF(System.Byte[],DBreeze.HNSW.TurboQuantParams)">
+            <summary>
+            Decompresses bit-packed MSE quantized data back to float[].
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.CompressQuantizedProdBitPackF(System.Single[],DBreeze.HNSW.TurboQuantParams)">
+            <summary>
+            Compresses a float[] vector into InnerProduct bit-packed byte format.
+            Format: [dim:2 LE][bitWidth:1][norm:4 LE][residualNorm:4 LE][packedMseIndices][packedQjlSigns]
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.SmallWorld`2.DecompressQuantizedProdBitPackF(System.Byte[],DBreeze.HNSW.TurboQuantParams)">
+            <summary>
+            Decompresses InnerProduct bit-packed data back to float[].
+            </summary>
+        </member>
         <member name="T:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageD">
             <summary>
             
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageD._tqp">
+            <summary>
+            TurboQuant configuration for this storage instance.
+            Set by Composer during initialization.
             </summary>
         </member>
         <member name="M:DBreeze.HNSW.SmallWorld`2.SmallWorldStorageD.AddItem(System.Int64,System.Int32,System.Int32,System.Double[])">
@@ -7515,6 +7619,66 @@
             <typeparam name="T">The types of items to comapre.</typeparam>
             <param name="comparer">The source comparer.</param>
             <returns>The inverted to source comparer.</returns>
+        </member>
+        <member name="T:DBreeze.HNSW.eTurboQuantMode">
+            <summary>
+            TurboQuant quantizer type
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.eTurboQuantMode.None">
+            <summary>
+            No quantization enabled (default, backward compatible)
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.eTurboQuantMode.MSE">
+            <summary>
+            MSE-optimal quantizer. Minimizes L2 reconstruction error.
+            Uses random rotation + per-coordinate Lloyd-Max scalar quantization.
+            Best for storage efficiency and general-purpose compression.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.eTurboQuantMode.InnerProduct">
+            <summary>
+            Inner-product unbiased quantizer.
+            Two-stage: MSE quantizer at (b-1) bits + QJL 1-bit on residual.
+            Provides unbiased inner product estimates, ideal for KNN search.
+            </summary>
+        </member>
+        <member name="T:DBreeze.HNSW.TurboQuantParams">
+            <summary>
+            TurboQuant configuration parameters.
+            When BitWidth = 0, quantization is disabled (full precision).
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.TurboQuantParams.BitWidth">
+            <summary>
+            Number of bits per coordinate. 
+            0 = disabled (full precision, backward compatible).
+            1..8 = enabled. Recommended: 2-4 for good quality, 4 for near-lossless.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.TurboQuantParams.Mode">
+            <summary>
+            Quantizer mode: MSE or InnerProduct unbiased.
+            Ignored when BitWidth = 0.
+            </summary>
+        </member>
+        <member name="F:DBreeze.HNSW.TurboQuantParams.RandomSeed">
+            <summary>
+            Seed for deterministic generation of rotation matrix Π and QJL matrix S.
+            Combined with table name hash to produce unique per-table matrices.
+            Default = 42.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.TurboQuantParams.IsEnabled">
+            <summary>
+            Returns true when quantization is enabled.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.TurboQuantParams.Clone">
+            <summary>
+            Creates a clone of these parameters.
+            </summary>
         </member>
         <member name="M:DBreeze.HNSW.VectorTran.InitForTableD``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
             <summary>

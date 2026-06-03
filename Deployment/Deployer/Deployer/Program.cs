@@ -66,7 +66,7 @@ namespace Deployer
 
                 exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.Net5\DBreeze.Net5.csproj");
                 if (exitCode != 0) { Console.ReadKey(); return; }
-                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.Net5\DBreeze.Net8.csproj");
+                exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.Net8\DBreeze.Net8.csproj");
                 if (exitCode != 0) { Console.ReadKey(); return; }
                 exitCode = Utils.ChangeProjectVersion(args[0], Utils.eFileToChangeType.Project, MyPath + @"..\..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj");
                 if (exitCode != 0) { Console.ReadKey(); return; }

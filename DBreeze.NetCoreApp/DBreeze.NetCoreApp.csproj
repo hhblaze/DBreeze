@@ -6,9 +6,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
-    <Version>1.137.2026.0422</Version>
-    <FileVersion>1.137.2026.0422</FileVersion>
-    <AssemblyVersion>1.137.2026.0422</AssemblyVersion>
+    <Version>1.138.2026.0603</Version>
+    <FileVersion>1.138.2026.0603</FileVersion>
+    <AssemblyVersion>1.138.2026.0603</AssemblyVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 
@@ -41,6 +41,8 @@
         <Compile Include="..\DBreeze.Net5\Utils\MJsonSerializator.cs" Link="Utils\MJsonSerializator.cs" />
         <Compile Include="..\DBreeze.Net5\Utils\XmlSerializator.cs" Link="Utils\XmlSerializator.cs" />
         <Compile Include="..\DBreeze.Net5\VectorLayer\HNSW\CosineDistance.cs" Link="VectorLayer\HNSW\CosineDistance.cs" />
+        <Compile Include="..\DBreeze.Net8\VectorLayer\HNSW\TurboQuantConfig.cs" Link="VectorLayer\HNSW\TurboQuantConfig.cs" />
+        <Compile Include="..\DBreeze.Net8\VectorLayer\HNSW\TurboQuantMath.cs" Link="VectorLayer\HNSW\TurboQuantMath.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
@@ -144,6 +146,7 @@
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Node.cs" Link="VectorLayer\HNSW\SmallWorld.Node.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Storage.cs" Link="VectorLayer\HNSW\SmallWorld.Storage.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Utils.cs" Link="VectorLayer\HNSW\SmallWorld.Utils.cs" />
+    <Compile Include="..\DBreeze\VectorLayer\HNSW\TurboQuantParams.cs" Link="VectorLayer\HNSW\TurboQuantParams.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\VectorTran.cs" Link="VectorLayer\HNSW\VectorTran.cs" />
 	
   </ItemGroup>
