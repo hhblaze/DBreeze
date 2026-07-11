@@ -359,11 +359,11 @@ namespace DBreeze.HNSW
 
                 // run bfs
                 var visited = new HashSet<int>() { entryPoint.Id };
-                while (expansionHeap.Buffer.Any())
+                while (expansionHeap.Count > 0)
                 {
                     // get next candidate to check and expand
                     var toExpand = expansionHeap.Pop();
-                    var farthestResult = resultHeap.Buffer.First();
+                    var farthestResult = resultHeap.Peek();
                     if (DGt(destination.From(toExpand), destination.From(farthestResult)))
                     {
                         // the closest candidate is farther than farthest result
@@ -377,13 +377,13 @@ namespace DBreeze.HNSW
                         {
                             // Always add to expansion heap for traversal, even if deleted
                             // (deleted nodes may have non-deleted children)
-                            farthestResult = resultHeap.Buffer.First();
-                            if (resultHeap.Buffer.Count < k
+                            farthestResult = resultHeap.Peek();
+                            if (resultHeap.Count < k
                             || DLt(destination.From(neighbour), destination.From(farthestResult)))
                             {
                                 expansionHeap.Push(neighbour);
                                 resultHeap.Push(neighbour);
-                                if (resultHeap.Buffer.Count > k)
+                                if (resultHeap.Count > k)
                                 {
                                     resultHeap.Pop();
                                 }
@@ -446,11 +446,11 @@ namespace DBreeze.HNSW
                 // run bfs
                 var visited = new HashSet<int> { entryPoint.Id };
                 
-                while (expansionHeap.Buffer.Any())
+                while (expansionHeap.Count > 0)
                 {
                     // get next candidate to check and expand
                     var toExpand = expansionHeap.Pop();
-                    var farthestResult = resultHeap.Buffer.First();
+                    var farthestResult = resultHeap.Peek();
                     
                     if (DGt(destination.From(toExpand), destination.From(farthestResult)))
                     {
@@ -470,7 +470,7 @@ namespace DBreeze.HNSW
                         {
                             // Always add to expansion heap for traversal, even if deleted
                             // (deleted nodes may have non-deleted children)
-                            farthestResult = resultHeap.Buffer.First();
+                            farthestResult = resultHeap.Peek();
                             if (DLt(destination.From(neighbour), destination.From(farthestResult)))
                             {
                                 expansionHeap.Push(neighbour);
@@ -481,7 +481,7 @@ namespace DBreeze.HNSW
                                     resultHeap.Push(neighbour);
                                     
                                     // When buffer exceeds threshold, yield sorted results
-                                    if (resultHeap.Buffer.Count > bufferSize)
+                                    if (resultHeap.Count > bufferSize)
                                     {
                                         // Yield all but the farthest (keep it as boundary marker)
                                         foreach (var node in YieldBufferResults(resultHeap, destination, keepOne: true))
@@ -514,7 +514,7 @@ namespace DBreeze.HNSW
             /// <returns>Nodes in order of increasing distance.</returns>
             private static IEnumerable<Node> YieldBufferResults(BinaryHeap<Node> resultHeap, Node destination, bool keepOne = false)
             {
-                if (resultHeap.Buffer.Count == 0)
+                if (resultHeap.Count == 0)
                     yield break;
 
                 // Sort by distance (ascending) - extract all from heap

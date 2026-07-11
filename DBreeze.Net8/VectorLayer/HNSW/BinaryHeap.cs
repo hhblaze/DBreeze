@@ -9,6 +9,7 @@ namespace DBreeze.HNSW
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.InteropServices;
 
     /// <summary>
     /// Binary heap wrapper around the <see cref="IList{T}"/>
@@ -117,8 +118,9 @@ namespace DBreeze.HNSW
         /// <param name="i">The position of item where heap property is violated.</param>
         private void SiftDown(int i)
         {
-            List<T> buffer = this.Buffer;
-            int count = buffer.Count;
+            Span<T> buffer = CollectionsMarshal.AsSpan(this.Buffer);
+            int count = buffer.Length;
+
             T item = buffer[i];
             int firstLeaf = count >> 1;
 
@@ -150,7 +152,7 @@ namespace DBreeze.HNSW
         /// <param name="i">The position of item where heap property is violated.</param>
         private void SiftUp(int i)
         {
-            List<T> buffer = this.Buffer;
+            Span<T> buffer = CollectionsMarshal.AsSpan(this.Buffer);
 
             T item = buffer[i];
 

@@ -120,7 +120,6 @@
     <Compile Include="..\DBreeze\Utils\MultiKeyDictionaryTyped.cs" Link="Utils\MultiKeyDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\MultiKeySortedDictionaryTyped.cs" Link="Utils\MultiKeySortedDictionaryTyped.cs" />
     <Compile Include="..\DBreeze\Utils\ValueTupleDeconstructor.cs" Link="Utils\ValueTupleDeconstructor.cs" />
-    <Compile Include="..\DBreeze\VectorLayer\HNSW\BinaryHeap.cs" Link="VectorLayer\HNSW\BinaryHeap.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\HNSW.Composer.cs" Link="VectorLayer\HNSW\HNSW.Composer.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\ReverseComparer.cs" Link="VectorLayer\HNSW\ReverseComparer.cs" />
     <Compile Include="..\DBreeze\VectorLayer\HNSW\SmallWorld.Caches.cs" Link="VectorLayer\HNSW\SmallWorld.Caches.cs" />

@@ -286,7 +286,7 @@ namespace DBreeze.HNSW
                 var candidatesHeap = new BinaryHeap<Node>(candidates, fartherIsLess);
 
                 var result = new List<Node>(GetM(this.Graph.Parameters.M, this.MaxLevel) + 1);
-                while (candidatesHeap.Buffer.Any() && result.Count < GetM(this.Graph.Parameters.M, this.MaxLevel))
+                while (candidatesHeap.Count > 0 && result.Count < GetM(this.Graph.Parameters.M, this.MaxLevel))
                 {
                     result.Add(candidatesHeap.Pop());
                 }
@@ -363,11 +363,11 @@ namespace DBreeze.HNSW
                 }
 
                 // main stage of moving candidates to result
-                var discardedHeap = new BinaryHeap<Node>(new List<Node>(candidatesHeap.Buffer.Count), fartherIsLess);
-                while (candidatesHeap.Buffer.Any() && resultHeap.Buffer.Count < GetM(this.Graph.Parameters.M, this.MaxLevel))
+                var discardedHeap = new BinaryHeap<Node>(new List<Node>(candidatesHeap.Count), fartherIsLess);
+                while (candidatesHeap.Count > 0 && resultHeap.Count < GetM(this.Graph.Parameters.M, this.MaxLevel))
                 {
                     var candidate = candidatesHeap.Pop();
-                    var farestResult = resultHeap.Buffer.FirstOrDefault();
+                    var farestResult = resultHeap.Count == 0 ? null : resultHeap.Peek();
 
                     if (farestResult == null
                     || DLt(this.From(candidate), this.From(farestResult)))
@@ -383,7 +383,7 @@ namespace DBreeze.HNSW
                 // keep pruned option is enabled
                 if (this.Graph.Parameters.KeepPrunedConnections)
                 {
-                    while (discardedHeap.Buffer.Any() && resultHeap.Buffer.Count < GetM(this.Graph.Parameters.M, this.MaxLevel))
+                    while (discardedHeap.Count > 0 && resultHeap.Count < GetM(this.Graph.Parameters.M, this.MaxLevel))
                     {
                         resultHeap.Push(discardedHeap.Pop());
                     }
