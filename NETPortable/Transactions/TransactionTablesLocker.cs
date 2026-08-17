@@ -5,9 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using DBreeze.Utils;
 using DBreeze.SchemeInternal;
 
@@ -34,6 +31,7 @@ namespace DBreeze
         class internSession
         {
             public string[] tables;
+            public List<string> tableList;
             public eTransactionTablesLockTypes lockType= eTransactionTablesLockTypes.EXCLUSIVE;
             public DbThreadsGator gator = null;          
         }
@@ -54,13 +52,14 @@ namespace DBreeze
 
             internSession iSession = null;
             bool ret = true;
+            List<string> requestedTables = new List<string>(tables);
 
             _sync.EnterWriteLock();
             try
             {
                 foreach (var ses in _acceptedSessions)
                 {
-                    if (DbUserTables.TableNamesIntersect(ses.Value.tables.ToList(), tables.ToList()))
+                    if (DbUserTables.TableNamesIntersect(ses.Value.tableList, requestedTables))
                     {
                        if (ses.Value.lockType == eTransactionTablesLockTypes.EXCLUSIVE || lockType == eTransactionTablesLockTypes.EXCLUSIVE)
                         {
@@ -71,26 +70,18 @@ namespace DBreeze
                     }
                 }
 
-                if (!ret)
+                foreach (var ses in _waitingSessionSequence)
                 {
                     internSession xSes = null;
-                    foreach (var ses in _waitingSessionSequence)
+                    if (ses == Environment.CurrentManagedThreadId)
+                        break;
+                    if (!_waitingSessions.TryGetValue(ses, out xSes))
+                        continue;
+                    if (DbUserTables.TableNamesIntersect(xSes.tableList, requestedTables) &&
+                        (xSes.lockType == eTransactionTablesLockTypes.EXCLUSIVE || lockType == eTransactionTablesLockTypes.EXCLUSIVE))
                     {
-
-                        if (ses == Environment.CurrentManagedThreadId)
-                            break;
-
-                        _waitingSessions.TryGetValue(ses, out xSes);
-
-                        if (DbUserTables.TableNamesIntersect(xSes.tables.ToList(), tables.ToList()))
-                        {
-                            if (xSes.lockType == eTransactionTablesLockTypes.EXCLUSIVE || lockType == eTransactionTablesLockTypes.EXCLUSIVE)
-                            {
-                                //Lock
-                                ret = false;
-                                break;
-                            }
-                        }
+                        ret = false;
+                        break;
                     }
                 }
 
@@ -116,7 +107,8 @@ namespace DBreeze
                     iSession = new internSession()
                     {
                         lockType = lockType,
-                        tables = tables
+                        tables = tables,
+                        tableList = requestedTables
                     };
 
                     if (!ret)
@@ -153,6 +145,14 @@ namespace DBreeze
         /// </summary>
         public void RemoveSession()
         {
+            RemoveSession(Environment.CurrentManagedThreadId);
+        }
+
+        /// <summary>
+        /// Removes a session by its creating thread id.
+        /// </summary>
+        internal void RemoveSession(int sessionId)
+        {
             lock (lock_disposed)
             {
                 if (disposed)
@@ -165,7 +165,7 @@ namespace DBreeze
             _sync.EnterWriteLock();
             try
             {
-                if (!_acceptedSessions.TryGetValue(Environment.CurrentManagedThreadId, out iSession))
+                if (!_acceptedSessions.TryGetValue(sessionId, out iSession))
                     return; //Should not happen
 
                 if (iSession.gator != null)
@@ -174,9 +174,9 @@ namespace DBreeze
                     iSession.gator = null;
                 }
 
-                _acceptedSessions.Remove(Environment.CurrentManagedThreadId);
+                _acceptedSessions.Remove(sessionId);
 
-                ws = _waitingSessionSequence.ToList();
+                ws = new List<int>(_waitingSessionSequence);
             }
             finally
             {
@@ -184,7 +184,7 @@ namespace DBreeze
             }
 
 
-            if (ws != null && ws.Count() > 0)
+            if (ws != null && ws.Count > 0)
             {
                 foreach (int wsId in ws)
                 {
@@ -230,29 +230,23 @@ namespace DBreeze
                 disposed = true;
             }
 
-            foreach (var ses in _waitingSessions)
+            _sync.EnterWriteLock();
+            try
             {
-                if (ses.Value.gator != null)
+                foreach (var ses in _waitingSessions)
                 {
-                    ses.Value.gator.OpenGate();
-                    ses.Value.gator.Dispose();
-                    ses.Value.gator = null;
+                    if (ses.Value.gator != null)
+                        ses.Value.gator.OpenGate();
                 }
-            }
 
-             foreach (var ses in _acceptedSessions)
+                _acceptedSessions.Clear();
+                _waitingSessions.Clear();
+                _waitingSessionSequence.Clear();
+            }
+            finally
             {
-                if (ses.Value.gator != null)
-                {
-                    ses.Value.gator.OpenGate();
-                    ses.Value.gator.Dispose();
-                    ses.Value.gator = null;
-                }
+                _sync.ExitWriteLock();
             }
-
-            _acceptedSessions.Clear();
-            _waitingSessions.Clear();
-            _waitingSessionSequence.Clear();
 
         }
 

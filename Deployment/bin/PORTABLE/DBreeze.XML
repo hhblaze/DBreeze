@@ -2598,16 +2598,15 @@
         <member name="T:DBreeze.Transactions.RandomKeySorter">
             <summary>
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
+            When AutomaticFlushLimitQuantityPerTable per table (default 1000000) is exceeded or
             within Commit command, all entites will be flushed (first removed then inserted) on the disk 
             sorted by key ascending
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
             <summary>
-            <para>NOT USED ANYMORE</para>
-            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
-            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
+            Number of pending unique keys per table which triggers an automatic flush.
+            Default is 1000000. A value less than or equal to zero disables automatic flushing.
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
@@ -2647,6 +2646,11 @@
         <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
             <summary>
             Flushing all 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Reset">
+            <summary>
+            Drops all operations which have not been committed. Called by Transaction.Rollback.
             </summary>
         </member>
         <member name="T:DBreeze.Transactions.Transaction">
@@ -2691,6 +2695,12 @@
             <param name="transactionUnit"></param>
             <param name="lockType"></param>
             <param name="tables"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.EnsureTransactionOwner">
+            <summary>
+            Transactions are deliberately thread-bound. Parallel read APIs explicitly opt out
+            of this check; all state-changing operations must stay on the creating thread.
+            </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Dispose">
             <summary>
@@ -3997,7 +4007,7 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.ItBwdFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             ItBwdFromTo
             </summary>
@@ -4005,8 +4015,6 @@
             <param name="generationMapLine"></param>
             <param name="useCache"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             IterateBackwardFromTo
             </summary>
@@ -4022,7 +4030,7 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.ItFrwFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             ItFrwFromTo
             </summary>
@@ -4030,8 +4038,6 @@
             <param name="generationMapLine"></param>
             <param name="useCache"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             IterateForwardFromTo
             </summary>
@@ -4058,7 +4064,7 @@
             Used via TableIsModified
             </summary>
         </member>
-        <member name="F:DBreeze.LianaTrie.LTrie._DtTableFixed">
+        <member name="F:DBreeze.LianaTrie.LTrie._tableVersion">
             <summary>
             Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
             Access via DtTableFixed interface ITrie
@@ -4559,7 +4565,7 @@
             <summary>
             Returns NULL if not found
             </summary>
-            <param name="generationMapLine"></param>
+            <param name="pointer"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingEnd(System.Byte[],System.Byte[])">
@@ -4572,13 +4578,12 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[],System.Byte[])">
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[])">
             <summary>
             OverWriting Generation Node, we supply params where, oldData and newData.
             </summary>
             <param name="pointer"></param>
             <param name="newData"></param>
-            <param name="generationMapLine"></param>
             <param name="kidsBeforeModification"></param>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
@@ -7138,6 +7143,13 @@
             <param name="userTableName"></param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.Scheme.OpenTableForRollbackRecovery(System.String)">
+            <summary>
+            Opens an existing user table only to let its storage restore a committed rollback.
+            Uses the same storage override decision as the normal table-opening path.
+            Returns null for removed and in-memory tables.
+            </summary>
+        </member>
         <member name="M:DBreeze.Scheme.GetTablePathFromTableName(System.String)">
             <summary>
             Returns physical path to the table file, if table doesn't exists in the Scheme returns String.Empty
@@ -7318,6 +7330,11 @@
         <member name="M:DBreeze.TransactionTablesLocker.RemoveSession">
             <summary>
             
+            </summary>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession(System.Int32)">
+            <summary>
+            Removes a session by its creating thread id.
             </summary>
         </member>
         <member name="M:DBreeze.TransactionTablesLocker.Dispose">

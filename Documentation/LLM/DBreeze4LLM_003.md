@@ -341,7 +341,7 @@ public void LogIoTPayloads(DBreezeEngine engine)
             byte[] ptr16 = tran.InsertDataBlockWithFixedAddress<byte[]>("SensorLogs", null, payloadBytes);
 
             // 4. Hand the pointer to the RandomKeySorter
-            // By default, it will auto-flush to disk sequentially every 10,000 items
+            // Operations stay buffered until explicit Flush or Commit
             tran.RandomKeySorter.Insert<DateTime, byte[]>("SensorLogs", sensorTime, ptr16);
         }
 

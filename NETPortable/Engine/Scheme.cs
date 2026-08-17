@@ -216,6 +216,35 @@ namespace DBreeze
             }
         }
 
+        /// <summary>
+        /// Opens an existing user table only to let its storage restore a committed rollback.
+        /// Uses the same storage override decision as the normal table-opening path.
+        /// Returns null for removed and in-memory tables.
+        /// </summary>
+        internal LTrie OpenTableForRollbackRecovery(string userTableName)
+        {
+            string physicalPath = GetPhysicalPathToTheUserTable(userTableName);
+            if (physicalPath == String.Empty || physicalPath == "MEMORY")
+                return null;
+
+            TrieSettings settings = new TrieSettings();
+            string alternativeTableLocation;
+            if (CheckAlternativeTableLocationsIntersections(userTableName, out alternativeTableLocation))
+            {
+                if (alternativeTableLocation == String.Empty)
+                    return null;
+
+                settings.StorageWasOverriden = true;
+                settings.AlternativeTableStorageType = DBreezeConfiguration.eStorage.DISK;
+                settings.AlternativeTableStorageFolder = alternativeTableLocation;
+            }
+
+            IStorage storage = new StorageLayer(physicalPath, settings, Engine.Configuration);
+            LTrie trie = new LTrie(storage);
+            trie.TableName = userTableName;
+            return trie;
+        }
+
 
         /// <summary>
         /// Returns physical path to the table file, if table doesn't exists in the Scheme returns String.Empty

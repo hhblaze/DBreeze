@@ -31,6 +31,7 @@ namespace DBreeze.Transactions
         internal TransactionUnit _transactionUnit = null;
 
         bool disposed = false;
+        readonly object sync_dispose = new object();
 
         /// <summary>
         /// DateTime.UtcNow.Ticks - time of transaction creation
@@ -50,9 +51,8 @@ namespace DBreeze.Transactions
 
         /// <summary>
         /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-        /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-        /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-        /// sorted by key ascending
+        /// Operations are flushed explicitly or by Commit (first removed, then inserted),
+        /// sorted by key ascending.
         /// </summary>
         public RandomKeySorter RandomKeySorter = new RandomKeySorter();
                 
@@ -95,42 +95,81 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
+        /// Transactions are deliberately thread-bound. Parallel read APIs explicitly opt out
+        /// of this check; all state-changing operations must stay on the creating thread.
+        /// </summary>
+        internal void EnsureTransactionOwner()
+        {
+#if NET35 || NETr40
+            int currentThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+#else
+            int currentThreadId = Environment.CurrentManagedThreadId;
+#endif
+            if (currentThreadId != ManagedThreadId)
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_CANBEUSED_FROM_ONE_THREAD);
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         public void Dispose()
-        {            
-            if (disposed)
-                return;
+        {
+            lock (sync_dispose)
+            {
+                if (disposed)
+                    return;
+                disposed = true;
+            }
 
-            disposed = true;
+            Exception firstException = null;
 
-            
-            this._transactionUnit.TransactionsCoordinator.UnregisterTransaction(this.ManagedThreadId);
-            
-            
-            //Clearing Write Tables buffer
+            try
+            {
+                this._transactionUnit.TransactionsCoordinator.UnregisterTransaction(this.ManagedThreadId);
+            }
+            catch (Exception ex)
+            {
+                firstException = ex;
+            }
+
+            RandomKeySorter.Reset();
             transactionWriteTables.Clear();
-            //Clearing Read Tables buffer
             transactionReadTables.Clear();
 
-
-            //foreach (var tb in _openTable)
-            //{
-            //    Console.WriteLine("Thread: {0}; TN: {1}; CNT: {2}", this.ManagedThreadId, tb.Key,tb.Value);
-            //}
-
-            this._transactionUnit.TransactionsCoordinator.GetSchema.CloseTables(_openTable);
-
-            lock (sync_openTable)
+            try
             {
-                _openTable.Clear();
+                this._transactionUnit.TransactionsCoordinator.GetSchema.CloseTables(_openTable);
+            }
+            catch (Exception ex)
+            {
+                if (firstException == null)
+                    firstException = ex;
+            }
+            finally
+            {
+                lock (sync_openTable)
+                {
+                    _openTable.Clear();
+                }
             }
 
-            //Transaction of type 1 is with Shared and Exclusive locks of the table. Can block even reading threads.
+            // Locked transactions may legally be disposed by a finally block running on a
+            // different thread. Release the session by its stored owner id, not by current id.
             if (_transactionType == 1)
             {
-                _transactionUnit.TransactionsCoordinator.GetSchema.Engine._transactionTablesLocker.RemoveSession();
+                try
+                {
+                    _transactionUnit.TransactionsCoordinator.GetSchema.Engine._transactionTablesLocker.RemoveSession(ManagedThreadId);
+                }
+                catch (Exception ex)
+                {
+                    if (firstException == null)
+                        firstException = ex;
+                }
             }
+
+            if (firstException != null)
+                throw firstException;
         }
 
         private bool _valuesLazyLoadingIsOn = true;
@@ -164,6 +203,7 @@ namespace DBreeze.Transactions
         /// <param name="tablesNamesPatterns">can be either tableName or pattern like Articles#/Items*</param>
         public void SynchronizeTables(IList<string> tablesNamesPatterns)
         {
+            EnsureTransactionOwner();
 
             this.CheckIfTransactionHasTablesRegisteredForWrite(tablesNamesPatterns);
 
@@ -259,6 +299,8 @@ namespace DBreeze.Transactions
         /// <returns></returns>
         internal LTrie GetWriteTableFromBuffer(string tableName)
         {
+            EnsureTransactionOwner();
+
             LTrie table = null;
 
             transactionWriteTables.TryGetValue(tableName, out table);
@@ -565,6 +607,7 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Commit()
         {
+            EnsureTransactionOwner();
             RandomKeySorter.Flush();
             
 
@@ -587,7 +630,15 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Rollback()
         {
-            this._transactionUnit.TransactionsCoordinator.Rollback(this.ManagedThreadId);
+            EnsureTransactionOwner();
+            try
+            {
+                this._transactionUnit.TransactionsCoordinator.Rollback(this.ManagedThreadId);
+            }
+            finally
+            {
+                RandomKeySorter.Reset();
+            }
         }
         #endregion
 
@@ -597,9 +648,8 @@ namespace DBreeze.Transactions
         /// Syntax-sugar for  this.RandomKeySorter.Remove(tableName, key, value);
         /// 
         /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-        /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-        /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-        /// sorted by key ascending
+        /// Operations are flushed explicitly or by Commit (first removed, then inserted),
+        /// sorted by key ascending.
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
         /// <typeparam name="TValue"></typeparam>
@@ -800,9 +850,15 @@ namespace DBreeze.Transactions
                 refToDataBlock = table.InsertDataBlock(ref refToDataBlock, ref dt);
 
                 table.OverWriteIsAllowed = true;
-                table.InsertDataBlock(ref initialPointer, ref refToDataBlock);                
-                table.OverWriteIsAllowed = state;
-                return initialPointer;                
+                try
+                {
+                    table.InsertDataBlock(ref initialPointer, ref refToDataBlock);
+                }
+                finally
+                {
+                    table.OverWriteIsAllowed = state;
+                }
+                return initialPointer;
             }
         }
 
@@ -846,9 +902,8 @@ namespace DBreeze.Transactions
         /// Syntax-sugar for  this.RandomKeySorter.Insert(tableName, key, value);
         /// 
         /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-        /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-        /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-        /// sorted by key ascending
+        /// Operations are flushed explicitly or by Commit (first removed, then inserted),
+        /// sorted by key ascending.
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
         /// <typeparam name="TValue"></typeparam>
@@ -1602,12 +1657,13 @@ namespace DBreeze.Transactions
 
             if (withValuesRemove)
             {
-                foreach
-                    (var row in (
-                        from c in subTable.SelectForward<TDictionaryKey, TDictionaryValue>()
-                        where !(from v in value select v.Key).Contains(c.Key)
-                        select c.Key)
-                    )
+                List<TDictionaryKey> keysToRemove = subTable
+                    .SelectForward<TDictionaryKey, TDictionaryValue>()
+                    .Where(c => !value.ContainsKey(c.Key))
+                    .Select(c => c.Key)
+                    .ToList();
+
+                foreach (var row in keysToRemove)
                 {
                     subTable.RemoveKey<TDictionaryKey>(row);
                 }
@@ -1633,12 +1689,13 @@ namespace DBreeze.Transactions
 
             if (withValuesRemove)
             {
-                foreach
-                    (var row in (
-                        from c in this.SelectForward<TDictionaryKey, TDictionaryValue>(tableName)
-                        where !(from v in value select v.Key).Contains(c.Key)
-                        select c.Key)
-                    )
+                List<TDictionaryKey> keysToRemove = this
+                    .SelectForward<TDictionaryKey, TDictionaryValue>(tableName)
+                    .Where(c => !value.ContainsKey(c.Key))
+                    .Select(c => c.Key)
+                    .ToList();
+
+                foreach (var row in keysToRemove)
                 {
                     this.RemoveKey<TDictionaryKey>(tableName, row);
                 }
@@ -1711,12 +1768,13 @@ namespace DBreeze.Transactions
 
             if (withValuesRemove)
             {
-                foreach
-                    (var row in (
-                        from c in subTable.SelectForward<THashSetKey, byte[]>()
-                        where !(from v in value select v).Contains(c.Key)
-                        select c.Key)
-                    )
+                List<THashSetKey> keysToRemove = subTable
+                    .SelectForward<THashSetKey, byte[]>()
+                    .Where(c => !value.Contains(c.Key))
+                    .Select(c => c.Key)
+                    .ToList();
+
+                foreach (var row in keysToRemove)
                 {
                     subTable.RemoveKey<THashSetKey>(row);
                 }
@@ -1741,12 +1799,13 @@ namespace DBreeze.Transactions
            
             if (withValuesRemove)
             {
-                foreach
-                    (var row in (
-                        from c in this.SelectForward<THashSetKey, byte[]>(tableName)
-                        where !(from v in value select v).Contains(c.Key)
-                        select c.Key)
-                    )
+                List<THashSetKey> keysToRemove = this
+                    .SelectForward<THashSetKey, byte[]>(tableName)
+                    .Where(c => !value.Contains(c.Key))
+                    .Select(c => c.Key)
+                    .ToList();
+
+                foreach (var row in keysToRemove)
                 {
                     this.RemoveKey<THashSetKey>(tableName,row);
                 }
@@ -2111,7 +2170,10 @@ namespace DBreeze.Transactions
         {
             ITrieRootNode readRoot = null;
             LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
-                       
+
+            if (table == null)
+                return new Row<TKey, TValue>(null, null, false);
+
             if (refToInsertedValue == null)
             {
                 return new Row<TKey, TValue>(null, null, false);
@@ -2122,13 +2184,7 @@ namespace DBreeze.Transactions
                 refToInsertedValue = refToInsertedValue.RemoveLeadingElement(0).EnlargeByteArray_BigEndian(table.Storage.TrieSettings.POINTER_LENGTH);
             }
 
-
-            if (table == null)
-            {               
-                
-                return new Row<TKey, TValue>(null, null, false);
-            }
-            else
+            if (table != null)
             {
                 
                 LTrieRow ltr=new LTrieRow(((readRoot == null) ? table.rn : (LTrieRootNode)readRoot));
@@ -2154,6 +2210,8 @@ namespace DBreeze.Transactions
                 return new Row<TKey, TValue>(ltr, null, !(readRoot == null));
                 
             }
+
+            return new Row<TKey, TValue>(null, null, false);
         }
 
 
@@ -2444,7 +2502,6 @@ namespace DBreeze.Transactions
                 }
 
             }
-
         }
 
 
@@ -2646,7 +2703,6 @@ namespace DBreeze.Transactions
                 }
 
             }
-
         }
 
         /// <summary>

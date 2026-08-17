@@ -1,0 +1,18 @@
+using BenchmarkDotNet.Running;
+using DBreeze.Net8.Benchmarks;
+
+if (args.Any(static arg => string.Equals(arg, "--focused-compare", StringComparison.OrdinalIgnoreCase)))
+    return FocusedBenchmarkComparison.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--disk-compat", StringComparison.OrdinalIgnoreCase)))
+    return DiskCompatibilityProbe.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--historical-compare", StringComparison.OrdinalIgnoreCase)))
+    return HistoricalBenchmarkComparison.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--historical-core", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(arg, "--historical-skip", StringComparison.OrdinalIgnoreCase)))
+    return HistoricalBenchmarkSuite.Run(args);
+
+BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+return 0;

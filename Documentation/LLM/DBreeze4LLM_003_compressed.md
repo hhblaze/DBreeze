@@ -258,7 +258,7 @@ using (var tran = engine.GetTransaction())
 using (var tran = engine.GetTransaction())
 {
     for (int i = 0; i < 100000; i++)
-        tran.RandomKeySorter.Insert<int, string>("t1", GetRandom(), "Val"); // auto-flushes at 10K
+        tran.RandomKeySorter.Insert<int, string>("t1", GetRandom(), "Val"); // buffered until explicit Flush or Commit
     tran.Commit();
 }
 ```

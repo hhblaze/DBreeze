@@ -71,12 +71,12 @@ namespace DBreeze.Transactions
         /// <summary>
         /// It holds all tables marked for possible mutations
         /// </summary>
-        Dictionary<string, ITransactable> _transactionWriteTables = new Dictionary<string, ITransactable>();
+        Dictionary<string, ITransactable> _transactionWriteTables;
 
         /// <summary>
         /// List of tables which are waiting for reservation for writing, we need it to predict deadlock situations.
         /// </summary>
-        List<string> _transactionWriteTablesAwaitingReservation = new List<string>();
+        List<string> _transactionWriteTablesAwaitingReservation;
 
 
         public void Dispose()
@@ -87,15 +87,16 @@ namespace DBreeze.Transactions
             {
                 if (this._transactionsCoordinator.GetSchema.Engine.DBisOperable)
                 {
-                    foreach (var tt in _transactionWriteTables.Where(r => r.Value != null))
+                    if (_transactionWriteTables != null)
                     {
-                        tt.Value.TransactionIsFinished(this._transaction.ManagedThreadId);
+                        foreach (var tt in _transactionWriteTables.Where(r => r.Value != null))
+                            tt.Value.TransactionIsFinished(this._transaction.ManagedThreadId);
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -107,12 +108,12 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterWriteLock();
             try
             {
-                _transactionWriteTables.Clear();    //holds table name + ITransactable interface                
-                _transactionWriteTablesAwaitingReservation.Clear(); //holds tables with awaiting reservation, means that transaction thread is blocked
+                _transactionWriteTables?.Clear();
+                _transactionWriteTablesAwaitingReservation?.Clear();
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -131,12 +132,13 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterWriteLock();
             try
             {
+                _transactionWriteTablesAwaitingReservation ??= new List<string>();
                 _transactionWriteTablesAwaitingReservation.AddRange(tablesNames.Except(_transactionWriteTablesAwaitingReservation));
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -149,7 +151,7 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterWriteLock();
             try
             {
-                _transactionWriteTablesAwaitingReservation.RemoveAll(r => tablesNames.Contains(r));
+                _transactionWriteTablesAwaitingReservation?.RemoveAll(r => tablesNames.Contains(r));
             }
             finally
             {
@@ -162,7 +164,9 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterReadLock();
             try
             {
-                return _transactionWriteTablesAwaitingReservation;
+                return _transactionWriteTablesAwaitingReservation == null
+                    ? new List<string>()
+                    : new List<string>(_transactionWriteTablesAwaitingReservation);
             }
             finally
             {
@@ -186,6 +190,7 @@ namespace DBreeze.Transactions
             try
             {
 
+                _transactionWriteTables ??= new Dictionary<string, ITransactable>();
                 if (!_transactionWriteTables.ContainsKey(tableName))
                 {
                     this._transactionWriteTables.Add(tableName, table);
@@ -199,10 +204,10 @@ namespace DBreeze.Transactions
                 }
 
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 //CIRCULAR
-                throw ex;
+                throw;
             }
             finally
             {
@@ -222,11 +227,13 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterReadLock();
             try
             {
-                return _transactionWriteTables.Where(r => r.Value != null).Select(r => r.Value).ToList();
+                return _transactionWriteTables == null
+                    ? new List<ITransactable>()
+                    : _transactionWriteTables.Where(r => r.Value != null).Select(r => r.Value).ToList();
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -262,6 +269,8 @@ namespace DBreeze.Transactions
                 //MUST NOT BE USED PATTERN CHECK, look FastTest TEST_TABLE_RESERVED_FOR_WRITE and TEST_TABLE_RESERVED_FOR_WRITE_1
                 //////return DbUserTables.TableNamesContains(_transactionWriteTables.Keys.ToList(), tableName);
 
+                if (_transactionWriteTables == null)
+                    return false;
                 ITransactable val;
                 return _transactionWriteTables.TryGetValue(tableName,out val);
 
@@ -280,9 +289,9 @@ namespace DBreeze.Transactions
                 //In new scheme it will check RegexCompliant, together with TransactionsCoordinator.RegisterWriteTablesForTransaction
                 //return !(kvp.Key == null);
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -328,11 +337,13 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterReadLock();
             try
             {
-                return _transactionWriteTables.Keys.ToList();
+                return _transactionWriteTables == null
+                    ? new List<string>()
+                    : _transactionWriteTables.Keys.ToList();
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -351,15 +362,17 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterReadLock();
             try
             {
+                if (_transactionWriteTables == null)
+                    return;
                 foreach (var tt in _transactionWriteTables.Where(r => r.Value != null))
                 {
                     tt.Value.ITRCommit();
                 }
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -377,15 +390,17 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterReadLock();
             try
             {
+                if (_transactionWriteTables == null)
+                    return;
                 foreach (var tt in _transactionWriteTables.Where(r => r.Value != null))
                 {
                     tt.Value.ITRRollBack();
                 }
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {

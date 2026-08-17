@@ -38,7 +38,6 @@
   <ItemGroup>
         <Compile Include="..\DBreeze.Net5\Utils\MultiKeyConcurrentSortedDictionary.cs" Link="Utils\MultiKeyConcurrentSortedDictionary.cs" />
         <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
-        <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>
@@ -102,13 +101,6 @@
       <Link>TextSearch\WABI.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\TextSearch\WabiStreamCrypto.cs" Link="TextSearch\WabiStreamCrypto.cs" />
-    <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs">
-      <Link>Transactions\RandomKeySorter.cs</Link>
-    </Compile>
-    <Compile Include="..\DBreeze\Transactions\Transaction.cs">
-      <Link>Transactions\Transaction.cs</Link>
-    </Compile>
-    <Compile Include="..\DBreeze\Transactions\Transaction.Vector.cs" Link="Transactions\Transaction.Vector.cs" />
     <Compile Include="..\DBreeze\Utils\Biser.cs" Link="Utils\Biser.cs" />
     <Compile Include="..\DBreeze\Utils\BiserDecoder.cs" Link="Utils\BiserDecoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserEncoder.cs" Link="Utils\BiserEncoder.cs" />

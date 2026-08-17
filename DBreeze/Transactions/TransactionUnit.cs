@@ -174,7 +174,7 @@ namespace DBreeze.Transactions
             _sync_transactionWriteTables.EnterReadLock();
             try
             {
-                return _transactionWriteTablesAwaitingReservation;
+                return new List<string>(_transactionWriteTablesAwaitingReservation);
             }
             finally
             {

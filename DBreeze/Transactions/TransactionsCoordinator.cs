@@ -58,31 +58,26 @@ namespace DBreeze.Transactions
             //Transaction must have 2 classes one class is for the user, with appropriate methods, second for technical purposes TransactionDetails, where we store different transaction information
             //both classes must be bound into one class TransactionUnit
 
-            TransactionUnit transactionUnit = new TransactionUnit(transactionType, this, lockType, tables);
-            
-
-            //Checking if the same transaction already exists in the list of Transactions. 
-            //It could happen in case of abnormal termination of parallel thread, without disposing of the transaction.
-            //So we delete pending transaction first, then create new one.
-            bool reRun = false;
+#if NET35 || NETr40
+            int transactionThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+#else
+            int transactionThreadId = Environment.CurrentManagedThreadId;
+#endif
+            bool existingTransaction = false;
             _sync_transactions.EnterReadLock();
             try
             {
-                if (this._transactions.ContainsKey(transactionUnit.TransactionThreadId))
-                {
-                    reRun = true;
-                }
+                existingTransaction = this._transactions.ContainsKey(transactionThreadId);
             }
             finally
             {
                 _sync_transactions.ExitReadLock();
             }
 
-            if (reRun)
-            {
-                UnregisterTransaction(transactionUnit.TransactionThreadId);
-                return GetTransaction(transactionType, lockType, tables);
-            }
+            if (existingTransaction)
+                UnregisterTransaction(transactionThreadId);
+
+            TransactionUnit transactionUnit = new TransactionUnit(transactionType, this, lockType, tables);
 
             //Adding transaction to the list
             _sync_transactions.EnterWriteLock();
@@ -192,32 +187,33 @@ namespace DBreeze.Transactions
         /// <param name="transactionThreadId"></param>
         public void UnregisterTransaction(int transactionThreadId)
         {
-            TransactionUnit transactionUnit = this.GetTransactionUnit(transactionThreadId);
+            TransactionUnit transactionUnit = null;
             Exception exc = null;
+
+            _sync_transactions.EnterWriteLock();
+            try
+            {
+                if (this._transactions.TryGetValue(transactionThreadId, out transactionUnit))
+                    this._transactions.Remove(transactionThreadId);
+            }
+            finally
+            {
+                _sync_transactions.ExitWriteLock();
+            }
 
             if (transactionUnit != null)
             {
-                _sync_transactions.EnterWriteLock();
                 try
                 {
-                    this._transactions.Remove(transactionUnit.Transaction.ManagedThreadId);
                     transactionUnit.Dispose();
                 }
                 catch (System.Exception ex)
                 {
                     exc = ex;
                 }
-                finally
-                {
-                    _sync_transactions.ExitWriteLock();
-                }
-
-                
             }
 
-            //letting other threads, which tried to register tables for modification and were blocked, to re-try the operation.
-            //mreWriteTransactionLock.Set();
-            ThreadsGator.OpenGate();
+            SignalWriteWaiters(transactionThreadId);
 
             if (exc != null)
                 throw exc;
@@ -230,45 +226,33 @@ namespace DBreeze.Transactions
         public void UnregisterAllTransactions()
         {
             Exception exc = null;
+            List<TransactionUnit> transactionUnits;
 
             _sync_transactions.EnterWriteLock();
             try
             {
-                foreach (var transactionUnit in _transactions.Values)
-                {
-                    try
-                    {
-                        transactionUnit.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        if(exc == null)
-                            exc = ex;
-                    }
-                    
-                }
-
+                transactionUnits = _transactions.Values.ToList();
                 this._transactions.Clear();
-            }
-            catch (System.Exception ex)
-            {
-                if (exc == null)
-                    exc = ex;
             }
             finally
             {
                 _sync_transactions.ExitWriteLock();
-
-                //lettign other threads, which tried to register tables for modification and were blocked, to re-try the operation.
-                //mreWriteTransactionLock.Set();
-                ThreadsGator.OpenGate();
-
-                //No need here
-                //////if (exc != null)
-                //////    throw exc;
             }
 
-            
+            foreach (TransactionUnit transactionUnit in transactionUnits)
+            {
+                try
+                {
+                    transactionUnit.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    if (exc == null)
+                        exc = ex;
+                }
+            }
+
+            SignalWriteWaiters(Int32.MinValue);
         }
 
 
@@ -325,9 +309,70 @@ namespace DBreeze.Transactions
             return ret;
         }
 
-        //System.Threading.ManualResetEvent mreWriteTransactionLock = new System.Threading.ManualResetEvent(true);
-        DbThreadsGator ThreadsGator = new DbThreadsGator();
         object _sync_dl = new object();
+
+        sealed class WriteReservationWaiter
+        {
+            internal readonly int TransactionThreadId;
+            internal readonly List<string> Tables;
+            internal readonly DbThreadsGator Gate = new DbThreadsGator(false);
+            internal List<int> Blockers = new List<int>();
+
+            internal WriteReservationWaiter(int transactionThreadId, List<string> tables)
+            {
+                TransactionThreadId = transactionThreadId;
+                Tables = new List<string>(tables);
+            }
+        }
+
+        readonly Dictionary<int, WriteReservationWaiter> _writeWaiters = new Dictionary<int, WriteReservationWaiter>();
+        readonly List<int> _writeWaiterSequence = new List<int>();
+
+        void RemoveWriteWaiterUnderLock(int transactionThreadId)
+        {
+            _writeWaiters.Remove(transactionThreadId);
+            _writeWaiterSequence.Remove(transactionThreadId);
+        }
+
+        void SignalWriteWaiters(int removedTransactionThreadId)
+        {
+            lock (_sync_dl)
+            {
+                WriteReservationWaiter removedWaiter;
+                if (_writeWaiters.TryGetValue(removedTransactionThreadId, out removedWaiter))
+                {
+                    RemoveWriteWaiterUnderLock(removedTransactionThreadId);
+                    removedWaiter.Gate.OpenGate();
+                }
+
+                foreach (WriteReservationWaiter waiter in _writeWaiters.Values)
+                {
+                    waiter.Blockers.RemoveAll(r => r == removedTransactionThreadId);
+                    waiter.Gate.OpenGate();
+                }
+            }
+        }
+
+        bool WaitPathExists(int fromTransactionThreadId, int targetTransactionThreadId, HashSet<int> visited)
+        {
+            Stack<int> pending = new Stack<int>();
+            pending.Push(fromTransactionThreadId);
+            while (pending.Count > 0)
+            {
+                int current = pending.Pop();
+                if (current == targetTransactionThreadId)
+                    return true;
+                if (!visited.Add(current))
+                    continue;
+
+                WriteReservationWaiter waiter;
+                if (!_writeWaiters.TryGetValue(current, out waiter))
+                    continue;
+                foreach (int blocker in waiter.Blockers)
+                    pending.Push(blocker);
+            }
+            return false;
+        }
 
 
         /// <summary>
@@ -337,169 +382,123 @@ namespace DBreeze.Transactions
         /// <param name="transactionThreadId"></param>
         /// <param name="tablesNames"></param>
         /// <param name="calledBySynchronizer"></param>
-        public void RegisterWriteTablesForTransaction(int transactionThreadId, List<string> tablesNames, bool calledBySynchronizer)
+        public void RegisterWriteTablesForTransaction(int transactionThreadId, List<string> tablesNames,bool calledBySynchronizer)
         {
-            //in every transaction unit we got a list of reserved for WRITING tables
+            WriteReservationWaiter waiter = null;
 
-            //if we have in tablesNames one of the tables which is in this list we have to stop the thread with mre
-            bool toWaitTillTransactionIsFinished = false;
-            bool breakOuterLoop = false;
-            TransactionUnit transactionUnit = null;
-            bool deadlock = false;
-
-            Exception innerException = null;
-
-            //When SyncTables is called
-            //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> SYNC IN Thread: " + transactionThreadId);
-
-            while (true)    //loop till thread will get full access to write tables
+            while (true)
             {
-                toWaitTillTransactionIsFinished = false;
-                breakOuterLoop = false;
-                deadlock = false;
+                TransactionUnit transactionUnit = null;
+                bool deadlock = false;
+                bool transactionMissing = false;
 
-                //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> " + "Thread: " + transactionThreadId + "WHILE ");
-
-                //only tables required for writing or read-commited will have to go over this fast bottleneck
                 lock (_sync_dl)
                 {
+                    if (waiter != null)
+                        waiter.Gate.CloseGate();
+
                     _sync_transactions.EnterReadLock();
                     try
                     {
-
                         this._transactions.TryGetValue(transactionThreadId, out transactionUnit);
-
                         if (transactionUnit == null)
-                            return; //transaction doesn't exist anymore, gracefully goes out
-
-                       
-                        if (!calledBySynchronizer)
                         {
-                            //Here we are in case if Registrator is called by WriteTableCall, so we check intersections
-                            //Between reserved Write tables and current table using patterns intersections technique.
-                            //If they intersect we let the thread to proceed
-                            if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(), tablesNames))
-                            {
-                                return;                       
-                            }
-
-                            //Help for the programmer on the early stage to see problem with the possible deadlock
-                            if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock)
-                            {
-                                if (transactionUnit.TransactionWriteTablesCount > 0)
-                                {
-                                    throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
-                                }
-                            }
-                           
+                            transactionMissing = true;
                         }
-
-
-                        //iterating over all open transactions except self, finding out if desired tables are locked by other threads.
-                        foreach (var tu in this._transactions.Where(r => r.Value.TransactionThreadId != transactionThreadId))
+                        else
                         {
-                            foreach (string tableName in tu.Value.GetTransactionWriteTablesNames())
+                            if (!calledBySynchronizer)
                             {
-                                //if (tablesNames.Contains(tableName))
-                                if (DbUserTables.TableNamesContains(tablesNames,tableName))
+                                if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(), tablesNames))
+                                    return;
+                                if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock && transactionUnit.TransactionWriteTablesCount > 0)
+                                    throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
+                            }
+
+                            if (waiter == null)
+                            {
+                                waiter = new WriteReservationWaiter(transactionThreadId, tablesNames);
+                                _writeWaiters[transactionThreadId] = waiter;
+                                _writeWaiterSequence.Add(transactionThreadId);
+                                transactionUnit.AddTransactionWriteTablesAwaitingReservation(tablesNames);
+                            }
+
+                            List<int> blockers = new List<int>();
+                            foreach (var other in this._transactions)
+                            {
+                                if (other.Key != transactionThreadId &&
+                                    DbUserTables.TableNamesIntersect(waiter.Tables, other.Value.GetTransactionWriteTablesNames()))
+                                    blockers.Add(other.Key);
+                            }
+
+                            // A later request may pass unrelated requests, but never an earlier
+                            // conflicting one. This prevents an exclusive writer from starving.
+                            foreach (int queuedId in _writeWaiterSequence)
+                            {
+                                if (queuedId == transactionThreadId)
+                                    break;
+                                WriteReservationWaiter earlier;
+                                if (_writeWaiters.TryGetValue(queuedId, out earlier) &&
+                                    DbUserTables.TableNamesIntersect(waiter.Tables, earlier.Tables) &&
+                                    !blockers.Contains(queuedId))
+                                    blockers.Add(queuedId);
+                            }
+
+                            waiter.Blockers = blockers;
+                            foreach (int blocker in blockers)
+                            {
+                                if (WaitPathExists(blocker, transactionThreadId, new HashSet<int>()))
                                 {
-                                    //
-                                    //++++++++++++++ here we can register all tables which are waiting for write lock release
-                                    transactionUnit.AddTransactionWriteTablesAwaitingReservation(tablesNames);
-
-                                    //++++++++++++++ if thread, who has locked this table has another table in a "waiting for reservation" blocked by this thread - it's a deadlock                                    
-                                    //if (transactionUnit.GetTransactionWriteTablesNames().Intersect(tu.Value.GetTransactionWriteTablesAwaitingReservation()).Count() > 0)
-                                    if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(),tu.Value.GetTransactionWriteTablesAwaitingReservation()))
-                                    {
-                                        //we got deadlock, we will stop this transaction with an exception
-                                        deadlock = true;
-                                    }
-
-                                    //other thread has reserved table for the transaction we have to wait
-                                    toWaitTillTransactionIsFinished = true;
-                                    breakOuterLoop = true;
-
-                                    if (!deadlock)
-                                    {
-                                        //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> " + "Thread: " + transactionThreadId + " GATE IS CLOSED ");
-
-                                        ThreadsGator.CloseGate();  //closing gate only if no deadlock situation  
-                                        //mreWriteTransactionLock.Reset();   //setting to signalled only in non-deadlock case
-                                    }
-
+                                    deadlock = true;
                                     break;
                                 }
-                               
                             }
 
-                            if (breakOuterLoop)
-                                break;
+                            if (blockers.Count == 0)
+                            {
+                                RemoveWriteWaiterUnderLock(transactionThreadId);
+                                transactionUnit.ClearTransactionWriteTablesAwaitingReservation(tablesNames);
+                                foreach (string tableName in tablesNames)
+                                    transactionUnit.AddTransactionWriteTable(tableName, null);
+                            }
                         }
-                    }
-                    catch (System.Exception ex)
-                    {
-                        innerException = ex;
-                        //this.UnregisterTransaction(transactionThreadId);
-
-                        //throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED,ex);                        
-                        
                     }
                     finally
                     {
                         _sync_transactions.ExitReadLock();
                     }
 
-                    if(innerException != null)
+                    if (transactionMissing)
                     {
-                        this.UnregisterTransaction(transactionThreadId);
-                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED, innerException);
+                        if (waiter != null)
+                            RemoveWriteWaiterUnderLock(transactionThreadId);
                     }
-
-                    //if(true) this thread owns all table for modification lock
-                    if (!toWaitTillTransactionIsFinished)
+                    else if (deadlock)
                     {
-                        //+++++++++++ Here we can clear all table names in the waiting reservation queue
-                        transactionUnit.ClearTransactionWriteTablesAwaitingReservation(tablesNames);
-
-                        //we have to reserve for our transaction all tables
-                        foreach (var tbn in tablesNames)
-                            transactionUnit.AddTransactionWriteTable(tbn, null);
-
-                        //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> SYNC OUT Thread: " + transactionThreadId + "   Sync stop: " + transactionUnit.udtSyncStop.ToString("dd.MM.yyyy HH:mm:ss"));
-
+                        RemoveWriteWaiterUnderLock(transactionThreadId);
+                    }
+                    else if (waiter != null && waiter.Blockers.Count == 0)
+                    {
+                        waiter.Gate.Dispose();
                         return;
                     }
+                }
 
-                }//end of lock
-
-
+                if (transactionMissing)
+                {
+                    if (waiter != null)
+                        waiter.Gate.Dispose();
+                    return;
+                }
                 if (deadlock)
                 {
+                    waiter.Gate.Dispose();
                     this.UnregisterTransaction(transactionThreadId);
-
-                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_IN_DEADLOCK);                    
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_IN_DEADLOCK);
                 }
 
-                if (toWaitTillTransactionIsFinished)
-                {
-                    //Console.WriteLine(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm:ss") + "> " + "Thread: " + transactionThreadId + " GATE IS PUT ");
-
-                    //blocking thread which requires busy tables for writing, till they are released
-                    //ThreadsGator.PutGateHere(20000);    //every 20 second (or by Gate open we give a chance to re-try, for safety reasons of hanged threads, if programmer didn't dispose DBreeze process after the programm end)
-
-                    //#if ASYNC
-                    //                    await ThreadsGator.PutGateHere().ConfigureAwait(false);
-                    //#else
-                    //                    ThreadsGator.PutGateHere();
-                    //#endif
-
-                    ThreadsGator.PutGateHere();
-
-                    //mreWriteTransactionLock.WaitOne();
-                }
-            }//eo while
-
-           
+                waiter.Gate.PutGateHere();
+            }
         }
 
 #endregion //Eliminating Deadlocks. Registering tables for write before starting transaction operations

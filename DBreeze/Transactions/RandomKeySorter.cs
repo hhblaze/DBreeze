@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DBreeze.Utils;
 using DBreeze.DataTypes;
 using DBreeze.LianaTrie;
@@ -14,9 +13,8 @@ namespace DBreeze.Transactions
 {
     /// <summary>
     /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-    /// When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-    /// within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-    /// sorted by key ascending
+    /// Operations are flushed explicitly or by Commit (first removed then inserted),
+    /// sorted by key ascending.
     /// </summary>
     public class RandomKeySorter
     {
@@ -30,9 +28,10 @@ namespace DBreeze.Transactions
         
         bool isUsed = false;
         /// <summary>
-        /// <para>NOT USED ANYMORE</para>
-        /// Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
-        /// <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
+        /// NOT USED ANYMORE. Preserved for public API compatibility.
+        /// Automatic flush makes TryGetValueByKey ambiguous after flushing: a miss can mean
+        /// either "not buffered" or "already flushed", forcing an LTrie/storage lookup and
+        /// breaking the object-layer fast path.
         /// </summary>
         public int AutomaticFlushLimitQuantityPerTable = 1000000;
                
@@ -43,6 +42,8 @@ namespace DBreeze.Transactions
         /// </summary>
         internal void TablesWithOverwriteIsNotAllowed(string tableName)
         {
+            _t.EnsureTransactionOwner();
+
             if (!_tablesWithOverwriteIsNotAllowed.Contains(tableName))
             {
                 _tablesWithOverwriteIsNotAllowed.Add(tableName);
@@ -77,29 +78,41 @@ namespace DBreeze.Transactions
         /// <param name="value"></param>        
         public void Insert<TKey,TValue>(string tableName, TKey key, TValue value)
         {
+            _t.EnsureTransactionOwner();
+
             if (key == null)
                 throw new Exception("RandomKeySorter, key can't be null");
 
             byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
-            byte[] btValue = DataTypesConvertor.ConvertKey<TValue>(value);
+            byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(value);
 
             var keyH = btKey.ToBytesString();
 
             isUsed = true;
                      
-            if (!_cnt.ContainsKey(tableName))
-                _cnt[tableName] = 0;
+            int count;
+            if (!_cnt.TryGetValue(tableName, out count))
+                count = 0;
 
-                if (!_dInsert.ContainsKey(tableName))
-                _dInsert[tableName] = new Dictionary<string, KeyValuePair<byte[], byte[]>>();            
+            Dictionary<string, byte[]> removeTable;
+            bool replacedRemove = _dRemove.TryGetValue(tableName, out removeTable) && removeTable.Remove(keyH);
+            if (removeTable != null && removeTable.Count == 0)
+                _dRemove.Remove(tableName);
 
-            _dInsert[tableName][keyH] = new KeyValuePair<byte[], byte[]>(btKey, btValue);
+            Dictionary<string, KeyValuePair<byte[], byte[]>> insertTable;
+            if (!_dInsert.TryGetValue(tableName, out insertTable))
+            {
+                insertTable = new Dictionary<string, KeyValuePair<byte[], byte[]>>();
+                _dInsert[tableName] = insertTable;
+            }
 
-            _cnt[tableName]++;
+            bool replacedInsert = insertTable.ContainsKey(keyH);
+            insertTable[keyH] = new KeyValuePair<byte[], byte[]>(btKey, btValue);
 
-            //Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter) 
-            //if (_cnt[tableName] >= AutomaticFlushLimitQuantityPerTable)
-            //    Flush(tableName);
+            if (!replacedRemove && !replacedInsert)
+                count++;
+            _cnt[tableName] = count;
+
         }
 
         /// <summary>
@@ -110,6 +123,8 @@ namespace DBreeze.Transactions
         /// <param name="key"></param>
         public void Remove<TKey>(string tableName, TKey key)
         {
+            _t.EnsureTransactionOwner();
+
             if (key == null)
                 throw new Exception("RandomKeySorter, key can't be null");
 
@@ -119,37 +134,33 @@ namespace DBreeze.Transactions
 
             isUsed = true;
 
-            if (!_cnt.ContainsKey(tableName))
-                _cnt[tableName] = 0;
+            int count;
+            if (!_cnt.TryGetValue(tableName, out count))
+                count = 0;
 
             Dictionary<string, KeyValuePair<byte[], byte[]>> dInsertTable = null;
+            bool replacedInsert = false;
             if (_dInsert.TryGetValue(tableName, out dInsertTable))
             {
-                //Trying already to remove these values
-                //NOTE
-                if (dInsertTable.ContainsKey(keyH))
-                {
-                    dInsertTable.Remove(keyH);
-                    _cnt[tableName]--;
-
-                    if(!WasAutomaticallyFlushed)
-                        return; //we can go out and don't put this to _remove list if in this session we entites were not flushed due to AutomaticFlushLimitQuantityPerTable, unless we must leave them in _dRemove table, so they are deleted when using Flush()
-                }
+                replacedInsert = dInsertTable.Remove(keyH);
+                if (dInsertTable.Count == 0)
+                    _dInsert.Remove(tableName);
             }
 
+            Dictionary<string, byte[]> removeTable;
+            if (!_dRemove.TryGetValue(tableName, out removeTable))
+            {
+                removeTable = new Dictionary<string, byte[]>();
+                _dRemove[tableName] = removeTable;
+            }
 
-            if (!_dRemove.ContainsKey(tableName))
-                _dRemove[tableName] = new Dictionary<string, byte[]>();
+            bool replacedRemove = removeTable.ContainsKey(keyH);
+            removeTable[keyH] = btKey;
 
-            _dRemove[tableName][keyH] = btKey;
+            if (!replacedInsert && !replacedRemove)
+                count++;
+            _cnt[tableName] = count;
 
-           
-
-            _cnt[tableName]++;
-
-            //Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter) 
-            //if (_cnt[tableName] >= AutomaticFlushLimitQuantityPerTable)
-            //    Flush(tableName);
         }
 
 
@@ -158,10 +169,11 @@ namespace DBreeze.Transactions
         /// Contains writing LTrie tables
         /// </summary>
         Dictionary<string, LTrie> tbls = new Dictionary<string, LTrie>();
-        bool WasAutomaticallyFlushed = false;
-        
+
         public void Flush(string tableName)
         {
+            _t.EnsureTransactionOwner();
+
             LTrie table = null;
             bool WasOperated = false;
             byte[] deletedValue = null;
@@ -176,7 +188,7 @@ namespace DBreeze.Transactions
                     tbls[tableName] = table;
                 }
 
-                foreach (var el2 in _dRemove[tableName].OrderBy(r => r.Key))
+                foreach (var el2 in _dRemove[tableName].OrderBy(r => r.Key, StringComparer.Ordinal))
                 {
                     // _t.RemoveKey<byte[]>(tableName, el2.Value);
                     btKey = el2.Value;
@@ -195,7 +207,7 @@ namespace DBreeze.Transactions
                     tbls[tableName] = table;
                 }
 
-                foreach (var el2 in _dInsert[tableName].OrderBy(r => r.Key))
+                foreach (var el2 in _dInsert[tableName].OrderBy(r => r.Key, StringComparer.Ordinal))
                 {
                     //_t.Insert<byte[],byte[]>(tableName, el2.Value.Key, el2.Value.Value);
                     btKey = el2.Value.Key;
@@ -206,8 +218,7 @@ namespace DBreeze.Transactions
                 _dInsert.Remove(tableName);
             }
 
-            _cnt[tableName] = 0;
-            WasAutomaticallyFlushed = true;
+            _cnt.Remove(tableName);
         }
 
       
@@ -216,6 +227,8 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Flush()
         {
+            _t.EnsureTransactionOwner();
+
             if (!isUsed)
                 return;
 
@@ -225,7 +238,7 @@ namespace DBreeze.Transactions
             byte[] btKey = null;
             byte[] btVal = null;
 
-            foreach (var el1 in _dRemove.OrderBy(r => r.Key))
+            foreach (var el1 in _dRemove.OrderBy(r => r.Key, StringComparer.Ordinal))
             {
                 if (!tbls.TryGetValue(el1.Key, out table))
                 {
@@ -233,7 +246,7 @@ namespace DBreeze.Transactions
                     tbls[el1.Key] = table;
                 }
 
-                foreach (var el2 in el1.Value.OrderBy(r => r.Key))
+                foreach (var el2 in el1.Value.OrderBy(r => r.Key, StringComparer.Ordinal))
                 {
                     //_t.RemoveKey<byte[]>(el1.Key, el2.Value);
                     btKey = el2.Value;
@@ -243,7 +256,7 @@ namespace DBreeze.Transactions
 
             _dRemove.Clear();
 
-            foreach (var el1 in _dInsert.OrderBy(r => r.Key))
+            foreach (var el1 in _dInsert.OrderBy(r => r.Key, StringComparer.Ordinal))
             {
                 if (!tbls.TryGetValue(el1.Key, out table))
                 {
@@ -252,7 +265,7 @@ namespace DBreeze.Transactions
                 }
 
                 //List<string> tt = el1.Value.OrderBy(r => r.Key).Select(r => r.Key).ToList();
-                foreach (var el2 in el1.Value.OrderBy(r => r.Key))
+                foreach (var el2 in el1.Value.OrderBy(r => r.Key, StringComparer.Ordinal))
                 {
                     //_t.Insert<byte[], byte[]>(el1.Key, el2.Value.Key, el2.Value.Value);
                     btKey = el2.Value.Key;
@@ -265,8 +278,19 @@ namespace DBreeze.Transactions
             _dInsert.Clear();
             _cnt.Clear();
 
-            WasAutomaticallyFlushed = false;
+            isUsed = false;
+        }
 
+        /// <summary>
+        /// Drops all operations which have not been committed. Called by Transaction.Rollback.
+        /// </summary>
+        internal void Reset()
+        {
+            _dInsert.Clear();
+            _dRemove.Clear();
+            _cnt.Clear();
+            tbls.Clear();
+            _tablesWithOverwriteIsNotAllowed.Clear();
             isUsed = false;
         }
 

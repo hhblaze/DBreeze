@@ -32,6 +32,7 @@ namespace DBreeze.Transactions
         ulong _transactionNumber = 0;
 
         DbReaderWriterLock _sync_transactionsTables = new DbReaderWriterLock();
+        readonly object _sync_journalIo = new object();
 
         /// <summary>
         /// We try to clear tranasction file, when its length is more then 10MB and if it's possible
@@ -71,33 +72,42 @@ namespace DBreeze.Transactions
 
                  this.RestoreNotFinishedTransactions();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
         }
 
 
 
+        private void RecreateJournalStorage()
+        {
+            // RemoveAll(true) disposes LTrie's NestedTablesCoordinator, so this LTrie
+            // instance must not be used for subsequent journal writes.
+            LTrie.RemoveAll(true);
+            LTrie.Dispose();
+            Storage = new StorageLayer(Path.Combine(Engine.MainFolder, JournalFileName), LTrieSettings, Engine.Configuration);
+            LTrie = new LTrie(Storage) { TableName = "DBreeze.TranJournal" };
+        }
+
         public void Dispose()
         {
+            LTrie journalToDispose = null;
             _sync_transactionsTables.EnterWriteLock();
             try
             {
                 _transactionsTables.Clear();
-                
-                //Disposing self trie
-                if (LTrie != null)
-                {
-                    //LTrieStorage.Dispose();
-                    LTrie.Dispose();
-                }
+                journalToDispose = LTrie;
+                LTrie = null;
             }
             finally
             {
                 _sync_transactionsTables.ExitWriteLock();
             }
+
+            lock (_sync_journalIo)
+                journalToDispose?.Dispose();
         }
 
 
@@ -114,15 +124,10 @@ namespace DBreeze.Transactions
 
                 if (LTrie.Count(false) == 0)     //All ok
                 {
-                    LTrie.RemoveAll(true);
+                    RecreateJournalStorage();
                     return;
                 }
 
-                string physicalPathToTheUserTable = String.Empty;
-
-                //Settigns and storage for Committed tables !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   MUST BE TAKEN FROM SCHEMA, FOR NOW DEFAULT
-                TrieSettings ltrSet = null;
-                IStorage storage = null;
                 DBreeze.LianaTrie.LTrie ltrie = null;
                                 
 
@@ -134,48 +139,28 @@ namespace DBreeze.Transactions
 
                     foreach (var fn in committedTablesNames)
                     {                       
-                        //Trying to get path from the Schema, there is universal function for getting table physical TABLE FULL PATH /NAME
+                        ltrie = Engine.DBreezeSchema.OpenTableForRollbackRecovery(fn);
+                        if (ltrie != null)
+                            ltrie.Dispose();
 
-                        physicalPathToTheUserTable = Engine.DBreezeSchema.GetPhysicalPathToTheUserTable(fn);
-
-                        //Returned path can be empty, if no more such table
-                        if (physicalPathToTheUserTable == String.Empty)
-                            continue;
-
-                        //We don't restore in-memory tables
-                        if (physicalPathToTheUserTable == "MEMORY")
-                            continue;
-
-                        //we open ltrie, and it automatically restores rollback
-                        ltrSet = new TrieSettings();     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   MUST BE TAKEN FROM SCHEMA, FOR NOW DEFAULT
-                        //storage = new TrieDiskStorage(physicalPathToTheUserTable, ltrSet, Engine.Configuration);
-                        storage = new StorageLayer(physicalPathToTheUserTable, ltrSet, Engine.Configuration);
-                        ltrie = new LTrie(storage);
-
-                        //closing trie, that Schema could open it again
-                        ltrie.Dispose();
-
-                        ////Deleting rollback file for such table
-                        //physicalPathToTheUserTable += ".rol";
-                        //System.IO.File.Delete(physicalPathToTheUserTable);
                     }
 
                     committedTablesNames.Clear();
                 }
 
                 //If all ok, recreate file
-                LTrie.RemoveAll(true);
+                RecreateJournalStorage();
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                throw ex;
+                throw;
             }
             //catch (System.Threading.ThreadAbortException ex)
             //{
             //    //We don'T make DBisOperable = false;                         
             //    throw ex;
             //}
-            catch (Exception ex)
+            catch (Exception)
             {
                 //BRINGS TO DB NOT OPERATABLE
                 this.Engine.DBisOperable = false;
@@ -213,10 +198,10 @@ namespace DBreeze.Transactions
                         tbls.Add(table.TableName, table);
                 }
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 //Called from TransactionCoordinator.Commit
-                throw ex;
+                throw;
             }
             finally
             {
@@ -227,83 +212,85 @@ namespace DBreeze.Transactions
 
         public void FinishTransaction(ulong tranNumber)
         {
+            Dictionary<string, ITransactable> transactionTables = null;
+            _sync_transactionsTables.EnterReadLock();
+            try
+            {
+                Dictionary<string, ITransactable> tables;
+                if (_transactionsTables.TryGetValue(tranNumber, out tables))
+                    transactionTables = new Dictionary<string, ITransactable>(tables, StringComparer.Ordinal);
+            }
+            finally
+            {
+                _sync_transactionsTables.ExitReadLock();
+            }
 
-            //_sync_transactionsTables.EnterReadLock();
+            if (transactionTables == null)
+                return;
+
+            // Keep the historical XML payload and table enumeration order byte-for-byte.
+            List<string> committedTablesNames = new List<string>(transactionTables.Keys);
+            string serTbls = committedTablesNames.SerializeXml_List();
+            byte[] btSerTbls = Encoding.UTF8.GetBytes(serTbls);
+            byte[] key = tranNumber.To_8_bytes_array_BigEndian();
+
+            // 1. Persist the recovery marker before finalizing any table.
+            lock (_sync_journalIo)
+            {
+                    LTrie.Add(ref key, ref btSerTbls);
+                    LTrie.Commit();
+            }
+
+            // 2. Potentially slow per-table I/O does not hold the journal state lock.
+            // If this throws, the durable marker intentionally remains for startup recovery.
+            foreach (var table in transactionTables.Values)
+                table.ITRCommitFinished();
+
+            // 3. All tables are finalized; remove the marker durably.
+            lock (_sync_journalIo)
+            {
+                    LTrie.Remove(ref key);
+                    LTrie.Commit();
+            }
+
+            bool journalCanBeCompacted;
             _sync_transactionsTables.EnterWriteLock();
             try
             {
-                Dictionary<string, ITransactable> tbls = null;
-                _transactionsTables.TryGetValue(tranNumber, out tbls);
-
-                if (tbls != null)
-                {
-                    //Starting procedure
-
-                    //1. Saving all table names into db - needed in case if something happens (Power loss or whatever).
-                    //   Then restarted TransactionalJournal will delete rollback files for these tables (they are all committed)
-                   
-                    List<string> committedTablesNames = new List<string>();
-                    foreach (var tt in tbls)
-                    {
-                        committedTablesNames.Add(tt.Key);                   
-                    }
-
-
-                    string serTbls = committedTablesNames.SerializeXml_List();
-                    byte[] btSerTbls = System.Text.Encoding.UTF8.GetBytes(serTbls);
-
-                    byte[] key = tranNumber.To_8_bytes_array_BigEndian();
-
-                    LTrie.Add(ref key, ref btSerTbls);
-                    LTrie.Commit();
-
-                    //2. Calling transaction End for all tables
-                    try
-                    {
-                        foreach (var tt in tbls)
-                        {
-                            tt.Value.ITRCommitFinished();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        //CASCADE from ITRCommitFinished, brings to NON-OPERATABLE
-                        throw ex;
-                    }
-
-                    //3. Deleting Record in Journal
-                    LTrie.Remove(ref key);
-                    LTrie.Commit();
-
-                    //Clearing transaction number
-                    tbls.Clear();
-                    _transactionsTables.Remove(tranNumber);
-
-
-                    //When Transaction File becomes big we try to clean it.
-                    if (LTrie.Storage.Length > MaxlengthOfTransactionFile && _transactionsTables.Count() == 0)
-                    {
-                        LTrie.Storage.RecreateFiles();
-                        LTrie.Dispose();
-                       
-                        Storage = new StorageLayer(Path.Combine(Engine.MainFolder, JournalFileName), LTrieSettings, Engine.Configuration);                        
-                        LTrie = new LTrie(Storage);
-                        LTrie.TableName = "DBreeze.TranJournal";
-                    }
-                }
-
-            }
-            catch (System.Exception ex)
-            {
-                //CASCADE 
-                throw ex;
+                _transactionsTables.Remove(tranNumber);
+                journalCanBeCompacted = _transactionsTables.Count == 0;
             }
             finally
             {
                 _sync_transactionsTables.ExitWriteLock();
-                //_sync_transactionsTables.ExitReadLock();
             }
 
+            if (journalCanBeCompacted)
+            {
+                lock (_sync_journalIo)
+                {
+                    // A transaction may have been registered after the first count check and
+                    // may already be waiting to persist its recovery marker. Recheck while the
+                    // journal itself is locked so RecreateFiles cannot erase that marker.
+                    _sync_transactionsTables.EnterReadLock();
+                    try
+                    {
+                        journalCanBeCompacted = _transactionsTables.Count == 0;
+                    }
+                    finally
+                    {
+                        _sync_transactionsTables.ExitReadLock();
+                    }
+
+                    if (journalCanBeCompacted && LTrie.Storage.Length > MaxlengthOfTransactionFile)
+                    {
+                        LTrie.Storage.RecreateFiles();
+                        LTrie.Dispose();
+                        Storage = new StorageLayer(Path.Combine(Engine.MainFolder, JournalFileName), LTrieSettings, Engine.Configuration);
+                        LTrie = new LTrie(Storage) { TableName = "DBreeze.TranJournal" };
+                    }
+                }
+            }
         }
 
         /// <summary>

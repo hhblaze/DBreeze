@@ -5557,11 +5557,9 @@ huge batch operations, so here there is a useful wrapper.
 using (var t = eng.GetTransaction())
 {
 //RandomKeySorter is accessible via transaction
-//AutomaticFlushLimitQuantityPerTable by default is 10000
-//t.RandomKeySorter.AutomaticFlushLimitQuantityPerTable = 100000;
-//When the quantity of operations per table is more or equal to
-AutomaticFlushLimitQuantityPerTable (or by committing the transaction),
-operations will be executed in sorted (ascending by the key) manner.
+//AutomaticFlushLimitQuantityPerTable is retained for API compatibility but is not used.
+//Operations are executed by an explicit Flush or by committing the transaction,
+//in sorted (ascending by the key) manner.
 //First Remove operations, then Insert operations will be executed.
 Random rnd = new Random();
 int k = 0 ;
@@ -5582,7 +5580,7 @@ t.RandomKeySorter.Insert<int,byte[]>("t1", k, new byte[] { 1
 //Or remove
 //t.RandomKeySorter.Remove<int>("t1", 1);
 }
-//Automatic flushing entities from RandomKeySorted
+//Flushing entities from RandomKeySorter
 t.Commit();
 }
 Note, while committing, keys will be removed first, then added

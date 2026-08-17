@@ -80,6 +80,17 @@ namespace DBreeze.Transactions
 
 
 
+        private void RecreateJournalStorage()
+        {
+            // RemoveAll(true) disposes LTrie's NestedTablesCoordinator, so this LTrie
+            // instance must not be used for subsequent journal writes.
+            LTrie.RemoveAll(true);
+            LTrie.Dispose();
+            Storage = new StorageLayer(Path.Combine(Engine.MainFolder, JournalFileName), LTrieSettings, Engine.Configuration);
+            LTrie = new LTrie(Storage);
+            LTrie.TableName = "DBreeze.TranJournal";
+        }
+
         public void Dispose()
         {
             _sync_transactionsTables.EnterWriteLock();
@@ -114,15 +125,10 @@ namespace DBreeze.Transactions
 
                 if (LTrie.Count(false) == 0)     //All ok
                 {
-                    LTrie.RemoveAll(true);
+                    RecreateJournalStorage();
                     return;
                 }
 
-                string physicalPathToTheUserTable = String.Empty;
-
-                //Settigns and storage for Committed tables !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   MUST BE TAKEN FROM SCHEMA, FOR NOW DEFAULT
-                TrieSettings ltrSet = null;
-                IStorage storage = null;
                 DBreeze.LianaTrie.LTrie ltrie = null;
                                 
 
@@ -135,37 +141,17 @@ namespace DBreeze.Transactions
 
                     foreach (var fn in committedTablesNames)
                     {                       
-                        //Trying to get path from the Schema, there is universal function for getting table physical TABLE FULL PATH /NAME
+                        ltrie = Engine.DBreezeSchema.OpenTableForRollbackRecovery(fn);
+                        if (ltrie != null)
+                            ltrie.Dispose();
 
-                        physicalPathToTheUserTable = Engine.DBreezeSchema.GetPhysicalPathToTheUserTable(fn);
-
-                        //Returned path can be empty, if no more such table
-                        if (physicalPathToTheUserTable == String.Empty)
-                            continue;
-
-                        //We don't restore in-memory tables
-                        if (physicalPathToTheUserTable == "MEMORY")
-                            continue;
-
-                        //we open ltrie, and it automatically restores rollback
-                        ltrSet = new TrieSettings();     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   MUST BE TAKEN FROM SCHEMA, FOR NOW DEFAULT
-                        //storage = new TrieDiskStorage(physicalPathToTheUserTable, ltrSet, Engine.Configuration);
-                        storage = new StorageLayer(physicalPathToTheUserTable, ltrSet, Engine.Configuration);
-                        ltrie = new LTrie(storage);
-
-                        //closing trie, that Schema could open it again
-                        ltrie.Dispose();
-
-                        ////Deleting rollback file for such table
-                        //physicalPathToTheUserTable += ".rol";
-                        //System.IO.File.Delete(physicalPathToTheUserTable);
                     }
 
                     committedTablesNames.Clear();
                 }
 
                 //If all ok, recreate file
-                LTrie.RemoveAll(true);
+                RecreateJournalStorage();
             }
             catch (OperationCanceledException ex)
             {
