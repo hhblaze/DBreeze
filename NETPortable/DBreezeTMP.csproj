@@ -108,11 +108,15 @@
     <Compile Include="..\DBreeze\TextSearch\WABI.cs">
       <Link>TextSearch\WABI.cs</Link>
     </Compile>
+    <Compile Include="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="..\DBreeze\Transactions\RandomKeySorter.cs">
       <Link>Transactions\RandomKeySorter.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\Transactions\Transaction.cs">
       <Link>Transactions\Transaction.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Transactions\Transaction.Vector.cs">
+      <Link>Transactions\Transaction.Vector.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\Utils\Biser.cs">
       <Link>Utils\Biser.cs</Link>
@@ -147,7 +151,9 @@
     <Compile Include="DataTypes\DbCustomSerializer.cs" />
     <Compile Include="DataTypes\DbUnicode.cs" />
     <Compile Include="DataTypes\DbUTF8.cs" />
-    <Compile Include="DataTypes\DbXML.cs" />
+    <Compile Include="..\DBreeze.Net5\DataTypes\DbXML.cs">
+      <Link>DataTypes\DbXML.cs</Link>
+    </Compile>
     <Compile Include="DataTypes\IDBConvertable.cs" />
     <Compile Include="Diagnostic\SpeedStatistic.cs" />
     <Compile Include="Engine\DBreezeConfiguration.cs" />
@@ -192,7 +198,9 @@
     <Compile Include="Utils\DbThreadsGator.cs" />
     <Compile Include="Utils\MurMurHash.cs" />
     <Compile Include="Utils\StringProcessing.cs" />
-    <Compile Include="Utils\XmlSerializator.cs" />
+    <Compile Include="..\DBreeze.Net5\Utils\XmlSerializator.cs">
+      <Link>Utils\XmlSerializator.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

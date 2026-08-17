@@ -57,7 +57,7 @@ internal static class FocusedBenchmarkComparison
             File.WriteAllText(Path.Combine(options.OutputDirectory, "focused-comparison.csv"), BuildCsv(rows), new UTF8Encoding(false));
             File.WriteAllText(Path.Combine(options.OutputDirectory, "focused-comparison.md"), BuildMarkdown(report), new UTF8Encoding(false));
 
-            Console.WriteLine($"Compared {rows.Count} focused transaction benchmarks.");
+            Console.WriteLine($"Compared {rows.Count} focused benchmarks.");
             Console.WriteLine($"New-version focused geometric-mean speedup: {report.OverallGeometricMeanSpeedup:F3}x");
             Console.WriteLine($"Reports: {options.OutputDirectory}");
             return 0;
@@ -172,9 +172,9 @@ internal static class FocusedBenchmarkComparison
     private static string BuildMarkdown(FocusedComparisonReport report)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("# DBreeze.Net8 focused transaction comparison");
+        sb.AppendLine("# DBreeze.Net8 focused benchmark comparison");
         sb.AppendLine();
-        sb.AppendLine("Mean and median are calculated by BenchmarkDotNet from three measured iterations after one warmup.");
+        sb.AppendLine("Mean and median are taken from the supplied BenchmarkDotNet reports.");
         sb.AppendLine($"Overall geometric-mean speedup: **{report.OverallGeometricMeanSpeedup:F3}x**");
         sb.AppendLine();
         sb.AppendLine("| Method | Old mean | New mean | Old median | New median | Speedup | Time delta | Old allocated | New allocated | Allocation delta |");

@@ -1,14 +1,13 @@
-﻿/* 
+/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's free software for those who think that it should be free.
 */
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using System.IO;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 
 using DBreeze.Transactions;
 using DBreeze.Exceptions;
@@ -48,18 +47,31 @@ namespace DBreeze
         /// <summary>
         /// Db is not operable any more by DBisOperableReason reason 
         /// </summary>
-        public bool DBisOperable { get; internal set; } = true;
+        private int _dbIsOperable = 1;
+        public bool DBisOperable
+        {
+            get => Volatile.Read(ref _dbIsOperable) == 1;
+            internal set => Volatile.Write(ref _dbIsOperable, value ? 1 : 0);
+        }
         /// <summary>
         /// Is filled with a text note who brought to DBisOperable = false
         /// </summary>
-        public string DBisOperableReason { get; internal set; } = String.Empty;        
+        private string _dbIsOperableReason = String.Empty;
+        public string DBisOperableReason
+        {
+            get => Volatile.Read(ref _dbIsOperableReason);
+            internal set => Volatile.Write(ref _dbIsOperableReason, value ?? String.Empty);
+        }
         internal TransactionsJournal _transactionsJournal = null;
         internal TransactionTablesLocker _transactionTablesLocker = null;
         /// <summary>
         /// Whether engine is disposed
         /// </summary>
-        public bool Disposed { get { return disposed == 1; }}
-        int disposed = 0;
+        public bool Disposed => Volatile.Read(ref disposed) == 1;
+        private int disposed = 0;
+
+        private static readonly object DataTypesInitializationLock = new object();
+        private readonly object _lifecycleLock = new object();
 
         /// <summary>
         /// Initialized from DBreezeRemoteEngine
@@ -75,7 +87,7 @@ namespace DBreeze
         /// For now BackupPlan is included.
         /// Later can be added special settings for each entity defined by string pattern.
         /// </summary>
-        internal DBreezeConfiguration Configuration = new DBreezeConfiguration();
+        internal DBreezeConfiguration Configuration = null;
 
         /// <summary>
         /// For DbreezeRemoteEngine wrapper
@@ -89,27 +101,6 @@ namespace DBreeze
         public DBreezeEngine(DBreezeConfiguration dbreezeConfiguration)
         {
             ConstructFromConfiguration(dbreezeConfiguration);
-
-            //if (Configuration != null)
-            //    Configuration = dbreezeConfiguration;
-            
-            ////Setting up in backup DbreezeFolderName, there must be found at least TransJournal and Scheme.
-            ////Configuration.Backup.SynchronizeBackup has more information
-            //if (Configuration.Backup.IsActive)
-            //{
-            //    Configuration.Backup.DBreezeFolderName = Configuration.DBreezeDataFolderName;
-
-            //    ////Running backup synchronization
-            //    //Configuration.Backup.SynchronizeBackup();
-            //}
-
-            //MainFolder = Configuration.DBreezeDataFolderName;
-
-            //InitDb();
-
-            ////Console.WriteLine("DBreeze notification: Don't forget in the dispose function of your DLL or main application thread");
-            ////Console.WriteLine("                      to dispose DBreeze engine:  if(_engine != null) _engine.Dispose(); ");
-            ////Console.WriteLine("                      to get graceful finilization of all working threads! ");
         }
 
         /// <summary>
@@ -118,31 +109,25 @@ namespace DBreeze
         /// <param name="dbreezeConfiguration"></param>
         internal void ConstructFromConfiguration(DBreezeConfiguration dbreezeConfiguration)
         {
-             if (Configuration != null)
-                Configuration = dbreezeConfiguration;
-             else
-                 throw new Exception("DBreeze.DBreezeEngine.DBreezeEngine: please supply DBreezeConfiguration");
-            
-            //Setting up in backup DbreezeFolderName, there must be found at least TransJournal and Scheme.
-            //Configuration.Backup.SynchronizeBackup has more information
-            if (Configuration.Backup.IsActive)
+            ArgumentNullException.ThrowIfNull(dbreezeConfiguration);
+
+            lock (_lifecycleLock)
             {
-                Configuration.Backup.DBreezeFolderName = Configuration.DBreezeDataFolderName;
+                ThrowIfDisposed();
 
-                ////Running backup synchronization
-                //Configuration.Backup.SynchronizeBackup();
+                Configuration = dbreezeConfiguration;
+
+                // There must be at least a transaction journal and a schema in the backup folder.
+                if (Configuration.Backup.IsActive)
+                    Configuration.Backup.DBreezeFolderName = Configuration.DBreezeDataFolderName;
+
+                if (Configuration.Storage == DBreezeConfiguration.eStorage.RemoteInstance && !RemoteEngine)
+                    throw new InvalidOperationException(
+                        "DBreeze.DBreezeEngine: a remote instance must be initialized via DBreezeRemoteEngine.");
+
+                MainFolder = Configuration.DBreezeDataFolderName;
+                InitDb();
             }
-                        
-            if (dbreezeConfiguration.Storage == DBreezeConfiguration.eStorage.RemoteInstance && !RemoteEngine)
-                throw new Exception("DBreeze.DBreezeEngine.DBreezeEngine: remote instance must be initiated via new DBreezeRemoteEngine");
-
-            MainFolder = Configuration.DBreezeDataFolderName;
-
-            InitDb();
-
-            //Console.WriteLine("DBreeze notification: Don't forget in the dispose function of your DLL or main application thread");
-            //Console.WriteLine("                      to dispose DBreeze engine:  if(_engine != null) _engine.Dispose(); ");
-            //Console.WriteLine("                      to get graceful finilization of all working threads! ");
         }
 
         /// <summary>
@@ -151,69 +136,60 @@ namespace DBreeze
         /// <param name="DBreezeDataFolderName"></param>
         public DBreezeEngine(string DBreezeDataFolderName)
         {
-            MainFolder = DBreezeDataFolderName;
-            Configuration.DBreezeDataFolderName = DBreezeDataFolderName;
+            if (String.IsNullOrWhiteSpace(DBreezeDataFolderName))
+                throw new ArgumentException("A database folder must be supplied.", nameof(DBreezeDataFolderName));
 
-            InitDb();
-
-            //Console.WriteLine("DBreeze notification: Don't forget in the dispose function of your DLL or main application thread");
-            //Console.WriteLine("                      to dispose DBreeze engine:  if(_engine != null) _engine.Dispose(); ");
-            //Console.WriteLine("                      to get graceful finilization of all working threads! ");
+            ConstructFromConfiguration(new DBreezeConfiguration
+            {
+                DBreezeDataFolderName = DBreezeDataFolderName
+            });
         }
-
-        object lock_initDb = new object();
 
         /// <summary>
         /// InitDb
         /// </summary>
         private void InitDb()
         {
-            //trying to check and create folder
-            
-
             try
             {
-                lock (lock_initDb)
-                {
-                    //Init type converter
+                // InitDict mutates several process-wide dictionaries and is not internally synchronized.
+                lock (DataTypesInitializationLock)
                     DataTypes.DataTypesConvertor.InitDict();
 
-                    if (Configuration.Storage == DBreezeConfiguration.eStorage.DISK)
+                if (Configuration.Storage == DBreezeConfiguration.eStorage.DISK)
+                {
+                    try
                     {
-                        DirectoryInfo di = new DirectoryInfo(MainFolder);
-
-                        if (!di.Exists)
-                            di.Create();
+                        Directory.CreateDirectory(MainFolder);
                     }
-
-                    //trying to open schema file
-                    DBreezeSchema = new Scheme(this);
-
-                    //Initializing Transactions Coordinator
-                    _transactionsCoordinator = new TransactionsCoordinator(this);
-
-                    //Initializing transactions Journal, may be later move journal into transactionsCoordinator
-                    //We must create journal after Schema, for getting path to rollback files
-                    _transactionsJournal = new TransactionsJournal(this);
-
-                    //Initializes transaction locker, who can help block tables of writing and reading threads
-                    _transactionTablesLocker = new TransactionTablesLocker();
-
-                    //Initializing 
-                    DeferredIndexer = new TextDeferredIndexer(this);
-
-                    //Init DBreezeResources
-                    Resources = new DBreezeResources(this);
+                    catch (Exception ex)
+                    {
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.CREATE_DB_FOLDER_FAILED, ex);
+                    }
                 }
+
+                DBreezeSchema = new Scheme(this);
+                _transactionsCoordinator = new TransactionsCoordinator(this);
+                _transactionsJournal = new TransactionsJournal(this);
+                _transactionTablesLocker = new TransactionTablesLocker();
+                DeferredIndexer = new TextDeferredIndexer(this);
+                Resources = new DBreezeResources(this);
+                DeferredIndexer.StartDefferedIndexing();
             }
             catch (Exception ex)
             {
-                DBisOperable = false;
                 DBisOperableReason = "InitDb";
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.CREATE_DB_FOLDER_FAILED, ex);
-            }
+                DBisOperable = false;
+                CleanupAfterFailedInitialization();
 
-            
+                if (ex is DBreezeException)
+                    throw;
+
+                throw DBreezeException.Throw(
+                    DBreezeException.eDBreezeExceptions.GENERAL_EXCEPTION_DB_NOT_OPERABLE,
+                    DBisOperableReason,
+                    ex);
+            }
         }
 
         /// <summary>
@@ -221,36 +197,77 @@ namespace DBreeze
         /// </summary>
         public void Dispose()
         {
-            if (System.Threading.Interlocked.CompareExchange(ref disposed, 1, 0) != 0)
+            if (Interlocked.CompareExchange(ref disposed, 1, 0) != 0)
                 return;
 
-            //if (Disposed)
-            //    return;
-
-            DBisOperable = false;
             DBisOperableReason = "DBreezeEngine.Dispose";
-            //Disposed = true;
+            DBisOperable = false;
 
-            //Disposing all transactions
-            _transactionsCoordinator.StopEngine();
+            List<Exception> errors = null;
+            lock (_lifecycleLock)
+            {
+                CaptureDisposeException(ref errors, () => DeferredIndexer?.RequestStop());
+                CaptureDisposeException(ref errors, () => _transactionsCoordinator?.StopEngine());
+                CaptureDisposeException(ref errors, () => DeferredIndexer?.Dispose());
+                CaptureDisposeException(ref errors, () => Resources?.Dispose());
+                CaptureDisposeException(ref errors, () => DBreezeSchema?.Dispose());
+                CaptureDisposeException(ref errors, () => _transactionsJournal?.Dispose());
+                CaptureDisposeException(ref errors, () => _transactionTablesLocker?.Dispose());
 
-            //Disposing Schema
-            DBreezeSchema.Dispose();
+                // Configuration owns the backup subsystem and must outlive all storages.
+                CaptureDisposeException(ref errors, () => Configuration?.Dispose());
+            }
 
-            //Disposing Trnsactional Journal, may be later move journal into transactionsCoordinator
-            _transactionsJournal.Dispose();
+            DBisOperableReason = "DBreezeEngine.Dispose";
 
-           //Disposing Configuration
-            Configuration.Dispose();
-            
-            //MUST BE IN THE END OF ALL.Disposing transaction locker
-            _transactionTablesLocker.Dispose();
+            if (errors == null)
+                return;
 
-            //Disposing DeferredIndexer
-            DeferredIndexer.Dispose();
+            if (errors.Count == 1)
+                ExceptionDispatchInfo.Capture(errors[0]).Throw();
 
-            //Disposing Resources
-            Resources.Dispose();
+            throw new AggregateException("One or more DBreeze components failed to dispose.", errors);
+        }
+
+        private static void CaptureDisposeException(ref List<Exception> errors, Action disposeAction)
+        {
+            try
+            {
+                disposeAction();
+            }
+            catch (Exception ex)
+            {
+                (errors ??= new List<Exception>()).Add(ex);
+            }
+        }
+
+        private void CleanupAfterFailedInitialization()
+        {
+            try { DeferredIndexer?.RequestStop(); } catch { }
+            try { _transactionsCoordinator?.StopEngine(); } catch { }
+            try { DeferredIndexer?.Dispose(); } catch { }
+            try { Resources?.Dispose(); } catch { }
+            try { DBreezeSchema?.Dispose(); } catch { }
+            try { _transactionsJournal?.Dispose(); } catch { }
+            try { _transactionTablesLocker?.Dispose(); } catch { }
+            try { Configuration?.Dispose(); } catch { }
+
+            DeferredIndexer = null;
+            Resources = null;
+            DBreezeSchema = null;
+            _transactionsCoordinator = null;
+            _transactionsJournal = null;
+            _transactionTablesLocker = null;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (Disposed)
+                throw new ObjectDisposedException(nameof(DBreezeEngine));
+        }
+
+        internal virtual void EnsureInitialized()
+        {
         }
 
 
@@ -260,8 +277,10 @@ namespace DBreeze
         /// <returns></returns>
         public Transaction GetTransaction()
         {
+            EnsureInitialized();
+
             if (!DBisOperable)
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,DBisOperableReason,new Exception());              
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,DBisOperableReason,new Exception());
 
             //User receives new transaction from the engine
             return this._transactionsCoordinator.GetTransaction(0, eTransactionTablesLockTypes.SHARED);
@@ -279,6 +298,8 @@ namespace DBreeze
         /// <returns>Returns transaction object</returns>
         public Transaction GetTransaction(eTransactionTablesLockTypes tablesLockType, params string[] tables)
         {
+            EnsureInitialized();
+
             if (!DBisOperable)
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE, DBisOperableReason, new Exception());
 
@@ -295,6 +316,7 @@ namespace DBreeze
         {
             get
             {
+                EnsureInitialized();
                 return this.DBreezeSchema;
             }
         }
@@ -306,42 +328,36 @@ namespace DBreeze
         /// <param name="obj"></param>
         internal void BackgroundNotify(string noti, object obj)
         {
-            if (BackgroundTasksExternalNotifier != null)
-            {
-                Action a = () =>
+            Action<string, object> notifier = BackgroundTasksExternalNotifier;
+            if (notifier == null)
+                return;
+
+            ThreadPool.QueueUserWorkItem(
+                static state =>
                 {
                     try
                     {
-                        BackgroundTasksExternalNotifier(noti, obj);
+                        state.Notifier(state.Notification, state.Payload);
                     }
                     catch
                     {
                     }
-                };
+                },
+                new BackgroundNotification(notifier, noti, obj),
+                preferLocal: false);
+        }
 
-#if NET35 || NETr40   //The same must be use for .NET 4.0
+        private readonly struct BackgroundNotification
+        {
+            internal readonly Action<string, object> Notifier;
+            internal readonly string Notification;
+            internal readonly object Payload;
 
-                new System.Threading.Thread(new System.Threading.ThreadStart(a)).Start();
-
-                //new System.Threading.Thread(new System.Threading.ThreadStart(() =>
-                //{
-                //    a();
-                //})).Start();
-#else
-                System.Threading.Tasks.Task.Run(a);
-#endif
-
-//#if NET35 || NETr40   //The same must be use for .NET 4.0
-
-//                                            new System.Threading.Thread(new System.Threading.ThreadStart(() =>
-//                                            {
-//                                                a();
-//                                            })).Start(); 
-//#else
-//                System.Threading.Tasks.Task.Run(() => {
-//                    a();
-//                });
-//#endif
+            internal BackgroundNotification(Action<string, object> notifier, string notification, object payload)
+            {
+                Notifier = notifier;
+                Notification = notification;
+                Payload = payload;
             }
         }
 

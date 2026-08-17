@@ -43,9 +43,6 @@
       <Link>DataTypes\Row.cs</Link>
     </Compile>
         <Compile Include="..\DBreeze\Engine\DBreezeConfiguration.cs" Link="Engine\DBreezeConfiguration.cs" />
-    <Compile Include="..\DBreeze\Engine\Scheme.cs">
-      <Link>Engine\Scheme.cs</Link>
-    </Compile>
     <Compile Include="..\DBreeze\Exceptions\DBreezeException.cs">
       <Link>Exceptions\DBreezeException.cs</Link>
     </Compile>
@@ -87,9 +84,6 @@
     </Compile>
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
-    </Compile>
-    <Compile Include="..\DBreeze\TextSearch\TextDeferredIndexer.cs">
-      <Link>TextSearch\TextDeferredIndexer.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
       <Link>TextSearch\TextSearchHandler.cs</Link>

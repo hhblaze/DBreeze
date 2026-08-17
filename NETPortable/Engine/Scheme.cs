@@ -1,4 +1,4 @@
-﻿/* 
+/*
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's free software for those who think that it should be free.
 */
@@ -9,6 +9,9 @@ using System.Linq;
 using System.Text;
 
 using System.IO;
+#if !NET35 && !NETr40
+using System.Runtime.ExceptionServices;
+#endif
 
 using DBreeze.Storage;
 using DBreeze.LianaTrie;
@@ -17,6 +20,7 @@ using DBreeze.Utils;
 using DBreeze.Exceptions;
 
 using DBreeze.SchemeInternal;
+using System.Threading;
 
 namespace DBreeze
 {
@@ -24,19 +28,17 @@ namespace DBreeze
     {
         internal DBreezeEngine Engine = null;
 
-        CachedTableNames cachedTableNames = new CachedTableNames();
-        
+        readonly CachedTableNames cachedTableNames = new CachedTableNames();
+
         /// <summary>
         /// Flag that closes file of the table if threads don't use it for reading or writing.
         /// </summary>
         internal bool AutoCloseOpenTables = true;
 
-        static string Copyright = "DBreeze.tiesky.com";
-
-        static string SchemaFileName = "_DBreezeSchema";
+        const string SchemaFileName = "_DBreezeSchema";
 
         //For System Tables or Records we reserve "@@@@" sequence
-        static string LastFileNumberKeyName = "@@@@LastFileNumber";
+        const string LastFileNumberKeyName = "@@@@LastFileNumber";
 
         TrieSettings LTrieSettings = null;
         IStorage Storage = null;
@@ -45,10 +47,13 @@ namespace DBreeze
         //User files counter
         ulong LastFileNumber = 10000000;
 
-        DbReaderWriterLock _sync_openTablesHolder = new DbReaderWriterLock();
-        Dictionary<string, OpenTable> _openTablesHolder = new Dictionary<string, OpenTable>();
+        readonly DbReaderWriterLock _sync_openTablesHolder = new DbReaderWriterLock();
+        readonly Dictionary<string, OpenTable> _openTablesHolder =
+            new Dictionary<string, OpenTable>(StringComparer.Ordinal);
 
-        bool _disposed = false;
+        int _disposed;
+        readonly object _tableUsageChanged = new object();
+        long _tableUsageVersion;
 
         public Scheme(DBreezeEngine DBreezeEngine)
         {
@@ -59,18 +64,26 @@ namespace DBreeze
 
         public void Dispose()
         {
-            if (_disposed)
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
-            _disposed = true;
+            SignalTableUsageChanged();
 
+            List<Exception> errors = null;
             _sync_openTablesHolder.EnterWriteLock();
             try
             {
                 foreach (var row in _openTablesHolder)
                 {
                     //Disposes all Ltrie, with storages and rollbacks
-                    row.Value.Dispose();
+                    try
+                    {
+                        row.Value.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        AddDisposeError(ref errors, ex);
+                    }
                 }
 
                 //Clear self
@@ -79,7 +92,14 @@ namespace DBreeze
                 //Disposing Schema trie
                 if (LTrie != null)
                 {
-                    LTrie.Dispose();
+                    try
+                    {
+                        LTrie.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        AddDisposeError(ref errors, ex);
+                    }
                 }
                 //LTrieStorage.Dispose();
             }
@@ -88,13 +108,50 @@ namespace DBreeze
                 _sync_openTablesHolder.ExitWriteLock();
             }
 
+            if (errors == null)
+                return;
+
+#if NET35 || NETr40
+            throw errors[0];
+#else
+            if (errors.Count == 1)
+                ExceptionDispatchInfo.Capture(errors[0]).Throw();
+
+            throw new AggregateException("One or more DBreeze schema storages failed to dispose.", errors);
+#endif
+        }
+
+        private static void AddDisposeError(ref List<Exception> errors, Exception error)
+        {
+            if (errors == null)
+                errors = new List<Exception>();
+            errors.Add(error);
+        }
+
+        private void SignalTableUsageChanged()
+        {
+            Interlocked.Increment(ref _tableUsageVersion);
+            lock (_tableUsageChanged)
+                Monitor.PulseAll(_tableUsageChanged);
+        }
+
+        private void WaitForTableUsageChange(long observedVersion)
+        {
+            lock (_tableUsageChanged)
+            {
+                if (Interlocked.CompareExchange(ref _disposed, 0, 0) == 0 &&
+                    Interlocked.CompareExchange(ref _tableUsageVersion, 0L, 0L) == observedVersion)
+                {
+                    Monitor.Wait(_tableUsageChanged);
+                }
+            }
         }
 
         /*          TODO
-         
+
          *  1. HERE we will add TableNames as RegEx with settings
          *  2. Checking Reserverd TableNames prefixes
-         *  3. User TableName must start from @ut 
+         *  3. User TableName must start from @ut
          *  4. GetPhysicalPathToTheUserTable - File with DIrectory Settings for different tables parser (to make reside different tables in different HDDs or even network drives)
          */
 
@@ -107,7 +164,6 @@ namespace DBreeze
             };
 
             Storage = new StorageLayer(Path.Combine(Engine.MainFolder, SchemaFileName), LTrieSettings, Engine.Configuration);
-
 
             LTrie = new LTrie(Storage);
 
@@ -130,13 +186,48 @@ namespace DBreeze
             }
         }
 
+        private static ulong ReadTableFileNumber(byte[] schemaValue)
+        {
+            if (schemaValue == null || schemaValue.Length < 10)
+                throw new InvalidDataException("The DBreeze schema record is truncated.");
+
+            ushort protocol = (ushort)((schemaValue[0] << 8) | schemaValue[1]);
+            if (protocol != 1)
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_FILE_PROTOCOL_IS_UNKNOWN);
+
+            return ((ulong)schemaValue[2] << 56)
+                | ((ulong)schemaValue[3] << 48)
+                | ((ulong)schemaValue[4] << 40)
+                | ((ulong)schemaValue[5] << 32)
+                | ((ulong)schemaValue[6] << 24)
+                | ((ulong)schemaValue[7] << 16)
+                | ((ulong)schemaValue[8] << 8)
+                | schemaValue[9];
+        }
+
+        private static byte[] CreateTableSchemaValue(ulong fileNumber)
+        {
+            byte[] value = new byte[10];
+            value[0] = 0;
+            value[1] = 1;
+            value[2] = (byte)(fileNumber >> 56);
+            value[3] = (byte)(fileNumber >> 48);
+            value[4] = (byte)(fileNumber >> 40);
+            value[5] = (byte)(fileNumber >> 32);
+            value[6] = (byte)(fileNumber >> 24);
+            value[7] = (byte)(fileNumber >> 16);
+            value[8] = (byte)(fileNumber >> 8);
+            value[9] = (byte)fileNumber;
+            return value;
+        }
+
         /// <summary>
         /// ONLY FOR INTERNAL NEEDS, lock must be handeled by outer procedure.
         /// Users must use GetTablePathFromTableName.
         /// Transactions Journal after start will try to delete RollbackFiles of the finished transactions.
         /// For this it needs to know exact pathes.
-        /// For now all tables stored in one folder. Later we will have extra config file which lets to reside 
-        /// some of tables in the other folders. 
+        /// For now all tables stored in one folder. Later we will have extra config file which lets to reside
+        /// some of tables in the other folders.
         /// This function is an access globalizer to physical file locations by userTableName.
         /// !!!!TRAnJRNL, WHEN RESTORES ROLLBACK, MUST REFER TO Scheme trie settings in the future, FOR NOW DEFAULT
         /// </summary>
@@ -156,17 +247,7 @@ namespace DBreeze
                 if (row.Exists)
                 {
                     byte[] fullValue = row.GetFullValue(true);
-                    //Can be parsed different. First protocol version is 1
-                    ushort schemeProtocol = fullValue.Substring(0, 2).To_UInt16_BigEndian();
-
-                    switch (schemeProtocol)
-                    {
-                        case 1:
-                            fileName = fullValue.Substring(2, 8).To_UInt64_BigEndian();
-                            break;
-                        default:
-                            throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_FILE_PROTOCOL_IS_UNKNOWN);
-                    }
+                    fileName = ReadTableFileNumber(fullValue);
                 }
                 else
                     return String.Empty;
@@ -198,13 +279,9 @@ namespace DBreeze
                     return Path.Combine(Engine.MainFolder, fileName.ToString());
                 }
             }
-            catch (OperationCanceledException ex)
-            {
-                throw ex;
-            }
             //catch (System.Threading.ThreadAbortException ex)
             //{
-            //    //We don'T make DBisOperable = false;                
+            //    //We don'T make DBisOperable = false;
             //    throw ex;
             //}
             catch (Exception ex)
@@ -268,17 +345,7 @@ namespace DBreeze
                 }
 
                 byte[] fullValue = row.GetFullValue(true);
-                //Can be parsed different. First protocol version is 1
-                ushort schemeProtocol = fullValue.Substring(0, 2).To_UInt16_BigEndian();
-                ulong fileName = 0;
-                switch (schemeProtocol)
-                {
-                    case 1:
-                        fileName = fullValue.Substring(2, 8).To_UInt64_BigEndian();
-                        break;
-                    default:
-                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_FILE_PROTOCOL_IS_UNKNOWN);
-                }
+                ulong fileName = ReadTableFileNumber(fullValue);
 
                 string alternativeTableLocation = String.Empty;
 
@@ -311,7 +378,14 @@ namespace DBreeze
         /// <returns></returns>
         private byte[] GetUserTableNameAsByte(string tableName)
         {
-            return Encoding.UTF8.GetBytes("@ut" + tableName);
+            if (tableName == null)
+                tableName = String.Empty;
+            byte[] result = new byte[3 + Encoding.UTF8.GetByteCount(tableName)];
+            result[0] = (byte)'@';
+            result[1] = (byte)'u';
+            result[2] = (byte)'t';
+            Encoding.UTF8.GetBytes(tableName, 0, tableName.Length, result, 3);
+            return result;
         }
 
         private string GetUserTableNameAsString(string tableName)
@@ -340,6 +414,23 @@ namespace DBreeze
             ulong fileName = 0;
             OpenTable otl = null;
 
+            // The overwhelmingly common path must allow concurrent readers. ReaderWriterLockSlim
+            // permits only one upgradeable reader, which previously serialized every table lookup.
+            _sync_openTablesHolder.EnterReadLock();
+            try
+            {
+                if (_openTablesHolder.TryGetValue(tableName, out otl))
+                {
+                    otl.Add();
+                    return otl.Trie;
+                }
+            }
+            finally
+            {
+                _sync_openTablesHolder.ExitReadLock();
+            }
+
+            // Keep the legacy slow path for creation, including its write-lock recheck.
             _sync_openTablesHolder.EnterUpgradeableReadLock();
             try
             {
@@ -388,17 +479,7 @@ namespace DBreeze
                             tableExists = true;
 
                             byte[] fullValue = row.GetFullValue(false);
-                            //Can be parsed different. First protocol version is 1
-                            ushort schemeProtocol = fullValue.Substring(0, 2).To_UInt16_BigEndian();
-
-                            switch (schemeProtocol)
-                            {
-                                case 1:
-                                    fileName = fullValue.Substring(2, 8).To_UInt64_BigEndian();
-                                    break;
-                                default:
-                                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_FILE_PROTOCOL_IS_UNKNOWN);
-                            }
+                            fileName = ReadTableFileNumber(fullValue);
                         }
                         else
                         {
@@ -427,9 +508,7 @@ namespace DBreeze
 
                             //Creating table self and writing to Schema file
 
-                            LTrie.Add(btTableName,
-                                new byte[] { 0, 1 }     //Protocol version 1
-                                .Concat(lft));          //Number of the file
+                            LTrie.Add(btTableName, CreateTableSchemaValue(LastFileNumber));
 
                             //Committing both records
                             LTrie.Commit();
@@ -482,7 +561,6 @@ namespace DBreeze
                             ts.AlternativeTableStorageFolder = alternativeTableLocation;
 
                             var diAlt = this.Engine.Configuration.FSFactory.CreateDirectoryInfo(alternativeTableLocation);
-                            //DirectoryInfo diAlt = new DirectoryInfo(alternativeTableLocation);
                             if (!diAlt.Exists)
                                 diAlt.Create();
 
@@ -519,11 +597,6 @@ namespace DBreeze
                     _openTablesHolder.Add(tableName, new OpenTable(trie));
 
                     return trie;
-                }
-                catch (System.Exception ex)
-                {
-                    //CASCADE
-                    throw ex;
                 }
                 finally
                 {
@@ -641,6 +714,8 @@ namespace DBreeze
             {
                 _sync_openTablesHolder.ExitWriteLock();
             }
+
+            SignalTableUsageChanged();
         }
 
 
@@ -657,7 +732,6 @@ namespace DBreeze
 
             try
             {
-                
                 //Deleting DB File
                 if (this.Engine.Configuration.FSFactory.Exists(fullTableFilePath))
                     this.Engine.Configuration.FSFactory.Delete(fullTableFilePath);
@@ -682,10 +756,9 @@ namespace DBreeze
                 /*****************/
 
             }
-            catch (Exception ex)
+            catch
             {
-                //CASCADE
-                throw ex;
+                throw;
             }
         }
 
@@ -698,7 +771,7 @@ namespace DBreeze
         {
             string tableName = GetUserTableNameAsString(userTableName);
 
-            _sync_openTablesHolder.EnterWriteLock();
+            _sync_openTablesHolder.EnterReadLock();
             try
             {
                 if (_openTablesHolder.ContainsKey(tableName))
@@ -709,13 +782,9 @@ namespace DBreeze
                 var row = LTrie.GetKey(btTableName, false, true);
                 return row.Exists;
             }
-            catch (System.Exception ex)
-            {
-                throw ex;
-            }
             finally
             {
-                _sync_openTablesHolder.ExitWriteLock();
+                _sync_openTablesHolder.ExitReadLock();
             }
 
             ////First trying to acquire memory storage, without lock but inside of "ignoring" try-catch, if answer is failed refer to the disk
@@ -756,15 +825,14 @@ namespace DBreeze
             //{
             byte[] btKeyName = Encoding.UTF8.GetBytes("@ut" + mask);
 
-            foreach (var row in LTrie.IterateForwardStartsWith(btKeyName,true,true))
+            foreach (var row in LTrie.IterateForwardStartsWith(btKeyName, true, false))
             {
                 //try       //try-catch could be necessary in case if we acquire value, which was deleted by other thread. Here we don't acquire value.
                 //{
-                ret.Add(row.Key.UTF8_GetString().Substring(3));
-                //ret.Add(System.Text.Encoding.UTF8.GetString(row.Key,0,row.Key.Length).Substring(3));
+                ret.Add(System.Text.Encoding.UTF8.GetString(row.Key, 0, row.Key.Length).Substring(3));
                 //}
                 //catch
-                //{}                  
+                //{}
 
             }
             //}
@@ -784,55 +852,40 @@ namespace DBreeze
         public void DeleteTable(string userTableName)
         {
             string tableName = GetUserTableNameAsString(userTableName);
-            this.cachedTableNames.Remove(tableName);
-
-            //Blocking Schema
             _sync_openTablesHolder.EnterWriteLock();
             try
             {
-                if (_openTablesHolder.ContainsKey(tableName))
+                cachedTableNames.Remove(tableName);
+
+                if (_openTablesHolder.TryGetValue(tableName, out OpenTable openTable))
                 {
-                    //Someone can use this table
-                    //We dispose table, what will cause disposing DBstorage and RollbackStorage
-                    //In this moment parallel reading table threads inside of Iterations, can get Exceptions - What is acceptable for now.
-                    _openTablesHolder[tableName].Dispose();
-
-
-                    _openTablesHolder[tableName] = null;
-
-                    //Deleting table from the holder
+                    openTable.Dispose();
                     _openTablesHolder.Remove(tableName);
                 }
 
-                //Trying to get full file name, via globilzed function which will also support mapping outside the DB main directory
                 string physicalDbFileName = GetPhysicalPathToTheUserTable(userTableName);
-
                 if (physicalDbFileName == String.Empty)
-                    return; //fake
-
-                //Removing record from the schema
+                    return;
 
                 byte[] btTableName = GetUserTableNameAsByte(userTableName);
-
-                //ulong cc = LTrie.Count();
                 LTrie.Remove(ref btTableName);
                 LTrie.Commit();
-                //cc = LTrie.Count();
 
-                //Deleting file physically
                 if (physicalDbFileName != "MEMORY")
                     DeleteAllReleatedTableFiles(physicalDbFileName);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_TABLE_DELETE_FAILED, userTableName, ex);
+                throw DBreezeException.Throw(
+                    DBreezeException.eDBreezeExceptions.SCHEME_TABLE_DELETE_FAILED,
+                    userTableName,
+                    ex);
             }
             finally
             {
                 _sync_openTablesHolder.ExitWriteLock();
+                SignalTableUsageChanged();
             }
-
-
         }
 
 
@@ -844,18 +897,23 @@ namespace DBreeze
         /// <param name="newUserTableName"></param>
         public void RenameTable(string oldUserTableName, string newUserTableName)
         {
+            if (String.Equals(oldUserTableName, newUserTableName, StringComparison.Ordinal))
+                return;
+
+            DbUserTables.UserTableNameIsOk(oldUserTableName);
+            DbUserTables.UserTableNameIsOk(newUserTableName);
+
             for (; ; )
             {
-                if (_disposed)
+                if (Interlocked.CompareExchange(ref _disposed, 0, 0) != 0)
                     return;
 
+                long observedVersion = Interlocked.CompareExchange(ref _tableUsageVersion, 0L, 0L);
                 if (RenameTableInternal(oldUserTableName, newUserTableName))
                     return;
 
-                System.Threading.Tasks.Task.Delay(TimeSpan.FromMilliseconds(200));
-                //System.Threading.Thread.Sleep(200);
+                WaitForTableUsageChange(observedVersion);
             }
-
         }
 
         /// <summary>
@@ -867,85 +925,151 @@ namespace DBreeze
         /// <returns>true if successfully renamed, otherwise false</returns>
         private bool RenameTableInternal(string oldUserTableName, string newUserTableName)
         {
-            this.DeleteTable(newUserTableName);
-
             _sync_openTablesHolder.EnterWriteLock();
             try
             {
                 string oldTableName = GetUserTableNameAsString(oldUserTableName);
                 string newTableName = GetUserTableNameAsString(newUserTableName);
-
-                OpenTable ot = null;
-
-                string alternativeTableLocation = String.Empty;
-                bool inMemory = false;
-
-                _openTablesHolder.TryGetValue(oldTableName, out ot);
-
-                if (CheckAlternativeTableLocationsIntersections(oldUserTableName, out alternativeTableLocation))
-                {
-                    if (alternativeTableLocation == String.Empty)
-                    {
-                        //In-Memory Table
-                        inMemory = true;
-                    }
-                    else
-                    {
-                        if (ot != null)
-                        {
-                            return false;       //Other threads are working with this table
-
-                        }
-                    }
-                }
-                else
-                {
-                    if (Engine.Configuration.Storage == DBreezeConfiguration.eStorage.MEMORY)
-                    {
-                        //In-Memory Table
-                        inMemory = true;
-                    }
-                    else
-                    {
-                        if (ot != null)
-                        {
-                            return false;       //Other threads are working with this table
-
-                        }
-                    }
-                }
-
-                //Changing key in Schema db
-
                 byte[] btOldTableName = GetUserTableNameAsByte(oldUserTableName);
                 byte[] btNewTableName = GetUserTableNameAsByte(newUserTableName);
+
+                LTrieRow sourceRow = LTrie.GetKey(btOldTableName, false, false);
+                if (!sourceRow.Exists)
+                    return true;
+
+                StorageRoute oldRoute = ResolveStorageRoute(oldUserTableName);
+                StorageRoute newRoute = ResolveStorageRoute(newUserTableName);
+                if (!oldRoute.Equals(newRoute))
+                {
+                    throw new InvalidOperationException(
+                        "Renaming a table across different storage locations is not supported.");
+                }
+
+                _openTablesHolder.TryGetValue(oldTableName, out OpenTable sourceOpenTable);
+                bool inMemory = oldRoute.Storage == DBreezeConfiguration.eStorage.MEMORY;
+                if (!inMemory && sourceOpenTable != null)
+                    return false;
+
+                ulong sourceFileNumber = ReadTableFileNumber(sourceRow.GetFullValue(false));
+
+                LTrieRow destinationRow = LTrie.GetKey(btNewTableName, false, false);
+                string destinationPhysicalPath = String.Empty;
+                if (destinationRow.Exists)
+                {
+                    ulong destinationFileNumber = ReadTableFileNumber(destinationRow.GetFullValue(false));
+                    destinationPhysicalPath = GetPhysicalPath(newRoute, destinationFileNumber);
+                }
+
+                if (_openTablesHolder.TryGetValue(newTableName, out OpenTable destinationOpenTable))
+                {
+                    destinationOpenTable.Dispose();
+                    _openTablesHolder.Remove(newTableName);
+                }
 
                 LTrie.ChangeKey(ref btOldTableName, ref btNewTableName);
                 LTrie.Commit();
 
-                this.cachedTableNames.Remove(oldTableName);
+                cachedTableNames.Remove(oldTableName);
+                cachedTableNames.Remove(newTableName);
+                cachedTableNames.Add(newTableName, sourceFileNumber);
 
-                if (inMemory && ot != null)
+                if (inMemory && sourceOpenTable != null)
                 {
-                    //Changing reference for in-memory table,
-                    _openTablesHolder.Add(newTableName, ot);
                     _openTablesHolder.Remove(oldTableName);
+                    sourceOpenTable.Trie.TableName = newUserTableName;
+                    _openTablesHolder.Add(newTableName, sourceOpenTable);
                 }
 
+                if (destinationPhysicalPath.Length != 0 && destinationPhysicalPath != "MEMORY")
+                    DeleteAllReleatedTableFiles(destinationPhysicalPath);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_TABLE_RENAME_FAILED, oldUserTableName, ex);
+                throw DBreezeException.Throw(
+                    DBreezeException.eDBreezeExceptions.SCHEME_TABLE_RENAME_FAILED,
+                    oldUserTableName,
+                    ex);
             }
             finally
             {
                 _sync_openTablesHolder.ExitWriteLock();
             }
 
-
             return true;
+        }
+
+        private StorageRoute ResolveStorageRoute(string userTableName)
+        {
+            if (CheckAlternativeTableLocationsIntersections(userTableName, out string alternativePath))
+            {
+                return alternativePath.Length == 0
+                    ? new StorageRoute(DBreezeConfiguration.eStorage.MEMORY, String.Empty)
+                    : new StorageRoute(DBreezeConfiguration.eStorage.DISK, NormalizeDirectory(alternativePath));
+            }
+
+            return Engine.Configuration.Storage == DBreezeConfiguration.eStorage.DISK
+                ? new StorageRoute(DBreezeConfiguration.eStorage.DISK, NormalizeDirectory(Engine.MainFolder))
+                : new StorageRoute(Engine.Configuration.Storage, String.Empty);
+        }
+
+        private static string NormalizeDirectory(string path)
+        {
+            string fullPath = (path ?? String.Empty).Replace('\\', '/');
+            int minimumLength = fullPath.Length > 0 && fullPath[0] == '/' ? 1 : 0;
+            int length = fullPath.Length;
+            while (length > minimumLength)
+            {
+                char last = fullPath[length - 1];
+                if (last != '/')
+                    break;
+                length--;
+            }
+
+            return length == fullPath.Length ? fullPath : fullPath.Substring(0, length);
+        }
+
+        private static string GetPhysicalPath(StorageRoute route, ulong fileNumber)
+        {
+            if (route.Storage == DBreezeConfiguration.eStorage.MEMORY)
+                return "MEMORY";
+
+            return route.Storage == DBreezeConfiguration.eStorage.DISK
+                ? Path.Combine(route.Directory, fileNumber.ToString())
+                : String.Empty;
+        }
+
+        private struct StorageRoute : IEquatable<StorageRoute>
+        {
+            internal readonly DBreezeConfiguration.eStorage Storage;
+            internal readonly string Directory;
+
+            internal StorageRoute(DBreezeConfiguration.eStorage storage, string directory)
+            {
+                Storage = storage;
+                Directory = directory;
+            }
+
+            public bool Equals(StorageRoute other)
+            {
+                if (Storage != other.Storage)
+                    return false;
+
+                return String.Equals(Directory, other.Directory, StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj) => obj is StorageRoute other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                StringComparer comparer = StringComparer.Ordinal;
+                unchecked
+                {
+                    return ((int)Storage * 397) ^ comparer.GetHashCode(Directory ?? String.Empty);
+                }
+            }
         }
 
 
     }
 }
+

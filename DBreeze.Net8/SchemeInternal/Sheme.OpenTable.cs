@@ -1,4 +1,4 @@
-﻿/* 
+/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's free software for those who think that it should be free.
 */
@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 using DBreeze.LianaTrie;
 
@@ -23,8 +24,8 @@ namespace DBreeze.SchemeInternal
         /// <summary>
         /// Quantity of open exemplars
         /// </summary>
-        private ulong qOpen = 0;
-        private object lock_qOpen = new object();
+        private long qOpen;
+        private int disposed;
 
 
         //public OpenTable()
@@ -44,14 +45,15 @@ namespace DBreeze.SchemeInternal
         /// </summary>
         public void Add()
         {
-            lock (lock_qOpen)
+            while (true)
             {
-                qOpen++;
+                long current = Volatile.Read(ref qOpen);
+                if (current == Int64.MaxValue)
+                    throw new InvalidOperationException("OpenTable usage counter overflowed.");
 
-                //Console.WriteLine("Add: {0}; Left: {1}", Trie.TableName, qOpen);
+                if (Interlocked.CompareExchange(ref qOpen, current + 1, current) == current)
+                    return;
             }
-
-            
         }
 
         /// <summary>
@@ -60,26 +62,27 @@ namespace DBreeze.SchemeInternal
         /// <returns></returns>
         public bool Remove(ulong cnt)
         {
-            bool toClose = false;
-            lock (lock_qOpen)
+            if (cnt > Int64.MaxValue)
+                throw new InvalidOperationException("OpenTable usage decrement is too large.");
+
+            long decrement = (long)cnt;
+            while (true)
             {
-                qOpen -= cnt;
-                if (qOpen == 0)
-                    toClose = true;
+                long current = Volatile.Read(ref qOpen);
+                if (current < decrement)
+                    throw new InvalidOperationException("OpenTable usage counter underflowed.");
 
-                //Console.WriteLine("Rmv: {0}; Left: {1}", Trie.TableName, qOpen);
+                long remaining = current - decrement;
+                if (Interlocked.CompareExchange(ref qOpen, remaining, current) == current)
+                    return remaining == 0;
             }
-
-           
-
-            return toClose;
         }
 
         
         public void Dispose()
         {
-            if (Trie != null)
-                Trie.Dispose();
+            if (Interlocked.Exchange(ref disposed, 1) == 0)
+                Trie?.Dispose();
         }
     }
 }

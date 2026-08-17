@@ -240,6 +240,10 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="vectors">(long ExternalId of the Vector, float[] vector itself - will be auto normalized)</param>
         /// <param name="vectorTableParameters"></param>
+        /// <remarks>
+        /// Builds the HNSW index synchronously inside this transaction. The changes become visible
+        /// after the normal transaction commit. TextDeferredIndexer is not used by this API.
+        /// </remarks>
         public void VectorsInsert(string tableName, IList<(long, float[])> vectors, VectorTableParameters<float[]> vectorTableParameters = null)
         {
             var graph = InitVectorTranF<float[]>(tableName, vectorTableParameters);
@@ -253,6 +257,10 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="vectors">(long ExternalId of the Vector, double[] vector itself - will be auto normalized)</param>
         /// <param name="vectorTableParameters"></param>
+        /// <remarks>
+        /// Builds the HNSW index synchronously inside this transaction. The changes become visible
+        /// after the normal transaction commit. TextDeferredIndexer is not used by this API.
+        /// </remarks>
         public void VectorsInsert(string tableName, IList<(long, double[])> vectors, VectorTableParameters<double[]> vectorTableParameters = null)
         {
             var graph = InitVectorTranD<double[]>(tableName, vectorTableParameters);
@@ -434,8 +442,13 @@ namespace DBreeze.Transactions
 
 
         /// <summary>
-        /// CAP Possible future implementation, can be called from TextDeferredIndexer
+        /// Legacy compatibility hook for the vector branch of TextDeferredIndexer.
         /// </summary>
+        /// <remarks>
+        /// This method intentionally performs no HNSW indexing. It is a compatibility placeholder
+        /// and must not be used as a production indexing path. Public VectorsInsert overloads build
+        /// HNSW synchronously and do not enqueue deferred vector work.
+        /// </remarks>
         /// <param name="tableName"></param>
         /// <param name="internalIDs">must be already sorted ascending</param>
         internal void VectorsDoIndexing(string tableName, List<int> internalIDs)
@@ -456,8 +469,12 @@ namespace DBreeze.Transactions
     public partial class Transaction : IDisposable
     {
         /// <summary>
-        /// CAP .NET 3.5
+        /// Legacy compatibility hook for the vector branch of TextDeferredIndexer.
         /// </summary>
+        /// <remarks>
+        /// This method intentionally performs no HNSW indexing. It is a compatibility placeholder
+        /// and must not be used as a production indexing path.
+        /// </remarks>
         /// <param name="tableName"></param>
         /// <param name="internalIDs">must be already sorted ascending</param>
         internal void VectorsDoIndexing(string tableName, List<int> internalIDs)

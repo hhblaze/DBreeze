@@ -13,6 +13,21 @@ internal static class Program
             // This test injects a durable journal marker directly and therefore must run before
             // the legacy process-global in-memory journal has been created and disposed.
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
+            (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
+            (nameof(DeferredIndexerRunsInParallelAndCoalescesStarts), DeferredIndexerRunsInParallelAndCoalescesStarts),
+            (nameof(DeferredIndexerShutdownPreservesPendingRows), DeferredIndexerShutdownPreservesPendingRows),
+            (nameof(DeferredIndexerFailureParksDurableBatch), DeferredIndexerFailureParksDurableBatch),
+            (nameof(DeferredIndexerSequenceAndDiskFormatRemainCompatible), DeferredIndexerSequenceAndDiskFormatRemainCompatible),
+            (nameof(ResourcesKeepCacheAndStorageCoherent), ResourcesKeepCacheAndStorageCoherent),
+            (nameof(ResourcesPersistNullAfterNegativeCache), ResourcesPersistNullAfterNegativeCache),
+            (nameof(ResourcesPreserveEmptyArraysAndActiveSnapshots), ResourcesPreserveEmptyArraysAndActiveSnapshots),
+            (nameof(ResourcesRemainCoherentUnderConcurrentWrites), ResourcesRemainCoherentUnderConcurrentWrites),
+            (nameof(ResourcesRefreshCommittedReadRoots), ResourcesRefreshCommittedReadRoots),
+            (nameof(ResourcesKeepCommittedReadRootsExclusive), ResourcesKeepCommittedReadRootsExclusive),
+            (nameof(SchemeRenamePreservesDataAndReplacementSemantics), SchemeRenamePreservesDataAndReplacementSemantics),
+            (nameof(SchemeRenameReplacesDiskDestination), SchemeRenameReplacesDiskDestination),
+            (nameof(SchemeRenameRejectsStorageRouteChanges), SchemeRenameRejectsStorageRouteChanges),
+            (nameof(SchemeRenameWaitsForActiveTable), SchemeRenameWaitsForActiveTable),
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
             (nameof(InsertIfAbsentPreservesNestedTable), InsertIfAbsentPreservesNestedTable),
             (nameof(NestedStructuralKeyCacheSurvivesMutationAndRename), NestedStructuralKeyCacheSurvivesMutationAndRename),
@@ -73,6 +88,775 @@ internal static class Program
         string folder = Path.Combine(DatabaseTestRoot, scenario + "-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
         return folder;
+    }
+
+    private static void EngineLifecycleIsSafe()
+    {
+        AssertThrows<ArgumentNullException>(() => new DBreezeEngine((DBreezeConfiguration)null));
+        AssertThrows<ArgumentNullException>(() => new DBreezeRemoteEngine(null));
+
+        var remoteConfiguration = new DBreezeConfiguration
+        {
+            Storage = DBreezeConfiguration.eStorage.RemoteInstance,
+        };
+        var uninitializedRemote = new DBreezeRemoteEngine(remoteConfiguration);
+        uninitializedRemote.Dispose();
+        Assert(uninitializedRemote.Disposed, "Uninitialized remote engine was not disposed.");
+
+        DBreezeEngine baseTypedRemote = new DBreezeRemoteEngine(new DBreezeConfiguration
+        {
+            Storage = DBreezeConfiguration.eStorage.MEMORY,
+            NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+        });
+        using (baseTypedRemote)
+        using (var transaction = baseTypedRemote.GetTransaction())
+        {
+            transaction.Insert("base-remote", 1, 42);
+            transaction.Commit();
+        }
+
+        var concurrentlyInitializedRemote = new DBreezeRemoteEngine(new DBreezeConfiguration
+        {
+            Storage = DBreezeConfiguration.eStorage.MEMORY,
+            NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+        });
+        Parallel.For(0, 32, _ =>
+        {
+            using var transaction = concurrentlyInitializedRemote.GetTransaction();
+        });
+        concurrentlyInitializedRemote.Dispose();
+
+        for (int i = 0; i < 16; i++)
+        {
+            var racedRemote = new DBreezeRemoteEngine(new DBreezeConfiguration
+            {
+                Storage = DBreezeConfiguration.eStorage.MEMORY,
+                NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+            });
+            using var gate = new ManualResetEventSlim();
+            Exception initializationError = null;
+            Task initialize = Task.Run(() =>
+            {
+                gate.Wait();
+                try
+                {
+                    _ = racedRemote.Scheme;
+                }
+                catch (Exception ex)
+                {
+                    initializationError = ex;
+                }
+            });
+            Task dispose = Task.Run(() =>
+            {
+                gate.Wait();
+                racedRemote.Dispose();
+            });
+
+            gate.Set();
+            Task.WaitAll(initialize, dispose);
+            Assert(initializationError == null || initializationError is ObjectDisposedException,
+                $"Concurrent remote initialization/disposal failed with {initializationError?.GetType().Name}.");
+            Assert(racedRemote.Disposed, "Raced remote engine was not disposed.");
+        }
+
+        Parallel.For(0, 32, _ =>
+        {
+            using var engine = CreateMemoryEngine();
+            using var transaction = engine.GetTransaction();
+        });
+    }
+
+    private static void DeferredIndexerRunsInParallelAndCoalescesStarts()
+    {
+        string folder = CreateDatabaseFolder(nameof(DeferredIndexerRunsInParallelAndCoalescesStarts));
+        byte[] documentId = { 1, 2, 3 };
+
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                int started = 0;
+                int finished = 0;
+                int failed = 0;
+                engine.BackgroundTasksExternalNotifier = (notification, _) =>
+                {
+                    switch (notification)
+                    {
+                        case "TextDefferedIndexingHasStarted":
+                            Interlocked.Increment(ref started);
+                            break;
+                        case "TextDefferedIndexingHasFinished":
+                            Interlocked.Increment(ref finished);
+                            break;
+                        case "TextDefferedIndexingHasFailed":
+                            Interlocked.Increment(ref failed);
+                            break;
+                    }
+                };
+
+                object indexer = GetDeferredIndexer(engine);
+                object indexerSync = GetPrivateField<object>(indexer, "_sync");
+                bool lockTaken = false;
+                try
+                {
+                    Monitor.Enter(indexerSync, ref lockTaken);
+
+                    using (var transaction = engine.GetTransaction())
+                    {
+                        transaction.TextInsert(
+                            "deferred-parallel",
+                            documentId,
+                            containsWords: "premium parallel indexing",
+                            deferredIndexing: true);
+                        transaction.Commit();
+                    }
+
+                    Task worker = GetPrivateField<Task>(indexer, "_workerTask");
+                    Assert(worker != null && !worker.IsCompleted,
+                        "Deferred commit waited for the background worker.");
+
+                    for (int i = 0; i < 32; i++)
+                    {
+                        InvokePrivate(indexer, "StartDefferedIndexing");
+                        Assert(ReferenceEquals(worker, GetPrivateField<Task>(indexer, "_workerTask")),
+                            "Concurrent StartDefferedIndexing created another worker.");
+                    }
+
+                    Task unrelatedTransaction = Task.Run(() =>
+                    {
+                        using var transaction = engine.GetTransaction();
+                        transaction.Insert("parallel-user-table", 1, "still available");
+                        transaction.Commit();
+                    });
+                    Assert(unrelatedTransaction.Wait(TimeSpan.FromSeconds(5)),
+                        "An unrelated user transaction was blocked by deferred indexing.");
+                }
+                finally
+                {
+                    if (lockTaken)
+                        Monitor.Exit(indexerSync);
+                }
+
+                AssertEventually(
+                    () => DeferredQueueCount(indexer) == 0 &&
+                          TextSearchContains(engine, "deferred-parallel", "premium", documentId),
+                    "Deferred text batch was not indexed.");
+                AssertEventually(() => Volatile.Read(ref finished) != 0,
+                    "Deferred indexer did not publish its finished notification.");
+                Assert(Volatile.Read(ref started) != 0,
+                    "Deferred indexer did not publish its started notification.");
+                AssertEqual(0, Volatile.Read(ref failed),
+                    "Deferred indexer unexpectedly failed during normal indexing.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            Assert(TextSearchContains(reopened, "deferred-parallel", "premium", documentId),
+                "Deferred text index was not preserved after reopen.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void DeferredIndexerShutdownPreservesPendingRows()
+    {
+        string folder = CreateDatabaseFolder(nameof(DeferredIndexerShutdownPreservesPendingRows));
+        byte[] documentId = { 9, 8, 7 };
+        DBreezeEngine engine = null;
+        Task disposeTask = null;
+        object indexer = null;
+        object indexerSync = null;
+        bool lockTaken = false;
+        int failed = 0;
+        int finished = 0;
+
+        try
+        {
+            engine = new DBreezeEngine(folder);
+            engine.BackgroundTasksExternalNotifier = (notification, _) =>
+            {
+                if (notification == "TextDefferedIndexingHasFailed")
+                    Interlocked.Increment(ref failed);
+                else if (notification == "TextDefferedIndexingHasFinished")
+                    Interlocked.Increment(ref finished);
+            };
+
+            indexer = GetDeferredIndexer(engine);
+            indexerSync = GetPrivateField<object>(indexer, "_sync");
+            Monitor.Enter(indexerSync, ref lockTaken);
+
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.TextInsert(
+                    "deferred-shutdown",
+                    documentId,
+                    containsWords: "retained shutdown batch",
+                    deferredIndexing: true);
+                transaction.Commit();
+            }
+
+            Task worker = GetPrivateField<Task>(indexer, "_workerTask");
+            Assert(worker != null && !worker.IsCompleted,
+                "The shutdown test did not capture an active deferred worker.");
+
+            disposeTask = Task.Run(engine.Dispose);
+            AssertEventually(() => engine.Disposed, "Engine disposal did not start.");
+            Assert(!disposeTask.IsCompleted,
+                "Engine disposal did not wait for the active deferred worker.");
+        }
+        finally
+        {
+            if (lockTaken)
+                Monitor.Exit(indexerSync);
+        }
+
+        try
+        {
+            Assert(disposeTask != null && disposeTask.Wait(TimeSpan.FromSeconds(10)),
+                "Engine disposal did not finish after the deferred worker left its safe boundary.");
+            AssertEventually(() => Volatile.Read(ref finished) != 0,
+                "Shutdown worker did not publish its finished notification.");
+            AssertEqual(0, Volatile.Read(ref failed),
+                "Normal shutdown was incorrectly reported as deferred-indexing failure.");
+            AssertEqual(1, ReadDeferredQueueRows(folder).Count,
+                "Shutdown removed a deferred row that was not processed.");
+
+            using var reopened = new DBreezeEngine(folder);
+            AssertEventually(
+                () => TextSearchContains(reopened, "deferred-shutdown", "retained", documentId),
+                "Pending deferred row was not recovered after reopen.");
+        }
+        finally
+        {
+            try { engine?.Dispose(); } catch { }
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void DeferredIndexerFailureParksDurableBatch()
+    {
+        string folder = CreateDatabaseFolder(nameof(DeferredIndexerFailureParksDurableBatch));
+
+        try
+        {
+            using var engine = new DBreezeEngine(folder);
+            object indexer = GetDeferredIndexer(engine);
+            object indexerSync = GetPrivateField<object>(indexer, "_sync");
+            Exception reportedFailure = null;
+            int started = 0;
+            int failed = 0;
+            int finished = 0;
+            engine.BackgroundTasksExternalNotifier = (notification, payload) =>
+            {
+                switch (notification)
+                {
+                    case "TextDefferedIndexingHasStarted":
+                        Interlocked.Increment(ref started);
+                        break;
+                    case "TextDefferedIndexingHasFailed":
+                        Interlocked.CompareExchange(ref reportedFailure, payload as Exception, null);
+                        Interlocked.Increment(ref failed);
+                        break;
+                    case "TextDefferedIndexingHasFinished":
+                        Interlocked.Increment(ref finished);
+                        break;
+                }
+            };
+
+            lock (indexerSync)
+            {
+                var queue = GetPrivateField<DBreeze.LianaTrie.LTrie>(indexer, "_lTrie");
+                queue.Add(DateTime.UtcNow.Ticks.To_8_bytes_array_BigEndian(),
+                    Enumerable.Repeat((byte)0x80, 5).ToArray());
+                queue.Commit();
+            }
+
+            InvokePrivate(indexer, "StartDefferedIndexing");
+            AssertEventually(() => Volatile.Read(ref failed) == 1,
+                "Malformed deferred payload did not publish a failure notification.");
+            AssertEventually(() => !DeferredWorkerIsRunning(indexer),
+                "Deferred worker did not park after a malformed payload.");
+            AssertEventually(() => Volatile.Read(ref started) >= 1 && Volatile.Read(ref finished) >= 1,
+                "Deferred failure did not preserve started/finished notifications.");
+            Assert(reportedFailure != null,
+                "Failure notification did not contain the original exception.");
+            AssertEqual(1, DeferredQueueCount(indexer),
+                "Malformed durable row was removed after failure.");
+
+            Thread.Sleep(300);
+            AssertEqual(1, Volatile.Read(ref failed),
+                "Deferred worker entered an automatic retry loop after failure.");
+
+            InvokePrivate(indexer, "StartDefferedIndexing");
+            AssertEventually(() => Volatile.Read(ref failed) == 2,
+                "Explicit StartDefferedIndexing did not retry a parked batch.");
+            AssertEventually(() => !DeferredWorkerIsRunning(indexer),
+                "Deferred worker did not park after the explicit retry failed.");
+            AssertEqual(1, DeferredQueueCount(indexer),
+                "Explicit retry removed a malformed durable row.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void DeferredIndexerSequenceAndDiskFormatRemainCompatible()
+    {
+        string folder = CreateDatabaseFolder(nameof(DeferredIndexerSequenceAndDiskFormatRemainCompatible));
+        long futureTextSequence = DateTime.UtcNow.AddDays(30).Ticks;
+        long futureVectorSequence = futureTextSequence + 10;
+        byte[] malformedPayload = Enumerable.Repeat((byte)0x80, 5).ToArray();
+
+        var textTask = new Dictionary<string, HashSet<uint>>(StringComparer.Ordinal)
+        {
+            ["format-text"] = new HashSet<uint> { 11, 12 }
+        };
+        var vectorTask = new Dictionary<string, HashSet<uint>>(StringComparer.Ordinal)
+        {
+            ["format-vector"] = new HashSet<uint> { 21, 22 }
+        };
+        byte[] expectedTextPayload = textTask.Encode_DICT_PROTO_STRING_UINTHASHSET();
+        byte[] expectedVectorPayload = vectorTask.Encode_DICT_PROTO_STRING_UINTHASHSET();
+
+        try
+        {
+            WriteDeferredQueueRows(
+                folder,
+                (CreateDeferredQueueKey(futureTextSequence, vectorTask: false), malformedPayload),
+                (CreateDeferredQueueKey(futureVectorSequence, vectorTask: true), malformedPayload));
+
+            using (var engine = new DBreezeEngine(folder))
+            {
+                object indexer = GetDeferredIndexer(engine);
+                AssertEventually(() => !DeferredWorkerIsRunning(indexer),
+                    "Recovery worker did not park on the injected malformed row.");
+
+                InvokePrivate(indexer, "Add", textTask);
+                InvokePrivate(indexer, "AddVectors", vectorTask);
+            }
+
+            List<(byte[] Key, byte[] Value)> rows = ReadDeferredQueueRows(folder);
+            AssertEqual(4, rows.Count, "Unexpected deferred queue row count in format probe.");
+
+            var generatedText = rows.Single(row =>
+                row.Key.Length == 8 && ReadDeferredSequence(row.Key) > futureVectorSequence);
+            var generatedVector = rows.Single(row =>
+                row.Key.Length == 10 && ReadDeferredSequence(row.Key) > futureVectorSequence);
+
+            AssertEqual(futureVectorSequence + 1, ReadDeferredSequence(generatedText.Key),
+                "Text sequence did not continue after the greatest persisted counter.");
+            AssertEqual(futureVectorSequence + 2, ReadDeferredSequence(generatedVector.Key),
+                "Vector sequence did not continue after the text counter.");
+            AssertEqual(8, generatedText.Key.Length, "Text deferred key length changed.");
+            AssertEqual(10, generatedVector.Key.Length, "Vector deferred key length changed.");
+            AssertEqual((byte)0, generatedVector.Key[0], "Vector protocol byte 0 changed.");
+            AssertEqual((byte)0, generatedVector.Key[1], "Vector protocol byte 1 changed.");
+            AssertSequenceEqual(expectedTextPayload, generatedText.Value,
+                "Text deferred Biser payload changed.");
+            AssertSequenceEqual(expectedVectorPayload, generatedVector.Value,
+                "Vector deferred Biser payload changed.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesKeepCacheAndStorageCoherent()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesKeepCacheAndStorageCoherent));
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                engine.Resources.Insert("coherent", "old");
+                var diskOnly = new DBreezeResources.Settings
+                {
+                    HoldInMemory = false,
+                    HoldOnDisk = true,
+                };
+                engine.Resources.Insert("coherent", "new", diskOnly);
+                AssertEqual("new", engine.Resources.Select<string>("coherent"),
+                    "Disk-only update left a stale cache value.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            AssertEqual("new", reopened.Resources.Select<string>("coherent"),
+                "Reopened resource differs from the live cache value.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesPersistNullAfterNegativeCache()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesPersistNullAfterNegativeCache));
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                AssertEqual<byte[]>(null, engine.Resources.Select<byte[]>("null-key"),
+                    "Missing resource did not return null.");
+                engine.Resources.Insert<byte[]>("null-key", null);
+
+                Assert(engine.Resources.SelectStartsWith<byte[]>("null").Any(x => x.Key == "null-key"),
+                    "Persisted null was confused with a missing resource.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            Assert(reopened.Resources.SelectStartsWith<byte[]>("null").Any(x => x.Key == "null-key"),
+                "Persisted null disappeared after reopen.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesPreserveEmptyArraysAndActiveSnapshots()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesPreserveEmptyArraysAndActiveSnapshots));
+        try
+        {
+            var engine = new DBreezeEngine(folder);
+            engine.Resources.Insert("empty-array", Array.Empty<byte>());
+            byte[] empty = engine.Resources.Select<byte[]>("empty-array");
+            Assert(empty != null && empty.Length == 0,
+                "An empty byte array was confused with the persisted-null sentinel.");
+
+            for (int i = 0; i < 32; i++)
+                engine.Resources.Insert("snapshot-" + i.ToString("D2"), new byte[] { (byte)i });
+
+            using IEnumerator<KeyValuePair<string, byte[]>> snapshot =
+                engine.Resources.SelectStartsWith<byte[]>("snapshot-").GetEnumerator();
+            Assert(snapshot.MoveNext(), "Prefix snapshot unexpectedly contained no rows.");
+
+            Task disposeTask = Task.Run(engine.Dispose);
+            Assert(SpinWait.SpinUntil(() => engine.Disposed, TimeSpan.FromSeconds(5)),
+                "Engine disposal did not start.");
+            Assert(!disposeTask.IsCompleted,
+                "Engine disposal destroyed storage while a prefix snapshot was active.");
+
+            int count = 1;
+            while (snapshot.MoveNext())
+                count++;
+            AssertEqual(32, count, "Active prefix snapshot was truncated during disposal.");
+            snapshot.Dispose();
+
+            Assert(disposeTask.Wait(TimeSpan.FromSeconds(5)),
+                "Engine disposal did not resume after the prefix snapshot completed.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesRemainCoherentUnderConcurrentWrites()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesRemainCoherentUnderConcurrentWrites));
+        try
+        {
+            var liveValues = new Dictionary<string, int>(StringComparer.Ordinal);
+            using (var engine = new DBreezeEngine(folder))
+            {
+                Parallel.For(0, 2_000, i =>
+                {
+                    string key = "parallel-" + (i & 15);
+                    engine.Resources.Insert(key, i);
+                    _ = engine.Resources.Select<int>(key);
+                });
+
+                for (int i = 0; i < 16; i++)
+                {
+                    string key = "parallel-" + i;
+                    liveValues[key] = engine.Resources.Select<int>(key);
+                }
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            foreach (KeyValuePair<string, int> pair in liveValues)
+            {
+                AssertEqual(pair.Value, reopened.Resources.Select<int>(pair.Key),
+                    $"Concurrent cache/storage mismatch for {pair.Key}.");
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesRefreshCommittedReadRoots()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesRefreshCommittedReadRoots));
+        var diskOnly = new DBreezeResources.Settings
+        {
+            HoldInMemory = false,
+            HoldOnDisk = true,
+            InsertWithVerification = false,
+            FastUpdates = true,
+        };
+
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                engine.Resources.Insert("pooled", new byte[] { 1 }, diskOnly);
+                AssertSequenceEqual(new byte[] { 1 }, engine.Resources.Select<byte[]>("pooled", diskOnly),
+                    "A pooled root did not see the inserted resource.");
+
+                engine.Resources.Insert("pooled", new byte[] { 2 }, diskOnly);
+                AssertSequenceEqual(new byte[] { 2 }, engine.Resources.Select<byte[]>("pooled", diskOnly),
+                    "A pooled root stayed stale after update.");
+
+                engine.Resources.Remove("pooled");
+                AssertEqual<byte[]>(null, engine.Resources.Select<byte[]>("pooled", diskOnly),
+                    "A pooled root stayed stale after remove.");
+
+                var inserted = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+                {
+                    ["pooled-a"] = new byte[] { 3 },
+                    ["pooled-b"] = new byte[] { 4 },
+                };
+                engine.Resources.Insert(inserted, diskOnly);
+                IDictionary<string, byte[]> selected = engine.Resources.Select<byte[]>(
+                    new[] { "pooled-a", "pooled-b" }, diskOnly);
+                AssertSequenceEqual(inserted["pooled-a"], selected["pooled-a"],
+                    "Batch select did not refresh its committed root after insert.");
+                AssertSequenceEqual(inserted["pooled-b"], selected["pooled-b"],
+                    "Batch select returned a stale value after insert.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            AssertSequenceEqual(new byte[] { 3 }, reopened.Resources.Select<byte[]>("pooled-a", diskOnly),
+                "A reopened resource differs from the last committed value.");
+            AssertSequenceEqual(new byte[] { 4 }, reopened.Resources.Select<byte[]>("pooled-b", diskOnly),
+                "A reopened batch resource differs from the last committed value.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesKeepCommittedReadRootsExclusive()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesKeepCommittedReadRootsExclusive));
+        var diskOnly = new DBreezeResources.Settings
+        {
+            HoldInMemory = false,
+            HoldOnDisk = true,
+            InsertWithVerification = false,
+            FastUpdates = true,
+        };
+        const int keyCount = 64;
+        const int versions = 40;
+        string[] keys = Enumerable.Range(0, keyCount).Select(static i => "root-" + i.ToString("D3")).ToArray();
+
+        try
+        {
+            using var engine = new DBreezeEngine(folder);
+            engine.Resources.Insert(CreateVersionedResources(keys, 0), diskOnly);
+
+            using var start = new ManualResetEventSlim(false);
+            Task writer = Task.Run(() =>
+            {
+                start.Wait();
+                for (int version = 1; version <= versions; version++)
+                    engine.Resources.Insert(CreateVersionedResources(keys, version), diskOnly);
+            });
+
+            Task[] readers = Enumerable.Range(0, 4).Select(readerId => Task.Run(() =>
+            {
+                start.Wait();
+                for (int iteration = 0; iteration < 100; iteration++)
+                {
+                    IDictionary<string, byte[]> batch = engine.Resources.Select<byte[]>(keys, diskOnly);
+                    AssertEqual(keyCount, batch.Count, "Concurrent batch read lost a resource.");
+
+                    int batchVersion = BitConverter.ToInt32(batch[keys[0]], 0);
+                    for (int keyIndex = 0; keyIndex < keyCount; keyIndex++)
+                    {
+                        byte[] value = batch[keys[keyIndex]];
+                        AssertEqual(batchVersion, BitConverter.ToInt32(value, 0),
+                            "One batch observed more than one committed generation.");
+                        AssertEqual(keyIndex, BitConverter.ToInt32(value, sizeof(int)),
+                            "Concurrent root use corrupted a resource value.");
+                    }
+
+                    int pointIndex = (iteration + readerId) % keyCount;
+                    byte[] point = engine.Resources.Select<byte[]>(keys[pointIndex], diskOnly);
+                    AssertEqual(pointIndex, BitConverter.ToInt32(point, sizeof(int)),
+                        "Concurrent point reads shared a mutable read root.");
+                }
+            })).ToArray();
+
+            start.Set();
+            Task.WaitAll(readers.Append(writer).ToArray());
+
+            IDictionary<string, byte[]> final = engine.Resources.Select<byte[]>(keys, diskOnly);
+            foreach (string key in keys)
+                AssertEqual(versions, BitConverter.ToInt32(final[key], 0),
+                    "A stale pooled root survived the final commit.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static Dictionary<string, byte[]> CreateVersionedResources(string[] keys, int version)
+    {
+        var resources = new Dictionary<string, byte[]>(keys.Length, StringComparer.Ordinal);
+        for (int i = 0; i < keys.Length; i++)
+        {
+            byte[] value = new byte[sizeof(int) * 2];
+            BitConverter.GetBytes(version).CopyTo(value, 0);
+            BitConverter.GetBytes(i).CopyTo(value, sizeof(int));
+            resources.Add(keys[i], value);
+        }
+        return resources;
+    }
+
+    private static void SchemeRenamePreservesDataAndReplacementSemantics()
+    {
+        using var engine = CreateMemoryEngine();
+
+        PutValue(engine, "same", 11);
+        engine.Scheme.RenameTable("same", "same");
+        AssertEqual(11, GetValue(engine, "same"), "Same-name rename changed the table.");
+
+        PutValue(engine, "existing-destination", 22);
+        engine.Scheme.RenameTable("missing-source", "existing-destination");
+        AssertEqual(22, GetValue(engine, "existing-destination"),
+            "Missing source deleted the destination.");
+
+        PutValue(engine, "replace-source", 33);
+        PutValue(engine, "replace-destination", 44);
+        engine.Scheme.RenameTable("replace-source", "replace-destination");
+        Assert(!engine.Scheme.IfUserTableExists("replace-source"), "Renamed source still exists.");
+        AssertEqual(33, GetValue(engine, "replace-destination"),
+            "Destination replacement did not preserve source data.");
+    }
+
+    private static void SchemeRenameReplacesDiskDestination()
+    {
+        string folder = CreateDatabaseFolder(nameof(SchemeRenameReplacesDiskDestination));
+        string replacedPath;
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                PutValue(engine, "disk-source", 35);
+                PutValue(engine, "disk-destination", 45);
+                replacedPath = engine.Scheme.GetTablePathFromTableName("disk-destination");
+                Assert(File.Exists(replacedPath), "Destination table file was not created.");
+
+                engine.Scheme.RenameTable("disk-source", "disk-destination");
+                Assert(!engine.Scheme.IfUserTableExists("disk-source"),
+                    "Disk source metadata survived rename.");
+                AssertEqual(35, GetValue(engine, "disk-destination"),
+                    "Disk destination replacement did not preserve source data.");
+                Assert(!File.Exists(replacedPath),
+                    "Replaced destination table file was left orphaned on disk.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            Assert(!reopened.Scheme.IfUserTableExists("disk-source"),
+                "Renamed disk source reappeared after reopen.");
+            AssertEqual(35, GetValue(reopened, "disk-destination"),
+                "Renamed disk destination did not reopen with source data.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void SchemeRenameRejectsStorageRouteChanges()
+    {
+        string folder = CreateDatabaseFolder(nameof(SchemeRenameRejectsStorageRouteChanges));
+        string alternateFolder = Path.Combine(folder, "alternate");
+        try
+        {
+            var configuration = new DBreezeConfiguration
+            {
+                DBreezeDataFolderName = folder,
+                Storage = DBreezeConfiguration.eStorage.DISK,
+                NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+            };
+            configuration.AlternativeTablesLocations["alt*"] = alternateFolder;
+
+            using var engine = new DBreezeEngine(configuration);
+            PutValue(engine, "default-source", 55);
+            PutValue(engine, "alt-destination", 66);
+
+            AssertThrows<DBreeze.Exceptions.DBreezeException>(() =>
+                engine.Scheme.RenameTable("default-source", "alt-destination"));
+            AssertEqual(55, GetValue(engine, "default-source"), "Rejected rename damaged source data.");
+            AssertEqual(66, GetValue(engine, "alt-destination"), "Rejected rename damaged destination data.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void SchemeRenameWaitsForActiveTable()
+    {
+        string folder = CreateDatabaseFolder(nameof(SchemeRenameWaitsForActiveTable));
+        try
+        {
+            using var engine = new DBreezeEngine(folder);
+            PutValue(engine, "busy-source", 77);
+
+            var active = engine.GetTransaction();
+            Assert(active.Select<int, int>("busy-source", 1).Exists, "Busy source row is missing.");
+
+            Task rename = Task.Run(() => engine.Scheme.RenameTable("busy-source", "busy-destination"));
+            Thread.Sleep(100);
+            Assert(!rename.IsCompleted, "Rename did not wait for an active disk table.");
+
+            active.Dispose();
+            Assert(rename.Wait(TimeSpan.FromSeconds(5)), "Rename did not resume after table release.");
+            AssertEqual(77, GetValue(engine, "busy-destination"), "Waited rename lost source data.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void PutValue(DBreezeEngine engine, string table, int value)
+    {
+        using var transaction = engine.GetTransaction();
+        transaction.Insert(table, 1, value);
+        transaction.Commit();
+    }
+
+    private static int GetValue(DBreezeEngine engine, string table)
+    {
+        using var transaction = engine.GetTransaction();
+        return transaction.Select<int, int>(table, 1).Value;
     }
 
     private static void RandomKeySorterKeepsFinalOperation()
@@ -1021,6 +1805,175 @@ internal static class Program
         return journal.IterateForward(true, false)
             .Select(static row => row.GetFullValue(true))
             .ToArray();
+    }
+
+    private static object GetDeferredIndexer(DBreezeEngine engine)
+    {
+        var field = typeof(DBreezeEngine).GetField(
+            "DeferredIndexer",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert(field != null, "Deferred indexer field was not found.");
+        object indexer = field.GetValue(engine);
+        Assert(indexer != null, "Deferred indexer was not initialized.");
+        return indexer;
+    }
+
+    private static T GetPrivateField<T>(object instance, string fieldName)
+    {
+        var field = instance.GetType().GetField(
+            fieldName,
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Public);
+        Assert(field != null, $"Field {fieldName} was not found on {instance.GetType().Name}.");
+        return (T)field.GetValue(instance);
+    }
+
+    private static object InvokePrivate(object instance, string methodName, params object[] arguments)
+    {
+        var method = instance.GetType().GetMethod(
+            methodName,
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Public);
+        Assert(method != null, $"Method {methodName} was not found on {instance.GetType().Name}.");
+
+        try
+        {
+            return method.Invoke(instance, arguments);
+        }
+        catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            throw;
+        }
+    }
+
+    private static bool DeferredWorkerIsRunning(object indexer)
+    {
+        object indexerSync = GetPrivateField<object>(indexer, "_sync");
+        lock (indexerSync)
+            return GetPrivateField<bool>(indexer, "_workerRunning");
+    }
+
+    private static int DeferredQueueCount(object indexer)
+    {
+        object indexerSync = GetPrivateField<object>(indexer, "_sync");
+        lock (indexerSync)
+        {
+            var queue = GetPrivateField<DBreeze.LianaTrie.LTrie>(indexer, "_lTrie");
+            return checked((int)queue.Count(true));
+        }
+    }
+
+    private static bool TextSearchContains(
+        DBreezeEngine engine,
+        string tableName,
+        string word,
+        byte[] expectedDocumentId)
+    {
+        using var transaction = engine.GetTransaction();
+        return transaction.TextSearch(tableName)
+            .Block(containsWords: word)
+            .GetDocumentIDs()
+            .Any(documentId => documentId.AsSpan().SequenceEqual(expectedDocumentId));
+    }
+
+    private static void AssertEventually(
+        Func<bool> condition,
+        string message,
+        int timeoutMilliseconds = 10_000)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        while (stopwatch.ElapsedMilliseconds < timeoutMilliseconds)
+        {
+            if (condition())
+                return;
+            Thread.Sleep(10);
+        }
+
+        if (!condition())
+            throw new InvalidOperationException(message);
+    }
+
+    private static void WriteDeferredQueueRows(
+        string folder,
+        params (byte[] Key, byte[] Value)[] rows)
+    {
+        using var configuration = new DBreezeConfiguration
+        {
+            DBreezeDataFolderName = folder,
+            Storage = DBreezeConfiguration.eStorage.DISK,
+        };
+        var storage = new DBreeze.Storage.StorageLayer(
+            Path.Combine(folder, "_DBreezeTextIndexer"),
+            CreateInternalTrieSettings(),
+            configuration);
+        using var queue = new DBreeze.LianaTrie.LTrie(storage)
+        {
+            TableName = "DBreeze.TextIndexer",
+        };
+
+        foreach ((byte[] key, byte[] value) in rows)
+            queue.Add(key, value);
+        queue.Commit();
+    }
+
+    private static List<(byte[] Key, byte[] Value)> ReadDeferredQueueRows(string folder)
+    {
+        using var configuration = new DBreezeConfiguration
+        {
+            DBreezeDataFolderName = folder,
+            Storage = DBreezeConfiguration.eStorage.DISK,
+        };
+        var storage = new DBreeze.Storage.StorageLayer(
+            Path.Combine(folder, "_DBreezeTextIndexer"),
+            CreateInternalTrieSettings(),
+            configuration);
+        using var queue = new DBreeze.LianaTrie.LTrie(storage)
+        {
+            TableName = "DBreeze.TextIndexer",
+        };
+
+        return queue.IterateForward(true, false)
+            .Select(static row => (row.Key, row.GetFullValue(true)))
+            .ToList();
+    }
+
+    private static DBreeze.Storage.TrieSettings CreateInternalTrieSettings()
+    {
+        var settings = new DBreeze.Storage.TrieSettings();
+        var field = typeof(DBreeze.Storage.TrieSettings).GetField(
+            "InternalTable",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert(field != null, "TrieSettings.InternalTable field was not found.");
+        field.SetValue(settings, true);
+        return settings;
+    }
+
+    private static byte[] CreateDeferredQueueKey(long sequence, bool vectorTask)
+    {
+        byte[] sequenceBytes = sequence.To_8_bytes_array_BigEndian();
+        if (!vectorTask)
+            return sequenceBytes;
+
+        byte[] key = new byte[10];
+        Buffer.BlockCopy(sequenceBytes, 0, key, 2, sequenceBytes.Length);
+        return key;
+    }
+
+    private static long ReadDeferredSequence(byte[] key)
+    {
+        if (key.Length == 8)
+            return key.To_Int64_BigEndian();
+        if (key.Length == 10 && key[0] == 0 && key[1] == 0)
+        {
+            byte[] sequenceBytes = new byte[8];
+            Buffer.BlockCopy(key, 2, sequenceBytes, 0, sequenceBytes.Length);
+            return sequenceBytes.To_Int64_BigEndian();
+        }
+
+        throw new InvalidOperationException($"Unknown deferred queue key: {Format(key)}.");
     }
 
     private static void VerifyTable(DBreezeEngine engine, SortedDictionary<byte[], byte[]> expected)

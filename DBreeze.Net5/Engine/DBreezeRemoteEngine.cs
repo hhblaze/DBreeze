@@ -1,15 +1,11 @@
-﻿/* 
+/* 
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's free software for those who think that it should be free.
 */
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-//using System.Threading.Tasks;
+using System.Threading;
 
 using DBreeze.Transactions;
-using DBreeze.Exceptions;
 
 namespace DBreeze
 {
@@ -18,20 +14,19 @@ namespace DBreeze
     /// </summary>
     public class DBreezeRemoteEngine : DBreezeEngine
     {
-        DBreezeConfiguration conf = null;
-        bool inited = false;
-        object lock_init = new object();
+        private readonly DBreezeConfiguration conf;
+        private int inited;
+        private readonly object lock_init = new object();
         
 
         /// <summary>
         /// DBreezeRemoteEngine instantiator
         /// </summary>
         /// <param name="dbreezeConfiguration"></param>
-        public DBreezeRemoteEngine(DBreezeConfiguration dbreezeConfiguration)            
+        public DBreezeRemoteEngine(DBreezeConfiguration dbreezeConfiguration)
         {
-
             if (dbreezeConfiguration == null)
-                throw new Exception("DBreeze.DbreezeRemoteEngine.DbreezeRemoteEngine:  dbreezeConfiguration is NULL");
+                throw new ArgumentNullException(nameof(dbreezeConfiguration));
 
             conf = dbreezeConfiguration;
             this.RemoteEngine = true;
@@ -43,17 +38,22 @@ namespace DBreeze
         /// </summary>
         void Init()
         {
-            if (!inited)
+            if (Interlocked.CompareExchange(ref inited, 0, 0) == 0)
             {
                 lock (lock_init)
                 {
-                    if (!inited)
+                    if (inited == 0)
                     {
                         this.ConstructFromConfiguration(conf);
-                        inited = true;
+                        Interlocked.Exchange(ref inited, 1);
                     }
                 }
             }
+        }
+
+        internal override void EnsureInitialized()
+        {
+            Init();
         }
 
 
@@ -98,3 +98,4 @@ namespace DBreeze
 
 
 }
+
