@@ -157,10 +157,16 @@ namespace DBreeze.DataTypes
 
             if (_exists)
             {
+                if (length == 0)
+                    return new byte[0];
+
+                if (startIndex > Int32.MaxValue)
+                    return null;
+
                 //Bringing arguments to int scope
-                if ((startIndex + length) > Int32.MaxValue)
+                if (((ulong)startIndex + length) > Int32.MaxValue)
                 {
-                    length = Int32.MaxValue - startIndex;
+                    length = (uint)Int32.MaxValue - startIndex;
                 }
 
                 if (_row.ValueIsReadOut)
@@ -187,14 +193,17 @@ namespace DBreeze.DataTypes
 
             if (_exists)
             {
+                if (startIndex > Int32.MaxValue)
+                    return null;
+
                 //Bringing arguments to int scope
-                if ((startIndex + length) > Int32.MaxValue)
+                if (((ulong)startIndex + length) > Int32.MaxValue)
                 {
-                    length = Int32.MaxValue - startIndex;
+                    length = (uint)Int32.MaxValue - startIndex;
                 }
 
                 if (_row.ValueIsReadOut)
-                    return _row.GetFullValue(true); //Cache plays no role here
+                    return _row.GetPartialValue(startIndex, length, true); //Cache plays no role here
 
                 long valueStartPointer = 0;
                 uint valueFullLength = 0;

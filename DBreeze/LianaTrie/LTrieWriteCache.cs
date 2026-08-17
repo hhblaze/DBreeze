@@ -22,8 +22,10 @@ namespace DBreeze.LianaTrie
         internal LTrie Trie = null;
 
         DbReaderWriterLock _sync_nodes = new DbReaderWriterLock();        
-        //Key is GenerationMap line as string, Value is Kids in generation node of the last element of the generation map line
-        Dictionary<string, byte[]> _nodes = new Dictionary<string, byte[]>();
+        //A physical node pointer is unique within a table/cache epoch. Using it avoids
+        //allocating and Base64-encoding the complete logical path on every lookup.
+        Dictionary<ulong, byte[]> _nodes = new Dictionary<ulong, byte[]>();
+        private int _disposed = 0;
 
         //DbReaderWriterLock _sync_values = new DbReaderWriterLock();
         //Dictionary<string, DataIdentifier> _values = new Dictionary<string, DataIdentifier>();
@@ -152,7 +154,7 @@ namespace DBreeze.LianaTrie
                         _nodes.Clear();
 
                         _nodes = null;
-                        _nodes = new Dictionary<string, byte[]>();
+                        _nodes = new Dictionary<ulong, byte[]>();
 
                         //dDynamicDataBlocks.Clear();
 
@@ -176,9 +178,9 @@ namespace DBreeze.LianaTrie
                     //    _sync_values.ExitWriteLock();
                     //}
                 }
-                catch (System.Exception ex)
+                catch
                 {
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -231,7 +233,7 @@ namespace DBreeze.LianaTrie
                         _nodes.Clear();
 
                         _nodes = null;
-                        _nodes = new Dictionary<string, byte[]>();
+                        _nodes = new Dictionary<ulong, byte[]>();
 
                         //dDynamicDataBlocks.Clear();
 
@@ -248,9 +250,9 @@ namespace DBreeze.LianaTrie
                     //    _sync_values.ExitWriteLock();
                     //}
                 }
-                catch (System.Exception ex)
+                catch
                 {
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -290,10 +292,10 @@ namespace DBreeze.LianaTrie
                 if (!IsNestedTable)
                     Trie.Storage.TransactionalCommit();
             }
-            catch (Exception ex)
+                catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }            
         }
 
@@ -323,7 +325,7 @@ namespace DBreeze.LianaTrie
                         _nodes.Clear();
 
                         _nodes = null;
-                        _nodes = new Dictionary<string, byte[]>();
+                        _nodes = new Dictionary<ulong, byte[]>();
 
                         //dDynamicDataBlocks.Clear();
 
@@ -346,10 +348,10 @@ namespace DBreeze.LianaTrie
                     //    _sync_values.ExitWriteLock();
                     //}
                 }
-                catch (System.Exception ex)
+                catch
                 {
                     //CASCADE
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -397,7 +399,7 @@ namespace DBreeze.LianaTrie
                         _nodes.Clear();
 
                         _nodes = null;
-                        _nodes = new Dictionary<string, byte[]>();
+                        _nodes = new Dictionary<ulong, byte[]>();
 
                         //dDynamicDataBlocks.Clear();
 
@@ -419,9 +421,9 @@ namespace DBreeze.LianaTrie
                     //    _sync_values.ExitWriteLock();
                     //}
                 }
-                catch (System.Exception ex)
+                catch
                 {
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -467,7 +469,7 @@ namespace DBreeze.LianaTrie
                         _nodes.Clear();
 
                         _nodes = null;
-                        _nodes = new Dictionary<string, byte[]>();
+                        _nodes = new Dictionary<ulong, byte[]>();
 
 
                 //dDynamicDataBlocks.Clear();
@@ -491,9 +493,9 @@ namespace DBreeze.LianaTrie
                     //    _sync_values.ExitWriteLock();
                     //}
                 }
-                catch (System.Exception ex)
+                catch
                 {
-                    throw ex;
+                    throw;
                 }
                 finally
                 {
@@ -518,24 +520,23 @@ namespace DBreeze.LianaTrie
         /// <summary>
         /// Returns NULL if not found
         /// </summary>
-        /// <param name="generationMapLine"></param>
+        /// <param name="pointer"></param>
         /// <returns></returns>
-        public byte[] GetNodeKids(byte[] generationMapLine)
+        public byte[] GetNodeKids(byte[] pointer)
         {
-            string hash = generationMapLine.ToBase64String();
-
+            ulong nodePointer = pointer.DynamicLength_To_UInt64_BigEndian();
 
             _sync_nodes.EnterReadLock();
             try
             {
                 byte[] ret = null;
-                _nodes.TryGetValue(hash, out ret);
+                _nodes.TryGetValue(nodePointer, out ret);
 
                 return ret;
             }
-            catch (System.Exception ex)
+                catch
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -625,38 +626,35 @@ namespace DBreeze.LianaTrie
         /// </summary>
         /// <param name="pointer"></param>
         /// <param name="newData"></param>
-        /// <param name="generationMapLine"></param>
         /// <param name="kidsBeforeModification"></param>
-        public void GenerationNodeWritingOver(byte[] pointer, byte[] newData, byte[] generationMapLine, byte[] kidsBeforeModification)
+        public void GenerationNodeWritingOver(byte[] pointer, byte[] newData, byte[] kidsBeforeModification)
         {
             _sync_nodes.EnterWriteLock();
             try
             {
-                long ptrU = (long)pointer.DynamicLength_To_UInt64_BigEndian();
+                ulong ptrU = pointer.DynamicLength_To_UInt64_BigEndian();
 
 
-                if (Trie.Storage.Length > ptrU && generationMapLine != null)
+                if ((ulong)Trie.Storage.Length > ptrU)
                 {
-                    //Update only. Filling parallel read nodes. 
-                    string hash = generationMapLine.ToBase64String();
-
+                    //Update only. Filling parallel read nodes.
                     byte[] ret = null;
-                    _nodes.TryGetValue(hash, out ret);                    
+                    _nodes.TryGetValue(ptrU, out ret);
 
                     if (ret == null)
                     {
                         if (kidsBeforeModification == null)
                             kidsBeforeModification = new byte[0];
 
-                        _nodes[hash] = kidsBeforeModification;
+                        _nodes[ptrU] = kidsBeforeModification;
                     }
                 }
                 
                 Trie.Storage.Table_WriteByOffset(pointer, newData);
             }
-            catch (System.Exception ex)
+                catch
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -680,7 +678,7 @@ namespace DBreeze.LianaTrie
 
             if (useCache)
             {
-                node = this.GetNodeKids(cachedGenerationMapLine);
+                node = this.GetNodeKids(pointer);
 
                 if (node != null)
                 {
@@ -702,9 +700,9 @@ namespace DBreeze.LianaTrie
             {
                 line = Trie.Storage.Table_Read(useCache, pointer, MaximumNodeLineLength);               
             }
-            catch (System.Exception ex)
+                catch
             {
-                throw ex;
+                throw;
             }
             finally
             {
@@ -801,9 +799,9 @@ namespace DBreeze.LianaTrie
                 //    return Trie.Storage.Table_Read(ptr, dl);
                 //}
             }
-            catch (Exception ex)
+                catch
             {                
-                throw ex;
+                throw;
             }
             
         }
@@ -984,9 +982,9 @@ namespace DBreeze.LianaTrie
                     }
                 }
             }
-            catch (Exception ex)
+                catch
             {
-                throw ex;
+                throw;
             }
            
         }
@@ -1323,6 +1321,8 @@ namespace DBreeze.LianaTrie
             /**************/
 
             valueLength = btValueSize.To_UInt32_BigEndian();
+            if (valueLength > Int32.MaxValue)
+                throw new InvalidOperationException("Stored value length exceeds the maximum supported array size.");
             valueSize = (int)valueLength;
 
             /*NULL SUPPORT*/
@@ -1437,15 +1437,19 @@ namespace DBreeze.LianaTrie
                 return new byte[0];
             /**************/
 
+            if (valueLength > Int32.MaxValue)
+                throw new InvalidOperationException("Stored value length exceeds the maximum supported array size.");
+
             //Checking startIndex and Length compliance with valueSize
             if (length == 0)
                 return new byte[0];
 
-            if (valueSize < startIndex)
+            if (startIndex > (uint)valueSize)
                 return null;
 
-            if (valueSize < (startIndex + length))
-                length = (uint)valueSize - startIndex;
+            uint availableLength = (uint)valueSize - startIndex;
+            if (length > availableLength)
+                length = availableLength;
 
             //--------------------------------------------------------
 
@@ -1521,7 +1525,10 @@ namespace DBreeze.LianaTrie
         
     
         public void Dispose()
-        {           
+        {
+            if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             //_sync_dDynamicDataBlocks.EnterWriteLock();
             //try
             //{
@@ -1551,6 +1558,7 @@ namespace DBreeze.LianaTrie
                 finally
                 {
                     _sync_nodes.ExitWriteLock();
+                    _sync_nodes.Dispose();
                 }
             //}
             //finally

@@ -238,8 +238,6 @@ namespace DBreeze.LianaTrie
             LTrieGenerationNode prevNode = null;
 
 
-            int gmMaxIndex = _generationMap.Count() - 1;
-
             foreach (var gn in _generationMap.Descending)
             {                
 
@@ -272,17 +270,8 @@ namespace DBreeze.LianaTrie
                 //Probably except 0 node, because for reading it will be not interesting, there LinkZeroNode is always synchronized
 
 
-                //Adding MapKids and WritinSelf synchro is checked 
-                byte[] generationMapLine = null;
-                if (gmMaxIndex > 0)
-                {
-                    generationMapLine = _generationMap.GenerateMapNodesValuesUpToIndex(gmMaxIndex, true);                    
-                    gmMaxIndex--;
-                    //this.Tree.Cache.AddMapKids(_generationMap.GenerateMapNodesValuesUpToIndex(gmMaxIndex--), gn.Value.KidsBeforeModification);                 
-                }
-
-                //Writing on disk                
-                gn.Value.WriteSelf(generationMapLine);
+                //Writing on disk
+                gn.Value.WriteSelf();
                 
                 
                 if (gn.Key == 0)
@@ -956,7 +945,7 @@ namespace DBreeze.LianaTrie
                 //gn.Value=0; - default
                 _generationMap.Add(0, gn);
 
-                gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(0));
+                gn.ReadSelf(useCache, null);
                 //gn.ReadSelf();
             }
 
@@ -1004,7 +993,7 @@ namespace DBreeze.LianaTrie
                     
                     _generationMap.Add(i, gn);
 
-                    gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(i));
+                    gn.ReadSelf(useCache, null);
                     //gn.ReadSelf();
                 }
 

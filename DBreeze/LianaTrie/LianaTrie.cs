@@ -55,7 +55,13 @@ namespace DBreeze.LianaTrie
         /// Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
         /// Access via DtTableFixed interface ITrie
         /// </summary>
-        long _DtTableFixed = (new DateTime(1970, 1, 1)).Ticks;
+        private static long _tableVersion = DateTime.UtcNow.Ticks;
+        long _DtTableFixed = NextTableVersion();
+
+        private static long NextTableVersion()
+        {
+            return System.Threading.Interlocked.Increment(ref _tableVersion);
+        }
 
         /// <summary>
         /// Coordinator of nested tables
@@ -117,7 +123,7 @@ namespace DBreeze.LianaTrie
                 {
                     Storage.Table_Dispose();
                 }
-                catch (Exception ex)
+                catch
                 {
                     //throw ex;
                 }
@@ -126,7 +132,7 @@ namespace DBreeze.LianaTrie
                 {
                     Cache.Dispose();
                 }
-                catch (Exception ex)
+                catch
                 {
 
                 }
@@ -170,14 +176,14 @@ namespace DBreeze.LianaTrie
              
                 TableIsModified = false;
                 GenerationMapSaved = true;
-                DtTableFixed = DateTime.Now.Ticks;
+                DtTableFixed = NextTableVersion();
             }
-            catch (Exception ex)
+            catch
             {
                 //Trying Rollback
                 this.RollBack();
                 
-                throw ex;
+                throw;
             }
             
             
@@ -213,7 +219,7 @@ namespace DBreeze.LianaTrie
 
                     TableIsModified = false;
                     GenerationMapSaved = true;
-                    DtTableFixed = DateTime.Now.Ticks;
+                    DtTableFixed = NextTableVersion();
                 }
             }
             catch (Exception ex)
@@ -379,11 +385,11 @@ namespace DBreeze.LianaTrie
                 return new NestedTable(dit, insertTable, true);
                 
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
                 //Cascade
-                throw ex;
+                throw;
             }
         }
 
@@ -445,30 +451,27 @@ namespace DBreeze.LianaTrie
             {
 
                 //Only available for Writing root
-                try
-                {
-                    linkToVal = rn.AddKey(ref key, ref value, out WasUpdated, dontUpdateIfExists);
-                }
-                catch (Exception ex1) 
-                {
-                    throw ex1;
-                }
+                linkToVal = rn.AddKey(ref key, ref value, out WasUpdated, dontUpdateIfExists);
                 
 
-                /*********** Support of the nested tables  *******/
-                this.NestedTablesCoordinator.Remove(ref key);
-                /*************************************************/
+                // Insert-if-absent must not remove nested data or create a false modification.
+                if (!(WasUpdated && dontUpdateIfExists))
+                {
+                    /*********** Support of the nested tables  *******/
+                    this.NestedTablesCoordinator.Remove(ref key);
+                    /*************************************************/
 
-                TableIsModified = true;
-                GenerationMapSaved = false;
+                    TableIsModified = true;
+                    GenerationMapSaved = false;
+                }
 
                 return linkToVal;
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
                 //Cascade
-                throw ex;
+                throw;
             }            
         }
 
@@ -537,6 +540,11 @@ namespace DBreeze.LianaTrie
         public byte[] AddPartially(ref byte[] key, ref byte[] value, uint startIndex, out long valueStartPtr, out bool WasUpdated)
         {
             this.CheckTableIsOperable();
+
+            ulong resultingValueLength = (ulong)startIndex + (ulong)(value == null ? 0 : value.Length);
+            if (startIndex > Int32.MaxValue || resultingValueLength > Int32.MaxValue)
+                throw new ArgumentOutOfRangeException("startIndex", "The resulting value cannot exceed Int32.MaxValue bytes.");
+
             byte[] linkToVal = null;
             try
             {
@@ -552,11 +560,11 @@ namespace DBreeze.LianaTrie
 
                 return linkToVal;
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
                 //Cascade
-                throw ex;
+                throw;
             }
         }
 
@@ -610,18 +618,21 @@ namespace DBreeze.LianaTrie
             {
                 rn.RemoveKey(ref key, out WasRemoved, retrieveDeletedValue, out deletedValue);
 
-                /*********** Support of the nested tables  *******/
-                this.NestedTablesCoordinator.Remove(ref key);
-                /*************************************************/
+                if (WasRemoved)
+                {
+                    /*********** Support of the nested tables  *******/
+                    this.NestedTablesCoordinator.Remove(ref key);
+                    /*************************************************/
 
-                TableIsModified = true;
-                GenerationMapSaved = false;
+                    TableIsModified = true;
+                    GenerationMapSaved = false;
+                }
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
 
-                throw ex;
+                throw;
             }
 
         }
@@ -654,7 +665,7 @@ namespace DBreeze.LianaTrie
                 TableIsModified = true;
                 GenerationMapSaved = false;
             }
-            catch (Exception ex)
+            catch
             {
                 if (!withFileRecreation)
                 {
@@ -665,7 +676,7 @@ namespace DBreeze.LianaTrie
                     TableIsOperable = false;
                 }
 
-                throw ex;
+                throw;
             }
             
         }
@@ -698,11 +709,11 @@ namespace DBreeze.LianaTrie
                     GenerationMapSaved = false;
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
 
-                throw ex;
+                throw;
             }
         }
 
@@ -730,11 +741,11 @@ namespace DBreeze.LianaTrie
                     GenerationMapSaved = false;
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
 
-                throw ex;
+                throw;
             }
         }
         
@@ -759,11 +770,11 @@ namespace DBreeze.LianaTrie
 
 
             }
-            catch (Exception ex)
+            catch
             {
                 this.RollBack();
 
-                throw ex;
+                throw;
             }
         }
 
@@ -1733,7 +1744,7 @@ namespace DBreeze.LianaTrie
 
                 TableIsModified = false;
                 GenerationMapSaved = true;
-                DtTableFixed = DateTime.Now.Ticks;
+                DtTableFixed = NextTableVersion();
             }
             //catch (System.Threading.ThreadAbortException ex)
             //{                                   
@@ -1767,7 +1778,7 @@ namespace DBreeze.LianaTrie
 
             TableIsModified = false;
             GenerationMapSaved = true;
-            DtTableFixed = DateTime.Now.Ticks;
+            DtTableFixed = NextTableVersion();
         }
 
 
@@ -1818,11 +1829,11 @@ namespace DBreeze.LianaTrie
         {
             get
             {
-                return _DtTableFixed;
+                return System.Threading.Interlocked.CompareExchange(ref _DtTableFixed, 0, 0);
             }
             set
             {
-                _DtTableFixed = value;
+                System.Threading.Interlocked.Exchange(ref _DtTableFixed, value);
             }
         }
 

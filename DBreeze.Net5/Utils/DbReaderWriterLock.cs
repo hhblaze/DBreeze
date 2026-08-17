@@ -17,9 +17,10 @@ namespace DBreeze.Utils
     /// Wrapper For System.Threading.ReaderWriterLockSlim
     /// In case if better algorithm will be found
     /// </summary>
-    public class DbReaderWriterLock
+    public class DbReaderWriterLock : IDisposable
     {
         ReaderWriterLockSlim rwls = new ReaderWriterLockSlim();
+        private int disposed = 0;
 
         public DbReaderWriterLock()
         {
@@ -53,6 +54,12 @@ namespace DBreeze.Utils
         public void ExitUpgradeableReadLock()
         {
             rwls.ExitUpgradeableReadLock();
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref disposed, 1) == 0)
+                rwls.Dispose();
         }
     }
 }

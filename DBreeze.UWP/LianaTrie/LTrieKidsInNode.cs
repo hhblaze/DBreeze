@@ -628,10 +628,15 @@ namespace DBreeze.LianaTrie
         {
             AllowSave = true;
 
-            _f = new byte[DefaultPointerLength + 2 + (256 * shift)];
+            Array.Clear(_f, 0, _f.Length);
+            Array.Clear(PtrToValue, 0, PtrToValue.Length);
+            count = 0;
+            ValueIsEmpty = true;
 
             NeedToSearchExtremums = false;
+            MaxKid = 0;
             MaxKidNull = true;
+            MinKid = 0;
             MinKidNull = true;
 
         }
@@ -842,6 +847,7 @@ namespace DBreeze.LianaTrie
 
             if (this.count > 0)
             {
+                SearchExtremums();
 
                 //Change back kid to normal
                 startFrom += 1;
@@ -853,7 +859,8 @@ namespace DBreeze.LianaTrie
                 //    startFrom += 1;
 
                 int kidPlace = 0;
-                for (int i = startFrom; i <= 256; i++)
+                int firstKid = startFrom > MinKid ? startFrom : MinKid;
+                for (int i = firstKid; i <= MaxKid; i++)
                 {
                     kidPlace = i * shift;
 
@@ -899,8 +906,9 @@ namespace DBreeze.LianaTrie
 
             if (this.count > 0)
             {
+                SearchExtremums();
                 int kidPlace = 0;
-                for (int i = 1; i <= 256; i++)
+                for (int i = MinKid; i <= MaxKid; i++)
                 {
                     kidPlace = i * shift;
 
@@ -934,10 +942,12 @@ namespace DBreeze.LianaTrie
 
             if (this.count > 0 && startFrom != 256)
             {
+                SearchExtremums();
                 startFrom += 1;
 
                 int kidPlace = 0;
-                for (int i = startFrom; i > 0; i--)
+                int firstKid = startFrom < MaxKid ? startFrom : MaxKid;
+                for (int i = firstKid; i >= MinKid; i--)
                 {
                     kidPlace = i * shift;
 
@@ -983,8 +993,9 @@ namespace DBreeze.LianaTrie
 
             if (this.count > 0)
             {
+                SearchExtremums();
                 int kidPlace = 0;
-                for (int i = 256; i > 0; i--)
+                for (int i = MaxKid; i >= MinKid; i--)
                 {
                     kidPlace = i * shift;
 
@@ -1245,7 +1256,6 @@ namespace DBreeze.LianaTrie
             {
                 int addSize = (2 + DefaultPointerLength) * toAdd;
                 ret1 = new byte[realcnt + addSize];
-                Buffer.BlockCopy(new byte[addSize], 0, ret1, realcnt, addSize);
                 Buffer.BlockCopy(ret, 0, ret1, 0, realcnt);
             }
             else

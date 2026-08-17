@@ -89,7 +89,11 @@ namespace DBreeze.LianaTrie
 
         public void Clear()
         {
+            if (size > 0)
+                Array.Clear(_d, 0, size);
+
             size = 0;
+            MapValuesUpToIndex = null;
 
             ReGenerateMapUpToIndex = true;
         }
@@ -101,16 +105,26 @@ namespace DBreeze.LianaTrie
 
         public void RemoveBiggerThenKey(int key)
         {
-            if ((key + 1) < size)
-                size = key + 1;
+            int newSize = key < -1 ? 0 : key >= size ? size : key + 1;
+            if (newSize < size)
+            {
+                Array.Clear(_d, newSize, size - newSize);
+                size = newSize;
+                MapValuesUpToIndex = null;
+            }
 
             ReGenerateMapUpToIndex = true;
         }
 
         public void RemoveBiggerOrEqualThenKey(int key)
         {
-            if (key < size)
-                size = key;
+            int newSize = key < 0 ? 0 : key;
+            if (newSize < size)
+            {
+                Array.Clear(_d, newSize, size - newSize);
+                size = newSize;
+                MapValuesUpToIndex = null;
+            }
 
             ReGenerateMapUpToIndex = true;
         }

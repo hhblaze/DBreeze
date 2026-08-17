@@ -40,151 +40,198 @@ namespace DBreeze.LianaTrie.Iterations
 
         #region "Iterate Forward"
 
-        private IEnumerable<LTrieRow> ItFrw(LTrieGenerationNode gn, byte[] generationMapLine,bool useCache)
+        private IEnumerable<LTrieRow> IterateForwardCore(bool useCache)
         {
-            byte[] key = null;
-            LTrieRow row = null;
-            byte[] gml = null;
-            long valueStartPtr = 0;
-            uint valueLength = 0;
-            byte[] xValue = null;
+            LTrieGenerationNode rootNode = new LTrieGenerationNode(this._root);
+            rootNode.Pointer = this._root.LinkToZeroNode;
+            rootNode.ReadSelf(useCache, null);
 
-            foreach (var kd in gn.KidsInNode.GetKidsForward())
+            Stack<IEnumerator<LTrieKid>> stack = new Stack<IEnumerator<LTrieKid>>();
+            stack.Push(rootNode.KidsInNode.GetKidsForward().GetEnumerator());
+
+            try
             {
-                if (kd.ValueKid || !kd.LinkToNode)
+                while (stack.Count > 0)
                 {
-                    //Value Kid
-                    //Raise Up Counter, iterate further if counter permits
-                    if (ReturnKeyValuePair)
+                    IEnumerator<LTrieKid> iterator = stack.Peek();
+                    if (!iterator.MoveNext())
                     {
-                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
+                        iterator.Dispose();
+                        stack.Pop();
+                        continue;
+                    }
+
+                    LTrieKid kid = iterator.Current;
+                    if (kid.ValueKid || !kid.LinkToNode)
+                    {
+                        LTrieRow row = new LTrieRow(this._root);
+                        if (ReturnKeyValuePair)
+                        {
+                            long valueStartPtr;
+                            uint valueLength;
+                            byte[] key;
+                            byte[] value;
+                            this._root.Tree.Cache.ReadKeyValue(useCache, kid.Ptr, out valueStartPtr, out valueLength, out key, out value);
+                            row.ValueStartPointer = valueStartPtr;
+                            row.ValueFullLength = valueLength;
+                            row.Value = value;
+                            row.ValueIsReadOut = true;
+                            row.Key = key;
+                        }
+                        else
+                        {
+                            row.Key = this._root.Tree.Cache.ReadKey(useCache, kid.Ptr);
+                        }
+
+                        row.LinkToValue = kid.Ptr;
+                        yield return row;
                     }
                     else
                     {
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
-                    }
-                    //Console.WriteLine("KN: {0}", key.ToBytesString(""));
-
-
-                    row = new LTrieRow(this._root);
-                    if (ReturnKeyValuePair)
-                    {
-                        row.ValueStartPointer = valueStartPtr;
-                        row.ValueFullLength = valueLength;
-                        row.Value = xValue;
-                        row.ValueIsReadOut = true;
-                    }
-                    row.Key = key;
-                    row.LinkToValue = kd.Ptr;
-                    yield return row;
-                }
-                else
-                {
-                    //It's a Link To Node, gettign new generation Node
-                    LTrieGenerationNode gn1 = new LTrieGenerationNode(this._root);
-                    gn1.Pointer = kd.Ptr;
-                    gn1.Value = (byte)kd.Val;
-                    gml = generationMapLine.Concat(gn1.Value);
-                    gn1.ReadSelf(useCache, gml);
-                    //generationMapLine = generationMapLine.Concat(gn1.Value);
-                    //gn1.ReadSelf(useCache, generationMapLine);
-
-                    //foreach (var xr in ItFrw(gn1, generationMapLine,useCache))
-                    foreach (var xr in ItFrw(gn1, gml, useCache))
-                    {
-                        yield return xr;
+                        LTrieGenerationNode node = new LTrieGenerationNode(this._root);
+                        node.Pointer = kid.Ptr;
+                        node.Value = (byte)kid.Val;
+                        node.ReadSelf(useCache, null);
+                        stack.Push(node.KidsInNode.GetKidsForward().GetEnumerator());
                     }
                 }
+            }
+            finally
+            {
+                while (stack.Count > 0)
+                    stack.Pop().Dispose();
             }
         }
 
+        private struct ForwardRangeFrame
+        {
+            public IEnumerator<LTrieKid> Iterator;
+            public int Depth;
+            public int StartRelation;
+            public int StopRelation;
+        }
+
+        private static int AdvanceBoundRelation(int relation, int depth, int kid, byte[] bound)
+        {
+            if (relation != 0)
+                return relation;
+            if (depth >= bound.Length)
+                return 1;
+            return kid.CompareTo(bound[depth]);
+        }
+
+        private static int CompareKeys(byte[] left, byte[] right)
+        {
+            int commonLength = Math.Min(left.Length, right.Length);
+            for (int i = 0; i < commonLength; i++)
+            {
+                int comparison = left[i].CompareTo(right[i]);
+                if (comparison != 0)
+                    return comparison;
+            }
+            return left.Length.CompareTo(right.Length);
+        }
+
+        private LTrieRow ReadRow(LTrieKid kid, bool useCache)
+        {
+            LTrieRow row = new LTrieRow(this._root);
+            if (ReturnKeyValuePair)
+            {
+                long valueStartPtr;
+                uint valueLength;
+                byte[] key;
+                byte[] value;
+                this._root.Tree.Cache.ReadKeyValue(useCache, kid.Ptr, out valueStartPtr, out valueLength, out key, out value);
+                row.ValueStartPointer = valueStartPtr;
+                row.ValueFullLength = valueLength;
+                row.Value = value;
+                row.ValueIsReadOut = true;
+                row.Key = key;
+            }
+            else
+            {
+                row.Key = this._root.Tree.Cache.ReadKey(useCache, kid.Ptr);
+            }
+
+            row.LinkToValue = kid.Ptr;
+            return row;
+        }
+
+        private IEnumerable<LTrieRow> IterateForwardRangeCore(
+            byte[] startKey, bool includeStart, byte[] stopKey, bool includeStop, bool useCache)
+        {
+            LTrieGenerationNode rootNode = new LTrieGenerationNode(this._root);
+            rootNode.Pointer = this._root.LinkToZeroNode;
+            rootNode.ReadSelf(useCache, null);
+
+            Stack<ForwardRangeFrame> stack = new Stack<ForwardRangeFrame>();
+            stack.Push(new ForwardRangeFrame
+            {
+                Iterator = rootNode.KidsInNode.GetKidsForward().GetEnumerator(),
+                Depth = 0,
+                StartRelation = 0,
+                StopRelation = 0,
+            });
+
+            try
+            {
+                while (stack.Count > 0)
+                {
+                    ForwardRangeFrame frame = stack.Peek();
+                    if (!frame.Iterator.MoveNext())
+                    {
+                        frame.Iterator.Dispose();
+                        stack.Pop();
+                        continue;
+                    }
+
+                    LTrieKid kid = frame.Iterator.Current;
+                    if (kid.ValueKid || !kid.LinkToNode)
+                    {
+                        LTrieRow row = ReadRow(kid, useCache);
+                        int startComparison = CompareKeys(row.Key, startKey);
+                        if (startComparison < 0 || (startComparison == 0 && !includeStart))
+                            continue;
+
+                        int stopComparison = CompareKeys(row.Key, stopKey);
+                        if (stopComparison > 0 || (stopComparison == 0 && !includeStop))
+                            yield break;
+
+                        yield return row;
+                        continue;
+                    }
+
+                    int startRelation = AdvanceBoundRelation(frame.StartRelation, frame.Depth, kid.Val, startKey);
+                    if (startRelation < 0)
+                        continue;
+
+                    int stopRelation = AdvanceBoundRelation(frame.StopRelation, frame.Depth, kid.Val, stopKey);
+                    if (stopRelation > 0)
+                        yield break;
+
+                    LTrieGenerationNode node = new LTrieGenerationNode(this._root);
+                    node.Pointer = kid.Ptr;
+                    node.Value = (byte)kid.Val;
+                    node.ReadSelf(useCache, null);
+                    stack.Push(new ForwardRangeFrame
+                    {
+                        Iterator = node.KidsInNode.GetKidsForward().GetEnumerator(),
+                        Depth = frame.Depth + 1,
+                        StartRelation = startRelation,
+                        StopRelation = stopRelation,
+                    });
+                }
+            }
+            finally
+            {
+                while (stack.Count > 0)
+                    stack.Pop().Iterator.Dispose();
+            }
+        }
 
         public IEnumerable<LTrieRow> IterateForward(bool useCache)
         {
-            LTrieGenerationNode gn = null;
-
-           
-
-            LTrieGenerationMap _generationMap = new LTrieGenerationMap();
-            //_generationMap.Clear();
-
-            //if (_generationMap.Count() == 0)
-            //{
-                //Loading it from Link TO ZERO Pointer
-                gn = new LTrieGenerationNode(this._root);
-                gn.Pointer = this._root.LinkToZeroNode;
-                //gn.Value=0; - default
-                _generationMap.Add(0, gn);
-
-                gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(0));
-            //}
-            //else
-            //{
-            //    //new
-            //    gn = _generationMap[0];
-            //}
-
-            //ulong cnt = 0;
-
-            byte[] generationMapLine = new byte[1] { 0 };
-            byte[] gml = null;
-            LTrieGenerationNode gn1 = null;
-            byte[] key = null;
-            LTrieRow row = null;
-            long valueStartPtr = 0;
-            uint valueLength = 0;
-            byte[] xValue = null;
-
-            foreach (var kd in gn.KidsInNode.GetKidsForward())
-            {
-                //Kid can be value link or node link
-                //if value link we can count 1 up
-                if (kd.ValueKid || !kd.LinkToNode)
-                {
-
-                    if (ReturnKeyValuePair)
-                    {
-                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
-                    }
-                    else
-                    {
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
-                    }
-                    //Console.WriteLine("KN: {0}", key.ToBytesString(""));
-
-                    //cnt++;
-                    row = new LTrieRow(this._root);
-                    if (ReturnKeyValuePair)
-                    {
-                        row.ValueStartPointer = valueStartPtr;
-                        row.ValueFullLength = valueLength;
-                        row.Value = xValue;
-                        row.ValueIsReadOut = true;
-                    }
-                    row.Key = key;
-                    row.LinkToValue = kd.Ptr;
-                    yield return row;
-                }
-                else
-                {
-                    gn1 = new LTrieGenerationNode(this._root);
-                    gn1.Pointer = kd.Ptr;
-                    gn1.Value = (byte)kd.Val;
-                    gml = generationMapLine.Concat(gn1.Value);
-                    gn1.ReadSelf(useCache, gml);
-                    //generationMapLine = generationMapLine.Concat(gn1.Value);
-                    //gn1.ReadSelf(useCache, generationMapLine);
-
-                    //foreach (var xr in ItFrw(gn1, generationMapLine, useCache))
-                    foreach (var xr in ItFrw(gn1, gml, useCache))
-                    {
-                        //cnt++;
-                        yield return xr;
-                    }
-                }
-            }
-
-            //Console.WriteLine("CNT: {0}", cnt);
+            return IterateForwardCore(useCache);
         }
 
         #endregion
@@ -431,137 +478,6 @@ namespace DBreeze.LianaTrie.Iterations
         /// <param name="generationMapLine"></param>
         /// <param name="useCache"></param>
         /// <returns></returns>
-        private IEnumerable<LTrieRow> ItFrwFromTo(LTrieGenerationNode gn, byte[] generationMapLine, bool useCache)
-        {
-            byte[] key = null;
-            LTrieRow row = null;
-            byte[] gml = null;
-            long valueStartPtr = 0;
-            uint valueLength = 0;
-            byte[] xValue = null;
-
-            int startFrom = 0;
-            if (keyIsFound)
-            {
-                startFrom = 256; //will check starting from KidsValue and then 0-255
-            }
-            else
-            {
-                //Kid is still not found
-                if (generationMapLine.Length > initialKey.Length)
-                {
-                    startFrom = 256;
-                }
-                else
-                {
-                    startFrom = initialKey[generationMapLine.Length - 1];
-                }
-            }
-
-            foreach (var kd in gn.KidsInNode.GetKidsForward(startFrom))
-            {
-                if (kd.ValueKid || !kd.LinkToNode)
-                {
-                    //Value Kid    
-
-                    if (ReturnKeyValuePair)
-                    {
-                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
-                    }
-                    else
-                    {
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
-                    }
-
-                    if (keyIsFound)
-                    {
-                        //We return this one key
-                        if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
-                        {
-                            row = new LTrieRow(this._root);
-                            if (ReturnKeyValuePair)
-                            {
-                                row.ValueStartPointer = valueStartPtr;
-                                row.ValueFullLength = valueLength;
-                                row.Value = xValue;
-                                row.ValueIsReadOut = true;
-                            }
-                            row.Key = key;
-                            row.LinkToValue = kd.Ptr;
-                            yield return row;
-                        }
-                        else
-                        {
-                            yield return null;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        //Checking if key equals to the found element, bigger or smaller
-
-                        //Key is still not found 
-
-                        if ((includeStartKey) ? key.IfStringArrayBiggerOrEqualThen(initialKey) : key.IfStringArrayBiggerThen(initialKey))
-                        //if (key.IfStringArrayBiggerThen(initialKey))
-                        //if (IfFirstKeyIsBiggerThenCompareKey(key, initialKey))
-                        {
-                            keyIsFound = true;
-
-                            if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
-                            {
-                                //We return this one key                        
-                                row = new LTrieRow(this._root);
-                                if (ReturnKeyValuePair)
-                                {
-                                    row.ValueStartPointer = valueStartPtr;
-                                    row.ValueFullLength = valueLength;
-                                    row.Value = xValue;
-                                    row.ValueIsReadOut = true;
-                                }
-                                row.Key = key;
-                                row.LinkToValue = kd.Ptr;
-                                yield return row;
-                            }
-                            else
-                            {
-                                yield return null;
-                                break;
-                            }
-                        }
-                        //else
-                        //    break;
-                    }
-                }
-                else
-                {
-                    if (!keyIsFound && startFrom != 256 && startFrom < kd.Val)
-                        keyIsFound = true;
-
-
-                    //It's a Link To Node, gettign new generation Node
-                    LTrieGenerationNode gn1 = new LTrieGenerationNode(this._root);
-                    gn1.Pointer = kd.Ptr;
-                    gn1.Value = (byte)kd.Val;
-                    gml = generationMapLine.Concat(gn1.Value);
-                    gn1.ReadSelf(useCache, gml);
-                    //generationMapLine = generationMapLine.Concat(gn1.Value);
-                    //gn1.ReadSelf(useCache, generationMapLine);
-
-                    //foreach (var xr in ItFrwFromTo(gn1, generationMapLine, useCache))
-                    foreach (var xr in ItFrwFromTo(gn1, gml, useCache))
-                    {
-                        if (xr == null)
-                        {
-                            yield return null;
-                            break;
-                        }
-                        yield return xr;
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// IterateForwardFromTo
         /// </summary>
@@ -573,142 +489,7 @@ namespace DBreeze.LianaTrie.Iterations
         /// <returns></returns>
         public IEnumerable<LTrieRow> IterateForwardFromTo(byte[] initKey, byte[] stopKey, bool inclStartKey, bool inclStopKey, bool useCache)
         {
-            LTrieGenerationNode gn = null;
-
-            initialKey = initKey;
-            endKey = stopKey;
-            includeStartKey = inclStartKey;
-            includeStopKey = inclStopKey;
-
-            LTrieGenerationMap _generationMap = new LTrieGenerationMap();
-
-            //if (_generationMap.Count() == 0)
-            //{
-            //Loading it from Link TO ZERO Pointer
-            gn = new LTrieGenerationNode(this._root);
-            gn.Pointer = this._root.LinkToZeroNode;
-            //gn.Value=0; - default
-            _generationMap.Add(0, gn);
-
-            gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(0));
-            //}
-
-            //ulong cnt = 0; //NEED ONLY FOR SKIP
-
-            byte[] generationMapLine = new byte[1] { 0 };
-            byte[] gml = null;
-            LTrieGenerationNode gn1 = null;
-            byte[] key = null;
-            LTrieRow row = null;
-            long valueStartPtr = 0;
-            uint valueLength = 0;
-            byte[] xValue = null;
-
-            //Starting from first key. It's interesting inside of RecursiveYieldReturn to look Starting from value
-            //If intialKey index already bigger then its own length
-            //But for the first must be enough
-            foreach (var kd in gn.KidsInNode.GetKidsForward(initialKey[0]))
-            {
-                //Console.WriteLine("KN: {0}", key.ToBytesString(""));
-
-                //Kid can be value link or node link
-                //if value link we can count 1 up
-                if (kd.ValueKid || !kd.LinkToNode)
-                {
-                    if (ReturnKeyValuePair)
-                    {
-                        this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
-                    }
-                    else
-                    {
-                        key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
-                    }
-
-                    if (keyIsFound)
-                    {
-                        //We return this one key
-
-                        if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
-                        {
-                            row = new LTrieRow(this._root);
-                            if (ReturnKeyValuePair)
-                            {
-                                row.ValueStartPointer = valueStartPtr;
-                                row.ValueFullLength = valueLength;
-                                row.Value = xValue;
-                                row.ValueIsReadOut = true;
-                            }
-                            row.Key = key;
-                            row.LinkToValue = kd.Ptr;
-                            yield return row;
-                        }
-                        else
-                            break;
-                    }
-                    else
-                    {
-                        //Checking if key equals to the found element, bigger or smaller
-
-                        //Key is still not found 
-
-                        if ((includeStartKey) ? key.IfStringArrayBiggerOrEqualThen(initialKey) : key.IfStringArrayBiggerThen(initialKey))
-                        //if (IfFirstKeyIsBiggerThenCompareKey(key, initialKey))
-                        {
-                            keyIsFound = true;
-
-                            //We return this one key in case if it's smaller or smaller/equal to stop key
-
-                            if ((includeStopKey) ? key.IfStringArraySmallerOrEqualThen(endKey) : key.IfStringArraySmallerThen(endKey))
-                            {
-                                row = new LTrieRow(this._root);
-                                if (ReturnKeyValuePair)
-                                {
-                                    row.ValueStartPointer = valueStartPtr;
-                                    row.ValueFullLength = valueLength;
-                                    row.Value = xValue;
-                                    row.ValueIsReadOut = true;
-                                }
-                                row.Key = key;
-                                row.LinkToValue = kd.Ptr;
-                                yield return row;
-                            }
-                            else
-                                break;
-
-                            //going on iteration
-                        }
-                        //else
-                        //    break;
-                    }
-                }
-                else
-                {
-                    if (!keyIsFound && initialKey[0] < kd.Val)
-                        keyIsFound = true;
-
-                    gn1 = new LTrieGenerationNode(this._root);
-                    gn1.Pointer = kd.Ptr;
-                    gn1.Value = (byte)kd.Val;
-                    //increasing map line must hold already 2 elements
-                    gml = generationMapLine.Concat(gn1.Value);
-                    gn1.ReadSelf(useCache, gml);
-                    //generationMapLine = generationMapLine.Concat(gn1.Value);
-                    //gn1.ReadSelf(useCache, generationMapLine);
-
-                    //foreach (var xr in ItFrwFromTo(gn1, generationMapLine, useCache))
-                    foreach (var xr in ItFrwFromTo(gn1, gml, useCache))
-                    {
-                        //cnt++;      //NEED ONLY FOR SKIP
-                        if (xr == null)
-                        {
-                            break;
-                        }
-                        yield return xr;
-                    }
-                }
-            }
-
-            //Console.WriteLine("CNT: {0}", cnt);
+            return IterateForwardRangeCore(initKey, inclStartKey, stopKey, inclStopKey, useCache);
         }
 
         #endregion
@@ -1123,157 +904,60 @@ namespace DBreeze.LianaTrie.Iterations
 
         #region "Skip N then Forward"
 
-        private IEnumerable<LTrieRow> ItFrwSkip(LTrieGenerationNode gn, byte[] generationMapLine, bool useCache)
+        private IEnumerable<LTrieRow> IterateForwardSkipCore(ulong remainingToSkip, bool useCache)
         {
-            byte[] key = null;
-            LTrieRow row = null;
-            byte[] gml = null;
-            long valueStartPtr = 0;
-            uint valueLength = 0;
-            byte[] xValue = null;
+            LTrieGenerationNode rootNode = new LTrieGenerationNode(this._root);
+            rootNode.Pointer = this._root.LinkToZeroNode;
+            rootNode.ReadSelf(useCache, null);
 
-            foreach (var kd in gn.KidsInNode.GetKidsForward())
+            Stack<IEnumerator<LTrieKid>> stack = new Stack<IEnumerator<LTrieKid>>();
+            stack.Push(rootNode.KidsInNode.GetKidsForward().GetEnumerator());
+
+            try
             {
-                if (kd.ValueKid || !kd.LinkToNode)
+                while (stack.Count > 0)
                 {
-                    skippedCnt++;
-
-                    if (skippedCnt > skippingTotal)
+                    IEnumerator<LTrieKid> iterator = stack.Peek();
+                    if (!iterator.MoveNext())
                     {
-                        //Value Kid                        
-                        if (ReturnKeyValuePair)
+                        iterator.Dispose();
+                        stack.Pop();
+                        continue;
+                    }
+
+                    LTrieKid kid = iterator.Current;
+                    if (kid.ValueKid || !kid.LinkToNode)
+                    {
+                        if (remainingToSkip > 0)
                         {
-                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
-                        }
-                        else
-                        {
-                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
+                            remainingToSkip--;
+                            continue;
                         }
 
-                        //Console.WriteLine("KN: {0}", key.ToBytesString(""));
-
-                        row = new LTrieRow(this._root);
-                        if (ReturnKeyValuePair)
-                        {
-                            row.ValueStartPointer = valueStartPtr;
-                            row.ValueFullLength = valueLength;
-                            row.Value = xValue;
-                            row.ValueIsReadOut = true;
-                        }
-                        row.Key = key;
-                        row.LinkToValue = kd.Ptr;
-                        yield return row;
+                        yield return ReadRow(kid, useCache);
+                    }
+                    else
+                    {
+                        LTrieGenerationNode node = new LTrieGenerationNode(this._root);
+                        node.Pointer = kid.Ptr;
+                        node.Value = (byte)kid.Val;
+                        node.ReadSelf(useCache, null);
+                        stack.Push(node.KidsInNode.GetKidsForward().GetEnumerator());
                     }
                 }
-                else
-                {
-                    //It's a Link To Node, gettign new generation Node
-                    LTrieGenerationNode gn1 = new LTrieGenerationNode(this._root);
-                    gn1.Pointer = kd.Ptr;
-                    gn1.Value = (byte)kd.Val;
-                    gml = generationMapLine.Concat(gn1.Value);
-                    gn1.ReadSelf(useCache, gml);
-                    //generationMapLine = generationMapLine.Concat(gn1.Value);
-                    //gn1.ReadSelf(useCache, generationMapLine);
-
-
-                    //foreach (var xr in ItFrwSkip(gn1, generationMapLine, useCache))
-                    foreach (var xr in ItFrwSkip(gn1, gml, useCache))
-                    {
-                        yield return xr;
-                    }
-                }
+            }
+            finally
+            {
+                while (stack.Count > 0)
+                    stack.Pop().Dispose();
             }
         }
 
 
         public IEnumerable<LTrieRow> IterateForwardSkip(ulong skippingQuantity, bool useCache)
         {
-            LTrieGenerationNode gn = null;
-
-            skippingTotal = skippingQuantity;
-
-            LTrieGenerationMap _generationMap = new LTrieGenerationMap();
-
-            //_generationMap.Clear();
-
-            //if (_generationMap.Count() == 0)
-            //{
-                //Loading it from Link TO ZERO Pointer
-                gn = new LTrieGenerationNode(this._root);
-                gn.Pointer = this._root.LinkToZeroNode;
-                //gn.Value=0; - default
-                _generationMap.Add(0, gn);
-
-                gn.ReadSelf(useCache, _generationMap.GenerateMapNodesValuesUpToIndex(0));
-            //}
-                 
-
-            byte[] generationMapLine = new byte[1] { 0 };
-            byte[] gml = null;
-            LTrieGenerationNode gn1 = null;
-            byte[] key = null;
-            LTrieRow row = null;
-            long valueStartPtr = 0;
-            uint valueLength = 0;
-            byte[] xValue = null;
-
-            foreach (var kd in gn.KidsInNode.GetKidsForward())
-            {
-                //Kid can be value link or node link
-                //if value link we can count 1 up
-                if (kd.ValueKid || !kd.LinkToNode)
-                {
-                    skippedCnt++;
-
-                    if (skippedCnt > skippingTotal)
-                    {
-                        if (ReturnKeyValuePair)
-                        {
-                            this._root.Tree.Cache.ReadKeyValue(useCache, kd.Ptr, out valueStartPtr, out valueLength, out key, out xValue);
-                        }
-                        else
-                        {
-                            key = this._root.Tree.Cache.ReadKey(useCache, kd.Ptr);
-                        }
-                        //Console.WriteLine("KN: {0}", key.ToBytesString(""));
-
-                        //cnt++;
-                        row = new LTrieRow(this._root);
-                        if (ReturnKeyValuePair)
-                        {
-                            row.ValueStartPointer = valueStartPtr;
-                            row.ValueFullLength = valueLength;
-                            row.Value = xValue;
-                            row.ValueIsReadOut = true;
-                        }
-                        row.Key = key;
-                        row.LinkToValue = kd.Ptr;
-                        yield return row;
-                    }
-                }
-                else
-                {
-                    gn1 = new LTrieGenerationNode(this._root);
-                    gn1.Pointer = kd.Ptr;
-                    gn1.Value = (byte)kd.Val;
-                    gml = generationMapLine.Concat(gn1.Value);
-                    gn1.ReadSelf(useCache, gml);
-                    //generationMapLine = generationMapLine.Concat(gn1.Value);
-                    //gn1.ReadSelf(useCache, generationMapLine);
-
-                    //foreach (var xr in ItFrwSkip(gn1, generationMapLine, useCache))
-                    foreach (var xr in ItFrwSkip(gn1, gml, useCache))
-                    {
-                        //cnt++;
-                        yield return xr;
-                    }
-                }
-            }
-
-            //Console.WriteLine("CNT: {0}", cnt);
+            return IterateForwardSkipCore(skippingQuantity, useCache);
         }
-
 
         #endregion
 

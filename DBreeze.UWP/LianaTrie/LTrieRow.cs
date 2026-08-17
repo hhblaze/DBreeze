@@ -122,7 +122,21 @@ namespace DBreeze.LianaTrie
             {
                 if (this.Value == null)
                     return null;
-                return this.Value.Substring((int)startIndex, (int)length);
+
+                if (length == 0)
+                    return new byte[0];
+
+                if (startIndex > (uint)this.Value.Length)
+                    return null;
+
+                uint availableLength = (uint)this.Value.Length - startIndex;
+                if (length > availableLength)
+                    length = availableLength;
+
+                byte[] result = new byte[(int)length];
+                if (length > 0)
+                    Buffer.BlockCopy(this.Value, (int)startIndex, result, 0, (int)length);
+                return result;
             }
 
             if (Exists)

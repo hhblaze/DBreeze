@@ -27,9 +27,43 @@ namespace DBreeze.LianaTrie
         Dictionary<ulong, Dictionary<long, NestedTableInternal>> _nestedTables = new Dictionary<ulong, Dictionary<long, NestedTableInternal>>();
         public DbReaderWriterLock Sync_NestedTables = new DbReaderWriterLock();
 
-        Dictionary<string, ulong> _nestedTblsViaKeys = new Dictionary<string, ulong>();
+        Dictionary<byte[], ulong> _nestedTblsViaKeys =
+            new Dictionary<byte[], ulong>(ByteArrayEqualityComparer.Instance);
+
+        private sealed class ByteArrayEqualityComparer : IEqualityComparer<byte[]>
+        {
+            internal static readonly ByteArrayEqualityComparer Instance = new ByteArrayEqualityComparer();
+
+            public bool Equals(byte[] x, byte[] y)
+            {
+                if (ReferenceEquals(x, y))
+                    return true;
+                if (x == null || y == null || x.Length != y.Length)
+                    return false;
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    if (x[i] != y[i])
+                        return false;
+                }
+
+                return true;
+            }
+
+            public int GetHashCode(byte[] value)
+            {
+                unchecked
+                {
+                    int hash = (int)2166136261;
+                    for (int i = 0; i < value.Length; i++)
+                        hash = (hash ^ value[i]) * 16777619;
+                    return hash;
+                }
+            }
+        }
 
         private int countNested = 0;
+        private int _disposed = 0;
 
         /// <summary>
         /// Will be taken into consideration only from MasterTrie.
@@ -50,14 +84,14 @@ namespace DBreeze.LianaTrie
             try
             {
 
-                string hash = key.ToBase64String();
+                byte[] hash = key;
 
                 ulong ptr = 0;
 
                 _nestedTblsViaKeys.TryGetValue(hash, out ptr);
 
                 if (ptr == 0)
-                    _nestedTblsViaKeys.Add(hash, fullValueStart);
+                    _nestedTblsViaKeys.Add((byte[])key.Clone(), fullValueStart);
 
                 Dictionary<long, NestedTableInternal> dict = null;
 
@@ -83,10 +117,10 @@ namespace DBreeze.LianaTrie
 
 
             }
-            catch (System.Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -119,10 +153,10 @@ namespace DBreeze.LianaTrie
                 }
 
             }
-            catch (System.Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -151,10 +185,10 @@ namespace DBreeze.LianaTrie
                 //_nestedTables.Clear();
                 //countNested = 0;
             }
-            catch (System.Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -182,10 +216,10 @@ namespace DBreeze.LianaTrie
                 //_nestedTables.Clear();
                 //countNested = 0;
             }
-            catch (System.Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -210,10 +244,10 @@ namespace DBreeze.LianaTrie
                 //_nestedTables.Clear();
                 //countNested = 0;
             }
-            catch (System.Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -238,10 +272,10 @@ namespace DBreeze.LianaTrie
                 }
 
             }
-            catch (System.Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -256,7 +290,7 @@ namespace DBreeze.LianaTrie
             Sync_NestedTables.EnterReadLock();
             try
             {
-                string hash = key.ToBase64String();
+                byte[] hash = key;
 
                 ulong ptr = 0; 
 
@@ -280,7 +314,7 @@ namespace DBreeze.LianaTrie
             Sync_NestedTables.EnterWriteLock();
             try
             {
-                string hash = oldKey.ToBase64String();
+                byte[] hash = oldKey;
 
                 ulong ptr = 0; 
 
@@ -309,15 +343,15 @@ namespace DBreeze.LianaTrie
 
                 _nestedTblsViaKeys.Remove(hash);
 
-                hash = newKey.ToBase64String();
+                hash = (byte[])newKey.Clone();
 
                 _nestedTblsViaKeys.Add(hash, idNewFullValueStart);               
                 
             }
-            catch (Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -331,7 +365,7 @@ namespace DBreeze.LianaTrie
             Sync_NestedTables.EnterWriteLock();
             try
             {
-                string hash = key.ToBase64String();
+                byte[] hash = key;
 
                 ulong ptr = 0;  //old fullValueStart
 
@@ -367,10 +401,10 @@ namespace DBreeze.LianaTrie
 
                 _nestedTables.Remove(ptr);
             }
-            catch (Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -393,7 +427,7 @@ namespace DBreeze.LianaTrie
             Sync_NestedTables.EnterReadLock();
             try
             {
-                string hash = key.ToBase64String();
+                byte[] hash = key;
 
                 ulong ptr = 0;
 
@@ -414,10 +448,10 @@ namespace DBreeze.LianaTrie
                 dict.TryGetValue(rootStart, out dit);
                 return dit;
             }
-            catch (Exception ex)
+            catch
             {
                 //CASCADE
-                throw ex;
+                throw;
             }
             finally
             {
@@ -470,7 +504,7 @@ namespace DBreeze.LianaTrie
                 Sync_NestedTables.EnterWriteLock();
                 try
                 {
-                    string hash = key.ToBase64String();
+                    byte[] hash = key;
 
                     ulong ptr = 0;
 
@@ -526,7 +560,7 @@ namespace DBreeze.LianaTrie
             Sync_NestedTables.EnterWriteLock();
             try
             {
-                string hash = key.ToBase64String();
+                byte[] hash = key;
 
                 ulong ptr = 0;
 
@@ -576,6 +610,9 @@ namespace DBreeze.LianaTrie
 
         public void Dispose()
         {
+            if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             Sync_NestedTables.EnterWriteLock();
             try
             {
@@ -598,6 +635,7 @@ namespace DBreeze.LianaTrie
             finally
             {
                 Sync_NestedTables.ExitWriteLock();
+                Sync_NestedTables.Dispose();
             }
         }
     }

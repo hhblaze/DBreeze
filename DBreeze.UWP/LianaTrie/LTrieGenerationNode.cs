@@ -111,6 +111,7 @@ namespace DBreeze.LianaTrie
         public LTrieSetupKidResult SetupKidWithValue(byte kid, bool lastElementOfTheKey, ref byte[] fullKey, ref byte[] value, bool useExistingPointerToValue,out bool WasUpdated,bool dontUpdateIfExists)
         {
             //useExistingPointerToValue is used to move previously saved kid to the new place
+            bool wasToWrite = ToWrite;
             ToWrite = true;
             WasUpdated = false;
 
@@ -141,6 +142,7 @@ namespace DBreeze.LianaTrie
                     if (WasUpdated && dontUpdateIfExists)
                     {
                         //Value exists, but we don't want to update it
+                        ToWrite = wasToWrite;
                         ptr = lKid.Ptr;
                     }
                     else
@@ -194,6 +196,7 @@ namespace DBreeze.LianaTrie
 
                             if (dontUpdateIfExists)
                             {
+                                ToWrite = wasToWrite;
                                 ptr = lKid.Ptr;
                             }
                             else
@@ -240,6 +243,7 @@ namespace DBreeze.LianaTrie
                         if (WasUpdated && dontUpdateIfExists)
                         {
                             //Value exists, but we don't want to update it
+                            ToWrite = wasToWrite;
                             ptr = lKid.Ptr;
                         }
                         else
@@ -1416,7 +1420,7 @@ namespace DBreeze.LianaTrie
 
 
 
-        public void WriteSelf(byte[] generationMapLine)
+        public void WriteSelf()
         {
             if (!ToWrite)
             {
@@ -1543,7 +1547,7 @@ namespace DBreeze.LianaTrie
                 //byte[] oldData = ((ushort)KidsBeforeModification.Length).To_2_bytes_array_BigEndian().Concat(KidsBeforeModification);
                 byte[] newData = sLen.To_2_bytes_array_BigEndian().Concat(bKids);
                 //this._root.Tree.Cache.GenerationNodeWritingOver(Pointer, newData);
-                this._root.Tree.Cache.GenerationNodeWritingOver(Pointer, newData, generationMapLine, this.KidsBeforeModification);
+                this._root.Tree.Cache.GenerationNodeWritingOver(Pointer, newData, this.KidsBeforeModification);
             }
 
             ToWrite = false;
