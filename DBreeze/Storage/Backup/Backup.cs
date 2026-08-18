@@ -5,9 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using System.IO;
 
 using DBreeze.Exceptions;
@@ -19,13 +16,13 @@ namespace DBreeze.Storage
 
     public class Backup:IDisposable
     {
-        DateTime udtInit = DateTime.UtcNow;
         internal object lock_ibp_fs = new object();
         FileStream fs = null;
         //copy from configuration
         internal string DBreezeFolderName = String.Empty;       
        
         int _bufferSize = 8192;
+        readonly byte[] _recordHeader = new byte[21];
 
         public Backup()
         {        
@@ -48,12 +45,17 @@ namespace DBreeze.Storage
             {
                 if (fs != null)
                 {
-                    
-                    FSR.NET_Flush(fs);
-
-                    fs.Close();
-                    fs.Dispose();
+                    FileStream stream = fs;
                     fs = null;
+                    wasWritten = false;
+                    try
+                    {
+                        FSR.NET_Flush(stream);
+                    }
+                    finally
+                    {
+                        stream.Dispose();
+                    }
                 }
             }
         }
@@ -87,13 +89,31 @@ namespace DBreeze.Storage
         /// Folder where backup files will be created
         /// </summary>
         public string BackupFolderName
-        {   get { 
-                    return this._backupFolderName; 
+        {   get {
+                    return this._backupFolderName;
                 }
             set {
-                this._backupFolderName = value;
-                InitBackupFolder();
-            } 
+                lock (lock_ibp_fs)
+                {
+                    if (fs != null)
+                    {
+                        FileStream stream = fs;
+                        fs = null;
+                        wasWritten = false;
+                        try
+                        {
+                            FSR.NET_Flush(stream);
+                        }
+                        finally
+                        {
+                            stream.Dispose();
+                        }
+                    }
+
+                    this._backupFolderName = value;
+                    InitBackupFolder();
+                }
+            }
         }
 
         private void InitBackupFolder()
@@ -179,66 +199,84 @@ namespace DBreeze.Storage
         /// <param name="pos"></param>
         /// <param name="data"></param>
         internal void WriteBackupElement(ulong fileNumber, byte type, long pos, byte[] data)
-        {            
+        {
+            WriteBackupElement(fileNumber, type, pos, data, 0, data == null ? 0 : data.Length);
+        }
+
+        internal void WriteBackupElement(ulong fileNumber, byte type, long pos, byte[] data, int dataOffset, int dataCount)
+        {
+            if (dataOffset < 0 || dataCount < 0 || data == null && dataCount != 0 || data != null && dataOffset > data.Length - dataCount)
+                throw new ArgumentOutOfRangeException("dataOffset/dataCount");
+
             lock (lock_ibp_fs)
             {
                 this.GetFileStream();
 
-                uint size = 0;
-                byte[] toSave = null;
-
+                uint size;
+                int headerLength;
                 switch (type)
                 {
                     case 0:
                     case 1:
-
-                        //8(fileNumber)+1(type)+8(position)+data.Length
-                        size = Convert.ToUInt32(8 + 1 + 8 + data.Length);
-                        toSave = size.To_4_bytes_array_BigEndian().ConcatMany(fileNumber.To_8_bytes_array_BigEndian(),
-                            new byte[] { type },
-                            pos.To_8_bytes_array_BigEndian(),
-                            data);                       
-                        break;
                     case 2:
-
-                        //Now we save new information into rollback 
-                        size = Convert.ToUInt32(8 + 1 + 8 + data.Length);
-                        toSave = size.To_4_bytes_array_BigEndian().ConcatMany(fileNumber.To_8_bytes_array_BigEndian(),
-                            new byte[] { 2 },
-                            ((long)0).To_8_bytes_array_BigEndian(),
-                            data);
+                        size = checked((uint)(17 + dataCount));
+                        headerLength = 21;
+                        WriteUInt32BigEndian(_recordHeader, 0, size);
+                        WriteUInt64BigEndian(_recordHeader, 4, fileNumber);
+                        _recordHeader[12] = type;
+                        WriteUInt64BigEndian(_recordHeader, 13, EncodeInt64BigEndian(type == 2 ? 0L : pos));
                         break;
-                    case 3: //recreate table file                 
+                    case 3: //recreate table file
                     case 5: //removing complete table
-
-                        //8(fileNumber)+1(type)
                         size = 9;
-                        toSave = size.To_4_bytes_array_BigEndian()
-                            .ConcatMany(
-                            fileNumber.To_8_bytes_array_BigEndian(),
-                            new byte[] { type }
-                            );
+                        headerLength = 13;
+                        WriteUInt32BigEndian(_recordHeader, 0, size);
+                        WriteUInt64BigEndian(_recordHeader, 4, fileNumber);
+                        _recordHeader[12] = type;
                         break;
-                   
-
-                    
+                    default:
+                        throw new InvalidDataException("Unknown incremental backup record type.");
                 }
 
                 wasWritten = true;
-                fs.Write(toSave, 0, toSave.Length);
+                fs.Write(_recordHeader, 0, headerLength);
+                if (dataCount != 0)
+                    fs.Write(data, dataOffset, dataCount);
             }
            
             //Console.WriteLine(String.Format("{0}> FN: {1} - {2}; at {3} q {4}", writeTime.ToString("dd.MM.yyyy HH:mm:ss"), fileNumber, type.ToString(), pos.ToString(), 
             //    data.Length.ToString()));
         }
 
+        private static void WriteUInt32BigEndian(byte[] destination, int offset, uint value)
+        {
+            destination[offset] = (byte)(value >> 24);
+            destination[offset + 1] = (byte)(value >> 16);
+            destination[offset + 2] = (byte)(value >> 8);
+            destination[offset + 3] = (byte)value;
+        }
+
+        private static void WriteUInt64BigEndian(byte[] destination, int offset, ulong value)
+        {
+            for (int i = 7; i >= 0; i--)
+            {
+                destination[offset + i] = (byte)value;
+                value >>= 8;
+            }
+        }
+
+        private static ulong EncodeInt64BigEndian(long value)
+        {
+            // DBreeze's legacy signed-integer format offsets Int64 by Int64.MinValue.
+            return unchecked((ulong)value) ^ 0x8000000000000000UL;
+        }
         public void Flush()
         {
-            if (!wasWritten)
-                return;
-
             lock (lock_ibp_fs)
-            {                
+            {
+                if (!wasWritten || fs == null)
+                    return;
+
                 FSR.NET_Flush(fs);
                 wasWritten = false;
             }
@@ -253,7 +291,12 @@ namespace DBreeze.Storage
             TimeSpan ts = DateTime.UtcNow.Subtract(dtBase);
             uint jj = (uint)(ts.TotalMinutes / (double)_IncrementalBackupFileIntervalMin);
             DateTime backupTime = dtBase.AddMinutes(jj * _IncrementalBackupFileIntervalMin);
-            ulong bupTime = Convert.ToUInt64(backupTime.ToString("yyyyMMddHHmmss"));
+            ulong bupTime = (ulong)backupTime.Year * 10000000000UL
+                + (ulong)backupTime.Month * 100000000UL
+                + (ulong)backupTime.Day * 1000000UL
+                + (ulong)backupTime.Hour * 10000UL
+                + (ulong)backupTime.Minute * 100UL
+                + (ulong)backupTime.Second;
 
             if (fs == null)
             {
@@ -275,7 +318,6 @@ namespace DBreeze.Storage
                     
                     FSR.NET_Flush(fs);
 
-                    fs.Close();
                     fs.Dispose();
                     currentBackup = bupTime;
                     string bupFileName = String.Format("dbreeze_ibp_{0}.ibp", bupTime);

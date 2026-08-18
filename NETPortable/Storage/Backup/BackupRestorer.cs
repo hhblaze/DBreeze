@@ -1,23 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using System.IO;
-
-using DBreeze.Exceptions;
-using DBreeze.Utils;
 
 namespace DBreeze.Storage
 {
-    /// <summary>
-    /// Access to Database restoration from incremental backups.
-    /// </summary>
     public class BackupRestorer
     {
-        /// <summary>
-        /// Object characterizes the backup restoration process
-        /// </summary>
         public class BackupRestorationProcess
         {
             public BackupRestorationProcess()
@@ -26,342 +14,248 @@ namespace DBreeze.Storage
                 ReadinessInProcent = 0;
             }
 
-            /// <summary>
-            /// How many procesnt of restoration is done
-            /// </summary>
             public int ReadinessInProcent { get; set; }
-
-            /// <summary>
-            /// true when restore is completed
-            /// </summary>
             public bool Finished { get; set; }
         }
 
-        /// <summary>
-        /// Subscribe on it to receive notification about restore process
-        /// </summary>
         public event Action<BackupRestorationProcess> OnRestore;
-
-        /// <summary>
-        /// Place where resides or should reside database
-        /// </summary>
         public string DataBaseFolder { get; set; }
-        /// <summary>
-        /// Place where reside incremnetal dbreeze backup files
-        /// </summary>
         public string BackupFolder { get; set; }
 
-        /// <summary>
-        /// Holder of filenames and file handlers
-        /// </summary>
-        Dictionary<string, IFileStream> ds = new Dictionary<string, IFileStream>();
+        readonly Dictionary<string, IFileStream> _handles = new Dictionary<string, IFileStream>();
+        readonly Backup.BackupFileNamesParser _fileNames = new Backup.BackupFileNamesParser();
+        readonly DBreezeConfiguration _configuration;
+        readonly byte[] _sizeBuffer = new byte[4];
+        readonly byte[] _recordHeader = new byte[17];
+        readonly byte[] _copyBuffer = new byte[64 * 1024];
 
-        Backup.BackupFileNamesParser BackupFNP = new Backup.BackupFileNamesParser();
-        DBreezeConfiguration configuration = null;
-
-        /// <summary>
-        /// FSFactory
-        /// </summary>
-        /// <param name="configuration">configuration.FSFactory must be instantiated for portable</param>
         public BackupRestorer(DBreezeConfiguration configuration)
         {
-            this.configuration = configuration;
+            if (configuration == null)
+                throw new ArgumentNullException("configuration");
+            if (configuration.FSFactory == null)
+                throw new ArgumentException("configuration.FSFactory must be initialized.", "configuration");
+            _configuration = configuration;
         }
 
-        /// <summary>
-        /// Starts backup restore routine
-        /// </summary>
         public void StartRestoration()
+        {
+            CloseHandles();
+            IDirectoryInfo databaseDirectory = _configuration.FSFactory.CreateDirectoryInfo(DataBaseFolder);
+            IDirectoryInfo backupDirectory = _configuration.FSFactory.CreateDirectoryInfo(BackupFolder);
+            if (!databaseDirectory.Exists)
+                databaseDirectory.Create();
+            if (!backupDirectory.Exists)
+                backupDirectory.Create();
+
+            IFileInfo[] allFiles = backupDirectory.GetFiles();
+            var backupFiles = new List<IFileInfo>();
+            long totalLength = 0;
+            foreach (IFileInfo file in allFiles)
+            {
+                if (!file.Name.StartsWith("dbreeze_ibp_") || !file.Name.EndsWith(".ibp"))
+                    continue;
+                backupFiles.Add(file);
+                totalLength = checked(totalLength + file.Length);
+            }
+            backupFiles.Sort(delegate(IFileInfo x, IFileInfo y)
+            {
+                return StringComparer.Ordinal.Compare(x.Name, y.Name);
+            });
+
+            long processed = 0;
+            int lastProgress = -1;
+            ReportProgress(0, false, ref lastProgress);
+            try
+            {
+                foreach (IFileInfo file in backupFiles)
+                {
+                    using (IFileStream source = _configuration.FSFactory.CreateType3(file.FullName))
+                    {
+                        while (source.Position < source.Length)
+                        {
+                            if (source.Length - source.Position < 4)
+                                throw new InvalidDataException("Incomplete incremental backup record size.");
+                            ReadExactly(source, _sizeBuffer, 0, 4);
+                            uint recordSize = ReadUInt32BigEndian(_sizeBuffer, 0);
+                            if (recordSize < 9 || recordSize > Int32.MaxValue)
+                                throw new InvalidDataException("Invalid incremental backup record size.");
+                            if (source.Length - source.Position < recordSize)
+                                throw new InvalidDataException("Incomplete incremental backup record.");
+
+                            ReadExactly(source, _recordHeader, 0, 9);
+                            ulong fileNumber = ReadUInt64BigEndian(_recordHeader, 0);
+                            byte type = _recordHeader[8];
+                            string fileName = _fileNames.ParseFilenameBack(fileNumber);
+
+                            if (type <= 2)
+                            {
+                                if (recordSize < 17)
+                                    throw new InvalidDataException("Backup write record is too short.");
+                                ReadExactly(source, _recordHeader, 9, 8);
+                                long position = DecodeInt64BigEndian(_recordHeader, 9);
+                                int dataLength = checked((int)recordSize - 17);
+                                if (position < 0 || position > Int64.MaxValue - dataLength)
+                                    throw new InvalidDataException("Invalid backup write range.");
+                                WritePayload(source, GetFileStream(fileName, type), position, dataLength);
+                            }
+                            else if (type == 3 || type == 4 || type == 5)
+                            {
+                                if (recordSize != 9)
+                                    throw new InvalidDataException("Backup command record has an invalid size.");
+                                if (type == 5)
+                                    DeleteTable(fileName);
+                                else
+                                    RecreateFile(type == 3 ? fileName : fileName + ".rol");
+                            }
+                            else
+                            {
+                                throw new InvalidDataException("Unknown incremental backup record type.");
+                            }
+
+                            processed = checked(processed + 4 + recordSize);
+                            int progress = totalLength == 0 ? 100 : (int)(processed * 100 / totalLength);
+                            ReportProgress(progress, false, ref lastProgress);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                CloseHandles();
+            }
+
+            ReportProgress(100, true, ref lastProgress);
+        }
+
+        void WritePayload(IFileStream source, IFileStream destination, long position, int count)
+        {
+            destination.Position = position;
+            while (count > 0)
+            {
+                int chunk = count > _copyBuffer.Length ? _copyBuffer.Length : count;
+                ReadExactly(source, _copyBuffer, 0, chunk);
+                destination.Write(_copyBuffer, 0, chunk);
+                count -= chunk;
+            }
+        }
+
+        IFileStream GetFileStream(string tableFileName, byte type)
+        {
+            string suffix = type == 1 ? ".rol" : type == 2 ? ".rhp" : String.Empty;
+            string key = tableFileName + suffix;
+            IFileStream stream;
+            if (_handles.TryGetValue(key, out stream))
+                return stream;
+
+            EnsureTableFiles(tableFileName);
+            return _handles[key];
+        }
+
+        void EnsureTableFiles(string tableFileName)
+        {
+            if (_handles.ContainsKey(tableFileName))
+                return;
+
+            string tablePath = Path.Combine(DataBaseFolder, tableFileName);
+            string directory = Path.GetDirectoryName(tablePath);
+            if (!String.IsNullOrEmpty(directory))
+            {
+                IDirectoryInfo directoryInfo = _configuration.FSFactory.CreateDirectoryInfo(directory);
+                if (!directoryInfo.Exists)
+                    directoryInfo.Create();
+            }
+            _handles.Add(tableFileName + ".rhp", _configuration.FSFactory.CreateType2(tablePath + ".rhp"));
+            _handles.Add(tableFileName + ".rol", _configuration.FSFactory.CreateType2(tablePath + ".rol"));
+            _handles.Add(tableFileName, _configuration.FSFactory.CreateType2(tablePath));
+        }
+
+        void RecreateFile(string fileName)
+        {
+            IFileStream stream;
+            if (_handles.TryGetValue(fileName, out stream))
+            {
+                stream.Dispose();
+                _handles.Remove(fileName);
+            }
+            string path = Path.Combine(DataBaseFolder, fileName);
+            _configuration.FSFactory.Delete(path);
+            _handles.Add(fileName, _configuration.FSFactory.CreateType2(path));
+        }
+
+        void DeleteTable(string tableFileName)
+        {
+            string[] names = { tableFileName, tableFileName + ".rol", tableFileName + ".rhp" };
+            foreach (string name in names)
+            {
+                IFileStream stream;
+                if (_handles.TryGetValue(name, out stream))
+                {
+                    stream.Dispose();
+                    _handles.Remove(name);
+                }
+                _configuration.FSFactory.Delete(Path.Combine(DataBaseFolder, name));
+            }
+        }
+
+        void CloseHandles()
         {
             try
             {
-                //holder of filenames and filestreams
-                ds.Clear();
-                var diDB = configuration.FSFactory.CreateDirectoryInfo(DataBaseFolder);
-                var diBP = configuration.FSFactory.CreateDirectoryInfo(BackupFolder);
-                //DirectoryInfo diDB = new DirectoryInfo(DataBaseFolder);
-                //DirectoryInfo diBP = new DirectoryInfo(BackupFolder);
-
-                if (!diDB.Exists)
-                    diDB.Create();
-
-                if (!diBP.Exists)
-                    diBP.Create();
-
-                long totalBackupFileLength = 0;
-                long processed = 0;
-
-                foreach (var file in diBP.GetFiles())
-                {
-                    totalBackupFileLength += file.Length;
-                }
-
-                if (totalBackupFileLength == processed)
-                {
-                    OnRestore(new BackupRestorationProcess()
-                    {
-                        ReadinessInProcent = 100,
-                        Finished = true
-                    });
-                    return;
-                }
-
-                int readinessInProcent = Convert.ToInt32((processed * 100) / totalBackupFileLength);
-                int prevReadinessInProcent = 0;
-
-                OnRestore(new BackupRestorationProcess()
-                {
-                    ReadinessInProcent = readinessInProcent,
-                    Finished = false
-                });
-
-                byte[] readOut = new byte[100000];
-                int cnt = 0;
-                byte[] pack = null;
-                uint packSize = 0;
-
-                foreach (var file in diBP.GetFiles().Where(r => r.Name.StartsWith("dbreeze_ibp_")).OrderBy(r => r.Name))
-                {
-                    using (var bfs = configuration.FSFactory.CreateType3(file.FullName))// new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.None))
-                    {
-                        while ((cnt = bfs.Read(readOut, 0, readOut.Length)) > 0)
-                        {
-                            processed += cnt;
-                            readinessInProcent = Convert.ToInt32((processed * 100) / totalBackupFileLength);
-                            pack = pack.Concat(readOut.Substring(0, cnt));
-
-                            while (true)
-                            {
-                                if (pack == null || pack.Length < 4)
-                                    break;
-
-                                packSize = pack.Substring(0, 4).To_UInt32_BigEndian();
-
-                                if (pack.Length >= 4 + packSize)
-                                {
-                                    this.DoPackage(pack.Substring(4, (int)packSize));
-                                    pack = pack.Substring(4 + (int)packSize);
-                                }
-                                else
-                                    break;
-                            }
-
-                            if (prevReadinessInProcent != readinessInProcent)
-                            {
-                                prevReadinessInProcent = readinessInProcent;
-                                OnRestore(new BackupRestorationProcess()
-                                {
-                                    ReadinessInProcent = readinessInProcent,
-                                    Finished = false
-                                });
-                            }
-                        }
-
-                        if (prevReadinessInProcent != readinessInProcent)
-                        {
-                            prevReadinessInProcent = readinessInProcent;
-                            OnRestore(new BackupRestorationProcess()
-                            {
-                                ReadinessInProcent = readinessInProcent,
-                                Finished = false
-                            });
-                        }
-
-                        bfs.Dispose();
-                    }
-                }
-
-                this.CloseHandels();
-
-                OnRestore(new BackupRestorationProcess()
-                {
-                    ReadinessInProcent = 100,
-                    Finished = true
-                });
-
+                foreach (KeyValuePair<string, IFileStream> item in _handles)
+                    item.Value.Flush(true);
             }
-            catch (Exception ex)
+            finally
             {
-                throw ex;
+                foreach (KeyValuePair<string, IFileStream> item in _handles)
+                {
+                    try { item.Value.Dispose(); }
+                    catch { }
+                }
+                _handles.Clear();
             }
         }
 
-        private void CloseHandels()
+        void ReportProgress(int progress, bool finished, ref int previous)
         {
-            foreach (var f in ds)
-            {                
-                f.Value.Dispose();
-            }
-
-            ds.Clear();
+            if (!finished && progress == previous)
+                return;
+            previous = progress;
+            Action<BackupRestorationProcess> handler = OnRestore;
+            if (handler != null)
+                handler(new BackupRestorationProcess { ReadinessInProcent = progress, Finished = finished });
         }
 
-
-
-        private IFileStream GetFileStream(string fileName)
+        static void ReadExactly(IFileStream stream, byte[] buffer, int offset, int count)
         {
-            IFileStream fsret = null;
-
-            if (!ds.TryGetValue(fileName, out fsret))
+            while (count > 0)
             {
-                if (fileName.EndsWith(".rhp") || fileName.EndsWith(".rol"))
-                    return null;
-
-                //Creating 3 files
-                string tfn = Path.Combine(this.DataBaseFolder, fileName);
-                fsret = this.configuration.FSFactory.CreateType2(tfn + ".rhp");// new FileStream(tfn + ".rhp", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                ds.Add(fileName + ".rhp", fsret);
-
-                fsret = this.configuration.FSFactory.CreateType2(tfn + ".rol");//new FileStream(tfn + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                ds.Add(fileName + ".rol", fsret);
-
-                fsret = this.configuration.FSFactory.CreateType2(tfn); //new FileStream(tfn, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                ds.Add(fileName, fsret);
-
+                int read = stream.Read(buffer, offset, count);
+                if (read == 0)
+                    throw new EndOfStreamException("Unexpected end of incremental backup stream.");
+                offset += read;
+                count -= read;
             }
-
-            return fsret;
         }
 
-        private void DoPackage(byte[] pack)
+        static uint ReadUInt32BigEndian(byte[] data, int offset)
         {
-            ulong fileNumber = pack.Substring(0, 8).To_UInt64_BigEndian();
-            byte type = pack.Substring(8, 1)[0];
-
-            string filename = BackupFNP.ParseFilenameBack(fileNumber);
-            long offset = 0;
-            byte[] data = null;
-            //Console.WriteLine("t: {0}", type);
-
-            //types description
-            // 0 - table file, 1 - rollback file, 2 - rollbackhelper, 3 - recreate table file (only table file), 4 - recreate rollback file (only rollback file), 5 - removing complete table
-
-            IFileStream lfs = null;
-            bool contains = false;
-            string tfn = String.Empty;
-
-            switch (type)
-            {
-                case 0:
-
-                    //Write into table file
-                    lfs = this.GetFileStream(filename);
-
-                    //if (lfs == null)
-                    //{
-                    //    Console.WriteLine("Backup lfs = null");
-                    //    return;
-                    //}
-
-                    offset = pack.Substring(9, 8).To_Int64_BigEndian();
-                    data = pack.Substring(17);
-                    lfs.Position = offset;
-                    lfs.Write(data, 0, data.Length);
-                    lfs.Flush();
-                    break;
-                case 1:
-                    //write into rollback file
-                    lfs = this.GetFileStream(filename + ".rol");
-
-                    if (lfs == null)
-                    {
-                        System.Diagnostics.Debug.WriteLine("Backup lfs = null");
-                        return;
-                    }
-
-                    offset = pack.Substring(9, 8).To_Int64_BigEndian();
-                    data = pack.Substring(17);
-                    lfs.Position = offset;
-                    lfs.Write(data, 0, data.Length);
-                    lfs.Flush();
-                    break;
-                case 2:
-                    //write into rollbackhelper
-                    lfs = this.GetFileStream(filename + ".rhp");
-
-                    if (lfs == null)
-                    {
-                        System.Diagnostics.Debug.WriteLine("Backup lfs = null");
-                        return;
-                    }
-
-                    offset = pack.Substring(9, 8).To_Int64_BigEndian();
-                    data = pack.Substring(17);
-                    lfs.Position = offset;
-                    lfs.Write(data, 0, data.Length);
-                    lfs.Flush();
-                    break;
-                case 3:
-
-                    //3 - recreate table file (only table file)
-
-                    contains = ds.ContainsKey(filename);
-                    if (contains)
-                    {                        
-                        ds[filename].Dispose();
-
-                    }
-
-                    tfn = Path.Combine(this.DataBaseFolder, filename);
-                    this.configuration.FSFactory.Delete(tfn);
-
-                    if (!contains)
-                        ds.Add(filename, null);
-
-                    ds[filename] = this.configuration.FSFactory.CreateType2(tfn);// new FileStream(tfn, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-
-                    break;
-
-                case 4:
-
-                    //4 - recreate rollback file (only rollback file)
-
-                    contains = ds.ContainsKey(filename + ".rol");
-                    if (contains)
-                    {                        
-                        ds[filename + ".rol"].Dispose();
-
-                    }
-
-                    tfn = Path.Combine(this.DataBaseFolder, filename + ".rol");
-                    this.configuration.FSFactory.Delete(tfn);
-
-                    if (!contains)
-                        ds.Add(filename + ".rol", null);
-
-                    ds[filename + ".rol"] = this.configuration.FSFactory.CreateType2(tfn);//new FileStream(tfn, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-
-                    break;
-                case 5:
-
-                    //5 - removing complete table
-
-                    if (ds.ContainsKey(filename))
-                    {                        
-                        ds[filename].Dispose();
-                    }
-
-                    ds.Remove(filename);
-
-                    if (ds.ContainsKey(filename + ".rol"))
-                    {                        
-                        ds[filename + ".rol"].Dispose();
-                    }
-
-                    ds.Remove(filename + ".rol");
-
-                    if (ds.ContainsKey(filename + ".rhp"))
-                    {                     
-                        ds[filename + ".rhp"].Dispose();
-                    }
-
-                    ds.Remove(filename + ".rhp");
-
-                    break;
-
-            }
+            return ((uint)data[offset] << 24) | ((uint)data[offset + 1] << 16) |
+                ((uint)data[offset + 2] << 8) | data[offset + 3];
         }
 
-    }//Restorer class end
+        static ulong ReadUInt64BigEndian(byte[] data, int offset)
+        {
+            ulong value = 0;
+            for (int i = 0; i < 8; i++)
+                value = (value << 8) | data[offset + i];
+            return value;
+        }
 
+        static long DecodeInt64BigEndian(byte[] data, int offset)
+        {
+            // DBreeze's legacy signed-integer format offsets Int64 by Int64.MinValue.
+            return unchecked((long)(ReadUInt64BigEndian(data, offset) ^ 0x8000000000000000UL));
+        }
+    }
 }

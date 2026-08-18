@@ -26,12 +26,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Storage\FSR.cs" />
+    <Compile Remove="Storage\Backup\Backup.cs" />
+    <Compile Remove="Storage\Backup\BackupRestorer.cs" />
+    <Compile Remove="Storage\RemoteInstance\**\*.cs" />
     <Compile Remove="KNNSearch\**" />
     <EmbeddedResource Remove="KNNSearch\**" />
     <None Remove="KNNSearch\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\DBreeze\Storage\FSR.cs" Link="Storage\FSR.cs" />
+    <Compile Include="..\DBreeze\Storage\Backup\Backup.cs" Link="Storage\Backup\Backup.cs" />
+    <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
+    <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />
     <Compile Remove="DataTypes\1Row.cs" />
     <Compile Remove="Engine\1Scheme.cs" />
     <Compile Remove="LianaTrie\1LianaTrie.cs" />

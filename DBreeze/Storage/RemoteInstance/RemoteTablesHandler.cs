@@ -5,12 +5,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-//using System.Threading.Tasks;
 using System.Threading;
-
-using DBreeze.Utils;
 
 namespace DBreeze.Storage.RemoteInstance
 {
@@ -19,15 +14,18 @@ namespace DBreeze.Storage.RemoteInstance
     /// </summary>
     public class RemoteTablesHandler:IDisposable
     {
-        ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
-        Dictionary<ulong, RemoteTable> _t = new Dictionary<ulong, RemoteTable>();
+        readonly ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
+        readonly Dictionary<ulong, RemoteTable> _t = new Dictionary<ulong, RemoteTable>();
         /// <summary>
         /// fileName to id binding
         /// </summary>
-        Dictionary<string, ulong> _tIds = new Dictionary<string, ulong>();
+        readonly Dictionary<string, ulong> _tIds = new Dictionary<string, ulong>(
+            System.IO.Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        readonly Dictionary<ulong, int> _openCounts = new Dictionary<ulong, int>();
         ulong tableId = 0;
         string databasePreFolderPath = String.Empty;
-        bool directoryIsNotCreated = true;
+        bool _disposed = false;
+        const int MaxReadResponseSize = 64 * 1024 * 1024;
 
         /// <summary>
         /// RemoteTablesHandler
@@ -43,21 +41,24 @@ namespace DBreeze.Storage.RemoteInstance
         /// </summary>
         public void Dispose()
         {
-
             _sync.EnterWriteLock();
             try
             {
+                if (_disposed)
+                    return;
+
+                _disposed = true;
                 foreach (var rt in _t)
                     rt.Value.Dispose();
 
                 _t.Clear();
                 _tIds.Clear();
+                _openCounts.Clear();
             }
             finally
             {
                 _sync.ExitWriteLock();
             }
-
         }
 
         /// <summary>
@@ -69,149 +70,210 @@ namespace DBreeze.Storage.RemoteInstance
         {
             try
             {
-                ulong callTableId = 0;
-                RemoteTable rt = null;
-                byte[] ret = null;
+                if (_disposed || protocol == null || protocol.Length < 2 || protocol[0] != 1)
+                    return ErrorResponse();
 
-                if (protocol[0] == 1)   //Protocol 1
+                byte command = protocol[1];
+                if (command == 1)
+                    return OpenTable(protocol);
+                if (command < 2 || command > 12 || protocol.Length < 10)
+                    return ErrorResponse();
+
+                ulong callTableId = BitConverter.ToUInt64(protocol, 2);
+                if (command == 2)
                 {
+                    if (protocol.Length != 10)
+                        return ErrorResponse();
+                    return CloseTable(callTableId);
+                }
+                if (command == 3)
+                {
+                    if (protocol.Length != 10)
+                        return ErrorResponse();
+                    return DeleteTable(callTableId);
+                }
 
-                    if (protocol[1] != 1)
+                _sync.EnterReadLock();
+                try
+                {
+                    RemoteTable table;
+                    if (!_t.TryGetValue(callTableId, out table))
+                        return ErrorResponse();
+
+                    switch (command)
                     {
-                        callTableId = BitConverter.ToUInt64(protocol, 2);
-
-                        _sync.EnterReadLock();
-                        try
-                        {
-                            if (!_t.TryGetValue(callTableId, out rt))
-                            {
-                                //throw new Exception("table can't be find by id");
-                                return new byte[] { 255 };  //Protocol 255 means error of operation and must raise an exception
-                            }
-                        }
-                        finally
-                        {
-                            _sync.ExitReadLock();
-                        }
-                    }
-
-                    switch (protocol[1])
-                    {
-                        case 1:
-                            #region "OpenRemoteTable"
-                            //Special parsing
-                            int tblLen = BitConverter.ToInt32(protocol, 2);
-                            string tblName = System.Text.Encoding.UTF8.GetString(protocol.Substring(6,tblLen));
-                            string _fileName = System.IO.Path.Combine(databasePreFolderPath, tblName);
-                         
-                            _sync.EnterUpgradeableReadLock();
-                            try
-                            {
-                                if (!_tIds.TryGetValue(_fileName, out callTableId))
-                                {
-                                    _sync.EnterWriteLock();
-                                    try
-                                    {
-                                        if (!_tIds.TryGetValue(_fileName, out callTableId))
-                                        {
-                                            tableId++;
-
-                                            //Creating directory, if necessary
-                                            if (directoryIsNotCreated)
-                                            {
-                                                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_fileName));
-                                                directoryIsNotCreated = false;
-                                            }
-
-                                            rt = new RemoteTable(_fileName, tableId);
-                                            _t[tableId] = rt;
-                                            _tIds[_fileName] = tableId;
-                                        }
-                                    }
-                                    finally
-                                    {
-                                        _sync.ExitWriteLock();
-                                    }
-                                }
-                                else
-                                    _t.TryGetValue(callTableId, out rt);
-                            }
-                            finally
-                            {
-                                _sync.ExitUpgradeableReadLock();
-                            }
-
-                            return rt.OpenRemoteTable();
-                            #endregion
-                        case 2:
-                            #region "CloseRemoteTable"
-
-                            return rt.CloseRemoteTable();
-
-                            #endregion
-                        case 3:
-                            #region "DeleteRemoteTable"
-                            ret = rt.DeleteRemoteTable();
-
-                            _sync.EnterWriteLock();
-                            try
-                            {
-                                _tIds.Remove(rt._fileName);                                
-                                _t.Remove(callTableId);                                
-                            }
-                            finally
-                            {
-                                _sync.ExitWriteLock();
-                            }
-
-                            return ret;
-                            #endregion
                         case 4:
-                            #region DataFileWrite
-                            return rt.DataFileWrite(BitConverter.ToInt64(protocol, 10), (protocol[18] == 1), protocol.Substring(19));
-                            #endregion                           
                         case 5:
-                            #region "RollbackFileWrite"
-                            return rt.RollbackFileWrite(BitConverter.ToInt64(protocol, 10), (protocol[18] == 1), protocol.Substring(19));
-                        #endregion
                         case 6:
-                            #region "RollbackHelperFileWrite"
-                            return rt.RollbackHelperFileWrite(BitConverter.ToInt64(protocol, 10), (protocol[18] == 1), protocol.Substring(19));
-                            #endregion
-                        case 7:
-                            #region "DataFileRead"
-                            return rt.DataFileRead(BitConverter.ToInt64(protocol, 10), BitConverter.ToInt32(protocol, 18));
-                        #endregion
-                        case 8:
-                            #region "RollbackFileRead"
-                            return rt.RollbackFileRead(BitConverter.ToInt64(protocol, 10), BitConverter.ToInt32(protocol, 18));
-                            #endregion
-                        case 9:
-                            #region "RollbackHelperFileRead"
-                            return rt.RollbackHelperFileRead(BitConverter.ToInt64(protocol, 10), BitConverter.ToInt32(protocol, 18));
-                            #endregion
-                        case 10:
-                            #region "DataFileFlush"
-                            return rt.DataFileFlush();
-                            #endregion
-                        case 11:
-                            #region "RollbackFileFlush"
-                            return rt.RollbackFileFlush();
-                            #endregion
-                        case 12:
-                            #region "RollbackFileRecreate"
-                            return rt.RollbackFileRecreate();
-                            #endregion
+                            if (protocol.Length < 19)
+                                return ErrorResponse();
+                            long writePosition = BitConverter.ToInt64(protocol, 10);
+                            if (writePosition < 0 || protocol[18] > 1)
+                                return ErrorResponse();
+                            int payloadLength = protocol.Length - 19;
+                            if (writePosition > Int64.MaxValue - payloadLength)
+                                return ErrorResponse();
+                            if (command == 4)
+                                return table.DataFileWrite(writePosition, protocol[18] == 1, protocol, 19, payloadLength);
+                            if (command == 5)
+                                return table.RollbackFileWrite(writePosition, protocol[18] == 1, protocol, 19, payloadLength);
+                            return table.RollbackHelperFileWrite(writePosition, protocol[18] == 1, protocol, 19, payloadLength);
 
+                        case 7:
+                        case 8:
+                        case 9:
+                            if (protocol.Length != 22)
+                                return ErrorResponse();
+                            long readPosition = BitConverter.ToInt64(protocol, 10);
+                            int count = BitConverter.ToInt32(protocol, 18);
+                            if (readPosition < 0 || count < 0 || count > MaxReadResponseSize)
+                                return ErrorResponse();
+                            if (command == 7)
+                                return table.DataFileRead(readPosition, count);
+                            if (command == 8)
+                                return table.RollbackFileRead(readPosition, count);
+                            return table.RollbackHelperFileRead(readPosition, count);
+
+                        case 10:
+                            if (protocol.Length != 10)
+                                return ErrorResponse();
+                            return table.DataFileFlush();
+                        case 11:
+                            if (protocol.Length != 10)
+                                return ErrorResponse();
+                            return table.RollbackFileFlush();
+                        case 12:
+                            if (protocol.Length != 10)
+                                return ErrorResponse();
+                            return table.RollbackFileRecreate();
                     }
                 }
+                finally
+                {
+                    _sync.ExitReadLock();
+                }
             }
-            catch// (Exception ex)
+            catch
             {
-                return new byte[] { 255 };
-                //throw ex;       //Connector must be disconnected and error must be logged
+                return ErrorResponse();
             }
-            return null;
+            return ErrorResponse();
+        }
+
+        private byte[] OpenTable(byte[] protocol)
+        {
+            if (protocol.Length < 6)
+                return ErrorResponse();
+
+            int tableNameLength = BitConverter.ToInt32(protocol, 2);
+            if (tableNameLength < 0 || tableNameLength != protocol.Length - 6)
+                return ErrorResponse();
+
+            string tableName = System.Text.Encoding.UTF8.GetString(protocol, 6, tableNameLength);
+            string fileName = System.IO.Path.GetFullPath(System.IO.Path.Combine(databasePreFolderPath, tableName));
+
+            _sync.EnterWriteLock();
+            try
+            {
+                if (_disposed)
+                    return ErrorResponse();
+
+                ulong id;
+                RemoteTable table;
+                bool created = false;
+                if (!_tIds.TryGetValue(fileName, out id))
+                {
+                    if (tableId == UInt64.MaxValue)
+                        return ErrorResponse();
+                    id = ++tableId;
+                    table = new RemoteTable(fileName, id);
+                    _t.Add(id, table);
+                    _tIds.Add(fileName, id);
+                    _openCounts.Add(id, 0);
+                    created = true;
+                }
+                else if (!_t.TryGetValue(id, out table))
+                {
+                    return ErrorResponse();
+                }
+
+                try
+                {
+                    byte[] response = table.OpenRemoteTable();
+                    _openCounts[id] = checked(_openCounts[id] + 1);
+                    return response;
+                }
+                catch
+                {
+                    if (created)
+                    {
+                        table.Dispose();
+                        _openCounts.Remove(id);
+                        _t.Remove(id);
+                        _tIds.Remove(fileName);
+                    }
+                    throw;
+                }
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+        }
+
+        private byte[] CloseTable(ulong id)
+        {
+            _sync.EnterWriteLock();
+            try
+            {
+                RemoteTable table;
+                int count;
+                if (!_t.TryGetValue(id, out table) || !_openCounts.TryGetValue(id, out count) || count <= 0)
+                    return ErrorResponse();
+
+                count--;
+                if (count != 0)
+                {
+                    _openCounts[id] = count;
+                    return new byte[] { 1 };
+                }
+
+                byte[] response = table.CloseRemoteTable();
+                _openCounts.Remove(id);
+                _t.Remove(id);
+                _tIds.Remove(table._fileName);
+                return response;
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+        }
+
+        private byte[] DeleteTable(ulong id)
+        {
+            _sync.EnterWriteLock();
+            try
+            {
+                RemoteTable table;
+                if (!_t.TryGetValue(id, out table))
+                    return ErrorResponse();
+
+                byte[] response = table.DeleteRemoteTable();
+                _openCounts.Remove(id);
+                _t.Remove(id);
+                _tIds.Remove(table._fileName);
+                return response;
+            }
+            finally
+            {
+                _sync.ExitWriteLock();
+            }
+        }
+
+        private static byte[] ErrorResponse()
+        {
+            return new byte[] { 255 };
         }
 
       

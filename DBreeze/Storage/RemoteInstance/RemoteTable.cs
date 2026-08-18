@@ -4,13 +4,7 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-//using System.Threading.Tasks;
 using System.IO;
-
-using DBreeze.Utils;
 
 
 namespace DBreeze.Storage.RemoteInstance
@@ -21,8 +15,7 @@ namespace DBreeze.Storage.RemoteInstance
     internal class RemoteTable:IDisposable
     {
         ulong tableId = 0;
-        string databasePreFolderPath = String.Empty;
-        object lock_fs = new object();
+        readonly object lock_fs = new object();
 
         FileStream _fsData = null;
         FileStream _fsRollback = null;
@@ -41,6 +34,10 @@ namespace DBreeze.Storage.RemoteInstance
         {
             this._fileName = _fileName;
             this.tableId = tableId;
+
+            string directory = Path.GetDirectoryName(_fileName);
+            if (!String.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
         }
 
         /// <summary>
@@ -58,13 +55,12 @@ namespace DBreeze.Storage.RemoteInstance
                 if (_fsRollbackHelper == null)
                     this._fsRollbackHelper = new FileStream(this._fileName + ".rhp", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
 
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                  .ConcatMany(
-                                    BitConverter.GetBytes(tableId),
-                                    BitConverter.GetBytes(_fsData.Length),
-                                    BitConverter.GetBytes(_fsRollback.Length),
-                                    BitConverter.GetBytes(_fsRollbackHelper.Length)
-                                  );
+                byte[] protocol = new byte[33];
+                protocol[0] = ProtocolVersion;
+                Buffer.BlockCopy(BitConverter.GetBytes(tableId), 0, protocol, 1, 8);
+                Buffer.BlockCopy(BitConverter.GetBytes(_fsData.Length), 0, protocol, 9, 8);
+                Buffer.BlockCopy(BitConverter.GetBytes(_fsRollback.Length), 0, protocol, 17, 8);
+                Buffer.BlockCopy(BitConverter.GetBytes(_fsRollbackHelper.Length), 0, protocol, 25, 8);
                 return protocol;
             }
         }
@@ -76,26 +72,7 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                if (_fsData != null)
-                {
-                    _fsData.Close();
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
-
-                if (_fsRollback != null)
-                {
-                    _fsRollback.Close();
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
-
-                if (_fsRollbackHelper != null)
-                {
-                    _fsRollbackHelper.Close();
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
+                CloseFiles();
             }
         }
 
@@ -106,26 +83,7 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                if (_fsData != null)
-                {
-                    _fsData.Close();
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
-
-                if (_fsRollback != null)
-                {
-                    _fsRollback.Close();
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
-
-                if (_fsRollbackHelper != null)
-                {
-                    _fsRollbackHelper.Close();
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
+                CloseFiles();
             }
 
             return new byte[] { ProtocolVersion };
@@ -139,26 +97,7 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                if (_fsData != null)
-                {                    
-                    _fsData.Close();
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
-
-                if (_fsRollback != null)
-                {
-                    _fsRollback.Close();
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
-
-                if (_fsRollbackHelper != null)
-                {
-                    _fsRollbackHelper.Close();
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
+                CloseFiles();
 
                 File.Delete(this._fileName);
                 File.Delete(this._fileName + ".rol");
@@ -175,19 +114,17 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="withFlush"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public byte[] DataFileWrite(long position, bool withFlush, byte[] data)
+        public byte[] DataFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
             {
                 _fsData.Position = position;
-                _fsData.Write(data, 0, data.Length);
+                _fsData.Write(data, offset, count);
 
                 if (withFlush)
                     FSR.NET_Flush(_fsData);
 
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                      .Concat(BitConverter.GetBytes(_fsData.Length));
-                return protocol;
+                return CreateLengthResponse(_fsData.Length);
             }            
         }
 
@@ -198,19 +135,17 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="withFlush"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public byte[] RollbackFileWrite(long position, bool withFlush, byte[] data)
+        public byte[] RollbackFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
             {
                 _fsRollback.Position = position;
-                _fsRollback.Write(data, 0, data.Length);
+                _fsRollback.Write(data, offset, count);
 
                 if (withFlush)
                     FSR.NET_Flush(_fsRollback);
 
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                      .Concat(BitConverter.GetBytes(_fsRollback.Length));
-                return protocol;
+                return CreateLengthResponse(_fsRollback.Length);
             }
         }
 
@@ -222,19 +157,17 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="withFlush"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public byte[] RollbackHelperFileWrite(long position, bool withFlush, byte[] data)
+        public byte[] RollbackHelperFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
             {
                 _fsRollbackHelper.Position = position;
-                _fsRollbackHelper.Write(data, 0, data.Length);
+                _fsRollbackHelper.Write(data, offset, count);
 
                 if (withFlush)
                     FSR.NET_Flush(_fsRollbackHelper);
 
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                      .Concat(BitConverter.GetBytes(_fsRollbackHelper.Length));
-                return protocol;
+                return CreateLengthResponse(_fsRollbackHelper.Length);
             }
         }
 
@@ -247,13 +180,7 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                byte[] bt = new byte[count];
-                _fsData.Position = position;
-                _fsData.Read(bt, 0, bt.Length);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                   .Concat(bt);
-                return protocol;
+                return Read(_fsData, position, count);
             }
         }
 
@@ -266,13 +193,7 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                byte[] bt = new byte[count];
-                _fsRollback.Position = position;
-                _fsRollback.Read(bt, 0, bt.Length);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                   .Concat(bt);
-                return protocol;
+                return Read(_fsRollback, position, count);
             }
         }
 
@@ -285,13 +206,7 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                byte[] bt = new byte[count];
-                _fsRollbackHelper.Position = position;
-                _fsRollbackHelper.Read(bt, 0, bt.Length);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                   .Concat(bt);
-                return protocol;
+                return Read(_fsRollbackHelper, position, count);
             }
         }
 
@@ -331,12 +246,61 @@ namespace DBreeze.Storage.RemoteInstance
         {
             lock (lock_fs)
             {
-                this._fsRollback.Close();
                 this._fsRollback.Dispose();
                 File.Delete(this._fileName + ".rol");
                 this._fsRollback = new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
             }
             return new byte[] { ProtocolVersion };
+        }
+
+        private void CloseFiles()
+        {
+            if (_fsData != null)
+            {
+                _fsData.Dispose();
+                _fsData = null;
+            }
+            if (_fsRollback != null)
+            {
+                _fsRollback.Dispose();
+                _fsRollback = null;
+            }
+            if (_fsRollbackHelper != null)
+            {
+                _fsRollbackHelper.Dispose();
+                _fsRollbackHelper = null;
+            }
+        }
+
+        private byte[] CreateLengthResponse(long length)
+        {
+            byte[] response = new byte[9];
+            response[0] = ProtocolVersion;
+            Buffer.BlockCopy(BitConverter.GetBytes(length), 0, response, 1, 8);
+            return response;
+        }
+
+        private byte[] Read(FileStream stream, long position, int count)
+        {
+            long available = position < stream.Length ? stream.Length - position : 0;
+            int payloadLength = available < count ? (int)available : count;
+            byte[] response = new byte[payloadLength + 1];
+            response[0] = ProtocolVersion;
+            if (payloadLength == 0)
+                return response;
+
+            stream.Position = position;
+            int offset = 1;
+            int remaining = payloadLength;
+            while (remaining > 0)
+            {
+                int read = stream.Read(response, offset, remaining);
+                if (read == 0)
+                    throw new EndOfStreamException("Unexpected end of remote table file.");
+                offset += read;
+                remaining -= read;
+            }
+            return response;
         }
 
 

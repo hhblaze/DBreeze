@@ -14,6 +14,12 @@ internal static class Program
             // the legacy process-global in-memory journal has been created and disposed.
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
+            (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
+            (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
+            (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),
+            (nameof(StorageRegressionTests.RollbackRecoveryIsBoundedAndExact), StorageRegressionTests.RollbackRecoveryIsBoundedAndExact),
+            (nameof(StorageRegressionTests.RestoreMissingSourceKeepsDestination), StorageRegressionTests.RestoreMissingSourceKeepsDestination),
+            (nameof(StorageRegressionTests.InvalidStorageSettingsFailBeforeCreatingFiles), StorageRegressionTests.InvalidStorageSettingsFailBeforeCreatingFiles),
             (nameof(DeferredIndexerRunsInParallelAndCoalescesStarts), DeferredIndexerRunsInParallelAndCoalescesStarts),
             (nameof(DeferredIndexerShutdownPreservesPendingRows), DeferredIndexerShutdownPreservesPendingRows),
             (nameof(DeferredIndexerFailureParksDurableBatch), DeferredIndexerFailureParksDurableBatch),

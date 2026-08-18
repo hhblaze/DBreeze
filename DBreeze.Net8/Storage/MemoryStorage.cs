@@ -19,7 +19,6 @@ namespace DBreeze.Storage
     internal class MemoryStorage : IDisposable
     {
         private byte[] _f;
-        private readonly object _lock = new object();
 
         private int _ptrEnd = 0;
         private int _capacity = 0;
@@ -66,10 +65,16 @@ namespace DBreeze.Storage
 
         public void Dispose()
         {
-            lock (_lock)
-            {
-                _f = null!;
-            }
+            _f = null!;
+            _capacity = 0;
+            _ptrEnd = 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CheckDisposed()
+        {
+            if (_f == null)
+                throw new ObjectDisposedException(nameof(MemoryStorage));
         }
 
         /// <summary>
@@ -79,6 +84,7 @@ namespace DBreeze.Storage
         {
             get
             {
+                CheckDisposed();
                 return _f;
             }
         }
@@ -92,15 +98,13 @@ namespace DBreeze.Storage
         /// <param name="withInternalArrayResize"></param>
         public void Clear(bool withInternalArrayResize)
         {
-            lock (_lock)
-            {
-                _ptrEnd = 0;
+            CheckDisposed();
+            _ptrEnd = 0;
 
-                if (withInternalArrayResize)
-                {
-                    _capacity = _initialCapacity;
-                    _f = new byte[_initialCapacity];
-                }
+            if (withInternalArrayResize)
+            {
+                _capacity = _initialCapacity;
+                _f = new byte[_initialCapacity];
             }
         }
 
@@ -111,10 +115,8 @@ namespace DBreeze.Storage
         {
             get
             {
-                lock (_lock)
-                {
-                    return _ptrEnd;
-                }
+                CheckDisposed();
+                return _ptrEnd;
             }
         }
 
@@ -124,16 +126,13 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public byte[] GetFullData()
         {
-            lock (_lock)
-            {
-                if (_ptrEnd == 0) return Array.Empty<byte>();
+            CheckDisposed();
+            if (_ptrEnd == 0) return Array.Empty<byte>();
 
-                // .NET 8 Optimization: Skips zeroing out the array before copying
-                byte[] ret = GC.AllocateUninitializedArray<byte>(_ptrEnd);
-                Buffer.BlockCopy(_f, 0, ret, 0, _ptrEnd);
+            byte[] ret = GC.AllocateUninitializedArray<byte>(_ptrEnd);
+            Buffer.BlockCopy(_f, 0, ret, 0, _ptrEnd);
 
-                return ret;
-            }
+            return ret;
         }
 
         /// <summary>
@@ -143,6 +142,7 @@ namespace DBreeze.Storage
         {
             get
             {
+                CheckDisposed();
                 return _f.Length;
             }
         }
@@ -153,27 +153,22 @@ namespace DBreeze.Storage
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        public byte[]? Read(int offset, int length)
+        public byte[] Read(int offset, int length)
         {
+            CheckDisposed();
             if (offset >= _capacity || offset < 0 || length < 0)
                 return null;
 
             if (length == 0)
                 return Array.Empty<byte>();
 
-            lock (_lock)
-            {
-                int q2r = length;
+            int available = _capacity - offset;
+            int q2r = length > available ? available : length;
 
-                if (offset + length > _capacity)
-                    q2r = _capacity - offset;
+            byte[] ret = GC.AllocateUninitializedArray<byte>(q2r);
+            Buffer.BlockCopy(_f, offset, ret, 0, q2r);
 
-                // .NET 8 Optimization: Skips zeroing out the array
-                byte[] ret = GC.AllocateUninitializedArray<byte>(q2r);
-                Buffer.BlockCopy(_f, offset, ret, 0, q2r);
-
-                return ret;
-            }
+            return ret;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -185,15 +180,23 @@ namespace DBreeze.Storage
             switch (_expandStrategy)
             {
                 case eMemoryExpandStartegy.MULTIPLY_CAPACITY_BY_2:
-                    int step = _capacity * 2;
-                    _capacity = ((upTo + step - 1) / step) * step;
+                    long step = (long)_capacity * 2L;
+                    long multipliedCapacity = ((long)upTo + step - 1L) / step * step;
+                    if (multipliedCapacity > Array.MaxLength)
+                        throw new OutOfMemoryException("MemoryStorage capacity exceeds Array.MaxLength.");
+                    _capacity = (int)multipliedCapacity;
                     break;
 
                 case eMemoryExpandStartegy.FIXED_LENGTH_INCREASE:
-                    int diff = upTo - _capacity;
-                    int multiples = (diff + _increaseOnInBytes - 1) / _increaseOnInBytes;
-                    _capacity += multiples * _increaseOnInBytes;
+                    long diff = (long)upTo - _capacity;
+                    long multiples = (diff + _increaseOnInBytes - 1L) / _increaseOnInBytes;
+                    long fixedCapacity = (long)_capacity + multiples * _increaseOnInBytes;
+                    if (fixedCapacity > Array.MaxLength)
+                        throw new OutOfMemoryException("MemoryStorage capacity exceeds Array.MaxLength.");
+                    _capacity = (int)fixedCapacity;
                     break;
+                default:
+                    throw new InvalidOperationException("Unknown memory expansion strategy.");
             }
 
             byte[] nf = new byte[_capacity];
@@ -212,7 +215,14 @@ namespace DBreeze.Storage
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Write(byte[] data, int offset)
         {
-            int pe = offset + data.Length;
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+
+            long end = (long)offset + data.Length;
+            if (end > Array.MaxLength)
+                throw new ArgumentOutOfRangeException(nameof(data), "MemoryStorage capacity exceeds Array.MaxLength.");
+
+            int pe = (int)end;
 
             if (pe > _capacity)
                 Resize(pe);
@@ -232,15 +242,13 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public int Write_ToTheEnd(byte[] data)
         {
+            CheckDisposed();
+            int retPtr = _ptrEnd;
             if (data == null || data.Length < 1)
-                return _ptrEnd;
-
-            lock (_lock)
-            {
-                int retPtr = _ptrEnd;
-                Write(data, _ptrEnd);
                 return retPtr;
-            }
+
+            Write(data, _ptrEnd);
+            return retPtr;
         }
                
 
@@ -251,13 +259,11 @@ namespace DBreeze.Storage
         /// <param name="data"></param>
         public void Write_ByOffset(int offset, byte[] data)
         {
+            CheckDisposed();
             if (data == null || data.Length < 1 || offset < 0)
                 return;
 
-            lock (_lock)
-            {
-                Write(data, offset);
-            }
+            Write(data, offset);
         }
 
         /// <summary>
@@ -266,15 +272,15 @@ namespace DBreeze.Storage
         /// <param name="datas"></param>
         public void Writes_ByOffsets(Dictionary<long, byte[]> datas)
         {           
+            CheckDisposed();
             if (datas == null || datas.Count == 0)
                 return;
 
-            lock (_lock)
+            foreach (KeyValuePair<long, byte[]> data in datas)
             {
-                foreach (KeyValuePair<long, byte[]> data in datas) //no need in datas.OrderBy(r=>r.Key)
-                {
-                    Write(data.Value, (int)data.Key);
-                }
+                if (data.Key < 0 || data.Key > Int32.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(datas), "MemoryStorage offset must fit Int32.");
+                Write(data.Value, (int)data.Key);
             }
         }
     }

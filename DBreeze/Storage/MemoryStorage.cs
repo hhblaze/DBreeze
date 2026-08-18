@@ -5,8 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace DBreeze.Storage
 {
@@ -16,7 +14,7 @@ namespace DBreeze.Storage
     public class MemoryStorage:IDisposable
     {
         byte[] _f = null;
-        object _lock = new object();
+        readonly object _lock = new object();
 
         int _ptrEnd = 0;
         int _capacity = 0;
@@ -66,7 +64,15 @@ namespace DBreeze.Storage
             lock (_lock)
             {
                 _f = null;
+                _capacity = 0;
+                _ptrEnd = 0;
             }
+        }
+
+        private void CheckDisposed()
+        {
+            if (_f == null)
+                throw new ObjectDisposedException("MemoryStorage");
         }
 
         /// <summary>
@@ -76,7 +82,11 @@ namespace DBreeze.Storage
         {
             get
             {
-                return _f;
+                lock (_lock)
+                {
+                    CheckDisposed();
+                    return _f;
+                }
             }
         }
 
@@ -91,6 +101,7 @@ namespace DBreeze.Storage
         {
             lock (_lock)
             {
+                CheckDisposed();
                 _ptrEnd = 0;
                                
                 if (withInternalArrayResize)
@@ -110,6 +121,7 @@ namespace DBreeze.Storage
             {
                 lock (_lock)
                 {
+                    CheckDisposed();
                     return _ptrEnd;
                 }
             }
@@ -123,6 +135,7 @@ namespace DBreeze.Storage
         {
             lock (_lock)
             {
+                CheckDisposed();
                 byte[] ret = new byte[_ptrEnd];
 
                 Buffer.BlockCopy(_f, 0, ret, 0, _ptrEnd);
@@ -138,7 +151,11 @@ namespace DBreeze.Storage
         {
             get
             {
-                return _f.Length;
+                lock (_lock)
+                {
+                    CheckDisposed();
+                    return _f.Length;
+                }
             }
         }
 
@@ -150,65 +167,55 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public byte[] Read(int offset, int length)
         {
-            if(offset >= _capacity)
-                return null;
-
-            if(offset<0 || length<0)
-                return null;
-
-            if(length == 0)
-                return new byte[0];
-
-            byte[] ret = null;
-
             lock (_lock)
             {
+                CheckDisposed();
 
-                int q2r = length;
+                if (offset < 0 || length < 0 || offset >= _capacity)
+                    return null;
 
-                if (offset + length > _capacity)
-                    q2r = _capacity - offset;
+                if (length == 0)
+                    return new byte[0];
 
-                ret = new byte[q2r];
+                int available = _capacity - offset;
+                int q2r = length > available ? available : length;
 
-                Buffer.BlockCopy(_f, offset, ret, 0, q2r);           
+                byte[] ret = new byte[q2r];
+
+                Buffer.BlockCopy(_f, offset, ret, 0, q2r);
+
+                return ret;
             }
-
-            return ret;
         }
      
 
         private void Resize(int upTo)
         {
-            if (upTo <= 0)
+            if (upTo <= _capacity)
                 return;
 
-            byte[] _nf = null;
-            int x=1;
+            long newCapacity;
 
             switch (_expandStrategy)
             {
                 case eMemoryExpandStartegy.MULTIPLY_CAPACITY_BY_2:
-
-                    if (_capacity * 2 < upTo)
-                    {
-                        x = (int)Math.Ceiling((double)upTo / ((double) 2 * _capacity));
-                    }
-                    _capacity = _capacity * 2 * x;
-                                  
+                    long step = (long)_capacity * 2L;
+                    newCapacity = ((long)upTo + step - 1L) / step * step;
                     break;
                 case eMemoryExpandStartegy.FIXED_LENGTH_INCREASE:
-
-                    if (_capacity + _increaseOnInBytes < upTo)
-                    {
-                        x = (int)Math.Ceiling((double)(upTo - _capacity) / (double)_increaseOnInBytes);
-                    }
-                    _capacity = _capacity + (_increaseOnInBytes * x);
-
+                    long difference = (long)upTo - _capacity;
+                    long increments = (difference + _increaseOnInBytes - 1L) / _increaseOnInBytes;
+                    newCapacity = (long)_capacity + increments * _increaseOnInBytes;
                     break;
+                default:
+                    throw new InvalidOperationException("Unknown memory expansion strategy.");
             }
 
-            _nf = new byte[_capacity];
+            if (newCapacity > Int32.MaxValue)
+                throw new OutOfMemoryException("MemoryStorage cannot exceed Int32.MaxValue bytes.");
+
+            _capacity = (int)newCapacity;
+            byte[] _nf = new byte[_capacity];
             Buffer.BlockCopy(_f, 0, _nf, 0, _ptrEnd);
             _f = _nf;
         }
@@ -225,7 +232,14 @@ namespace DBreeze.Storage
         /// <param name="offset"></param>
         private void Write(ref byte[] data, int offset)
         {
-            int pe = offset + data.Length;           
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException("offset");
+
+            long end = (long)offset + data.Length;
+            if (end > Int32.MaxValue)
+                throw new ArgumentOutOfRangeException("data", "MemoryStorage cannot exceed Int32.MaxValue bytes.");
+
+            int pe = (int)end;
 
             if (pe > _capacity)
                 Resize(pe); 
@@ -243,14 +257,15 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public int Write_ToTheEnd(ref byte[] data)
         {
-            if (data == null || data.Length < 1)
-                return _ptrEnd;
-
             lock (_lock)
             {
+                CheckDisposed();
                 int retPtr = _ptrEnd;
 
-                Write(ref data, _ptrEnd);                
+                if (data == null || data.Length < 1)
+                    return retPtr;
+
+                Write(ref data, _ptrEnd);
 
                 return retPtr;
             }
@@ -263,12 +278,13 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public int Write_ToTheEnd(byte[] data)
         {
-            if (data == null || data.Length < 1)
-                return _ptrEnd;
-
             lock (_lock)
             {
+                CheckDisposed();
                 int retPtr = _ptrEnd;
+
+                if (data == null || data.Length < 1)
+                    return retPtr;
 
                 Write(ref data, _ptrEnd);
 
@@ -283,12 +299,13 @@ namespace DBreeze.Storage
         /// <param name="data"></param>
         public void Write_ByOffset(int offset, ref byte[] data)
         {
-            if (data == null || data.Length < 1 || offset < 0)
-                return;
-
             lock (_lock)
             {
-                Write(ref data, offset);     
+                CheckDisposed();
+                if (data == null || data.Length < 1 || offset < 0)
+                    return;
+
+                Write(ref data, offset);
             }
 
         }
@@ -300,11 +317,12 @@ namespace DBreeze.Storage
         /// <param name="data"></param>
         public void Write_ByOffset(int offset, byte[] data)
         {
-            if (data == null || data.Length < 1 || offset < 0)
-                return;
-
             lock (_lock)
             {
+                CheckDisposed();
+                if (data == null || data.Length < 1 || offset < 0)
+                    return;
+
                 Write(ref data, offset);
             }
         }
@@ -315,13 +333,17 @@ namespace DBreeze.Storage
         /// <param name="datas"></param>
         public void Writes_ByOffsets(Dictionary<long, byte[]> datas)
         {
-            if (datas == null || datas.Count() < 1)
-                return;
-
             lock (_lock)
             {
+                CheckDisposed();
+                if (datas == null || datas.Count < 1)
+                    return;
+
                 foreach (var data in datas)   //no need in datas.OrderBy(r=>r.Key)
                 {
+                    if (data.Key < 0 || data.Key > Int32.MaxValue)
+                        throw new ArgumentOutOfRangeException("datas", "MemoryStorage offset must fit Int32.");
+
                     Write(data.Value, (int)data.Key);
                     
                 }                

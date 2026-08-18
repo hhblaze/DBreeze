@@ -1,339 +1,199 @@
-﻿/* 
+/*
   Copyright (C) 2012 dbreeze.tiesky.com / Alex Solovyov / Ivars Sudmalis.
   It's free software for those who think that it should be free.
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-//using System.Threading.Tasks;
 using System.IO;
-
-using DBreeze.Utils;
-
 
 namespace DBreeze.Storage.RemoteInstance
 {
-    /// <summary>
-    /// Represents one table, is managed by RemoteTablesHandler, server data, rollback and rollback helper files.
-    /// </summary>
-    internal class RemoteTable:IDisposable
+    internal class RemoteTable : IDisposable
     {
-        ulong tableId = 0;
-        string databasePreFolderPath = String.Empty;
-        object lock_fs = new object();
+        readonly ulong tableId;
+        readonly object lock_fs = new object();
+        readonly RemoteTablesHandler rth;
+        IFileStream _fsData;
+        IFileStream _fsRollback;
+        IFileStream _fsRollbackHelper;
+        readonly int _fileStreamBufferSize = 8192;
+        public readonly string _fileName;
+        readonly byte ProtocolVersion = 1;
 
-        IFileStream _fsData = null;
-        IFileStream _fsRollback = null;
-        IFileStream _fsRollbackHelper = null;
-
-        int _fileStreamBufferSize = 8192;
-        public string _fileName = String.Empty;
-        byte ProtocolVersion = 1;
-
-        RemoteTablesHandler rth = null;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_fileName"></param>
-        /// <param name="tableId"></param>
-        public RemoteTable(RemoteTablesHandler rth, string _fileName, ulong tableId)
+        public RemoteTable(RemoteTablesHandler handler, string fileName, ulong id)
         {
-            this._fileName = _fileName;
-            this.tableId = tableId;
-            this.rth = rth;
+            rth = handler;
+            _fileName = fileName;
+            tableId = id;
+
+            string directory = Path.GetDirectoryName(fileName);
+            if (!String.IsNullOrEmpty(directory))
+            {
+                IDirectoryInfo directoryInfo = rth.configuration.FSFactory.CreateDirectoryInfo(directory);
+                if (!directoryInfo.Exists)
+                    directoryInfo.Create();
+            }
         }
 
-        /// <summary>
-        /// OpenRemoteTable
-        /// </summary>
-        /// <returns></returns>
         public byte[] OpenRemoteTable()
         {
             lock (lock_fs)
             {
                 if (_fsData == null)
-                    this._fsData = this.rth.configuration.FSFactory.CreateType1(this._fileName, _fileStreamBufferSize);// new FileStream(this._fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);                
+                    _fsData = rth.configuration.FSFactory.CreateType1(_fileName, _fileStreamBufferSize);
                 if (_fsRollback == null)
-                    this._fsRollback = this.rth.configuration.FSFactory.CreateType1(this._fileName + ".rol", _fileStreamBufferSize);//new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                    _fsRollback = rth.configuration.FSFactory.CreateType1(_fileName + ".rol", _fileStreamBufferSize);
                 if (_fsRollbackHelper == null)
-                    this._fsRollbackHelper = this.rth.configuration.FSFactory.CreateType1(this._fileName + ".rhp", _fileStreamBufferSize);//new FileStream(this._fileName + ".rhp", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+                    _fsRollbackHelper = rth.configuration.FSFactory.CreateType1(_fileName + ".rhp", _fileStreamBufferSize);
 
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                  .ConcatMany(
-                                    BitConverter.GetBytes(tableId),
-                                    BitConverter.GetBytes(_fsData.Length),
-                                    BitConverter.GetBytes(_fsRollback.Length),
-                                    BitConverter.GetBytes(_fsRollbackHelper.Length)
-                                  );
-                return protocol;
+                byte[] response = new byte[33];
+                response[0] = ProtocolVersion;
+                Buffer.BlockCopy(BitConverter.GetBytes(tableId), 0, response, 1, 8);
+                Buffer.BlockCopy(BitConverter.GetBytes(_fsData.Length), 0, response, 9, 8);
+                Buffer.BlockCopy(BitConverter.GetBytes(_fsRollback.Length), 0, response, 17, 8);
+                Buffer.BlockCopy(BitConverter.GetBytes(_fsRollbackHelper.Length), 0, response, 25, 8);
+                return response;
             }
         }
 
-        /// <summary>
-        /// Dispose
-        /// </summary>
         public void Dispose()
         {
             lock (lock_fs)
-            {
-                if (_fsData != null)
-                {                    
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
-
-                if (_fsRollback != null)
-                {                    
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
-
-                if (_fsRollbackHelper != null)
-                {                    
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
-            }
+                CloseFiles();
         }
 
-        /// <summary>
-        /// CloseRemoteTable
-        /// </summary>
         public byte[] CloseRemoteTable()
         {
             lock (lock_fs)
-            {
-                if (_fsData != null)
-                {                    
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
-
-                if (_fsRollback != null)
-                {                    
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
-
-                if (_fsRollbackHelper != null)
-                {                    
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
-            }
-
-            return new byte[] { ProtocolVersion };
+                CloseFiles();
+            return Success();
         }
 
-        /// <summary>
-        /// DeleteRemoteTable
-        /// </summary>
-        /// <returns></returns>
         public byte[] DeleteRemoteTable()
         {
             lock (lock_fs)
             {
-                if (_fsData != null)
-                {   
-                    _fsData.Dispose();
-                    _fsData = null;
-                }
-
-                if (_fsRollback != null)
-                {                    
-                    _fsRollback.Dispose();
-                    _fsRollback = null;
-                }
-
-                if (_fsRollbackHelper != null)
-                {                    
-                    _fsRollbackHelper.Dispose();
-                    _fsRollbackHelper = null;
-                }
-
-                
-                this.rth.configuration.FSFactory.Delete(this._fileName);
-                this.rth.configuration.FSFactory.Delete(this._fileName + ".rol");
-                this.rth.configuration.FSFactory.Delete(this._fileName + ".rhp");
+                CloseFiles();
+                rth.configuration.FSFactory.Delete(_fileName);
+                rth.configuration.FSFactory.Delete(_fileName + ".rol");
+                rth.configuration.FSFactory.Delete(_fileName + ".rhp");
             }
-
-            return new byte[] { ProtocolVersion };
+            return Success();
         }
 
-        /// <summary>
-        /// DataFileWrite
-        /// </summary>
-        /// <param name="position"></param>
-        /// <param name="withFlush"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public byte[] DataFileWrite(long position, bool withFlush, byte[] data)
+        public byte[] DataFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
-            {
-                _fsData.Position = position;
-                _fsData.Write(data, 0, data.Length);
-
-                if (withFlush)
-                    FSR.NET_Flush(_fsData);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                      .Concat(BitConverter.GetBytes(_fsData.Length));
-                return protocol;
-            }            
+                return Write(_fsData, position, withFlush, data, offset, count);
         }
 
-        /// <summary>
-        /// RollbackFileWrite
-        /// </summary>
-        /// <param name="position"></param>
-        /// <param name="withFlush"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public byte[] RollbackFileWrite(long position, bool withFlush, byte[] data)
+        public byte[] RollbackFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
-            {
-                _fsRollback.Position = position;
-                _fsRollback.Write(data, 0, data.Length);
-
-                if (withFlush)
-                    FSR.NET_Flush(_fsRollback);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                      .Concat(BitConverter.GetBytes(_fsRollback.Length));
-                return protocol;
-            }
+                return Write(_fsRollback, position, withFlush, data, offset, count);
         }
 
-
-        /// <summary>
-        /// RollbackFileWrite
-        /// </summary>
-        /// <param name="position"></param>
-        /// <param name="withFlush"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public byte[] RollbackHelperFileWrite(long position, bool withFlush, byte[] data)
+        public byte[] RollbackHelperFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
-            {
-                _fsRollbackHelper.Position = position;
-                _fsRollbackHelper.Write(data, 0, data.Length);
-
-                if (withFlush)
-                    FSR.NET_Flush(_fsRollbackHelper);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                      .Concat(BitConverter.GetBytes(_fsRollbackHelper.Length));
-                return protocol;
-            }
+                return Write(_fsRollbackHelper, position, withFlush, data, offset, count);
         }
 
-        /// <summary>
-        /// DataFileRead
-        /// </summary>
-        /// <param name="position"></param>
-        /// <returns></returns>
         public byte[] DataFileRead(long position, int count)
         {
             lock (lock_fs)
-            {
-                byte[] bt = new byte[count];
-                _fsData.Position = position;
-                _fsData.Read(bt, 0, bt.Length);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                   .Concat(bt);
-                return protocol;
-            }
+                return Read(_fsData, position, count);
         }
 
-        /// <summary>
-        /// RollbackFileRead
-        /// </summary>
-        /// <param name="position"></param>
-        /// <returns></returns>
         public byte[] RollbackFileRead(long position, int count)
         {
             lock (lock_fs)
-            {
-                byte[] bt = new byte[count];
-                _fsRollback.Position = position;
-                _fsRollback.Read(bt, 0, bt.Length);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                   .Concat(bt);
-                return protocol;
-            }
+                return Read(_fsRollback, position, count);
         }
 
-        /// <summary>
-        /// RollbackHelperFileRead
-        /// </summary>
-        /// <param name="position"></param>
-        /// <returns></returns>
         public byte[] RollbackHelperFileRead(long position, int count)
         {
             lock (lock_fs)
-            {
-                byte[] bt = new byte[count];
-                _fsRollbackHelper.Position = position;
-                _fsRollbackHelper.Read(bt, 0, bt.Length);
-
-                byte[] protocol = new byte[] { ProtocolVersion }   //Protocol version
-                                   .Concat(bt);
-                return protocol;
-            }
+                return Read(_fsRollbackHelper, position, count);
         }
 
-        /// <summary>
-        /// DataFileFlush
-        /// </summary>
-        /// <returns></returns>
         public byte[] DataFileFlush()
         {
             lock (lock_fs)
-            {
-                FSR.NET_Flush(_fsData);                
-            }
-
-            return new byte[] { ProtocolVersion };
+                FSR.NET_Flush(_fsData);
+            return Success();
         }
 
-        /// <summary>
-        /// RollbackFileFlush
-        /// </summary>
-        /// <returns></returns>
         public byte[] RollbackFileFlush()
         {
             lock (lock_fs)
-            {
-                FSR.NET_Flush(_fsRollback);                
-            }
-
-            return new byte[] { ProtocolVersion };
+                FSR.NET_Flush(_fsRollback);
+            return Success();
         }
 
-        /// <summary>
-        /// RollbackFileRecreate
-        /// </summary>
-        /// <returns></returns>
         public byte[] RollbackFileRecreate()
         {
             lock (lock_fs)
-            {                
-                this._fsRollback.Dispose();
-                this.rth.configuration.FSFactory.Delete(this._fileName + ".rol");
-                this._fsRollback = this.rth.configuration.FSFactory.CreateType1(this._fileName + ".rol", _fileStreamBufferSize); // new FileStream(this._fileName + ".rol", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, _fileStreamBufferSize, FileOptions.WriteThrough);
+            {
+                if (_fsRollback != null)
+                    _fsRollback.Dispose();
+                rth.configuration.FSFactory.Delete(_fileName + ".rol");
+                _fsRollback = rth.configuration.FSFactory.CreateType1(_fileName + ".rol", _fileStreamBufferSize);
             }
-            return new byte[] { ProtocolVersion };
+            return Success();
         }
 
+        byte[] Write(IFileStream stream, long position, bool withFlush, byte[] data, int offset, int count)
+        {
+            if (stream == null)
+                throw new InvalidOperationException("The remote table is not open.");
+            stream.Position = position;
+            stream.Write(data, offset, count);
+            if (withFlush)
+                FSR.NET_Flush(stream);
+            return CreateLengthResponse(stream.Length);
+        }
 
-       
-    }//eoc
+        byte[] Read(IFileStream stream, long position, int count)
+        {
+            if (stream == null)
+                throw new InvalidOperationException("The remote table is not open.");
+            long available = position < stream.Length ? stream.Length - position : 0;
+            int payloadLength = available < count ? (int)available : count;
+            byte[] response = new byte[checked(payloadLength + 1)];
+            response[0] = ProtocolVersion;
+            if (payloadLength == 0)
+                return response;
+
+            stream.Position = position;
+            int responseOffset = 1;
+            int remaining = payloadLength;
+            while (remaining > 0)
+            {
+                int read = stream.Read(response, responseOffset, remaining);
+                if (read == 0)
+                    throw new EndOfStreamException("Unexpected end of remote table file.");
+                responseOffset += read;
+                remaining -= read;
+            }
+            return response;
+        }
+
+        void CloseFiles()
+        {
+            if (_fsData != null) { _fsData.Dispose(); _fsData = null; }
+            if (_fsRollback != null) { _fsRollback.Dispose(); _fsRollback = null; }
+            if (_fsRollbackHelper != null) { _fsRollbackHelper.Dispose(); _fsRollbackHelper = null; }
+        }
+
+        byte[] CreateLengthResponse(long length)
+        {
+            byte[] response = new byte[9];
+            response[0] = ProtocolVersion;
+            Buffer.BlockCopy(BitConverter.GetBytes(length), 0, response, 1, 8);
+            return response;
+        }
+
+        byte[] Success() { return new byte[] { ProtocolVersion }; }
+    }
 }

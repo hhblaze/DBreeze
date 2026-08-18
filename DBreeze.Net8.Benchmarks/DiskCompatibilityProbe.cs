@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DBreeze;
+using DBreeze.Storage;
 
 namespace DBreeze.Net8.Benchmarks;
 
@@ -52,6 +53,14 @@ internal static class DiskCompatibilityProbe
                     Validate(options.DatabasePath, extended: true);
                     WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, "extended"));
                     break;
+                case "create-backup":
+                    CreateWithBackup(options.DatabasePath, options.BackupPath);
+                    WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, "base"));
+                    break;
+                case "restore-backup":
+                    RestoreBackup(options.DatabasePath, options.BackupPath);
+                    WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, "base"));
+                    break;
                 case "compare":
                     Compare(options.LeftManifestPath, options.RightManifestPath, options.OutputPath);
                     break;
@@ -71,39 +80,88 @@ internal static class DiskCompatibilityProbe
 
     private static void Create(string databasePath)
     {
+        PrepareNewDatabase(databasePath);
+
+        using (var engine = new DBreezeEngine(databasePath))
+            PopulateBaseData(engine);
+
+        Validate(databasePath, extended: false);
+    }
+
+    private static void CreateWithBackup(string databasePath, string backupPath)
+    {
+        PrepareNewDatabase(databasePath);
+        if (Directory.Exists(backupPath))
+            throw new IOException($"Compatibility backup already exists and will not be overwritten: {backupPath}");
+
+        var configuration = new DBreezeConfiguration
+        {
+            DBreezeDataFolderName = databasePath,
+        };
+        configuration.Backup.BackupFolderName = backupPath;
+
+        using (var engine = new DBreezeEngine(configuration))
+            PopulateBaseData(engine);
+
+        Validate(databasePath, extended: false);
+    }
+
+    private static void RestoreBackup(string databasePath, string backupPath)
+    {
+        if (Directory.Exists(databasePath))
+            throw new IOException($"Compatibility restore destination already exists and will not be overwritten: {databasePath}");
+        if (!Directory.Exists(backupPath))
+            throw new DirectoryNotFoundException(backupPath);
+
+        string parent = Path.GetDirectoryName(databasePath)
+            ?? throw new InvalidOperationException("Compatibility restore destination must have a parent directory.");
+        Directory.CreateDirectory(parent);
+
+        var restorer = new BackupRestorer
+        {
+            BackupFolder = backupPath,
+            DataBaseFolder = databasePath,
+        };
+        // Legacy restorers require a subscriber; the current implementation deliberately does not.
+        restorer.OnRestore += delegate { };
+        restorer.StartRestoration();
+
+        Validate(databasePath, extended: false);
+    }
+
+    private static void PrepareNewDatabase(string databasePath)
+    {
         if (Directory.Exists(databasePath))
             throw new IOException($"Compatibility database already exists and will not be overwritten: {databasePath}");
 
         string parent = Path.GetDirectoryName(databasePath)
             ?? throw new InvalidOperationException("Compatibility database must have a parent directory.");
         Directory.CreateDirectory(parent);
+    }
 
-        using (var engine = new DBreezeEngine(databasePath))
-        using (var transaction = engine.GetTransaction())
-        {
-            transaction.SynchronizeTables(CompatibilityTables);
+    private static void PopulateBaseData(DBreezeEngine engine)
+    {
+        using var transaction = engine.GetTransaction();
+        transaction.SynchronizeTables(CompatibilityTables);
 
-            for (int i = 0; i < BaseIntRows; i++)
-                transaction.Insert("compat-int", i, BaseValue(i));
+        for (int i = 0; i < BaseIntRows; i++)
+            transaction.Insert("compat-int", i, BaseValue(i));
 
-            for (int i = 0; i < DateRows; i++)
-                transaction.Insert("compat-date", DateAt(i), (long)i * 17);
+        for (int i = 0; i < DateRows; i++)
+            transaction.Insert("compat-date", DateAt(i), (long)i * 17);
 
-            for (int i = 0; i < ByteRows; i++)
-                transaction.Insert("compat-bytes", ByteKey(i), ByteValue(i));
+        for (int i = 0; i < ByteRows; i++)
+            transaction.Insert("compat-bytes", ByteKey(i), ByteValue(i));
 
-            for (int i = 0; i < 512; i++)
-                transaction.RandomKeySorter.Insert("compat-rks", i, i * 3);
-            for (int i = 0; i < 64; i++)
-                transaction.RandomKeySorter.Remove("compat-rks", i);
+        for (int i = 0; i < 512; i++)
+            transaction.RandomKeySorter.Insert("compat-rks", i, i * 3);
+        for (int i = 0; i < 64; i++)
+            transaction.RandomKeySorter.Remove("compat-rks", i);
 
-            transaction.InsertDictionary("compat-dictionary",
-                Enumerable.Range(0, 128).ToDictionary(static i => i, static i => i * 11), false);
-            transaction.InsertHashSet("compat-hashset", Enumerable.Range(0, 128).ToHashSet(), false);
-            transaction.Commit();
-        }
-
-        Validate(databasePath, extended: false);
+        transaction.InsertDictionary("compat-dictionary",
+            Enumerable.Range(0, 128).ToDictionary(static i => i, static i => i * 11), false);
+        transaction.InsertHashSet("compat-hashset", Enumerable.Range(0, 128).ToHashSet(), false);
+        transaction.Commit();
     }
 
     private static void Extend(string databasePath)
@@ -293,6 +351,9 @@ internal static class DiskCompatibilityProbe
         File.WriteAllText(Path.Combine(outputDirectory, "disk-compatibility.json"),
             JsonSerializer.Serialize(report, JsonOptions), new UTF8Encoding(false));
         File.WriteAllText(Path.Combine(outputDirectory, "disk-compatibility.md"), BuildMarkdown(report), new UTF8Encoding(false));
+
+        if (!report.FileInventoryEqual || !report.FileLengthsEqual || !report.FileHashesEqual)
+            throw new InvalidDataException("Disk compatibility comparison found physical file differences.");
     }
 
     private static string BuildMarkdown(CompatibilityComparisonReport report)
@@ -370,6 +431,7 @@ internal static class DiskCompatibilityProbe
     {
         internal string Action { get; private set; }
         internal string DatabasePath { get; private set; }
+        internal string BackupPath { get; private set; }
         internal string OutputPath { get; private set; }
         internal string LeftManifestPath { get; private set; }
         internal string RightManifestPath { get; private set; }
@@ -386,6 +448,9 @@ internal static class DiskCompatibilityProbe
                         break;
                     case "--database":
                         options.DatabasePath = Path.GetFullPath(ReadValue(args, ref i, "--database"));
+                        break;
+                    case "--backup":
+                        options.BackupPath = Path.GetFullPath(ReadValue(args, ref i, "--backup"));
                         break;
                     case "--output":
                         options.OutputPath = Path.GetFullPath(ReadValue(args, ref i, "--output"));
@@ -412,6 +477,12 @@ internal static class DiskCompatibilityProbe
             else if (string.IsNullOrEmpty(options.DatabasePath))
             {
                 throw new ArgumentException($"disk-compat {options.Action} requires --database.", nameof(args));
+            }
+
+            if ((options.Action == "create-backup" || options.Action == "restore-backup")
+                && string.IsNullOrEmpty(options.BackupPath))
+            {
+                throw new ArgumentException($"disk-compat {options.Action} requires --backup.", nameof(args));
             }
 
             return options;

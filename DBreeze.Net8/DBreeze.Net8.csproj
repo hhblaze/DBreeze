@@ -23,13 +23,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Storage\Backup\Backup.cs" />
+    <Compile Remove="Storage\Backup\BackupRestorer.cs" />
+    <Compile Remove="Storage\RemoteInstance\**\*.cs" />
     <Compile Remove="KNNSearch\**" />
     <EmbeddedResource Remove="KNNSearch\**" />
     <None Remove="KNNSearch\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Storage\_FSR.cs" />
+    <Compile Include="..\DBreeze\Storage\Backup\Backup.cs" Link="Storage\Backup\Backup.cs" />
+    <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
+    <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />
     <Compile Remove="Utils\AsyncOperations.cs" />
     <Compile Remove="Utils\BytesProcessing_old.cs" />
     <Compile Remove="VectorLayer\VectorMath.cs" />
@@ -37,7 +42,6 @@
 
   <ItemGroup>
         <Compile Include="..\DBreeze.Net5\Utils\MultiKeyConcurrentSortedDictionary.cs" Link="Utils\MultiKeyConcurrentSortedDictionary.cs" />
-        <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">
       <Link>DataTypes\Row.cs</Link>

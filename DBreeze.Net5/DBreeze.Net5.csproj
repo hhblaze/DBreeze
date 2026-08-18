@@ -23,12 +23,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Storage\Backup\Backup.cs" />
+    <Compile Remove="Storage\Backup\BackupRestorer.cs" />
+    <Compile Remove="Storage\RemoteInstance\**\*.cs" />
     <Compile Remove="KNNSearch\**" />
     <EmbeddedResource Remove="KNNSearch\**" />
     <None Remove="KNNSearch\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\DBreeze\Storage\Backup\Backup.cs" Link="Storage\Backup\Backup.cs" />
+    <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
+    <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />
     <Compile Remove="Storage\_FSR.cs" />
     <Compile Remove="Utils\AsyncOperations.cs" />
     <Compile Remove="VectorLayer\VectorMath.cs" />
@@ -37,7 +43,7 @@
   <ItemGroup>
         <Compile Include="..\DBreeze.Net8\VectorLayer\HNSW\TurboQuantConfig.cs" Link="VectorLayer\HNSW\TurboQuantConfig.cs" />
         <Compile Include="..\DBreeze.Net8\VectorLayer\HNSW\TurboQuantMath.cs" Link="VectorLayer\HNSW\TurboQuantMath.cs" />
-        <Compile Include="..\DBreeze.NetStandard\Storage\FSR.cs" Link="Storage\FSR.cs" />
+        <Compile Include="..\DBreeze\Storage\FSR.cs" Link="Storage\FSR.cs" />
         <Compile Include="..\DBreeze.NetStandard\Transactions\TransactionsCoordinator.cs" Link="Transactions\TransactionsCoordinator.cs" />
         <Compile Include="..\DBreeze.NetStandard\Utils\Compression.cs" Link="Utils\Compression.cs" />
         <Compile Include="..\DBreeze\DataTypes\Row.cs">

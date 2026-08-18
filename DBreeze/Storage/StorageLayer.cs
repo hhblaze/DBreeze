@@ -20,7 +20,14 @@ namespace DBreeze.Storage
         IStorage _tableStorage = null;        
         
         public StorageLayer(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
-        {          
+        {
+            if (trieSettings == null)
+                throw new ArgumentNullException("trieSettings");
+            if (configuration == null)
+                throw new ArgumentNullException("configuration");
+            if (trieSettings.POINTER_LENGTH < 1 || trieSettings.POINTER_LENGTH > 8)
+                throw new ArgumentOutOfRangeException("trieSettings.POINTER_LENGTH", "POINTER_LENGTH must be between 1 and 8 bytes.");
+
             if (trieSettings.StorageWasOverriden)
             {
                 switch (trieSettings.AlternativeTableStorageType)
@@ -40,6 +47,8 @@ namespace DBreeze.Storage
                         _tableStorage = (IStorage)new RISR(fileName, trieSettings, configuration);
 
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException("trieSettings.AlternativeTableStorageType");
                 }
             }
             else
@@ -61,6 +70,8 @@ namespace DBreeze.Storage
                         _tableStorage = (IStorage)new RISR(fileName, trieSettings, configuration);
 
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException("configuration.Storage");
                 }
             }
 

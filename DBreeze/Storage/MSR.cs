@@ -5,8 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 
 using DBreeze.Utils;
@@ -36,7 +34,7 @@ namespace DBreeze.Storage
         /// <summary>
         /// Record in rollback is characterized with 
         /// </summary>
-        class r
+        class RollbackRecord
         {
             /// <summary>
             /// offset in rollback file
@@ -52,7 +50,7 @@ namespace DBreeze.Storage
         /// Rollback cache
         /// Key is offset in data file, value is corresponding offset and length in rollback file
         /// </summary>
-        Dictionary<long, r> _rollbackCache = new Dictionary<long, r>();
+        Dictionary<long, RollbackRecord> _rollbackCache = new Dictionary<long, RollbackRecord>();
 
         string _fileName = String.Empty;
        
@@ -107,7 +105,7 @@ namespace DBreeze.Storage
         /// </summary>
         public long Length
         {
-            get { return eofData; }
+            get { lock (lock_fs) { return eofData; } }
         }
         
         /// <summary>
@@ -115,7 +113,7 @@ namespace DBreeze.Storage
         /// </summary>
         public DateTime StorageFixTime
         {
-            get { return _storageFixTime; }
+            get { lock (lock_fs) { return _storageFixTime; } }
         }
 
         public TrieSettings TrieSettings
@@ -155,6 +153,12 @@ namespace DBreeze.Storage
                     _fsRollbackHelper.Dispose();
                     _fsRollbackHelper = null;
                 }
+
+                _randBuf.Clear();
+                _rollbackCache.Clear();
+                usedBufferSize = 0;
+                eofRollback = 0;
+                TransactionalCommitIsStarted = false;
             }
         }
 
@@ -192,7 +196,7 @@ namespace DBreeze.Storage
 
         public void RestoreTableFromTheOtherTable(string newTableFullPath)
         {
-            //DO NOTHING
+            throw new NotSupportedException("RestoreTableFromTheOtherTable is not available for memory storage.");
         }
 
         #region "Recreate Files"
@@ -211,9 +215,12 @@ namespace DBreeze.Storage
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofRollback = 0;
-                eofData = 0;
+                TransactionalCommitIsStarted = false;
 
-                InitFiles();
+                _fsData.Write_ToTheEnd(new byte[64]);
+                eofData = _fsData.EOF;
+                _storageFixTime = DateTime.UtcNow;
+                IsOperable = true;
 
             }
         }
@@ -226,14 +233,20 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public byte[] Table_WriteToTheEnd(byte[] data)
         {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
             long position = 0;
+            byte[] encodedPosition = null;
 
             lock (lock_fs)
             {
-                position = _fsData.Write_ToTheEnd(ref data);                
+                position = _fsData.EOF;
+                encodedPosition = EncodePointer(position);
+                position = _fsData.Write_ToTheEnd(ref data);
             }
-                        
-            return ((ulong)position).To_8_bytes_array_BigEndian().Substring(8 - DefaultPointerLen, DefaultPointerLen);
+
+            return encodedPosition;
         }
 
         /// <summary>
@@ -262,13 +275,16 @@ namespace DBreeze.Storage
 
             lock (lock_fs)
             {
+                if (offset < 0 || offset > Int32.MaxValue - data.Length)
+                    throw new ArgumentOutOfRangeException("offset");
+                long writeEnd = offset + data.Length;
 
-                if (offset < _fsData.EOF && offset + data.Length > _fsData.EOF)
+                if (offset < _fsData.EOF && writeEnd > _fsData.EOF)
                 {
                     throw new Exception("FSR.WriteByOffset: offset < _fsData.EOF && offset + data.Length > _fsData.EOF");
                 }
 
-                if (offset + data.Length > _fsData.EOF)
+                if (writeEnd > _fsData.EOF)
                 {
                     //DB RULE1. We cant update and go out of the end of file. Only if we write into empty file root in the beginning
                     throw new Exception("FSR.WriteByOffset: offset + data.Length > _fsData.EOF");
@@ -288,7 +304,7 @@ namespace DBreeze.Storage
                         //we just overwrite offset value with the new data
                     }
 
-                    //setting new value for such offset
+                    usedBufferSize += data.Length - inBuf.Length;
                     _randBuf[offset] = data;
                 }
                 else
@@ -300,7 +316,7 @@ namespace DBreeze.Storage
                 }
 
                 //if we are able to store data into buffer lets do it
-                if (usedBufferSize >= maxRandomBufferSize || _randBuf.Count() > maxRandomElementsCount)
+                if (usedBufferSize >= maxRandomBufferSize || _randBuf.Count > maxRandomElementsCount)
                     FlushRandomBuffer();
             }
         }
@@ -312,7 +328,7 @@ namespace DBreeze.Storage
         /// <param name="commit"></param>
         void FlushRandomBuffer()
         {
-            if (_randBuf.Count() == 0)
+            if (_randBuf.Count == 0)
             {
                 return;
             }
@@ -321,66 +337,105 @@ namespace DBreeze.Storage
             //then updating data of data file but dont call update
             //clearing random buffer
 
-            //Creating rollback header           
-            byte[] offset = null;
-            byte[] btRoll = null;
+            List<long> keys = new List<long>(_randBuf.Keys);
+            keys.Sort();
 
             bool flushRollback = false;
 
             //first loop for saving rollback data
-            foreach (var de in _randBuf.OrderBy(r => r.Key))      //sorting can mean nothing here, only takes extra time
+            foreach (long key in keys)
             {
-                offset = ((ulong)de.Key).To_8_bytes_array_BigEndian().Substring(8 - DefaultPointerLen, DefaultPointerLen);
-
-                if (_rollbackCache.ContainsKey(de.Key))
-                    continue;
-
-                //Reading from dataFile values which must be rolled back
-                btRoll = new byte[de.Value.Length];
-
-                _fsData.Write_ByOffset((int)de.Key, ref btRoll);
-
-                //Forming protocol for rollback
-                btRoll = new byte[] { 1 }
-                           .ConcatMany(
-                           offset,
-                           ((uint)btRoll.Length).To_4_bytes_array_BigEndian(),
-                           btRoll
-                           );
-
-                //Writing rollback
-                _fsRollback.Write_ByOffset((int)eofRollback, ref btRoll);
-
-                _rollbackCache.Add(de.Key, new r { o = eofRollback + 1 + offset.Length + 4, l = de.Value.Length });  //10 is size of protocol data
-
-                //increasing eof rollback file
-                eofRollback += btRoll.Length;
-
-                flushRollback = true;
+                byte[] value = _randBuf[key];
+                if (PreserveRollbackRange(key, value.Length))
+                    flushRollback = true;
             }
 
             if (flushRollback)
             {
                 //Writing into helper
-                btRoll = eofRollback.To_8_bytes_array_BigEndian();
-                _fsRollbackHelper.Write_ByOffset(0, ref btRoll);
+                byte[] marker = eofRollback.To_8_bytes_array_BigEndian();
+                _fsRollbackHelper.Write_ByOffset(0, ref marker);
 
                 //Flushing rollback and rollback helper
             }
 
 
             //second loop for saving data
-            foreach (var de in _randBuf.OrderBy(r => r.Key))      //sorting can mean nothing here, only takes extra time
+            foreach (long key in keys)
             {
-                btRoll = de.Value;
-                _fsData.Write_ByOffset((int)de.Key, ref btRoll);
+                byte[] value = _randBuf[key];
+                _fsData.Write_ByOffset((int)key, ref value);
             }
 
             //No flush of data file, it will be done on Flush()                        
 
             _randBuf.Clear();
             usedBufferSize = 0;
-            
+
+        }
+
+        private bool PreserveRollbackRange(long dataOffset, int length)
+        {
+            long end = checked(dataOffset + length);
+            long cursor = dataOffset;
+            bool appended = false;
+
+            while (cursor < end)
+            {
+                long coveredEnd = cursor;
+                long nextCoveredStart = end;
+                foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
+                {
+                    long rollbackEnd = rollback.Key + rollback.Value.l;
+                    if (rollback.Key <= cursor && rollbackEnd > coveredEnd)
+                        coveredEnd = rollbackEnd;
+                    else if (rollback.Key > cursor && rollback.Key < nextCoveredStart)
+                        nextCoveredStart = rollback.Key;
+                }
+
+                if (coveredEnd > cursor)
+                {
+                    cursor = coveredEnd < end ? coveredEnd : end;
+                    continue;
+                }
+
+                int uncoveredLength = checked((int)(nextCoveredStart - cursor));
+                AppendRollbackRecord(cursor, uncoveredLength);
+                appended = true;
+                cursor = nextCoveredStart;
+            }
+
+            return appended;
+        }
+
+        private void AppendRollbackRecord(long dataOffset, int length)
+        {
+            int headerLength = 1 + DefaultPointerLen + 4;
+            byte[] original = _fsData.Read(checked((int)dataOffset), length);
+            byte[] record = new byte[checked(headerLength + length)];
+            record[0] = 1;
+
+            ulong encodedOffset = (ulong)dataOffset;
+            for (int i = DefaultPointerLen; i > 0; i--)
+            {
+                record[i] = (byte)encodedOffset;
+                encodedOffset >>= 8;
+            }
+            if (encodedOffset != 0)
+                throw new InvalidOperationException("Storage offset does not fit configured pointer length.");
+
+            uint encodedLength = (uint)length;
+            int lengthOffset = 1 + DefaultPointerLen;
+            record[lengthOffset] = (byte)(encodedLength >> 24);
+            record[lengthOffset + 1] = (byte)(encodedLength >> 16);
+            record[lengthOffset + 2] = (byte)(encodedLength >> 8);
+            record[lengthOffset + 3] = (byte)encodedLength;
+            Buffer.BlockCopy(original, 0, record, headerLength, length);
+
+            int recordOffset = checked((int)eofRollback);
+            _fsRollback.Write_ByOffset(recordOffset, ref record);
+            _rollbackCache.Add(dataOffset, new RollbackRecord { o = recordOffset + headerLength, l = length });
+            eofRollback = checked((long)recordOffset + record.Length);
         }
 
         /// <summary>
@@ -404,209 +459,84 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public byte[] Table_Read(bool useCache, long offset, int count)
         {
-
-            byte[] res = null;
-
-            //if (count == 0)     //!!! also not necessary, but can be while testing period under exception
-            //    return null;
-
             lock (lock_fs)
             {
+                if (offset < 0)
+                    throw new ArgumentOutOfRangeException("offset");
+                if (count < 0)
+                    throw new ArgumentOutOfRangeException("count");
+
                 if (!useCache)
                 {
-                    //We read exactly what is already saved, without rollback.
-                    //all data must be either in file or in buffer
-                    //we must form resulting byte[] 
+                    int resultLength = GetReadLength(offset, count, _fsData.EOF);
+                    if (resultLength == 0)
+                        return new byte[0];
 
-                    //Buffer
-                    //Finding first element which is smaller or equal then offset
-                    List<long> bufKeys = new List<long>();
+                    byte[] result = _fsData.Read((int)offset, resultLength);
 
-                    if (_randBuf.Count() > 0)
-                    {
-                        var qkvp = _randBuf.OrderByDescending(r => r.Key).Where(r => r.Key < offset).Take(1).Where(r => (r.Key + r.Value.Length - 1) >= offset);
-
-
-                        if (qkvp.Count() > 0)
-                        {
-                            bufKeys.Add(qkvp.FirstOrDefault().Key);
-                        }
-
-                        foreach (var kvp in _randBuf.OrderBy(r => r.Key).Where(r => r.Key >= offset && r.Key < (offset + count)))
-                        {
-                            bufKeys.Add(kvp.Key);
-                        }
-                    }
-
-                    //reading full byte[] from original file and putting on top keys
-                    //We use full length of the file
-                    if (offset + count > _fsData.EOF)
-                        res = new byte[_fsData.EOF - offset];
-                    else
-                        res = new byte[count];
-
-                    res = _fsData.Read((int)offset, res.Length);
-
-                    byte[] btWork = null;
-                    //putting on top
-                    foreach (var bk in bufKeys)
-                    {
-                        if (offset + res.Length <= bk)
-                            continue;
-
-                        btWork = _randBuf[bk];
-
-                        bool cut = false;
-                        int start = 0;
-                        int stop = btWork.Length;
-
-                        if (bk < offset)
-                        {
-                            cut = true;
-                            start = Convert.ToInt32(offset - bk);
-                        }
-
-                        if ((offset + count) < (bk + btWork.Length))
-                        {
-                            cut = true;
-                            stop = Convert.ToInt32(offset + count - bk);
-                        }
-
-                        if (cut)
-                        {
-                            byte[] tmp = new byte[stop - start];
-                            Buffer.BlockCopy(btWork, start, tmp, 0, tmp.Length);
-                            btWork = tmp;
-                        }
-
-                        Buffer.BlockCopy(btWork, 0, res, (start > 0) ? 0 : Convert.ToInt32(bk - offset), btWork.Length);
-                    }
-
-
+                    foreach (KeyValuePair<long, byte[]> buffered in _randBuf)
+                        CopyIntersection(buffered.Key, buffered.Value, offset, result);
+                    return result;
                 }
-                else
+
+                long visibleLength = offset > eofData && TransactionalCommitIsStarted ? _fsData.EOF : eofData;
+                int committedLength = GetReadLength(offset, count, visibleLength);
+                if (committedLength == 0)
+                    return new byte[0];
+
+                byte[] committed = _fsData.Read((int)offset, committedLength);
+                foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
                 {
-                    //we must use rollback file.
-                    //We can read only up to commited file lengh eofData
+                    long rollbackEnd = rollback.Key + rollback.Value.l;
+                    long resultEnd = offset + committed.Length;
+                    if (rollback.Key >= resultEnd || rollbackEnd <= offset)
+                        continue;
 
-                    List<long> bufKeys = new List<long>();
-
-                    if (_rollbackCache.Count() > 0)
-                    {
-                        var qkvp = _rollbackCache.OrderByDescending(r => r.Key).Where(r => r.Key < offset).Take(1).Where(r => (r.Key + r.Value.l - 1) >= offset);
-
-
-                        if (qkvp.Count() > 0)
-                        {
-                            bufKeys.Add(qkvp.FirstOrDefault().Key);
-                        }
-
-                        foreach (var kvp in _rollbackCache.OrderBy(r => r.Key).Where(r => r.Key >= offset && r.Key < (offset + count)))
-                        {
-                            bufKeys.Add(kvp.Key);
-                        }
-                    }
-
-                    //reading full byte[] from original file and putting on top keys
-
-                    /*
-                         * Transaction with minimum 2 tables. T2 is inserted, reference to T2 KVP is taken, then this reference is saved into T1.
-                         * Commit().
-                         * Commit calls TransactionalCommit for every table sequentially. First it meets table T1, then T2.
-                         * In both tables TransactionalCommit procedures are successfull.
-                         * then Commit procedure for each table calls TransactionalCommitIsFinished (this proc will clear rollback refs and moves eofData for every table).
-                         * First encounters T1 and only then T2. 
-                         * ....Somewhere here (between calling T1 and T2 TransactionalCommitIsFinished) starts a parallel thread. 
-                         * After T1 TransactionalCommitIsFinished our parallel thread P1 reads data from T1, 
-                         * and gets SelectDirect reference to T2 KVP. Then tries to read from not yet TransactionalCommitIsFinished T2.
-                         * and for T2 happens: eofData < offset
-                         * 
-                         * To avoid such specific case we use for calculation this._fsData.Length instead of eofData in case if (eofData < offset && TransactionalCommitIsStarted)            
-                         * 19.07.2013 10:25
-                        */
-
-                    //WAS
-                    //if (offset + count > eofData)
-                    //    res = new byte[eofData - offset];
-                    //else
-                    //    res = new byte[count];
-                    //////
-
-                    //NOW
-                    if (offset + count > eofData)
-                    {
-                        if (eofData < offset && TransactionalCommitIsStarted)   //NOT FINISHED multi-table COMMIT. SelectDirect case
-                        {
-                            //Probably not finished transaction and SelectDirect case. We return value,
-                            //because at this momont all transaction table have successfully gone through TransactionalCommit() procedure.
-
-                            if (offset + count > this._fsData.EOF)
-                            {
-                                res = new byte[this._fsData.EOF - offset];
-                            }
-                            else
-                            {
-                                res = new byte[count];
-                            }
-                        }
-                        else
-                        {
-                            res = new byte[eofData - offset];
-                        }
-                    }
-                    else
-                        res = new byte[count];
-                    ///////
-
-
-                    res = _fsData.Read((int)offset, res.Length);
-
-
-                    byte[] btWork = null;
-                    r rb = null;
-                    //putting on top
-                    foreach (var bk in bufKeys)
-                    {
-                        if (offset + res.Length <= bk)
-                            continue;
-
-                        rb = _rollbackCache[bk];
-                        //reading from rollback
-                        btWork = new byte[rb.l];
-
-                        btWork = _fsData.Read((int)rb.o, btWork.Length);
-
-                        bool cut = false;
-                        int start = 0;
-                        int stop = btWork.Length;
-
-                        if (bk < offset)
-                        {
-                            cut = true;
-                            start = Convert.ToInt32(offset - bk);
-                        }
-
-                        if ((offset + count) < (bk + btWork.Length))
-                        {
-                            cut = true;
-                            stop = Convert.ToInt32(offset + count - bk);
-                        }
-
-                        if (cut)
-                        {
-                            byte[] tmp = new byte[stop - start];
-                            Buffer.BlockCopy(btWork, start, tmp, 0, tmp.Length);
-                            btWork = tmp;
-                        }
-
-                        Buffer.BlockCopy(btWork, 0, res, (start > 0) ? 0 : Convert.ToInt32(bk - offset), btWork.Length);
-                    }
+                    byte[] rollbackData = _fsRollback.Read((int)rollback.Value.o, rollback.Value.l);
+                    CopyIntersection(rollback.Key, rollbackData, offset, committed);
                 }
+                return committed;
             }
+        }
 
+        private byte[] EncodePointer(long position)
+        {
+            if (position < 0)
+                throw new ArgumentOutOfRangeException("position");
 
-            return res;
-           
+            byte[] pointer = new byte[DefaultPointerLen];
+            ulong value = (ulong)position;
+            for (int i = pointer.Length - 1; i >= 0; i--)
+            {
+                pointer[i] = (byte)value;
+                value >>= 8;
+            }
+            if (value != 0)
+                throw new InvalidOperationException("Storage position does not fit configured pointer length.");
+            return pointer;
+        }
+
+        private static int GetReadLength(long offset, int count, long length)
+        {
+            if (count == 0 || offset >= length)
+                return 0;
+
+            long available = length - offset;
+            return available < count ? (int)available : count;
+        }
+
+        private static void CopyIntersection(long sourceOffset, byte[] source, long destinationOffset, byte[] destination)
+        {
+            long sourceEnd = sourceOffset + source.Length;
+            long destinationEnd = destinationOffset + destination.Length;
+            long copyStart = sourceOffset > destinationOffset ? sourceOffset : destinationOffset;
+            long copyEnd = sourceEnd < destinationEnd ? sourceEnd : destinationEnd;
+
+            if (copyStart >= copyEnd)
+                return;
+
+            Buffer.BlockCopy(source, (int)(copyStart - sourceOffset), destination,
+                (int)(copyStart - destinationOffset), (int)(copyEnd - copyStart));
         }
 
        
@@ -693,8 +623,19 @@ namespace DBreeze.Storage
         /// </summary>
         public void TransactionalRollback()
         {
-            Rollback();
-            TransactionalCommitIsStarted = false;
+            try
+            {
+                lock (lock_fs)
+                {
+                    RollbackCore();
+                    TransactionalCommitIsStarted = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                IsOperable = false;
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.RESTORE_ROLLBACK_DATA_FAILED, this._fileName, ex);
+            }
         }
 
         /// <summary>
@@ -706,51 +647,7 @@ namespace DBreeze.Storage
             {
                 lock (lock_fs)
                 {
-                    //Clearing random buffer
-                    if (_randBuf.Count() != 0)
-                    {
-                        usedBufferSize = 0;
-                        _randBuf.Clear();
-                    }
-
-                    //Restoring Rollback records
-                    byte[] btWork = null;
-
-                    if (_rollbackCache.Count() > 0)
-                    {
-
-                        foreach (var rb in _rollbackCache)
-                        {
-                            btWork = new byte[rb.Value.l];
-
-                            btWork = _fsRollback.Read((int)rb.Value.o, btWork.Length);
-
-                            //_fsRollback.Position = rb.Value.o;
-                            //_fsRollback.Read(btWork, 0, btWork.Length);
-
-                            _fsData.Write_ByOffset((int)rb.Key, btWork);
-                            //_fsData.Position = rb.Key;
-                            //_fsData.Write(btWork, 0, btWork.Length);
-                        }
-
-                        //NET_Flush(_fsData);
-
-                        //Restoring rhp
-                        eofRollback = 0;
-                        btWork = eofRollback.To_8_bytes_array_BigEndian();
-                        _fsRollbackHelper.Write_ByOffset(0, btWork);
-                        //_fsRollbackHelper.Position = 0;
-                        //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
-
-                        //NET_Flush(_fsRollbackHelper);
-
-                        //Clearing rollbackCache
-                        _rollbackCache.Clear();
-
-                    }
-
-                    //we dont move eofData, space can be re-used up to next restart (may be root can have this info in next protocols)
-                    //eofData = this._fsData.Length;
+                    RollbackCore();
                 }
             }
             catch (Exception ex)
@@ -760,6 +657,29 @@ namespace DBreeze.Storage
             }
 
 
+        }
+
+        private void RollbackCore()
+        {
+            if (_randBuf.Count != 0)
+            {
+                usedBufferSize = 0;
+                _randBuf.Clear();
+            }
+
+            if (_rollbackCache.Count == 0)
+                return;
+
+            foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
+            {
+                byte[] rollbackData = _fsRollback.Read((int)rollback.Value.o, rollback.Value.l);
+                _fsData.Write_ByOffset((int)rollback.Key, rollbackData);
+            }
+
+            eofRollback = 0;
+            byte[] marker = eofRollback.To_8_bytes_array_BigEndian();
+            _fsRollbackHelper.Write_ByOffset(0, marker);
+            _rollbackCache.Clear();
         }
 
 

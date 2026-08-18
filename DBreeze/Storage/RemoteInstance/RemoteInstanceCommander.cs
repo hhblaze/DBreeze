@@ -4,12 +4,7 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-//using System.Threading.Tasks;
-
-using DBreeze.Utils;
+using System.IO;
 
 namespace DBreeze.Storage.RemoteInstance
 {
@@ -28,6 +23,7 @@ namespace DBreeze.Storage.RemoteInstance
 
         IRemoteInstanceCommunicator Com = null;
         byte ProtocolVersion = 1;
+        bool _isOpen = false;
 
         public RemoteInstanceCommander(IRemoteInstanceCommunicator communicator)
         {
@@ -74,29 +70,32 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="fileName"></param>
         public void OpenRemoteTable(string tableName)
         {
+            if (tableName == null)
+                throw new ArgumentNullException("tableName");
+            if (_isOpen)
+            {
+                if (String.Equals(this.tableName, tableName, StringComparison.Ordinal))
+                    return;
+                throw new InvalidOperationException("A remote table is already open by this commander.");
+            }
+
             this.tableName = tableName;
             byte[] btTblName = System.Text.Encoding.UTF8.GetBytes(tableName);
-            byte[] protocol = new byte[] { ProtocolVersion, 1 }   //Protocol version
-                              .ConcatMany(
-                                BitConverter.GetBytes(btTblName.Length),
-                                btTblName
-                              );
+            byte[] protocol = new byte[6 + btTblName.Length];
+            protocol[0] = ProtocolVersion;
+            protocol[1] = 1;
+            Buffer.BlockCopy(BitConverter.GetBytes(btTblName.Length), 0, protocol, 2, 4);
+            Buffer.BlockCopy(btTblName, 0, protocol, 6, btTblName.Length);
 
-            //!!!!!!!!!Check throwing exception in send
-            byte[] ret = Com.Send(protocol);        
-
-            //Parsing Answer
-            if (ret[0] == 1)    //For protocol version 1
-            {
-                //First 8 bytes = RemoteTableId
-                RemoteTableId = BitConverter.ToUInt64(ret, 1);
-                //We need all remote table files lengthes
-                _DataFileLength = BitConverter.ToInt64(ret, 9);
-                _RollbackFileLength = BitConverter.ToInt64(ret, 17);
-                _RollbackHelperFileLength = BitConverter.ToInt64(ret, 25);
-            }
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.OpenRemoteTable: remote exception");
+            byte[] ret = SendExact(protocol, "OpenRemoteTable", 33);
+            RemoteTableId = BitConverter.ToUInt64(ret, 1);
+            _DataFileLength = BitConverter.ToInt64(ret, 9);
+            _RollbackFileLength = BitConverter.ToInt64(ret, 17);
+            _RollbackHelperFileLength = BitConverter.ToInt64(ret, 25);
+            _DataFilePosition = 0;
+            _RollbackFilePosition = 0;
+            _RollbackHelperFilePosition = 0;
+            _isOpen = true;
 
         }
 
@@ -105,13 +104,11 @@ namespace DBreeze.Storage.RemoteInstance
         /// </summary>
         public void CloseRemoteTable()
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 2 }
-                              .ConcatMany(BitConverter.GetBytes(RemoteTableId));
+            if (!_isOpen)
+                return;
 
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.CloseRemoteTable: remote exception");
+            SendExact(CreateTableCommand(2), "CloseRemoteTable", 1);
+            _isOpen = false;
         }
 
         /// <summary>
@@ -119,13 +116,14 @@ namespace DBreeze.Storage.RemoteInstance
         /// </summary>
         public void DeleteRemoteTable()
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 3 }
-                              .ConcatMany(BitConverter.GetBytes(RemoteTableId));
+            if (!_isOpen)
+                return;
 
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.DeleteRemoteTable: remote exception");
+            SendExact(CreateTableCommand(3), "DeleteRemoteTable", 1);
+            _isOpen = false;
+            _DataFileLength = 0;
+            _RollbackFileLength = 0;
+            _RollbackHelperFileLength = 0;
         }
                
 
@@ -201,22 +199,9 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="withFlush"></param>
         public void DataFileWrite(byte[] array, int offset, int count, bool withFlush)
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 4 }
-                              .ConcatMany(
-                              BitConverter.GetBytes(RemoteTableId),
-                              BitConverter.GetBytes(this._DataFilePosition),
-                              (withFlush) ? new byte[] {1} : new byte[] {0},
-                              array.Substring(offset,count)
-                              );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 1)    //For protocol version 1
-            {                
-                _DataFileLength = BitConverter.ToInt64(ret, 1);             
-            }
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.DataFileWrite: remote exception");
+            byte[] ret = Write(4, _DataFilePosition, array, offset, count, withFlush, "DataFileWrite");
+            _DataFileLength = BitConverter.ToInt64(ret, 1);
+            _DataFilePosition += count;
         }
 
         /// <summary>
@@ -228,22 +213,9 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="withFlush"></param>
         public void RollbackFileWrite(byte[] array, int offset, int count, bool withFlush)
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 5 }
-                             .ConcatMany(
-                             BitConverter.GetBytes(RemoteTableId),
-                             BitConverter.GetBytes(this._RollbackFilePosition),
-                             (withFlush) ? new byte[] { 1 } : new byte[] { 0 },
-                             array.Substring(offset, count)
-                             );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 1)    //For protocol version 1
-            {
-                _RollbackFileLength = BitConverter.ToInt64(ret, 1);
-            }
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.RollbackFileWrite: remote exception");
+            byte[] ret = Write(5, _RollbackFilePosition, array, offset, count, withFlush, "RollbackFileWrite");
+            _RollbackFileLength = BitConverter.ToInt64(ret, 1);
+            _RollbackFilePosition += count;
         }
 
         /// <summary>
@@ -255,22 +227,9 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="withFlush"></param>
         public void RollbackHelperFileWrite(byte[] array, int offset, int count, bool withFlush)
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 6 }
-                             .ConcatMany(
-                             BitConverter.GetBytes(RemoteTableId),
-                             BitConverter.GetBytes(this._RollbackHelperFilePosition),
-                             (withFlush) ? new byte[] { 1 } : new byte[] { 0 },
-                             array.Substring(offset, count)
-                             );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 1)    //For protocol version 1
-            {
-                _RollbackHelperFileLength = BitConverter.ToInt64(ret, 1);
-            }
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.RollbackHelperFileWrite: remote exception");
+            byte[] ret = Write(6, _RollbackHelperFilePosition, array, offset, count, withFlush, "RollbackHelperFileWrite");
+            _RollbackHelperFileLength = BitConverter.ToInt64(ret, 1);
+            _RollbackHelperFilePosition += count;
         }
 
         #endregion
@@ -286,34 +245,9 @@ namespace DBreeze.Storage.RemoteInstance
         /// <returns></returns>
         public int DataFileRead(byte[] array, int offset, int count)
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 7 }
-                              .ConcatMany(
-                              BitConverter.GetBytes(RemoteTableId),
-                              BitConverter.GetBytes(this._DataFilePosition),                             
-                              BitConverter.GetBytes(count-offset)
-                              );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 1)    //For protocol version 1
-            {
-                if (ret.Length == 1)
-                {
-                    (new byte[0]).CopyTo(array, 0);
-                }
-                else
-                    ret.Substring(1).CopyTo(array, 0);  //not to loose ref object
-            }
-            //else if (ret[0] == 254)
-            //{
-            //    //Trying to reconnect
-            //    OpenRemoteTable(this.tableName);
-            //    DataFileRead(array, offset, count);
-            //}
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.DataFileRead: remote exception");
-
-            return (array == null) ? 0 : array.Length;
+            int read = Read(7, _DataFilePosition, array, offset, count, "DataFileRead");
+            _DataFilePosition += read;
+            return read;
         }
 
         /// <summary>
@@ -325,28 +259,9 @@ namespace DBreeze.Storage.RemoteInstance
         /// <returns></returns>
         public int RollbackFileRead(byte[] array, int offset, int count)
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 8 }
-                              .ConcatMany(
-                              BitConverter.GetBytes(RemoteTableId),
-                              BitConverter.GetBytes(this._RollbackFilePosition),
-                              BitConverter.GetBytes(count - offset)
-                              );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 1)    //For protocol version 1
-            {
-                if (ret.Length == 1)
-                {
-                    (new byte[0]).CopyTo(array, 0);
-                }
-                else
-                    ret.Substring(1).CopyTo(array, 0);  //not to loose ref object                
-            }
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.RollbackFileRead: remote exception");
-
-            return (array == null) ? 0 : array.Length;
+            int read = Read(8, _RollbackFilePosition, array, offset, count, "RollbackFileRead");
+            _RollbackFilePosition += read;
+            return read;
         }
 
         /// <summary>
@@ -358,28 +273,9 @@ namespace DBreeze.Storage.RemoteInstance
         /// <returns></returns>
         public int RollbackHelperFileRead(byte[] array, int offset, int count)
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 9 }
-                              .ConcatMany(
-                              BitConverter.GetBytes(RemoteTableId),
-                              BitConverter.GetBytes(this._RollbackHelperFilePosition),
-                              BitConverter.GetBytes(count - offset)
-                              );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 1)    //For protocol version 1
-            {
-                if (ret.Length == 1)
-                {
-                    (new byte[0]).CopyTo(array, 0);
-                }
-                else
-                    ret.Substring(1).CopyTo(array, 0);  //not to loose ref object
-            }
-            else if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.RollbackHelperFileRead: remote exception");
-
-            return (array == null) ? 0 : array.Length;
+            int read = Read(9, _RollbackHelperFilePosition, array, offset, count, "RollbackHelperFileRead");
+            _RollbackHelperFilePosition += read;
+            return read;
         }
         #endregion
         
@@ -390,15 +286,8 @@ namespace DBreeze.Storage.RemoteInstance
         /// </summary>
         public void DataFileFlush()
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 10 }
-                             .ConcatMany(
-                             BitConverter.GetBytes(RemoteTableId)
-                             );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.DataFileFlush: remote exception");
+            EnsureOpen();
+            SendExact(CreateTableCommand(10), "DataFileFlush", 1);
         }
 
         /// <summary>
@@ -406,15 +295,8 @@ namespace DBreeze.Storage.RemoteInstance
         /// </summary>
         public void RollbackFileFlush()
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 11 }
-                             .ConcatMany(
-                             BitConverter.GetBytes(RemoteTableId)
-                             );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.RollbackFileFlush: remote exception");
+            EnsureOpen();
+            SendExact(CreateTableCommand(11), "RollbackFileFlush", 1);
         }
         #endregion
 
@@ -423,17 +305,96 @@ namespace DBreeze.Storage.RemoteInstance
         /// </summary>
         public void RollbackFileRecreate()
         {
-            byte[] protocol = new byte[] { ProtocolVersion, 12 }
-                             .ConcatMany(
-                             BitConverter.GetBytes(RemoteTableId)
-                             );
-
-            byte[] ret = Com.Send(protocol);
-
-            if (ret[0] == 255)
-                throw new Exception("DBreeze.Storage.RemoteInstance.RemoteInstanceCommander.RollbackFileRecreate: remote exception");
+            EnsureOpen();
+            SendExact(CreateTableCommand(12), "RollbackFileRecreate", 1);
 
             _RollbackFileLength = 0;
+            _RollbackFilePosition = 0;
+        }
+
+        private byte[] CreateTableCommand(byte command)
+        {
+            EnsureOpen();
+            byte[] protocol = new byte[10];
+            protocol[0] = ProtocolVersion;
+            protocol[1] = command;
+            Buffer.BlockCopy(BitConverter.GetBytes(RemoteTableId), 0, protocol, 2, 8);
+            return protocol;
+        }
+
+        private byte[] Write(byte command, long position, byte[] array, int offset, int count, bool withFlush, string operation)
+        {
+            EnsureOpen();
+            ValidateBuffer(array, offset, count);
+            if (position < 0)
+                throw new ArgumentOutOfRangeException("position");
+            if (position > Int64.MaxValue - count)
+                throw new ArgumentOutOfRangeException("position/count");
+
+            byte[] protocol = new byte[19 + count];
+            protocol[0] = ProtocolVersion;
+            protocol[1] = command;
+            Buffer.BlockCopy(BitConverter.GetBytes(RemoteTableId), 0, protocol, 2, 8);
+            Buffer.BlockCopy(BitConverter.GetBytes(position), 0, protocol, 10, 8);
+            protocol[18] = withFlush ? (byte)1 : (byte)0;
+            if (count != 0)
+                Buffer.BlockCopy(array, offset, protocol, 19, count);
+            return SendExact(protocol, operation, 9);
+        }
+
+        private int Read(byte command, long position, byte[] array, int offset, int count, string operation)
+        {
+            EnsureOpen();
+            ValidateBuffer(array, offset, count);
+            if (position < 0)
+                throw new ArgumentOutOfRangeException("position");
+
+            byte[] protocol = new byte[22];
+            protocol[0] = ProtocolVersion;
+            protocol[1] = command;
+            Buffer.BlockCopy(BitConverter.GetBytes(RemoteTableId), 0, protocol, 2, 8);
+            Buffer.BlockCopy(BitConverter.GetBytes(position), 0, protocol, 10, 8);
+            Buffer.BlockCopy(BitConverter.GetBytes(count), 0, protocol, 18, 4);
+
+            byte[] response = Send(protocol, operation, 1);
+            int read = response.Length - 1;
+            if (read > count)
+                throw new InvalidOperationException(operation + ": remote response is larger than requested.");
+            if (read != 0)
+                Buffer.BlockCopy(response, 1, array, offset, read);
+            return read;
+        }
+
+        private byte[] Send(byte[] protocol, string operation, int minimumLength)
+        {
+            byte[] response = Com.Send(protocol);
+            if (response == null || response.Length == 0 || response[0] == 255)
+                throw new InvalidOperationException("DBreeze remote operation failed: " + operation + ".");
+            if (response[0] != ProtocolVersion || response.Length < minimumLength)
+                throw new InvalidDataException("Invalid DBreeze remote response: " + operation + ".");
+            return response;
+        }
+
+        private byte[] SendExact(byte[] protocol, string operation, int expectedLength)
+        {
+            byte[] response = Send(protocol, operation, expectedLength);
+            if (response.Length != expectedLength)
+                throw new InvalidDataException("Invalid DBreeze remote response length: " + operation + ".");
+            return response;
+        }
+
+        private static void ValidateBuffer(byte[] array, int offset, int count)
+        {
+            if (array == null)
+                throw new ArgumentNullException("array");
+            if (offset < 0 || count < 0 || offset > array.Length - count)
+                throw new ArgumentOutOfRangeException("offset/count");
+        }
+
+        private void EnsureOpen()
+        {
+            if (!_isOpen)
+                throw new InvalidOperationException("The remote table is not open.");
         }
 
         #endregion
