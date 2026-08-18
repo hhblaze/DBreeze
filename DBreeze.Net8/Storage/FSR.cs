@@ -76,6 +76,24 @@ namespace DBreeze.Storage
         FileStream _fsData = null;
         FileStream _fsRollback = null;
         FileStream _fsRollbackHelper = null;
+        const int ReadPageSize = 8 * 1024;
+        static long _nextInstanceId;
+        readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
+        long _mutationVersion = 1;
+        long _physicalDataLength;
+
+        [ThreadStatic]
+        static ReadPageCache _threadReadPageCache;
+
+        sealed class ReadPageCache
+        {
+            public readonly byte[] Buffer = GC.AllocateUninitializedArray<byte>(ReadPageSize);
+            public long OwnerId;
+            public long MutationVersion;
+            public long PageOffset;
+            public int PageLength;
+            public bool IsPopulated;
+        }
         /// <summary>
         /// Pointer to the end of file, before current commit
         /// </summary>
@@ -210,6 +228,8 @@ namespace DBreeze.Storage
                 usedBufferSize = 0;
                 eofData = 0;
                 eofRollback = 0;
+                _physicalDataLength = 0;
+                InvalidateReadCache();
                 TransactionalCommitIsStarted = false;
             }
 
@@ -226,15 +246,16 @@ namespace DBreeze.Storage
                 this._fsData = OpenFile(this._fileName);
                 this._fsRollback = OpenFile(this._fileName + ".rol");
                 this._fsRollbackHelper = OpenFile(this._fileName + ".rhp");
+                _physicalDataLength = GetLength(_fsData);
 
                 //!!!!We dont have this value in root yet, could have and economize tail of the file in case if rollback occured
 
-                if (GetLength(_fsData) == 0)
+                if (_physicalDataLength == 0)
                 {
                     //Writing initial root data
 
                     byte[] root = new byte[this._trieSettings.ROOT_SIZE];
-                    WriteAt(_fsData, root, 0, root.Length, 0);
+                    WriteDataAt(root, 0, root.Length, 0);
 
 
                     if (_backupIsActive)
@@ -245,7 +266,7 @@ namespace DBreeze.Storage
                     //no flush here
                 }
 
-                eofData = GetLength(_fsData);
+                eofData = _physicalDataLength;
 
                 //Check is .rhp is empty add 0 pointer
                 if (GetLength(_fsRollbackHelper) == 0)
@@ -386,7 +407,7 @@ namespace DBreeze.Storage
                 {
                     int chunk = remaining > copyBuffer.Length ? copyBuffer.Length : (int)remaining;
                     ReadExactlyAt(_fsRollback, copyBuffer, 0, chunk, sourceOffset);
-                    WriteAt(_fsData, copyBuffer, 0, chunk, destinationOffset);
+                    WriteDataAt(copyBuffer, 0, chunk, destinationOffset);
                     remaining -= chunk;
                     sourceOffset += chunk;
                     destinationOffset += chunk;
@@ -424,6 +445,28 @@ namespace DBreeze.Storage
         private static void WriteAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
         {
             RandomAccess.Write(stream.SafeFileHandle, new ReadOnlySpan<byte>(buffer, bufferOffset, count), fileOffset);
+        }
+
+        private void WriteDataAt(byte[] buffer, int bufferOffset, int count, long fileOffset)
+        {
+            WriteAt(_fsData, buffer, bufferOffset, count, fileOffset);
+            long end = checked(fileOffset + count);
+            if (end > _physicalDataLength)
+                _physicalDataLength = end;
+
+            // A positioned write may replace bytes already held by another reader thread.
+            // Versioning invalidates those pages without retaining references to this FSR.
+            InvalidateReadCache();
+        }
+
+        private void InvalidateReadCache()
+        {
+            unchecked
+            {
+                _mutationVersion++;
+                if (_mutationVersion == 0)
+                    _mutationVersion = 1;
+            }
         }
 
         private static void ReadExactlyAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
@@ -544,6 +587,8 @@ namespace DBreeze.Storage
             usedBufferSize = 0;
             eofRollback = 0;
             eofData = 0;
+            _physicalDataLength = 0;
+            InvalidateReadCache();
             TransactionalCommitIsStarted = false;
             _seqBuf.Clear(true);
         }
@@ -581,6 +626,9 @@ namespace DBreeze.Storage
                 usedBufferSize = 0;
                 eofRollback = 0;
                 eofData = 0;
+                _physicalDataLength = 0;
+                InvalidateReadCache();
+                TransactionalCommitIsStarted = false;
                 _seqBuf.Clear(true);
 
                 File.Delete(this._fileName);
@@ -604,8 +652,8 @@ namespace DBreeze.Storage
             if (_seqBuf.EOF == 0)
                 return;
 
-            long pos = GetLength(_fsData);
-            WriteAt(_fsData, _seqBuf.RawBuffer, 0, _seqBuf.EOF, pos);
+            long pos = _physicalDataLength;
+            WriteDataAt(_seqBuf.RawBuffer, 0, _seqBuf.EOF, pos);
 
             if (_backupIsActive)
             {
@@ -646,10 +694,10 @@ namespace DBreeze.Storage
                 if (data.Length > _seqBufCapacity)
                 {
                     FlushSequentialBuffer();
-                    position = GetLength(_fsData);
+                    position = _physicalDataLength;
                     encodedPosition = EncodePointer(position);
                     checked { _ = position + data.Length; }
-                    WriteAt(_fsData, data, 0, data.Length, position);
+                    WriteDataAt(data, 0, data.Length, position);
 
                     if (_backupIsActive)
                         _configuration.Backup.WriteBackupElement(ulFileName, 0, position, data);
@@ -665,7 +713,7 @@ namespace DBreeze.Storage
 
                 //Writing into buffer
 
-                position = checked(GetLength(_fsData) + _seqBuf.EOF);
+                position = checked(_physicalDataLength + _seqBuf.EOF);
                 encodedPosition = EncodePointer(position);
 
                 _seqBuf.Write_ToTheEnd(data);
@@ -723,7 +771,7 @@ namespace DBreeze.Storage
                 if (offset < 0 || offset > Int64.MaxValue - data.Length)
                     throw new ArgumentOutOfRangeException(nameof(offset));
                 long writeEnd = offset + data.Length;
-                long dataLength = GetLength(_fsData);
+                long dataLength = _physicalDataLength;
 
                 if (offset >= dataLength)
                 {
@@ -827,7 +875,7 @@ namespace DBreeze.Storage
             foreach (long key in keys)
             {
                 byte[] value = _randBuf[key];
-                WriteAt(_fsData, value, 0, value.Length, key);
+                WriteDataAt(value, 0, value.Length, key);
 
                 if (_backupIsActive)
                 {
@@ -955,7 +1003,7 @@ namespace DBreeze.Storage
                 if (count < 0)
                     throw new ArgumentOutOfRangeException(nameof(count));
 
-                long dataLength = GetLength(_fsData);
+                long dataLength = _physicalDataLength;
                 if (!useCache)
                 {
                     int resultLength = GetReadLength(offset, count, dataLength + _seqBuf.EOF);
@@ -981,10 +1029,19 @@ namespace DBreeze.Storage
                     return result;
                 }
 
+                // Physical length can already include an uncommitted append; eofData remains the
+                // committed visibility boundary until the transaction is finished.
                 long visibleLength = offset > eofData && TransactionalCommitIsStarted ? dataLength : eofData;
                 int committedLength = GetReadLength(offset, count, visibleLength);
                 if (committedLength == 0)
                     return Array.Empty<byte>();
+
+                if (_rollbackCache.Count == 0 && !TransactionalCommitIsStarted)
+                {
+                    byte[] cached = TryReadCommittedPage(offset, committedLength, visibleLength);
+                    if (cached != null)
+                        return cached;
+                }
 
                 byte[] committed = GC.AllocateUninitializedArray<byte>(committedLength);
                 ReadExactlyAt(_fsData, committed, 0, committed.Length, offset);
@@ -1003,6 +1060,45 @@ namespace DBreeze.Storage
 
                 return committed;
             }
+        }
+
+        private byte[] TryReadCommittedPage(long offset, int count, long visibleLength)
+        {
+            int offsetInPage = (int)(offset & (ReadPageSize - 1));
+            if (count > ReadPageSize - offsetInPage)
+                return null;
+
+            long pageOffset = offset - offsetInPage;
+            int pageLength = (int)Math.Min(ReadPageSize, visibleLength - pageOffset);
+            ReadPageCache cache = _threadReadPageCache ??= new ReadPageCache();
+            long mutationVersion = _mutationVersion;
+
+            // A hit is safe only for the same storage generation and committed page extent.
+            // Rollback-backed and cross-page reads deliberately stay on the exact positioned path.
+            if (cache.OwnerId != _instanceId ||
+                cache.MutationVersion != mutationVersion ||
+                cache.PageOffset != pageOffset ||
+                cache.PageLength != pageLength)
+            {
+                cache.OwnerId = _instanceId;
+                cache.MutationVersion = mutationVersion;
+                cache.PageOffset = pageOffset;
+                cache.PageLength = pageLength;
+                cache.IsPopulated = false;
+                return null;
+            }
+
+            // One exact read acts as admission: isolated random pages never turn a 64-byte read
+            // into an 8 KiB read, while the second local access amortizes later system calls.
+            if (!cache.IsPopulated)
+            {
+                ReadExactlyAt(_fsData, cache.Buffer, 0, pageLength, pageOffset);
+                cache.IsPopulated = true;
+            }
+
+            byte[] result = GC.AllocateUninitializedArray<byte>(count);
+            Buffer.BlockCopy(cache.Buffer, offsetInPage, result, 0, count);
+            return result;
         }
 
         private static int GetReadLength(long offset, int count, long length)
@@ -1300,7 +1396,7 @@ namespace DBreeze.Storage
 
                 _rollbackCache.Clear();
 
-                eofData = GetLength(_fsData);
+                eofData = _physicalDataLength;
 
             }
         }
@@ -1357,7 +1453,7 @@ namespace DBreeze.Storage
 
                 _rollbackCache.Clear();
 
-                eofData = GetLength(_fsData);
+                eofData = _physicalDataLength;
 
                 TransactionalCommitIsStarted = false;
             }
@@ -1419,7 +1515,7 @@ namespace DBreeze.Storage
             {
                 byte[] rollbackData = GC.AllocateUninitializedArray<byte>(rollback.Value.l);
                 ReadExactlyAt(_fsRollback, rollbackData, 0, rollbackData.Length, rollback.Value.o);
-                WriteAt(_fsData, rollbackData, 0, rollbackData.Length, rollback.Key);
+                WriteDataAt(rollbackData, 0, rollbackData.Length, rollback.Key);
 
                 if (_backupIsActive)
                     _configuration.Backup.WriteBackupElement(ulFileName, 0, rollback.Key, rollbackData);

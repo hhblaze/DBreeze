@@ -11,6 +11,154 @@ internal static class StorageRegressionTests
         RunStorageViewScenario(DBreezeConfiguration.eStorage.MEMORY);
     }
 
+    public static void CommittedPageCacheTracksStorageLifecycle()
+    {
+        string root = CreateFolder(nameof(CommittedPageCacheTracksStorageLifecycle));
+        string tablePath = Path.Combine(root, "1");
+        try
+        {
+            byte[] payload = new byte[24 * 1024];
+            new Random(6143).NextBytes(payload);
+            long start;
+
+            using (var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
+            {
+                var storage = new StorageLayer(tablePath, new TrieSettings(), configuration);
+                start = DecodePointer(storage.Table_WriteToTheEnd(payload));
+                storage.Commit();
+
+                byte[] localExpected = payload.AsSpan(97, 64).ToArray();
+                AssertBytes(localExpected, storage.Table_Read(true, start + 97, localExpected.Length),
+                    "Initial committed page read failed.");
+                AssertBytes(localExpected, storage.Table_Read(true, start + 97, localExpected.Length),
+                    "Cached committed page read failed.");
+
+                long crossPageOffset = ((start + 8192) / 8192 * 8192) - 23;
+                int payloadOffset = checked((int)(crossPageOffset - start));
+                byte[] crossExpected = payload.AsSpan(payloadOffset, 128).ToArray();
+                AssertBytes(crossExpected, storage.Table_Read(true, crossPageOffset, crossExpected.Length),
+                    "Cross-page committed read was truncated or reordered.");
+
+                byte[] appended = Enumerable.Range(0, 257).Select(static value => (byte)value).ToArray();
+                long appendOffset = DecodePointer(storage.Table_WriteToTheEnd(appended));
+                Assert(storage.Table_Read(true, appendOffset, appended.Length).Length == 0,
+                    "Committed view exposed an uncommitted append.");
+                AssertBytes(appended, storage.Table_Read(false, appendOffset, appended.Length),
+                    "Writer view missed a buffered append.");
+                storage.Commit();
+                AssertBytes(appended, storage.Table_Read(true, appendOffset, appended.Length),
+                    "Commit did not advance the cached physical length.");
+
+                byte[] original = payload.AsSpan(97, 64).ToArray();
+                byte[] replacement = Enumerable.Repeat((byte)0xA5, 64).ToArray();
+                storage.Table_WriteByOffset(start + 97, replacement);
+                AssertBytes(original, storage.Table_Read(true, start + 97, replacement.Length),
+                    "Committed cache exposed a buffered writer update.");
+                AssertBytes(replacement, storage.Table_Read(false, start + 97, replacement.Length),
+                    "Writer view did not expose its buffered update.");
+                storage.TransactionalCommit();
+                AssertBytes(original, storage.Table_Read(true, start + 97, replacement.Length),
+                    "Transactional commit exposed data before commit-finished.");
+                storage.TransactionalCommitIsFinished();
+                AssertBytes(replacement, storage.Table_Read(true, start + 97, replacement.Length),
+                    "Commit-finished did not invalidate the committed page.");
+
+                byte[] rolledBack = Enumerable.Repeat((byte)0x3C, 64).ToArray();
+                storage.Table_WriteByOffset(start + 97, rolledBack);
+                storage.TransactionalCommit();
+                storage.TransactionalRollback();
+                AssertBytes(replacement, storage.Table_Read(true, start + 97, replacement.Length),
+                    "Rollback left a stale page in the committed cache.");
+                storage.Table_Dispose();
+            }
+
+            using (var reopenedConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
+            {
+                var reopened = new StorageLayer(tablePath, new TrieSettings(), reopenedConfiguration);
+                AssertBytes(Enumerable.Repeat((byte)0xA5, 64).ToArray(), reopened.Table_Read(true, start + 97, 64),
+                    "Reopen used a page from the previous FSR instance.");
+
+                string sourcePath = Path.Combine(root, "2");
+                byte[] restoredPayload = Enumerable.Repeat((byte)0x6D, payload.Length).ToArray();
+                using (var sourceConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
+                {
+                    var source = new StorageLayer(sourcePath, new TrieSettings(), sourceConfiguration);
+                    source.Table_WriteToTheEnd(restoredPayload);
+                    source.Commit();
+                    source.Table_Dispose();
+                }
+
+                reopened.RestoreTableFromTheOtherTable(sourcePath);
+                AssertBytes(restoredPayload.AsSpan(97, 64).ToArray(), reopened.Table_Read(true, start + 97, 64),
+                    "Restore reused a page from the replaced data file.");
+
+                reopened.RecreateFiles();
+                byte[] recreatedPayload = { 9, 8, 7, 6, 5 };
+                long recreatedStart = DecodePointer(reopened.Table_WriteToTheEnd(recreatedPayload));
+                reopened.Commit();
+                AssertBytes(recreatedPayload, reopened.Table_Read(true, recreatedStart, recreatedPayload.Length),
+                    "Recreate retained cached bytes from the old file.");
+                reopened.Table_Dispose();
+            }
+        }
+        finally
+        {
+            DeleteFolder(root);
+        }
+    }
+
+    public static void CommittedPageCacheIsSafeDuringConcurrentCommits()
+    {
+        string root = CreateFolder(nameof(CommittedPageCacheIsSafeDuringConcurrentCommits));
+        try
+        {
+            using var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            var storage = new StorageLayer(Path.Combine(root, "1"), new TrieSettings(), configuration);
+            byte[] initial = new byte[64];
+            long start = DecodePointer(storage.Table_WriteToTheEnd(initial));
+            storage.Commit();
+            storage.Table_Read(true, start, initial.Length);
+            storage.Table_Read(true, start, initial.Length);
+
+            int finished = 0;
+            Task writer = Task.Run(() =>
+            {
+                try
+                {
+                    for (int generation = 1; generation <= 100; generation++)
+                    {
+                        storage.Table_WriteByOffset(start, Enumerable.Repeat((byte)generation, 64).ToArray());
+                        storage.Commit();
+                    }
+                }
+                finally
+                {
+                    Volatile.Write(ref finished, 1);
+                }
+            });
+
+            Task[] readers = Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
+            {
+                while (Volatile.Read(ref finished) == 0)
+                {
+                    byte[] value = storage.Table_Read(true, start, 64);
+                    byte generation = value[0];
+                    if (value.AsSpan().IndexOfAnyExcept(generation) >= 0)
+                        throw new InvalidOperationException("Concurrent committed read observed torn page contents.");
+                }
+            })).ToArray();
+
+            Task.WaitAll(readers.Append(writer).ToArray());
+            AssertBytes(Enumerable.Repeat((byte)100, 64).ToArray(), storage.Table_Read(true, start, 64),
+                "Concurrent commit did not publish its final generation.");
+            storage.Table_Dispose();
+        }
+        finally
+        {
+            DeleteFolder(root);
+        }
+    }
+
     public static void BackupRestoreStreamsAndRejectsTruncation()
     {
         string root = CreateFolder(nameof(BackupRestoreStreamsAndRejectsTruncation));

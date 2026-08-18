@@ -78,66 +78,46 @@ namespace DBreeze.TextSearch
             // B ^ Key = A
             if (inputText == null)
                 throw new ArgumentNullException("inputText");
-            return TransformBytes(Encoding.UTF8.GetBytes(inputText));
+            byte[] result = new byte[Encoding.UTF8.GetByteCount(inputText)];
+            Encoding.UTF8.GetBytes(inputText.AsSpan(), result.AsSpan());
+            TransformInPlace(result);
+            return result;
         }
 
         public string TextDecrypt(byte[] encryptedText)
         {
-            byte[] resultBytes = TransformBytes(encryptedText);
-            if (resultBytes == null)
+            if (encryptedText == null)
                 return null;
-            return Encoding.UTF8.GetString(resultBytes);
+            byte[] result = (byte[])encryptedText.Clone();
+            TransformInPlace(result);
+            return Encoding.UTF8.GetString(result);
         }
 
-
-        private byte[] TransformBytes(byte[] input)
+        private void TransformInPlace(Span<byte> data)
         {
-            if (input == null)
-                return null;
-
-            byte[] outputBytes = new byte[input.Length];
-            if (input.Length == 0)
-                return outputBytes;
+            if (data.IsEmpty)
+                return;
 
             // We use AES in ECB mode to generate a secure "Keystream" based on a Counter.
             // This is safe because we are using the output as a mask, not encrypting blocks directly.
-            using (Aes aes = Aes.Create())
+            using Aes aes = Aes.Create();
+            aes.Key = Key;
+
+            Span<byte> counterBlock = stackalloc byte[16];
+            Span<byte> keystreamBlock = stackalloc byte[16];
+            IV.CopyTo(counterBlock);
+
+            int processed = 0;
+            while (processed < data.Length)
             {
-                aes.Key = Key;
-                aes.Mode = CipherMode.ECB; // ECB is used ONLY to generate the keystream
-                aes.Padding = PaddingMode.None;
+                aes.EncryptEcb(counterBlock, keystreamBlock, PaddingMode.None);
+                int toProcess = Math.Min(data.Length - processed, 16);
+                for (int i = 0; i < toProcess; i++)
+                    data[processed + i] ^= keystreamBlock[i];
 
-                using (var encryptor = aes.CreateEncryptor())
-                {
-                    byte[] counterBlock = new byte[16];
-                    byte[] keystreamBlock = new byte[16];
-
-                    // Copy Static IV to counter
-                    Array.Copy(IV, counterBlock, 16);
-
-                    int processed = 0;
-                    while (processed < input.Length)
-                    {
-                        // 1. Generate 16 bytes of random noise (Keystream)
-                        encryptor.TransformBlock(counterBlock, 0, 16, keystreamBlock, 0);
-
-                        // 2. XOR the input with the Keystream
-                        int remaining = input.Length - processed;
-                        int toProcess = Math.Min(remaining, 16);
-
-                        for (int i = 0; i < toProcess; i++)
-                        {
-                            outputBytes[processed + i] = (byte)(input[processed + i] ^ keystreamBlock[i]);
-                        }
-
-                        // 3. Increment Counter for next block (Standard AES-CTR logic)
-                        IncrementCounter(counterBlock);
-                        processed += toProcess;
-                    }
-                }
+                IncrementCounter(counterBlock);
+                processed += toProcess;
             }
-
-            return outputBytes;
         }
 
 
@@ -160,8 +140,15 @@ namespace DBreeze.TextSearch
             // In a Stream Cipher (XOR based), Encryption and Decryption are the EXACT same operation.
             // A ^ Key = B
             // B ^ Key = A
-            byte[] inputBytes = encrypt ? Encoding.UTF8.GetBytes(input) : input.ToByteArrayFromHex();
-            byte[] resultBytes = TransformBytes(inputBytes);
+            byte[] resultBytes;
+            if (encrypt)
+            {
+                resultBytes = new byte[Encoding.UTF8.GetByteCount(input)];
+                Encoding.UTF8.GetBytes(input.AsSpan(), resultBytes.AsSpan());
+            }
+            else
+                resultBytes = Convert.FromHexString(input);
+            TransformInPlace(resultBytes);
 
             if (encrypt)
             {
@@ -178,7 +165,7 @@ namespace DBreeze.TextSearch
         }
 
         // Helper to increment the 16-byte counter (Big Endian logic)
-        private static void IncrementCounter(byte[] counter)
+        private static void IncrementCounter(Span<byte> counter)
         {
             for (int i = counter.Length - 1; i >= 0; i--)
             {

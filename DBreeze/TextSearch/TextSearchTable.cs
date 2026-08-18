@@ -56,6 +56,51 @@ namespace DBreeze.TextSearch
         /// </summary>
         internal int DocIdZ = 0;
 
+        /// <summary>
+        /// Resolves external bounds once per query enumeration. False means that the requested
+        /// interval does not intersect any external document id.
+        /// </summary>
+        internal bool ResolveDocumentRange()
+        {
+            DocIdA = 0;
+            DocIdZ = 0;
+
+            if (ExternalDocumentIdStart == null && ExternalDocumentIdStop == null)
+                return true;
+
+            if (e2i == null)
+                return false;
+
+            DBreeze.DataTypes.Row<byte[], int> startRow;
+            DBreeze.DataTypes.Row<byte[], int> stopRow;
+
+            if (Descending)
+            {
+                startRow = ExternalDocumentIdStart == null
+                    ? e2i.Max<byte[], int>()
+                    : e2i.SelectBackwardStartFrom<byte[], int>(ExternalDocumentIdStart, true).FirstOrDefault();
+                stopRow = ExternalDocumentIdStop == null
+                    ? e2i.Min<byte[], int>()
+                    : e2i.SelectForwardStartFrom<byte[], int>(ExternalDocumentIdStop, true).FirstOrDefault();
+            }
+            else
+            {
+                startRow = ExternalDocumentIdStart == null
+                    ? e2i.Min<byte[], int>()
+                    : e2i.SelectForwardStartFrom<byte[], int>(ExternalDocumentIdStart, true).FirstOrDefault();
+                stopRow = ExternalDocumentIdStop == null
+                    ? e2i.Max<byte[], int>()
+                    : e2i.SelectBackwardStartFrom<byte[], int>(ExternalDocumentIdStop, true).FirstOrDefault();
+            }
+
+            if (startRow == null || stopRow == null || !startRow.Exists || !stopRow.Exists)
+                return false;
+
+            DocIdA = startRow.Value;
+            DocIdZ = stopRow.Value;
+            return Descending ? DocIdA >= DocIdZ : DocIdA <= DocIdZ;
+        }
+
 
         internal NestedTable tbWords = null;
         internal NestedTable tbBlocks = null;
@@ -170,7 +215,10 @@ namespace DBreeze.TextSearch
                 if (wrd.Value.FullMatch)
                 {
                     if (this.RealWords.ContainsKey(wrd.Key))
+                    {
+                        wrd.Value.Processed = true;
                         continue;
+                    }
 
                     byte[] rowVal = null;
                     if (this.Encryption > 0 && this.Encryptor != null)
@@ -330,14 +378,13 @@ namespace DBreeze.TextSearch
                 IsLogicalBlock = false                
             };
             
-            //First we add always but with the ignored flag
-            if (ignoreOnEmptyParameters && String.IsNullOrEmpty(fullMatchWords) && String.IsNullOrEmpty(containsWords))
-                sb.Ignored = true;
-
-            Blocks.Add(sb.BlockId, sb);                      
+            Blocks.Add(sb.BlockId, sb);
 
             this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref sb.ParsedWords);
             this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), false, ref sb.ParsedWords);
+
+            if (ignoreOnEmptyParameters && sb.ParsedWords.Count == 0)
+                sb.Ignored = true;
 
             toComputeWordsOrigin = true;
             return sb;
@@ -372,19 +419,13 @@ namespace DBreeze.TextSearch
                 IsLogicalBlock = false
             };
 
-            //First we add always but with the ignored flag
-            if (ignoreOnEmptyParameters)
-            {
-                if((containsWords == null || containsWords.Count() == 0 || containsWords.Where(r=>r.Trim().Length > 0).Count() < 1)
-                    &&
-                   (fullMatchWords == null || fullMatchWords.Count() == 0 || fullMatchWords.Where(r => r.Trim().Length > 0).Count() < 1))
-                    sb.Ignored = true;
-            }
-
             Blocks.Add(sb.BlockId, sb);
 
             this.WordsPrepare(fullMatchWords, true, ref sb.ParsedWords);
             this.WordsPrepare(containsWords, false, ref sb.ParsedWords);
+
+            if (ignoreOnEmptyParameters && sb.ParsedWords.Count == 0)
+                sb.Ignored = true;
 
             toComputeWordsOrigin = true;
             return sb;
@@ -422,14 +463,13 @@ namespace DBreeze.TextSearch
                 IsLogicalBlock = false
             };
 
-            //First we add always but with the ignored flag
-            if (ignoreOnEmptyParameters && String.IsNullOrEmpty(fullMatchWords) && String.IsNullOrEmpty(containsWords))
-                sb.Ignored = true;
-
             Blocks.Add(sb.BlockId, sb);
             
             this.WordsPrepare(fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), true, ref sb.ParsedWords);
             this.WordsPrepare(containsWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length > 2), false, ref sb.ParsedWords);
+
+            if (ignoreOnEmptyParameters && sb.ParsedWords.Count == 0)
+                sb.Ignored = true;
 
             toComputeWordsOrigin = true;
             return sb;
@@ -465,19 +505,13 @@ namespace DBreeze.TextSearch
                 IsLogicalBlock = false
             };
 
-            //First we add always but with the ignored flag
-            if (ignoreOnEmptyParameters)
-            {
-                if ((containsWords == null || containsWords.Count() == 0 || containsWords.Where(r => r.Trim().Length > 0).Count() < 1)
-                    &&
-                   (fullMatchWords == null || fullMatchWords.Count() == 0 || fullMatchWords.Where(r => r.Trim().Length > 0).Count() < 1))
-                    sb.Ignored = true;
-            }
-
             Blocks.Add(sb.BlockId, sb);
 
             this.WordsPrepare(fullMatchWords, true, ref sb.ParsedWords);
             this.WordsPrepare(containsWords, false, ref sb.ParsedWords);
+
+            if (ignoreOnEmptyParameters && sb.ParsedWords.Count == 0)
+                sb.Ignored = true;
 
             toComputeWordsOrigin = true;
             return sb;
@@ -494,14 +528,17 @@ namespace DBreeze.TextSearch
         {
             string word = "";
             
-            if (searchKeywords == null || searchKeywords.Count() == 0)
+            if (searchKeywords == null)
                 return;
 
             foreach (var wrd in searchKeywords)
-            {   
+            {
+                if (wrd == null)
+                    continue;
+
                 word = wrd.ToLower();
 
-                if (word.Trim().Length < 2 || word.Contains(" "))
+                if (word.Trim().Length < 3 || word.Contains(" "))
                     continue;
 
                 

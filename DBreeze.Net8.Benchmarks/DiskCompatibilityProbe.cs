@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using DBreeze;
 using DBreeze.Storage;
+using DBreeze.Utils;
 
 namespace DBreeze.Net8.Benchmarks;
 
@@ -21,6 +22,7 @@ internal static class DiskCompatibilityProbe
         "compat-rks",
         "compat-dictionary",
         "compat-hashset",
+        "compat-text",
     };
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -62,7 +64,8 @@ internal static class DiskCompatibilityProbe
                     WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, "base"));
                     break;
                 case "compare":
-                    Compare(options.LeftManifestPath, options.RightManifestPath, options.OutputPath);
+                    Compare(options.LeftManifestPath, options.RightManifestPath, options.OutputPath,
+                        options.PhysicalPolicy);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(options.Action), options.Action, "Unknown disk compatibility action.");
@@ -161,6 +164,12 @@ internal static class DiskCompatibilityProbe
         transaction.InsertDictionary("compat-dictionary",
             Enumerable.Range(0, 128).ToDictionary(static i => i, static i => i * 11), false);
         transaction.InsertHashSet("compat-hashset", Enumerable.Range(0, 128).ToHashSet(), false);
+
+        for (int i = 0; i < 128; i++)
+        {
+            string contains = i % 2 == 0 ? "compatibility prefixable even" : "compatibility prefixable odd";
+            transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), contains, "group" + (i % 4));
+        }
         transaction.Commit();
     }
 
@@ -186,6 +195,13 @@ internal static class DiskCompatibilityProbe
             transaction.InsertDictionary("compat-dictionary",
                 Enumerable.Range(64, 128).ToDictionary(static i => i, static i => i * 13), true);
             transaction.InsertHashSet("compat-hashset", Enumerable.Range(64, 128).ToHashSet(), true);
+
+            for (int i = 0; i < 32; i++)
+                transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), "updated searchable", "extended");
+            for (int i = 32; i < 48; i++)
+                transaction.TextRemoveAll("compat-text", i.To_4_bytes_array_BigEndian());
+            for (int i = 128; i < 160; i++)
+                transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), "compatibility added", "extended");
             transaction.Commit();
         }
 
@@ -268,9 +284,40 @@ internal static class DiskCompatibilityProbe
             rowCount += 2;
         }
 
-        long expectedRows = extended ? 3_360 : 3_264;
+        int[] prefixable = TextIds(transaction, "pref");
+        int[] expectedPrefixable = extended
+            ? Enumerable.Range(48, 80).Reverse().ToArray()
+            : Enumerable.Range(0, 128).Reverse().ToArray();
+        Ensure(prefixable.SequenceEqual(expectedPrefixable), "compat-text prefix result mismatch");
+        foreach (int id in prefixable)
+        {
+            checksum.Add(id);
+            rowCount++;
+        }
+
+        int[] exact = TextIds(transaction, string.Empty, extended ? "extended" : "group1");
+        int[] expectedExact = extended
+            ? Enumerable.Range(128, 32).Concat(Enumerable.Range(0, 32)).OrderByDescending(static id => id).ToArray()
+            : Enumerable.Range(0, 128).Where(static id => id % 4 == 1).OrderByDescending(static id => id).ToArray();
+        Ensure(exact.SequenceEqual(expectedExact), "compat-text exact result mismatch");
+        foreach (int id in exact)
+        {
+            checksum.Add(id);
+            rowCount++;
+        }
+
+        long expectedRows = extended ? 3_504 : 3_424;
         Ensure(rowCount == expectedRows, $"Total compatibility row count: {rowCount}");
         return new CompatibilitySummary(rowCount, checksum.Value);
+    }
+
+    private static int[] TextIds(DBreeze.Transactions.Transaction transaction, string contains, string exact = "")
+    {
+        return transaction.TextSearch("compat-text")
+            .BlockAnd(contains, exact)
+            .GetDocumentIDs()
+            .Select(static id => id.To_Int32_BigEndian())
+            .ToArray();
     }
 
     private static CompatibilityManifest BuildManifest(string databasePath, string state)
@@ -298,7 +345,11 @@ internal static class DiskCompatibilityProbe
         };
     }
 
-    private static void Compare(string leftPath, string rightPath, string outputDirectory)
+    private static void Compare(
+        string leftPath,
+        string rightPath,
+        string outputDirectory,
+        string physicalPolicy)
     {
         CompatibilityManifest left = LoadManifest(leftPath);
         CompatibilityManifest right = LoadManifest(rightPath);
@@ -337,6 +388,7 @@ internal static class DiskCompatibilityProbe
             Checksum = left.Checksum,
             LeftTotalBytes = left.TotalBytes,
             RightTotalBytes = right.TotalBytes,
+            PhysicalPolicy = physicalPolicy,
             FileInventoryEqual = leftFiles.Keys.OrderBy(static path => path, StringComparer.Ordinal)
                 .SequenceEqual(rightFiles.Keys.OrderBy(static path => path, StringComparer.Ordinal), StringComparer.Ordinal),
             FileLengthsEqual = leftFiles.Count == rightFiles.Count
@@ -352,8 +404,10 @@ internal static class DiskCompatibilityProbe
             JsonSerializer.Serialize(report, JsonOptions), new UTF8Encoding(false));
         File.WriteAllText(Path.Combine(outputDirectory, "disk-compatibility.md"), BuildMarkdown(report), new UTF8Encoding(false));
 
-        if (!report.FileInventoryEqual || !report.FileLengthsEqual || !report.FileHashesEqual)
-            throw new InvalidDataException("Disk compatibility comparison found physical file differences.");
+        if (!report.FileInventoryEqual)
+            throw new InvalidDataException("Disk compatibility comparison found different relative file inventories.");
+        if (physicalPolicy == "strict" && (!report.FileLengthsEqual || !report.FileHashesEqual))
+            throw new InvalidDataException("Strict disk compatibility comparison found physical file differences.");
     }
 
     private static string BuildMarkdown(CompatibilityComparisonReport report)
@@ -362,6 +416,7 @@ internal static class DiskCompatibilityProbe
         sb.AppendLine("# DBreeze disk compatibility comparison");
         sb.AppendLine();
         sb.AppendLine($"- State: `{report.State}`");
+        sb.AppendLine($"- Physical policy: `{report.PhysicalPolicy}`");
         sb.AppendLine($"- Rows/checksum equal: `true` ({report.RowCount} / {report.Checksum})");
         sb.AppendLine($"- Relative file inventory equal: `{report.FileInventoryEqual}`");
         sb.AppendLine($"- File lengths equal: `{report.FileLengthsEqual}`");
@@ -435,6 +490,7 @@ internal static class DiskCompatibilityProbe
         internal string OutputPath { get; private set; }
         internal string LeftManifestPath { get; private set; }
         internal string RightManifestPath { get; private set; }
+        internal string PhysicalPolicy { get; private set; } = "strict";
 
         internal static Options Parse(string[] args)
         {
@@ -460,6 +516,14 @@ internal static class DiskCompatibilityProbe
                         break;
                     case "--right":
                         options.RightManifestPath = Path.GetFullPath(ReadValue(args, ref i, "--right"));
+                        break;
+                    case "--physical-policy":
+                        options.PhysicalPolicy = ReadValue(args, ref i, "--physical-policy").ToLowerInvariant();
+                        if (options.PhysicalPolicy != "strict" && options.PhysicalPolicy != "compatible")
+                        {
+                            throw new ArgumentException(
+                                "--physical-policy must be either strict or compatible.", nameof(args));
+                        }
                         break;
                     default:
                         throw new ArgumentException($"Unknown disk compatibility option: {args[i]}", nameof(args));
@@ -557,6 +621,7 @@ internal static class DiskCompatibilityProbe
         public long Checksum { get; set; }
         public long LeftTotalBytes { get; set; }
         public long RightTotalBytes { get; set; }
+        public string PhysicalPolicy { get; set; }
         public bool FileInventoryEqual { get; set; }
         public bool FileLengthsEqual { get; set; }
         public bool FileHashesEqual { get; set; }

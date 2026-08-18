@@ -89,16 +89,9 @@
     <Compile Include="..\DBreeze\TextSearch\SBlock.cs">
       <Link>TextSearch\SBlock.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\TextSearch\TextSearchHandler.cs">
-      <Link>TextSearch\TextSearchHandler.cs</Link>
-    </Compile>
     <Compile Include="..\DBreeze\TextSearch\TextSearchTable.cs">
       <Link>TextSearch\TextSearchTable.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\TextSearch\WABI.cs">
-      <Link>TextSearch\WABI.cs</Link>
-    </Compile>
-    <Compile Include="..\DBreeze\TextSearch\WabiStreamCrypto.cs" Link="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="..\DBreeze\Utils\Biser.cs" Link="Utils\Biser.cs" />
     <Compile Include="..\DBreeze\Utils\BiserDecoder.cs" Link="Utils\BiserDecoder.cs" />
     <Compile Include="..\DBreeze\Utils\BiserEncoder.cs" Link="Utils\BiserEncoder.cs" />

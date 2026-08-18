@@ -6,8 +6,15 @@ internal static class Program
     private static readonly IComparer<byte[]> ByteComparer = new LexicographicByteComparer();
     private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
 
-    private static int Main()
+    private static int Main(string[] args)
     {
+        if (args.Any(static arg => String.Equals(arg, "--textsearch-large-batch", StringComparison.OrdinalIgnoreCase)))
+        {
+            TextSearchRegressionTests.LargeLexicalBatchFlushesAndReopens();
+            Console.WriteLine($"PASS {nameof(TextSearchRegressionTests.LargeLexicalBatchFlushesAndReopens)}");
+            return 0;
+        }
+
         (string Name, Action Test)[] tests =
         {
             // This test injects a durable journal marker directly and therefore must run before
@@ -15,11 +22,25 @@ internal static class Program
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
+            (nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle), StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle),
+            (nameof(StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits),
             (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
             (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),
             (nameof(StorageRegressionTests.RollbackRecoveryIsBoundedAndExact), StorageRegressionTests.RollbackRecoveryIsBoundedAndExact),
             (nameof(StorageRegressionTests.RestoreMissingSourceKeepsDestination), StorageRegressionTests.RestoreMissingSourceKeepsDestination),
             (nameof(StorageRegressionTests.InvalidStorageSettingsFailBeforeCreatingFiles), StorageRegressionTests.InvalidStorageSettingsFailBeforeCreatingFiles),
+            (nameof(TextSearchRegressionTests.SynchronousIndexingRoundTrips), TextSearchRegressionTests.SynchronousIndexingRoundTrips),
+            (nameof(TextSearchRegressionTests.WabiEnumerationAndMergesMatchReferenceModel), TextSearchRegressionTests.WabiEnumerationAndMergesMatchReferenceModel),
+            (nameof(TextSearchRegressionTests.InvalidParserConfigurationFailsEarly), TextSearchRegressionTests.InvalidParserConfigurationFailsEarly),
+            (nameof(TextSearchRegressionTests.CompositionHandlesMissingTermsAndReusableBlocks), TextSearchRegressionTests.CompositionHandlesMissingTermsAndReusableBlocks),
+            (nameof(TextSearchRegressionTests.QueryParametersAreSinglePassAndTableScoped), TextSearchRegressionTests.QueryParametersAreSinglePassAndTableScoped),
+            (nameof(TextSearchRegressionTests.ExternalRangesAreBoundedAndCanBeOneSided), TextSearchRegressionTests.ExternalRangesAreBoundedAndCanBeOneSided),
+            (nameof(TextSearchRegressionTests.MutationsRemoveEmptyWordsAndBlocks), TextSearchRegressionTests.MutationsRemoveEmptyWordsAndBlocks),
+            (nameof(TextSearchRegressionTests.CryptoVectorsAndEncryptedSearchRemainCompatible), TextSearchRegressionTests.CryptoVectorsAndEncryptedSearchRemainCompatible),
+            (nameof(TextSearchRegressionTests.LexicalWordBatchesPreserveTriePrefixLocality), TextSearchRegressionTests.LexicalWordBatchesPreserveTriePrefixLocality),
+            (nameof(TextSearchRegressionTests.MigrationValidatesAndIndexesPendingRows), TextSearchRegressionTests.MigrationValidatesAndIndexesPendingRows),
+            (nameof(TextSearchRegressionTests.RandomizedCompositionMatchesSetModel), TextSearchRegressionTests.RandomizedCompositionMatchesSetModel),
+            (nameof(TextSearchRegressionTests.DiskIndexReopensAndUpdates), TextSearchRegressionTests.DiskIndexReopensAndUpdates),
             (nameof(DeferredIndexerRunsInParallelAndCoalescesStarts), DeferredIndexerRunsInParallelAndCoalescesStarts),
             (nameof(DeferredIndexerShutdownPreservesPendingRows), DeferredIndexerShutdownPreservesPendingRows),
             (nameof(DeferredIndexerFailureParksDurableBatch), DeferredIndexerFailureParksDurableBatch),
@@ -185,7 +206,7 @@ internal static class Program
                 int started = 0;
                 int finished = 0;
                 int failed = 0;
-                engine.BackgroundTasksExternalNotifier = (notification, _) =>
+                engine.BackgroundTasksExternalNotifier = (notification, error) =>
                 {
                     switch (notification)
                     {
@@ -197,6 +218,7 @@ internal static class Program
                             break;
                         case "TextDefferedIndexingHasFailed":
                             Interlocked.Increment(ref failed);
+                            Console.Error.WriteLine(error);
                             break;
                     }
                 };

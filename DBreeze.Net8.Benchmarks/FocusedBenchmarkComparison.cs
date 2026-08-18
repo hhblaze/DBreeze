@@ -32,8 +32,8 @@ internal static class FocusedBenchmarkComparison
                     NewMeanNanoseconds = newValue.MeanNanoseconds,
                     OldMedianNanoseconds = oldValue.MedianNanoseconds,
                     NewMedianNanoseconds = newValue.MedianNanoseconds,
-                    NewSpeedup = oldValue.MeanNanoseconds / newValue.MeanNanoseconds,
-                    NewTimeDeltaPercent = PercentDelta(oldValue.MeanNanoseconds, newValue.MeanNanoseconds),
+                    NewSpeedup = oldValue.MedianNanoseconds / newValue.MedianNanoseconds,
+                    NewTimeDeltaPercent = PercentDelta(oldValue.MedianNanoseconds, newValue.MedianNanoseconds),
                     OldAllocatedBytes = oldValue.AllocatedBytes,
                     NewAllocatedBytes = newValue.AllocatedBytes,
                     NewAllocatedDeltaPercent = PercentDelta(oldValue.AllocatedBytes, newValue.AllocatedBytes),
@@ -58,7 +58,8 @@ internal static class FocusedBenchmarkComparison
             File.WriteAllText(Path.Combine(options.OutputDirectory, "focused-comparison.md"), BuildMarkdown(report), new UTF8Encoding(false));
 
             Console.WriteLine($"Compared {rows.Count} focused benchmarks.");
-            Console.WriteLine($"New-version focused geometric-mean speedup: {report.OverallGeometricMeanSpeedup:F3}x");
+            Console.WriteLine(FormattableString.Invariant(
+                $"New-version focused geometric-mean median speedup: {report.OverallGeometricMeanSpeedup:F3}x"));
             Console.WriteLine($"Reports: {options.OutputDirectory}");
             return 0;
         }
@@ -175,13 +176,15 @@ internal static class FocusedBenchmarkComparison
         sb.AppendLine("# DBreeze.Net8 focused benchmark comparison");
         sb.AppendLine();
         sb.AppendLine("Mean and median are taken from the supplied BenchmarkDotNet reports.");
-        sb.AppendLine($"Overall geometric-mean speedup: **{report.OverallGeometricMeanSpeedup:F3}x**");
+        sb.AppendLine(FormattableString.Invariant(
+            $"Overall geometric-mean median speedup: **{report.OverallGeometricMeanSpeedup:F3}x**"));
         sb.AppendLine();
         sb.AppendLine("| Method | Old mean | New mean | Old median | New median | Speedup | Time delta | Old allocated | New allocated | Allocation delta |");
         sb.AppendLine("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
         foreach (FocusedComparisonRow row in report.Rows)
         {
-            sb.AppendLine($"| {row.Method} | {FormatTime(row.OldMeanNanoseconds)} | {FormatTime(row.NewMeanNanoseconds)} | {FormatTime(row.OldMedianNanoseconds)} | {FormatTime(row.NewMedianNanoseconds)} | {row.NewSpeedup:F3}x | {row.NewTimeDeltaPercent:+0.00;-0.00;0.00}% | {row.OldAllocatedBytes:F0} B | {row.NewAllocatedBytes:F0} B | {row.NewAllocatedDeltaPercent:+0.00;-0.00;0.00}% |");
+            sb.AppendLine(FormattableString.Invariant(
+                $"| {row.Method} | {FormatTime(row.OldMeanNanoseconds)} | {FormatTime(row.NewMeanNanoseconds)} | {FormatTime(row.OldMedianNanoseconds)} | {FormatTime(row.NewMedianNanoseconds)} | {row.NewSpeedup:F3}x | {row.NewTimeDeltaPercent:+0.00;-0.00;0.00}% | {row.OldAllocatedBytes:F0} B | {row.NewAllocatedBytes:F0} B | {row.NewAllocatedDeltaPercent:+0.00;-0.00;0.00}% |"));
         }
         return sb.ToString();
     }

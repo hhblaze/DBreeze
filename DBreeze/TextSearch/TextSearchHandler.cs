@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 //using System.Threading.Tasks;
 
@@ -13,7 +12,7 @@ using DBreeze;
 using DBreeze.Transactions;
 using DBreeze.Utils;
 using DBreeze.DataTypes;
-using System.Diagnostics;
+using System.IO;
 
 
 namespace DBreeze.TextSearch
@@ -89,6 +88,11 @@ namespace DBreeze.TextSearch
             /// Key 14 (byte): Value: int, where 0 - legacy, non-encrypted; Otherwise encryption type. 1 - ITextStreamCrypto bound to TextConfiguration.
             /// </summary>
             public int Encryption = 0;
+
+            // Used only by in-transaction migration: newly copied nested rows are not guaranteed
+            // to be visible through another read scope until commit.
+            public Dictionary<string, WordInDocs> MigratedWords = null;
+            public Dictionary<uint, byte[]> MigratedBlocks = null;
         }
 
         /// <summary>
@@ -140,7 +144,7 @@ namespace DBreeze.TextSearch
                 if (r1.Exists)          //DOCUMENT EXISTS
                 {                   
                     //Getting searchables for this document                
-                    byte[] oldSrch = its.srch.Select<byte[], byte[]>(r1.Value.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
+                    byte[] oldSrch = its.srch.Select<byte[], byte[]>(CreateSearchablesKey(r1.Value, 0), true).Value;
                     //rdocuments[documentID] = GetSearchablesFromByteArray_AsHashSet(oldSrch); //always instantiated hashset
 
                     var hs = GetSearchablesFromByteArray_AsHashSet(oldSrch,
@@ -176,7 +180,7 @@ namespace DBreeze.TextSearch
         /// <param name="deferredIndexing"></param>
         /// <param name="containsMinimalLength"></param>
         /// <param name="iMode"></param>        
-        public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords, 
+        public void InsertDocumentText(Transaction tran, string tableName, byte[] documentId, string containsWords, string fullMatchWords,
             bool deferredIndexing, int containsMinimalLength, eInsertMode iMode)
         {
 
@@ -184,11 +188,14 @@ namespace DBreeze.TextSearch
             if (String.IsNullOrEmpty(tableName) || documentId == null)
                 return;
 
+            containsWords = containsWords ?? String.Empty;
+            fullMatchWords = fullMatchWords ?? String.Empty;
+
             if ((iMode == eInsertMode.Append || iMode == eInsertMode.Remove) && (String.IsNullOrEmpty(containsWords) && String.IsNullOrEmpty(fullMatchWords)))
                 return;           
 
             //tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock
-            SortedDictionary<string, WordDefinition> pST = this.GetWordsDefinitionFromText(containsWords, fullMatchWords, containsMinimalLength,
+            SortedDictionary<string, byte> pST = this.GetWordsDefinitionFromText(containsWords, fullMatchWords, containsMinimalLength,
                 tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MaximalWordSize); //flattend searchables
 
             StringBuilder sbPs = new StringBuilder();
@@ -253,7 +260,7 @@ namespace DBreeze.TextSearch
                 iId = r1.Value;
 
                 //Getting old searchables for this document                
-                byte[] oldSrch = its.srch.Select<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value;
+                byte[] oldSrch = its.srch.Select<byte[], byte[]>(CreateSearchablesKey(iId, 0), true).Value;
                 HashSet<string> oldSearchables = GetSearchablesFromByteArray_AsHashSet(oldSrch,
                     its.Encryption > 0 ? tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
                     ); //always instantiated hashset
@@ -261,26 +268,22 @@ namespace DBreeze.TextSearch
                 switch (iMode)
                 {
                     case eInsertMode.Insert:
-                        //Comparing 
-                        if (oldSearchables.Intersect(pST.Keys).Count() == oldSearchables.Count && oldSearchables.Count == pST.Keys.Count)
+                        if (oldSearchables.SetEquals(pST.Keys))
                             return; //Going out, nothing to insert
 
-                        foreach (var ps1i in pST)
+                        foreach (string word in pST.Keys)
                         {
-                            sbPs.Append(ps1i.Key);
-                            sbPs.Append(" ");
+                            sbPs.Append(word);
+                            sbPs.Append(' ');
                         }
                         break;
                     case eInsertMode.Append:
                     case eInsertMode.Remove:
 
-                        if ((iMode == eInsertMode.Append)
-                            &&
-                            oldSearchables.Intersect(pST.Keys).Count() == oldSearchables.Count
-                            &&
-                            oldSearchables.Count == pST.Keys.Count
-                            )
-                            return; //Going out, nothing to insert
+                        if (iMode == eInsertMode.Append && oldSearchables.IsSupersetOf(pST.Keys))
+                            return;
+                        if (iMode == eInsertMode.Remove && !oldSearchables.Overlaps(pST.Keys))
+                            return;
 
                         foreach (var ew in pST.Keys)
                         {
@@ -293,7 +296,7 @@ namespace DBreeze.TextSearch
                         foreach (var el in oldSearchables)
                         {
                             sbPs.Append(el);
-                            sbPs.Append(" ");
+                            sbPs.Append(' ');
                         }
 
                         break;
@@ -311,16 +314,15 @@ namespace DBreeze.TextSearch
                 else if (iMode == eInsertMode.Remove)
                     return; //Going out
 
-                iId = its.i2e.Max<int, byte[]>().Key;
-                iId++;
+                iId = checked(its.i2e.Max<int, byte[]>().Key + 1);
 
                 its.e2i.Insert<byte[], int>(documentId, iId);
                 its.i2e.Insert<int, byte[]>(iId, documentId);
 
-                foreach (var ps1i in pST)
+                foreach (string word in pST.Keys)
                 {
-                    sbPs.Append(ps1i.Key);
-                    sbPs.Append(" ");
+                    sbPs.Append(word);
+                    sbPs.Append(' ');
                 }
             }
 
@@ -338,7 +340,7 @@ namespace DBreeze.TextSearch
             }
 
             //Inserting searchables to be indexed            
-            its.srch.Insert<byte[], byte[]>(iId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), 
+            its.srch.Insert<byte[], byte[]>(CreateSearchablesKey(iId, 1),
                 GetByteArrayFromSearchbles(sbPs.ToString(),
                 its.Encryption > 0 ? tran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
                 ));
@@ -370,8 +372,8 @@ namespace DBreeze.TextSearch
         /// Started only in case if InsertWasPerformed in deffered or not deffered way
         /// </summary>
         public void BeforeCommit()
-        {          
-            this.DoIndexing(this.tran,this.itbls);  //Do start indexing inside of commit            
+        {
+            this.DoIndexing(this.tran,this.itbls);  //Do start indexing inside of commit
         }
 
         /// <summary>
@@ -403,47 +405,51 @@ namespace DBreeze.TextSearch
         /// <summary>
         /// itbls and transaction must be supplied, to make it working from outside
         /// </summary>
+        sealed class WordChange
+        {
+            public readonly HashSet<int> RemoveFrom = new HashSet<int>();
+            public readonly HashSet<int> AddTo = new HashSet<int>();
+            public WordInDocs Definition;
+        }
+
+        const int NewWordReferenceFlushThreshold = 100000;
+
+        static void FlushNewWordReferences(NestedTable words, SortedDictionary<string, byte[]> pendingWords,
+            ITextStreamCrypto encryptor)
+        {
+            // LTrie reuses the previous key path. Ordinal plaintext order keeps equal prefixes
+            // adjacent; deterministic stream encryption preserves those prefixes in stored keys.
+            foreach (var pendingWord in pendingWords)
+            {
+                if (encryptor != null)
+                    words.Insert<byte[], byte[]>(encryptor.TextEncrypt(pendingWord.Key), pendingWord.Value);
+                else
+                    words.Insert<string, byte[]>(pendingWord.Key, pendingWord.Value);
+            }
+
+            pendingWords.Clear();
+        }
+
         internal void DoIndexing(Transaction itran, Dictionary<string, ITS> xitbls)
         {
-
             byte[] btUdtStart = DateTime.UtcNow.Ticks.To_8_bytes_array_BigEndian();
-
-            ITS its = null;
-
-            byte[] kA = null;
-            byte[] kZ = null;           
-            byte[] newSrch = null;
-            byte[] oldSrch = null;
-            Row<string, byte[]> rWord = null;
-            Row<byte[], byte[]> rWordBytes = null;
-            //Dictionary<string, WordInDocs> wds = new Dictionary<string, WordInDocs>();
-            WordInDocs wd = null;
-
-            uint iterBlockId = 0;
-            int iterBlockLen = 0;
-            int blockSize = 0;
-            byte[] btBlock = null;
-            Dictionary<uint, byte[]> block = new Dictionary<uint, byte[]>();
-            byte[] btWah = null;
-            byte[] tmp = null;
-            byte[] val = null;
-            WABI wah = null;
-            
-
-
             foreach (var tbl in xitbls)
             {
-                its = tbl.Value;
+                ITS its = tbl.Value;
                 if (its.srch == null)   //Can be instantiated in insert procedure, depending how we use indexer
                 {
                     its.srch = itran.InsertTable<byte>(tbl.Key, 3, 0);
                     its.srch.ValuesLazyLoadingIsOn = false;
                 }
-                //Are instantiated only hear
-                its.blocks = itran.InsertTable<byte>(tbl.Key, 10, 0);
-                its.words = itran.InsertTable<byte>(tbl.Key, 20, 0);
-                its.currentBlock = itran.Select<int, uint>(tbl.Key, 11).Value;
-                its.numberInBlock = itran.Select<int, uint>(tbl.Key, 12).Value;
+                if (its.blocks == null)
+                    its.blocks = itran.InsertTable<byte>(tbl.Key, 10, 0);
+                if (its.words == null)
+                    its.words = itran.InsertTable<byte>(tbl.Key, 20, 0);
+                if (its.currentBlock == 0)
+                {
+                    its.currentBlock = itran.Select<int, uint>(tbl.Key, 11).Value;
+                    its.numberInBlock = itran.Select<int, uint>(tbl.Key, 12).Value;
+                }
 
                 //wheather table is encrypted
                 itran.ValuesLazyLoadingIsOn = false;
@@ -452,7 +458,7 @@ namespace DBreeze.TextSearch
                 {
                     its.Encryption = encRow.Value;
                     if (its.Encryption > 0 && itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor == null)
-                        throw new Exception($"Encryptor for the text search table {tbl} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
+                        throw new Exception($"Encryptor for the text search table {tbl.Key} is null (Configuration.TextSearchConfig.TextEncryptor), set it up with your keys");
                 }
 
                 its.blocks.ValuesLazyLoadingIsOn = false;
@@ -464,279 +470,164 @@ namespace DBreeze.TextSearch
                     its.currentBlock = 1;
                 }
 
-                //Getting latest indexing time for that table
-                var litRow = itran.Select<byte, byte[]>(tbl.Key, 4);
-                byte[] lastIndexed = DateTime.MinValue.Ticks.To_8_bytes_array_BigEndian();
-                if (litRow.Exists)
-                    lastIndexed = litRow.Value;
-
-                kA = lastIndexed.Concat(int.MinValue.To_4_bytes_array_BigEndian());
-                kZ = DateTime.MaxValue.Ticks.To_8_bytes_array_BigEndian().Concat(int.MaxValue.To_4_bytes_array_BigEndian());
-
-                //Key is word, Value.Item1 is documents list from which this word must be removed, Value.Item2 is documents List where word must be added
-                Dictionary<string, Tuple<HashSet<int>, HashSet<int>, WordInDocs>> ds = new Dictionary<string, Tuple<HashSet<int>, HashSet<int>, WordInDocs>>();
-                Tuple<HashSet<int>, HashSet<int>, WordInDocs> tpl = null;
-
-                //Dictionary<string, byte[]> tmpWrds = new Dictionary<string, byte[]>(StringComparison.Ordinal);
-                var tmpWrds = new SortedDictionary<string, byte[]>(StringComparer.Ordinal);
-
                 // Capture encryptor once per table (null when table is not encrypted)
                 ITextStreamCrypto encryptor = its.Encryption > 0
                     ? itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor
                     : null;
 
-                Action<string> createNew = (word) =>
+                int wordsPerBlock = itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock;
+                if (wordsPerBlock < 1)
+                    throw new InvalidOperationException("DBreeze.TextSearch: QuantityOfWordsInBlock must be positive");
+
+                var changes = new Dictionary<string, WordChange>(StringComparer.Ordinal);
+                var newWordReferences = new SortedDictionary<string, byte[]>(StringComparer.Ordinal);
+
+                Func<string, bool, WordChange> getChange = delegate(string word, bool createIfMissing)
                 {
-                    if (!tmpWrds.ContainsKey(word))
+                    WordChange existingChange;
+                    if (changes.TryGetValue(word, out existingChange))
+                        return existingChange;
+
+                    byte[] wordValue = null;
+                    WordInDocs migratedDefinition = null;
+                    bool wordExists = its.MigratedWords != null && its.MigratedWords.TryGetValue(word, out migratedDefinition);
+                    if (!wordExists && encryptor != null)
                     {
-                        // Look up the word in key-20 table.
-                        // For encrypted tables the key is stored as byte[] (encrypted), not as string.
-                        bool wordExists = false;
-                        byte[] wordValue = null;
-                        if (encryptor != null)
-                        {
-                            rWordBytes = its.words.Select<byte[], byte[]>(encryptor.TextEncrypt(word), true);
-                            if (rWordBytes.Exists) { wordExists = true; wordValue = rWordBytes.Value; }
-                        }
-                        else
-                        {
-                            rWord = its.words.Select<string, byte[]>(word, true);
-                            if (rWord.Exists) { wordExists = true; wordValue = rWord.Value; }
-                        }
-
-                        wd = new WordInDocs();
-
+                        Row<byte[], byte[]> row = its.words.Select<byte[], byte[]>(encryptor.TextEncrypt(word), true);
+                        wordExists = row.Exists;
                         if (wordExists)
-                        {
-                            wd.BlockId = wordValue.Substring(0, 4).To_UInt32_BigEndian();
-                            wd.NumberInBlock = wordValue.Substring(4, 4).To_UInt32_BigEndian();
-                        }
-                        else
-                        {
-                            its.numberInBlock++;
-
-                            if (its.numberInBlock > itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.QuantityOfWordsInBlock)  //Quantity of words (WAHs) in block
-                            {
-                                its.currentBlock++;
-                                its.numberInBlock = 1;
-                            }
-
-                            wd.BlockId = its.currentBlock;
-                            wd.NumberInBlock = its.numberInBlock;
-                            //Inserting new definition
-
-                            tmpWrds[word] = wd.BlockId.To_4_bytes_array_BigEndian().Concat(wd.NumberInBlock.To_4_bytes_array_BigEndian());
-                            if (tmpWrds.Count > 100000)
-                            {
-                                // Flush batch to DB. For encrypted tables use byte[] key.
-                                foreach (var tmpwrd in tmpWrds)
-                                {
-                                    if (encryptor != null)
-                                        its.words.Insert<byte[], byte[]>(encryptor.TextEncrypt(tmpwrd.Key), tmpwrd.Value);
-                                    else
-                                        its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
-                                }
-                                tmpWrds.Clear();
-                            }
-                        }
-                        tpl = new Tuple<HashSet<int>, HashSet<int>, WordInDocs>(new HashSet<int>(), new HashSet<int>(), wd);
-                        ds[word] = tpl;
+                            wordValue = row.Value;
                     }
+                    else if (!wordExists)
+                    {
+                        Row<string, byte[]> row = its.words.Select<string, byte[]>(word, true);
+                        wordExists = row.Exists;
+                        if (wordExists)
+                            wordValue = row.Value;
+                    }
+
+                    if (!wordExists && !createIfMissing)
+                        return null;
+
+                    var definition = migratedDefinition ?? new WordInDocs();
+                    if (wordExists)
+                    {
+                        if (migratedDefinition == null)
+                        {
+                            if (wordValue == null || wordValue.Length < 8)
+                                throw new InvalidDataException("DBreeze.TextSearch: invalid word-to-block reference");
+                            definition.BlockId = ReadUInt32BigEndian(wordValue, 0);
+                            definition.NumberInBlock = ReadUInt32BigEndian(wordValue, 4);
+                        }
+                    }
+                    else
+                    {
+                        its.numberInBlock = checked(its.numberInBlock + 1);
+                        if (its.numberInBlock > (uint)wordsPerBlock)
+                        {
+                            its.currentBlock = checked(its.currentBlock + 1);
+                            its.numberInBlock = 1;
+                        }
+
+                        definition.BlockId = its.currentBlock;
+                        definition.NumberInBlock = its.numberInBlock;
+                        newWordReferences[word] = CreateWordReference(definition.BlockId, definition.NumberInBlock);
+                        if (newWordReferences.Count > NewWordReferenceFlushThreshold)
+                            FlushNewWordReferences(its.words, newWordReferences, encryptor);
+                    }
+
+                    var change = new WordChange { Definition = definition };
+                    changes.Add(word, change);
+                    return change;
                 };
 
-                //List<byte[]> docs2Change = new List<byte[]>();
-                Dictionary<byte[],byte[]> docs2Change = new Dictionary<byte[],byte[]>();
-                Tuple<HashSet<string>, HashSet<string>> diff;
-                
-                
-                //foreach (var docId in its.ChangedDocIds)
-                foreach (var docId in its.ChangedDocIds.OrderBy(r=>r))
+                int[] changedDocumentIds = new int[its.ChangedDocIds.Count];
+                its.ChangedDocIds.CopyTo(changedDocumentIds);
+                Array.Sort(changedDocumentIds);
+
+                for (int documentIndex = 0; documentIndex < changedDocumentIds.Length; documentIndex++)
                 {
+                    int docId = changedDocumentIds[documentIndex];
+                    byte[] currentKey = CreateSearchablesKey(docId, 0);
+                    byte[] pendingKey = CreateSearchablesKey(docId, 1);
+                    byte[] oldSrch = its.srch.Select<byte[], byte[]>(currentKey).Value;
+                    byte[] newSrch = its.srch.Select<byte[], byte[]>(pendingKey).Value;
+                    HashSet<string> oldWords = GetSearchablesFromByteArray_AsHashSet(oldSrch, encryptor);
+                    HashSet<string> newWords = GetSearchablesFromByteArray_AsHashSet(newSrch, encryptor);
 
-                    //diff will return list of words to be removed and list of words to be added                   
-                    oldSrch = its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 })).Value;
-                    newSrch = its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 })).Value;
-
-                    diff = WordsDiff(
-                                oldSrch, //Current searchables 
-                                newSrch, //new
-                                its.Encryption > 0 ? itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.TextEncryptor : null
-                                );
-
-                    //diff = WordsDiff(
-                    //            its.srch.Select<byte[], byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }), true).Value, //Current searchables 
-                    //            newSrch //new
-                    //            );
-
-                    //Copying new searchables to current searchables
-                    docs2Change.Add(docId.To_4_bytes_array_BigEndian(), newSrch);
-                    //its.srch.ChangeKey<byte[]>(docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 1 }), docId.To_4_bytes_array_BigEndian().Concat(new byte[] { 0 }));
-
-
-                    //To be removed
-                    foreach (var word in diff.Item1)
+                    foreach (string word in oldWords)
                     {
-                        if (!ds.TryGetValue(word, out tpl))
-                            createNew(word);
-
-                        tpl.Item1.Add(docId);
+                        if (newWords.Contains(word))
+                            continue;
+                        WordChange change = getChange(word, false);
+                        if (change != null)
+                            change.RemoveFrom.Add(docId);
                     }
 
-                    //To be added
-                    foreach (var word in diff.Item2)
+                    foreach (string word in newWords)
                     {
-                        if (!ds.TryGetValue(word, out tpl))
-                            createNew(word);
-
-                        tpl.Item2.Add(docId);
+                        if (!oldWords.Contains(word))
+                            getChange(word, true).AddTo.Add(docId);
                     }
-                }//eo foreach new searchables, end of document itteration 
 
-                
-                foreach (var d2c in docs2Change.OrderBy(r=>r.Key.ToBytesString()))
-                {
-                    its.srch.RemoveKey<byte[]>(d2c.Key.Concat(new byte[] { 1 }));                   
-                    its.srch.Insert<byte[],byte[]>(d2c.Key.Concat(new byte[] { 0 }), d2c.Value);
-                    // its.srch.ChangeKey<byte[]>(d2c.Concat(new byte[] { 1 }), d2c.Concat(new byte[] { 0 }));
+                    its.srch.RemoveKey<byte[]>(pendingKey);
+                    its.srch.Insert<byte[], byte[]>(currentKey, newSrch);
                 }
 
-                //foreach (var eeel in its.srch.SelectForward<byte[], byte[]>(false).Take(50))
-                //    Console.WriteLine(eeel.Key.ToBytesString());
+                FlushNewWordReferences(its.words, newWordReferences, encryptor);
 
-                // Final flush of pending words to key-20 table.
-                // For encrypted tables the key is stored as byte[] (encrypted).
-                foreach (var tmpwrd in tmpWrds)
+                var orderedChanges = new List<KeyValuePair<string, WordChange>>(changes);
+                orderedChanges.Sort(delegate(KeyValuePair<string, WordChange> left, KeyValuePair<string, WordChange> right)
                 {
-                    if (encryptor != null)
-                        its.words.Insert<byte[], byte[]>(encryptor.TextEncrypt(tmpwrd.Key), tmpwrd.Value);
-                    else
-                        its.words.Insert<string, byte[]>(tmpwrd.Key, tmpwrd.Value);
-                }
-                tmpWrds.Clear();
+                    int comparison = left.Value.Definition.BlockId.CompareTo(right.Value.Definition.BlockId);
+                    if (comparison == 0)
+                        comparison = left.Value.Definition.NumberInBlock.CompareTo(right.Value.Definition.NumberInBlock);
+                    if (comparison == 0)
+                        comparison = StringComparer.Ordinal.Compare(left.Key, right.Key);
+                    return comparison;
+                });
 
+                var block = new Dictionary<uint, byte[]>();
+                uint loadedBlockId = 0;
+                int loadedBlockCapacity = 0;
+                int minimalBlockReserve = itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes;
 
-                #region "S1"
-                //Inserting WAH blocks
-                //Going through the list of collected words order by blockID, fill blocks and save them                  
-                block.Clear();
-                iterBlockId = 0;
-
-                foreach (var wd1 in ds.OrderBy(r => r.Value.Item3.BlockId))
+                for (int changeIndex = 0; changeIndex < orderedChanges.Count; changeIndex++)
                 {
-                    //reading block if it's not loaded
-                    if (wd1.Value.Item3.BlockId != iterBlockId)
+                    KeyValuePair<string, WordChange> entry = orderedChanges[changeIndex];
+                    WordInDocs definition = entry.Value.Definition;
+                    if (definition.BlockId != loadedBlockId)
                     {
-                        if (iterBlockId > 0)
-                        {
-                            //We must save current datablock
-                            if (block.Count() > 0)
-                            {
+                        if (loadedBlockId != 0)
+                            SaveBlock(its.blocks, loadedBlockId, block, loadedBlockCapacity, minimalBlockReserve);
+                        loadedBlockId = definition.BlockId;
+                        byte[] migratedBlock = null;
+                        if (its.MigratedBlocks != null)
+                            its.MigratedBlocks.TryGetValue(loadedBlockId, out migratedBlock);
+                        LoadBlock(its.blocks, loadedBlockId, migratedBlock, block, out loadedBlockCapacity);
+                    }
 
-                                btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
+                    byte[] compressedBitmap;
+                    WABI bitmap = block.TryGetValue(definition.NumberInBlock, out compressedBitmap)
+                        ? new WABI(compressedBitmap)
+                        : new WABI();
+                    bitmap.Add(entry.Value.AddTo, true);
+                    bitmap.Add(entry.Value.RemoveFrom, false);
 
-                                if ((btBlock.Length + 4) < itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserv
-                                {
-                                    tmp = new byte[itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
-                                    tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
-                                    tmp.CopyInside(4, btBlock);
-                                }
-                                else if ((btBlock.Length + 4) > iterBlockLen)
-                                {
-                                    //Doubling reserve
-                                    tmp = new byte[btBlock.Length * 2];
-                                    tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
-                                    tmp.CopyInside(4, btBlock);
-                                }
-                                else
-                                {
-                                    //Filling existing space
-                                    tmp = new byte[btBlock.Length + 4];
-                                    tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
-                                    tmp.CopyInside(4, btBlock);
-                                }
-
-                                //Saving into DB                                   
-                                its.blocks.Insert<uint, byte[]>(iterBlockId, tmp);
-                            }
-
-                            block.Clear();
-                        }
-
-                        val = its.blocks.Select<uint, byte[]>(wd1.Value.Item3.BlockId).Value;
-                        iterBlockId = wd1.Value.Item3.BlockId;
-                        iterBlockLen = val == null ? 0 : val.Length;
-
-                        if (val != null)
-                        {
-                            blockSize = val.Substring(0, 4).To_Int32_BigEndian();
-                            if (blockSize > 0)
-                            {
-                                btBlock = val.Substring(4, blockSize);
-                                block.Clear();
-                                btBlock.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
-                            }
-                            else
-                                block.Clear();
-                        }
+                    if (bitmap.IsEmpty)
+                    {
+                        block.Remove(definition.NumberInBlock);
+                        if (encryptor != null)
+                            its.words.RemoveKey<byte[]>(encryptor.TextEncrypt(entry.Key));
                         else
-                            block.Clear();
-                    }
-
-                    //Getting from Block 
-                    if (block.TryGetValue((uint)wd1.Value.Item3.NumberInBlock, out btWah))
-                    {
-                        wah = new WABI(btWah);
+                            its.words.RemoveKey<string>(entry.Key);
                     }
                     else
-                        wah = new WABI(null);
-
-                    //Adding documents
-                    foreach (var dId in wd1.Value.Item2)
-                        wah.Add(dId, true);
-
-                    //Removing documents
-                    foreach (var dId in wd1.Value.Item1)
-                        wah.Add(dId, false);
-
-                    block[wd1.Value.Item3.NumberInBlock] = wah.GetCompressedByteArray();
-
-                }//eo foreach wds
-
-
-                //Saving last element
-                //saving current block
-                if (block.Count() > 0)
-                {
-                    //!!!!!!!!!!! Remake it for smoothing storage 
-                    btBlock = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
-
-                    if ((btBlock.Length + 4) < itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes)    //Minimal reserve
-                    {
-                        tmp = new byte[itran._transactionUnit.TransactionsCoordinator._engine.Configuration.TextSearchConfig.MinimalBlockReservInBytes];
-                        tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
-                        tmp.CopyInside(4, btBlock);
-                    }
-                    else if ((btBlock.Length + 4) > iterBlockLen)
-                    {
-                        //Doubling reserve
-                        tmp = new byte[btBlock.Length * 2];
-                        tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
-                        tmp.CopyInside(4, btBlock);
-                    }
-                    else
-                    {
-                        //Filling existing space
-                        tmp = new byte[btBlock.Length + 4];
-                        tmp.CopyInside(0, btBlock.Length.To_4_bytes_array_BigEndian());
-                        tmp.CopyInside(4, btBlock);
-                    }
-
-                    //Saving into DB          
-                    its.blocks.Insert<uint, byte[]>(iterBlockId, tmp);
+                        block[definition.NumberInBlock] = bitmap.GetCompressedByteArray();
                 }
 
-                block.Clear();
-                #endregion
+                if (loadedBlockId != 0)
+                    SaveBlock(its.blocks, loadedBlockId, block, loadedBlockCapacity, minimalBlockReserve);
 
                 itran.Insert<int, uint>(tbl.Key, 11, its.currentBlock);
                 itran.Insert<int, uint>(tbl.Key, 12, its.numberInBlock);
@@ -744,40 +635,107 @@ namespace DBreeze.TextSearch
                 //Setting last indexing time
                 itran.Insert<byte, byte[]>(tbl.Key, 4, btUdtStart);
 
-            }//eo foreach tablesToIndex            
+            }//eo foreach tablesToIndex
         }
 
-        /// <summary>
-        /// This function accepts old value of searchables for one document and new value,
-        /// decides what must be Removed (par1) and what should be Added (par2)
-        /// </summary>
-        /// <param name="oldtext"></param>
-        /// <param name="newtext"></param>
-        /// <returns>List 2remove, List 2add</returns>
-        Tuple<HashSet<string>, HashSet<string>> WordsDiff(byte[] oldtext, byte[] newtext, ITextStreamCrypto encryptor)
+        static byte[] CreateSearchablesKey(int documentId, byte marker)
         {
-            HashSet<string> toRemove = new HashSet<string>();
-            HashSet<string> toAdd = new HashSet<string>();
+            byte[] result = new byte[5];
+            // DBreeze's sortable Int32 encoding flips the sign bit before writing big-endian.
+            WriteUInt32BigEndian(result, 0, unchecked((uint)(documentId ^ Int32.MinValue)));
+            result[4] = marker;
+            return result;
+        }
 
-            //Debug.WriteLine(word);
+        static byte[] CreateWordReference(uint blockId, uint numberInBlock)
+        {
+            byte[] result = new byte[8];
+            WriteUInt32BigEndian(result, 0, blockId);
+            WriteUInt32BigEndian(result, 4, numberInBlock);
+            return result;
+        }
 
-            HashSet<string> nt = GetSearchablesFromByteArray_AsHashSet(newtext, encryptor);
-            HashSet<string> ot = GetSearchablesFromByteArray_AsHashSet(oldtext, encryptor);
+        static void LoadBlock(NestedTable blocks, uint blockId, byte[] prefetched, Dictionary<uint, byte[]> block, out int existingCapacity)
+        {
+            block.Clear();
+            byte[] stored = prefetched ?? blocks.Select<uint, byte[]>(blockId).Value;
+            existingCapacity = stored == null ? 0 : stored.Length;
+            if (stored == null)
+                return;
+            if (stored.Length < 4)
+                throw new InvalidDataException("DBreeze.TextSearch: invalid bitmap block header");
 
-            foreach (var word in nt)
+            int payloadLength = ReadInt32BigEndian(stored, 0);
+            if (payloadLength < 0 || payloadLength > stored.Length - 4)
+                throw new InvalidDataException("DBreeze.TextSearch: invalid bitmap block length");
+            if (payloadLength == 0)
+                return;
+
+            byte[] payload = new byte[payloadLength];
+            Buffer.BlockCopy(stored, 4, payload, 0, payloadLength);
+            payload.Decode_DICT_PROTO_UINT_BYTEARRAY(block, Compression.eCompressionMethod.Gzip);
+        }
+
+        static void SaveBlock(NestedTable blocks, uint blockId, Dictionary<uint, byte[]> block, int existingCapacity, int minimalReserve)
+        {
+            if (block.Count == 0)
             {
-                if (!ot.Contains(word))
-                    toAdd.Add(word);
+                blocks.RemoveKey<uint>(blockId);
+                return;
             }
 
-            foreach (var word in ot)
+            byte[] payload = block.Encode_DICT_PROTO_UINT_BYTEARRAY(Compression.eCompressionMethod.Gzip);
+            int required = checked(payload.Length + 4);
+            int minimum = Math.Max(4, minimalReserve);
+            int capacity;
+            if (existingCapacity < required)
             {
-                if (!nt.Contains(word))
-                    toRemove.Add(word);
+                int doubled = existingCapacity <= 0 || existingCapacity > Int32.MaxValue / 2
+                    ? required
+                    : existingCapacity * 2;
+                capacity = Math.Max(minimum, Math.Max(required, doubled));
             }
+            else if (existingCapacity > minimum && required <= existingCapacity / 4)
+            {
+                int doubledRequired = required > Int32.MaxValue / 2 ? required : required * 2;
+                capacity = Math.Max(minimum, doubledRequired);
+            }
+            else
+                capacity = Math.Max(minimum, existingCapacity);
 
+            if (capacity < required)
+                capacity = required;
 
-            return new Tuple<HashSet<string>, HashSet<string>>(toRemove, toAdd);
+            byte[] stored = new byte[capacity];
+            WriteInt32BigEndian(stored, 0, payload.Length);
+            Buffer.BlockCopy(payload, 0, stored, 4, payload.Length);
+            blocks.Insert<uint, byte[]>(blockId, stored);
+        }
+
+        static uint ReadUInt32BigEndian(byte[] value, int offset)
+        {
+            return ((uint)value[offset] << 24) |
+                   ((uint)value[offset + 1] << 16) |
+                   ((uint)value[offset + 2] << 8) |
+                   value[offset + 3];
+        }
+
+        static int ReadInt32BigEndian(byte[] value, int offset)
+        {
+            return unchecked((int)(ReadUInt32BigEndian(value, offset) ^ 0x80000000u));
+        }
+
+        static void WriteUInt32BigEndian(byte[] value, int offset, uint number)
+        {
+            value[offset] = (byte)(number >> 24);
+            value[offset + 1] = (byte)(number >> 16);
+            value[offset + 2] = (byte)(number >> 8);
+            value[offset + 3] = (byte)number;
+        }
+
+        static void WriteInt32BigEndian(byte[] value, int offset, int number)
+        {
+            WriteUInt32BigEndian(value, offset, unchecked((uint)(number ^ Int32.MinValue)));
         }
 
         #region "Converters"
@@ -822,20 +780,25 @@ namespace DBreeze.TextSearch
             string r = GetSearchablesFromByteArray(searchables, encryptor);
             if (String.IsNullOrEmpty(r))
                 return res;
-            foreach (var word in r.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
-                res.Add(word);
+
+            int start = 0;
+            while (start < r.Length)
+            {
+                while (start < r.Length && r[start] == ' ')
+                    start++;
+                if (start == r.Length)
+                    break;
+
+                int end = r.IndexOf(' ', start);
+                if (end < 0)
+                    end = r.Length;
+                res.Add(r.Substring(start, end - start));
+                start = end + 1;
+            }
             return res;
         }
 
         #endregion
-
-        /// <summary>
-        /// 
-        /// </summary>        
-        class WordDefinition
-        {
-            public uint CountInDocu = 0;
-        }
 
         /// <summary>
         /// Returns null in case of notfound anything or what ever
@@ -845,117 +808,71 @@ namespace DBreeze.TextSearch
         /// <param name="containsMinimalLength"></param>
         /// <param name="maxWordSize">Taken from configuration. Default is 50. word separated by spaces</param>
         /// <returns></returns>
-        SortedDictionary<string, WordDefinition> GetWordsDefinitionFromText(string containsWords, string fullMatchWords, int containsMinimalLength, int maxWordSize)
+        SortedDictionary<string, byte> GetWordsDefinitionFromText(string containsWords, string fullMatchWords, int containsMinimalLength, int maxWordSize)
         {
-            SortedDictionary<string, WordDefinition> wordsCounter = new SortedDictionary<string, WordDefinition>();
+            var words = new SortedDictionary<string, byte>(StringComparer.Ordinal);
+            containsWords = containsWords ?? String.Empty;
+            fullMatchWords = fullMatchWords ?? String.Empty;
 
-            try
+            if (containsMinimalLength < 3)
+                containsMinimalLength = 3;
+            if (maxWordSize < 1)
+                throw new ArgumentOutOfRangeException("maxWordSize", "MaximalWordSize must be positive");
+
+            int exactStart = 0;
+            while (exactStart < fullMatchWords.Length)
             {
-                if (String.IsNullOrEmpty(containsWords) && String.IsNullOrEmpty(fullMatchWords))
-                    return wordsCounter;
+                while (exactStart < fullMatchWords.Length && fullMatchWords[exactStart] == ' ')
+                    exactStart++;
+                if (exactStart == fullMatchWords.Length)
+                    break;
 
-                if (containsMinimalLength < 3)
-                    containsMinimalLength = 3;
-
-                StringBuilder sb = new StringBuilder();
-                string word = "";
-                WordDefinition wordDefinition = null;
-                
-                //Non splittable words
-                foreach (var nswrd in fullMatchWords.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Where(r => r.Length >= containsMinimalLength))
-                {                  
-                    word = nswrd.ToLower();
-                    
-                    wordDefinition = new WordDefinition() { CountInDocu = 1 };
-                    wordsCounter[word] = wordDefinition;
-                }
-
-                if (String.IsNullOrEmpty(containsWords))
-                    return wordsCounter;
-
-                Action processWord = () =>
-                {
-                    string subWord = null;
-                    //We take all words, so we can later find even by email address jj@gmx.net ... we will need jj and gmx.net
-                    if (sb.Length > 0 && sb.Length >= containsMinimalLength)
-                    {
-                        word = sb.ToString().ToLower();                        
-                        List<string> wrds = new List<string>();
-                        
-
-                        
-                        wrds.Add(word);
-
-                        int i = 1;
-
-                        while (word.Length - i >= containsMinimalLength)
-                        {
-                            subWord = word.Substring(i);
-                            
-                            wrds.Add(subWord);
-                            i++;
-                        }
-
-                        // System.Diagnostics.Debug.WriteLine("--------------");
-                        foreach (var w in wrds)
-                        {
-                            //System.Diagnostics.Debug.WriteLine(w);
-                            if (wordsCounter.TryGetValue(w, out wordDefinition))
-                            {
-                                wordDefinition.CountInDocu++;
-                            }
-                            else
-                            {
-                                wordDefinition = new WordDefinition() { CountInDocu = 1 };
-                                wordsCounter[w] = wordDefinition;
-                            }
-                        }
-
-                    }
-
-                    if (sb.Length > 0)
-                        sb.Remove(0, sb.Length);
-                    //sb.Clear();
-                };
-
-                int wordLen = 0;
-                int maximalWordLengthBeforeSplit = maxWordSize; //Default is 50
-
-                foreach (var c in containsWords)
-                {
-                    //No words reviews (must be checked in outer systems)
-                    if (c != ' ')
-                    {
-                        sb.Append(c);
-                        wordLen++;
-                        
-                        if (wordLen >= maximalWordLengthBeforeSplit)
-                        {
-                            //Processing ready word
-                            processWord();
-                            wordLen = 0;
-                        }
-                    }
-                    else
-                    {
-                        //Processing ready word
-                        processWord();
-                        wordLen = 0;
-                    }                   
-                }
-
-                //Processing last word
-                processWord();
-
-                //if (wordsCounter.Count() > 0)
-                //    return wordsCounter;
-            }
-            catch
-            {
-
+                int exactEnd = fullMatchWords.IndexOf(' ', exactStart);
+                if (exactEnd < 0)
+                    exactEnd = fullMatchWords.Length;
+                int exactLength = exactEnd - exactStart;
+                if (exactLength >= containsMinimalLength)
+                    words[fullMatchWords.Substring(exactStart, exactLength).ToLower()] = 0;
+                exactStart = exactEnd + 1;
             }
 
-            return wordsCounter;
+            if (containsWords.Length == 0)
+                return words;
+
+            int tokenStart = 0;
+            while (tokenStart < containsWords.Length)
+            {
+                while (tokenStart < containsWords.Length && containsWords[tokenStart] == ' ')
+                    tokenStart++;
+                if (tokenStart == containsWords.Length)
+                    break;
+
+                int tokenEnd = containsWords.IndexOf(' ', tokenStart);
+                if (tokenEnd < 0)
+                    tokenEnd = containsWords.Length;
+
+                while (tokenStart < tokenEnd)
+                {
+                    int chunkLength = Math.Min(maxWordSize, tokenEnd - tokenStart);
+                    AddWordAndSuffixes(words, containsWords.Substring(tokenStart, chunkLength), containsMinimalLength);
+                    tokenStart += chunkLength;
+                }
+
+                tokenStart = tokenEnd + 1;
+            }
+
+            return words;
+        }
+
+        static void AddWordAndSuffixes(SortedDictionary<string, byte> words, string value, int minimalLength)
+        {
+            if (value.Length < minimalLength)
+                return;
+
+            string word = value.ToLower();
+            int suffixCount = word.Length - minimalLength;
+            for (int i = 0; i <= suffixCount; i++)
+                words[i == 0 ? word : word.Substring(i)] = 0;
         }
 
              
@@ -1111,6 +1028,13 @@ namespace DBreeze.TextSearch
             if (encryptor == null)
                 throw new Exception("Encryptor is null (Configuration.TextSearchConfig.TextEncryptor). Set it up with your keys before migrating.");
 
+            Row<byte, int> sourceEncryption = tran.Select<byte, int>(oldTableName, 14);
+            if (sourceEncryption.Exists && sourceEncryption.Value != 0)
+                throw new InvalidOperationException("DBreeze.TextSearch migration source must be a non-encrypted table.");
+
+            if (tran.Count(newTableName) != 0)
+                throw new InvalidOperationException("DBreeze.TextSearch migration destination must be empty.");
+
             // ── Read-only nested tables from the old (plain) table ──────────────
             NestedTable oldE2i    = tran.SelectTable<byte>(oldTableName, 1, 0);
             NestedTable oldI2e    = tran.SelectTable<byte>(oldTableName, 2, 0);
@@ -1164,15 +1088,25 @@ namespace DBreeze.TextSearch
 
             // 4. Copy bitmap blocks as-is
             //    Blocks contain WAH-compressed bitmaps keyed by internal integer positions — no word text inside.
+            var migratedBlocks = new Dictionary<uint, byte[]>();
             foreach (var row in oldBlocks.SelectForward<uint, byte[]>())
+            {
                 newBlocks.Insert<uint, byte[]>(row.Key, row.Value);
+                migratedBlocks[row.Key] = row.Value;
+            }
 
             // 5. Migrate searchables (key 3): re-encrypt the plain-text word list per document.
             //    Storage format: key = internalDocId[4 bytes] + marker[1 byte] (0=current, 1=pending)
             //    Value (non-encrypted): GZip( UTF-8 bytes of "word1 word2 word3 ..." )
             //    Value (encrypted):     GZip( encryptor.TextEncrypt("word1 word2 word3 ...") )
+            var pendingDocumentIds = new HashSet<int>();
             foreach (var row in oldSrch.SelectForward<byte[], byte[]>())
             {
+                if (row.Key == null || row.Key.Length != 5 || (row.Key[4] != 0 && row.Key[4] != 1))
+                    throw new InvalidDataException("DBreeze.TextSearch: invalid searchables key during migration");
+                if (row.Key[4] == 1)
+                    pendingDocumentIds.Add(row.Key.Substring(0, 4).To_Int32_BigEndian());
+
                 if (row.Value == null || row.Value.Length == 0)
                 {
                     newSrch.Insert<byte[], byte[]>(row.Key, row.Value);
@@ -1188,8 +1122,39 @@ namespace DBreeze.TextSearch
             // 6. Migrate word index (key 20): re-key each entry using encrypted byte[] key.
             //    Old table: Insert<string, byte[]>(word, blockRef)
             //    New table: Insert<byte[], byte[]>(encryptor.TextEncrypt(word), blockRef)
+            var migratedWords = new Dictionary<string, WordInDocs>(StringComparer.Ordinal);
             foreach (var row in oldWords.SelectForward<string, byte[]>())
+            {
                 newWords.Insert<byte[], byte[]>(encryptor.TextEncrypt(row.Key), row.Value);
+                if (row.Value == null || row.Value.Length < 8)
+                    throw new InvalidDataException("DBreeze.TextSearch: invalid word-to-block reference during migration");
+                migratedWords[row.Key] = new WordInDocs
+                {
+                    BlockId = ReadUInt32BigEndian(row.Value, 0),
+                    NumberInBlock = ReadUInt32BigEndian(row.Value, 4),
+                };
+            }
+
+            // A pending row is not part of the copied bitmap yet. Index it now so the migrated
+            // table is immediately consistent and does not depend on the source's deferred queue.
+            if (pendingDocumentIds.Count != 0)
+            {
+                var migratedTable = new ITS
+                {
+                    srch = newSrch,
+                    blocks = newBlocks,
+                    words = newWords,
+                    currentBlock = oldCurrentBlock.Exists ? oldCurrentBlock.Value : 1u,
+                    numberInBlock = oldNumberInBlock.Exists ? oldNumberInBlock.Value : 0u,
+                    Encryption = 1,
+                    ChangedDocIds = pendingDocumentIds,
+                    MigratedWords = migratedWords,
+                    MigratedBlocks = migratedBlocks,
+                };
+                var tablesToIndex = new Dictionary<string, ITS>(StringComparer.Ordinal);
+                tablesToIndex.Add(newTableName, migratedTable);
+                DoIndexing(tran, tablesToIndex);
+            }
         }
 
     }//eoc

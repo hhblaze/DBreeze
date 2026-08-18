@@ -19,6 +19,8 @@ public class StorageBenchmarks
     private byte[] _updateValue;
     private byte[] _appendValue;
     private long _dataStart;
+    private long[] _randomReadOffsets;
+    private long[] _localReadOffsets;
     private string _backupFolder;
     private string _restoreFolder;
 
@@ -38,6 +40,14 @@ public class StorageBenchmarks
         new Random(100).NextBytes(readData);
         _dataStart = DecodePointer(_readStorage.Table_WriteToTheEnd(readData));
         _readStorage.Commit();
+        _randomReadOffsets = new long[1_024];
+        _localReadOffsets = new long[1_024];
+        var readRandom = new Random(103);
+        for (int i = 0; i < _randomReadOffsets.Length; i++)
+        {
+            _randomReadOffsets[i] = _dataStart + readRandom.Next(readData.Length - 64);
+            _localReadOffsets[i] = _dataStart + ((i * 61) & 0x0FFF);
+        }
 
         _updateConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
         _updateStorage = new StorageLayer(Path.Combine(_root, "2"), new TrieSettings(), _updateConfiguration);
@@ -134,6 +144,39 @@ public class StorageBenchmarks
         {
             byte[] value = _readStorage.Table_Read(true, _dataStart + worker * 4096, 4096);
             Interlocked.Add(ref checksum, value[0]);
+        });
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 1_024)]
+    public int Random64ByteRead()
+    {
+        int checksum = 0;
+        for (int i = 0; i < _randomReadOffsets.Length; i++)
+            checksum += _readStorage.Table_Read(true, _randomReadOffsets[i], 64)[0];
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 1_024)]
+    public int Local64ByteRead()
+    {
+        int checksum = 0;
+        for (int i = 0; i < _localReadOffsets.Length; i++)
+            checksum += _readStorage.Table_Read(true, _localReadOffsets[i], 64)[0];
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 1_024)]
+    public int EightThread64ByteRead()
+    {
+        int checksum = 0;
+        Parallel.For(0, 8, worker =>
+        {
+            int localChecksum = 0;
+            int first = worker * 128;
+            for (int i = first; i < first + 128; i++)
+                localChecksum += _readStorage.Table_Read(true, _localReadOffsets[i], 64)[0];
+            Interlocked.Add(ref checksum, localChecksum);
         });
         return checksum;
     }

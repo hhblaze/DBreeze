@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.IO;
 using DBreeze.Utils;
 
@@ -34,13 +33,18 @@ namespace DBreeze.TextSearch
         /// <param name="array"></param>
         public WABI(byte[] array)
         {
-            if (array == null || array.Length < 1)
+            if (array == null || array.Length == 0)
                 return;
+
+            if (array.Length < 2)
+                throw new InvalidDataException("DBreeze.TextSearch: invalid WABI payload");
 
             //First byte is SByte showing by module(ABS) version of the protocol
             //if <0 then compressed
-            //bt = Substring(array, 2, array.Length);
-            bt = array.Substring(2, array.Length);
+            int payloadLength = array.Length - 2;
+            bt = new byte[payloadLength];
+            if (payloadLength != 0)
+                Buffer.BlockCopy(array, 2, bt, 0, payloadLength);
             if (array[1] == 1)
                 bt = bt.GZip_Decompress();
 
@@ -81,7 +85,11 @@ namespace DBreeze.TextSearch
             //}
 
 
-            return new byte[] { currentProtocol }.ConcatMany(new byte[] { 0 }, bt);
+            byte[] result = new byte[checked(bt.Length + 2)];
+            result[0] = currentProtocol;
+            result[1] = 0;
+            Buffer.BlockCopy(bt, 0, result, 2, bt.Length);
+            return result;
         }
 
 
@@ -92,14 +100,22 @@ namespace DBreeze.TextSearch
         /// <param name="value"></param>
         public void Add(int index, bool value)
         {
-            int byteNumber = Convert.ToInt32(index / 8);
+            if (index < 0)
+                throw new ArgumentOutOfRangeException("index");
+
+            int byteNumber = index / 8;
             int rest = index % 8;
 
             int btLen = 0;
             if (bt != null)
                 btLen = bt.Length;
 
-            if (byteNumber > (btLen - 1))
+            // Clearing a non-existing bit is a no-op. In particular, deleting a large missing
+            // document must never expand the persisted bitmap.
+            if (!value && byteNumber >= btLen)
+                return;
+
+            if (byteNumber >= btLen)
                 Resize(byteNumber + 1);
 
             byte mask = (byte)(1 << rest);
@@ -107,7 +123,10 @@ namespace DBreeze.TextSearch
             if (value)
                 bt[byteNumber] |= mask; // set to 1
             else
+            {
                 bt[byteNumber] &= (byte)~mask;  // Set to zero
+                TrimTrailingZeros();
+            }
 
             //bool isSet = (bytes[byteIndex] & mask) != 0;
             //int bitInByteIndex = bitIndex % 8;
@@ -123,6 +142,64 @@ namespace DBreeze.TextSearch
         }
 
         /// <summary>
+        /// Applies many bit changes with a single capacity calculation. Index enumeration is
+        /// consumed exactly once.
+        /// </summary>
+        public void Add(IEnumerable<int> indexes, bool value)
+        {
+            if (indexes == null)
+                return;
+
+            if (value)
+            {
+                var materialized = indexes as ICollection<int>;
+                if (materialized == null)
+                    materialized = new List<int>(indexes);
+
+                int maxIndex = -1;
+                foreach (int index in materialized)
+                {
+                    if (index < 0)
+                        throw new ArgumentOutOfRangeException("indexes");
+                    if (index > maxIndex)
+                        maxIndex = index;
+                }
+
+                if (maxIndex < 0)
+                    return;
+
+                int requiredLength = checked((maxIndex / 8) + 1);
+                if (bt == null || bt.Length < requiredLength)
+                    Resize(requiredLength);
+
+                foreach (int index in materialized)
+                    bt[index / 8] |= (byte)(1 << (index % 8));
+            }
+            else
+            {
+                int length = bt == null ? 0 : bt.Length;
+                if (length == 0)
+                    return;
+
+                foreach (int index in indexes)
+                {
+                    if (index < 0)
+                        throw new ArgumentOutOfRangeException("indexes");
+                    int byteNumber = index / 8;
+                    if (byteNumber < length)
+                        bt[byteNumber] &= (byte)~(1 << (index % 8));
+                }
+
+                TrimTrailingZeros();
+            }
+        }
+
+        public bool IsEmpty
+        {
+            get { return bt == null || bt.Length == 0; }
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="len"></param>
@@ -135,13 +212,30 @@ namespace DBreeze.TextSearch
                 return;
             }
 
-            for (int i = 0; i < bt.Length; i++)
-            {
-                btNew[i] = bt[i];
-            }
+            Buffer.BlockCopy(bt, 0, btNew, 0, Math.Min(bt.Length, len));
 
             bt = btNew;
             return;
+        }
+
+        void TrimTrailingZeros()
+        {
+            if (bt == null)
+                return;
+
+            int length = bt.Length;
+            while (length > 0 && bt[length - 1] == 0)
+                length--;
+
+            if (length == bt.Length)
+                return;
+            if (length == 0)
+            {
+                bt = null;
+                return;
+            }
+
+            Resize(length);
         }
 
         /// <summary>
@@ -199,27 +293,29 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public static byte[] MergeByAndLogic(List<byte[]> arraysToMerge)
         {
-            if (arraysToMerge == null || arraysToMerge.Count() == 0)
-                return null;                        
-            int MinLenght = arraysToMerge.Min(r => r == null ? 0 : r.Length);
-            if(MinLenght == 0)
+            if (arraysToMerge == null || arraysToMerge.Count == 0)
                 return null;
-            if (arraysToMerge.Count == 1)
-                return arraysToMerge[0];    //If there is only one array we return it back
-            byte[] res = new byte[MinLenght];
 
-            for (int i = 0; i < MinLenght; i++)
+            int minLength = Int32.MaxValue;
+            for (int i = 0; i < arraysToMerge.Count; i++)
             {
-                for (int j = 0; j < arraysToMerge.Count; j++)
-                {
-                    if (j == 0)
-                        res[i] = arraysToMerge[j][i];
-                    else
-                        res[i] &= arraysToMerge[j][i];
-                }               
+                byte[] current = arraysToMerge[i];
+                if (current == null || current.Length == 0)
+                    return null;
+                if (current.Length < minLength)
+                    minLength = current.Length;
             }
-            
-            return res;
+
+            if (arraysToMerge.Count == 1)
+                return arraysToMerge[0];
+
+            byte[] result = new byte[minLength];
+            Buffer.BlockCopy(arraysToMerge[0], 0, result, 0, minLength);
+            for (int arrayIndex = 1; arrayIndex < arraysToMerge.Count; arrayIndex++)
+                for (int i = 0; i < minLength; i++)
+                    result[i] &= arraysToMerge[arrayIndex][i];
+
+            return TrimResult(result);
         }
 
         /// <summary>
@@ -229,29 +325,39 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public static byte[] MergeByOrLogic(List<byte[]> arraysToMerge)
         {
-            if (arraysToMerge == null || arraysToMerge.Count() == 0)
+            if (arraysToMerge == null || arraysToMerge.Count == 0)
                 return null;
-            int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
-            if (MaxLenght == 0)
-                return null;
-            if (arraysToMerge.Count == 1)
-                return arraysToMerge[0];    //If there is only one array we return it back
-            byte[] res = new byte[MaxLenght];
 
-            for (int i = 0; i < MaxLenght; i++)
+            int maxLength = 0;
+            byte[] only = null;
+            int nonEmptyCount = 0;
+            for (int i = 0; i < arraysToMerge.Count; i++)
             {
-                for (int j = 0; j < arraysToMerge.Count; j++)
-                {  
-                    
-                    if (j == 0)
-                        res[i] = arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
-                    else
-                        res[i] |= arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
-                }
-
+                byte[] current = arraysToMerge[i];
+                if (current == null || current.Length == 0)
+                    continue;
+                nonEmptyCount++;
+                only = current;
+                if (current.Length > maxLength)
+                    maxLength = current.Length;
             }
 
-            return res;
+            if (maxLength == 0)
+                return null;
+            if (nonEmptyCount == 1)
+                return only;
+
+            byte[] result = new byte[maxLength];
+            for (int arrayIndex = 0; arrayIndex < arraysToMerge.Count; arrayIndex++)
+            {
+                byte[] current = arraysToMerge[arrayIndex];
+                if (current == null)
+                    continue;
+                for (int i = 0; i < current.Length; i++)
+                    result[i] |= current[i];
+            }
+
+            return TrimResult(result);
         }
 
         /// <summary>
@@ -261,26 +367,39 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public static byte[] MergeByXorLogic(List<byte[]> arraysToMerge)
         {
-            if (arraysToMerge == null || arraysToMerge.Count() == 0)
+            if (arraysToMerge == null || arraysToMerge.Count == 0)
                 return null;
-            int MaxLenght = arraysToMerge.Max(r => r == null ? 0 : r.Length);
-            if (MaxLenght == 0)
-                return null;
-            if (arraysToMerge.Count == 1)
-                return arraysToMerge[0];    //If there is only one array we return it back
-            byte[] res = new byte[MaxLenght];
-            for (int i = 0; i < MaxLenght; i++)
+
+            int maxLength = 0;
+            byte[] only = null;
+            int nonEmptyCount = 0;
+            for (int i = 0; i < arraysToMerge.Count; i++)
             {
-                for (int j = 0; j < arraysToMerge.Count; j++)
-                {
-                    if (j == 0)
-                        res[i] = arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
-                    else
-                        res[i] ^= arraysToMerge[j].Length > i ? arraysToMerge[j][i] : (byte)0;
-                }                
+                byte[] current = arraysToMerge[i];
+                if (current == null || current.Length == 0)
+                    continue;
+                nonEmptyCount++;
+                only = current;
+                if (current.Length > maxLength)
+                    maxLength = current.Length;
             }
 
-            return res;
+            if (maxLength == 0)
+                return null;
+            if (nonEmptyCount == 1)
+                return only;
+
+            byte[] result = new byte[maxLength];
+            for (int arrayIndex = 0; arrayIndex < arraysToMerge.Count; arrayIndex++)
+            {
+                byte[] current = arraysToMerge[arrayIndex];
+                if (current == null)
+                    continue;
+                for (int i = 0; i < current.Length; i++)
+                    result[i] ^= current[i];
+            }
+
+            return TrimResult(result);
         }
 
         /// <summary>
@@ -291,21 +410,35 @@ namespace DBreeze.TextSearch
         /// <returns></returns>
         public static byte[] MergeByExcludeLogic(byte[] array1, byte[] array2)
         {
-            if (array1 == null || array1.Count() == 0)
+            if (array1 == null || array1.Length == 0)
                 return null;
-            if (array2 == null || array2.Count() == 0)
+            if (array2 == null || array2.Length == 0)
                 return array1;
-            int MaxLenght = array1.Length > array2.Length ? array1.Length : array2.Length;
-            if (MaxLenght == 0)
+            byte[] result = new byte[array1.Length];
+
+            int overlap = Math.Min(array1.Length, array2.Length);
+            for (int i = 0; i < overlap; i++)
+                result[i] = (byte)(array1[i] & ~array2[i]);
+            if (overlap < array1.Length)
+                Buffer.BlockCopy(array1, overlap, result, overlap, array1.Length - overlap);
+
+            return TrimResult(result);
+        }
+
+        static byte[] TrimResult(byte[] value)
+        {
+            int length = value.Length;
+            while (length > 0 && value[length - 1] == 0)
+                length--;
+
+            if (length == 0)
                 return null;
-            byte[] res = new byte[MaxLenght];
+            if (length == value.Length)
+                return value;
 
-            for (int i = 0; i < MaxLenght; i++)
-            {
-                res[i] = (byte)((array1.Length > i ? array1[i] : (byte)0) & ~(array2.Length > i ? array2[i] : (byte)0));
-            }
-
-            return res;
+            byte[] result = new byte[length];
+            Buffer.BlockCopy(value, 0, result, 0, length);
+            return result;
         }
 
         /// <summary>
