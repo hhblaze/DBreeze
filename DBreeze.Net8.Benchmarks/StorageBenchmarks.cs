@@ -10,11 +10,19 @@ namespace DBreeze.Net8.Benchmarks;
 [MedianColumn]
 public class StorageBenchmarks
 {
+    private const int ReadPageSize = 32 * 1024;
+    private const int ReadOperations = 1_024;
+    private const int MixedTableCount = 4;
+
     private string _root;
     private StorageLayer _readStorage;
+    private StorageLayer _coldReadStorage;
+    private StorageLayer[] _mixedReadStorages;
     private StorageLayer _updateStorage;
     private StorageLayer _appendStorage;
     private DBreezeConfiguration _readConfiguration;
+    private DBreezeConfiguration _coldReadConfiguration;
+    private DBreezeConfiguration[] _mixedReadConfigurations;
     private DBreezeConfiguration _updateConfiguration;
     private DBreezeConfiguration _appendConfiguration;
     private byte[] _updateValue;
@@ -22,6 +30,9 @@ public class StorageBenchmarks
     private long _dataStart;
     private long[] _randomReadOffsets;
     private long[] _localReadOffsets;
+    private long[] _coldReadOffsets;
+    private long[] _repeatedSamePageReadOffsets;
+    private long[] _mixedReadPageStarts;
     private string _backupFolder;
     private string _restoreFolder;
     private string _remoteFolder;
@@ -46,13 +57,55 @@ public class StorageBenchmarks
         new Random(100).NextBytes(readData);
         _dataStart = DecodePointer(_readStorage.Table_WriteToTheEnd(readData));
         _readStorage.Commit();
-        _randomReadOffsets = new long[1_024];
-        _localReadOffsets = new long[1_024];
+        _randomReadOffsets = new long[ReadOperations];
+        _localReadOffsets = new long[ReadOperations];
+        _repeatedSamePageReadOffsets = new long[ReadOperations];
         var readRandom = new Random(103);
         for (int i = 0; i < _randomReadOffsets.Length; i++)
         {
             _randomReadOffsets[i] = _dataStart + readRandom.Next(readData.Length - 64);
             _localReadOffsets[i] = _dataStart + ((i * 61) & 0x0FFF);
+            _repeatedSamePageReadOffsets[i] = AlignUp(_dataStart, ReadPageSize) +
+                ((i * 61) % (ReadPageSize - 64));
+        }
+
+        _coldReadConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+        _coldReadStorage = new StorageLayer(Path.Combine(_root, "10"), new TrieSettings(), _coldReadConfiguration);
+        byte[] coldReadData = new byte[(ReadOperations + 2) * ReadPageSize];
+        new Random(105).NextBytes(coldReadData);
+        long coldStart = DecodePointer(_coldReadStorage.Table_WriteToTheEnd(coldReadData));
+        _coldReadStorage.Commit();
+        long firstColdPage = AlignUp(coldStart, ReadPageSize);
+        int[] coldPages = Enumerable.Range(0, ReadOperations).ToArray();
+        var coldRandom = new Random(106);
+        for (int i = coldPages.Length - 1; i > 0; i--)
+        {
+            int other = coldRandom.Next(i + 1);
+            (coldPages[i], coldPages[other]) = (coldPages[other], coldPages[i]);
+        }
+
+        _coldReadOffsets = new long[ReadOperations];
+        for (int i = 0; i < _coldReadOffsets.Length; i++)
+        {
+            _coldReadOffsets[i] = firstColdPage + coldPages[i] * (long)ReadPageSize +
+                coldRandom.Next(ReadPageSize - 64);
+        }
+
+        _mixedReadStorages = new StorageLayer[MixedTableCount];
+        _mixedReadConfigurations = new DBreezeConfiguration[MixedTableCount];
+        _mixedReadPageStarts = new long[MixedTableCount];
+        byte[] mixedReadData = new byte[2 * ReadPageSize];
+        new Random(107).NextBytes(mixedReadData);
+        for (int i = 0; i < MixedTableCount; i++)
+        {
+            _mixedReadConfigurations[i] = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            _mixedReadStorages[i] = new StorageLayer(
+                Path.Combine(_root, (20 + i).ToString()),
+                new TrieSettings(),
+                _mixedReadConfigurations[i]);
+            long mixedStart = DecodePointer(_mixedReadStorages[i].Table_WriteToTheEnd(mixedReadData));
+            _mixedReadStorages[i].Commit();
+            _mixedReadPageStarts[i] = AlignUp(mixedStart, ReadPageSize);
         }
 
         _updateConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
@@ -86,8 +139,20 @@ public class StorageBenchmarks
         CleanupAppendIteration();
         CleanupRemoteIteration();
         _readStorage?.Table_Dispose();
+        _coldReadStorage?.Table_Dispose();
+        if (_mixedReadStorages != null)
+        {
+            foreach (StorageLayer storage in _mixedReadStorages)
+                storage?.Table_Dispose();
+        }
         _updateStorage?.Table_Dispose();
         _readConfiguration?.Dispose();
+        _coldReadConfiguration?.Dispose();
+        if (_mixedReadConfigurations != null)
+        {
+            foreach (DBreezeConfiguration configuration in _mixedReadConfigurations)
+                configuration?.Dispose();
+        }
         _updateConfiguration?.Dispose();
         if (Directory.Exists(_root))
             Directory.Delete(_root, true);
@@ -194,6 +259,37 @@ public class StorageBenchmarks
         return checksum;
     }
 
+    [Benchmark(OperationsPerInvoke = ReadOperations)]
+    public int ColdRandomPages64ByteRead()
+    {
+        int checksum = 0;
+        for (int i = 0; i < _coldReadOffsets.Length; i++)
+            checksum += _coldReadStorage.Table_Read(true, _coldReadOffsets[i], 64)[0];
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = ReadOperations)]
+    public int RepeatedSamePage64ByteRead()
+    {
+        int checksum = 0;
+        for (int i = 0; i < _repeatedSamePageReadOffsets.Length; i++)
+            checksum += _readStorage.Table_Read(true, _repeatedSamePageReadOffsets[i], 64)[0];
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = ReadOperations)]
+    public int MixedTableWorker64ByteRead()
+    {
+        int checksum = 0;
+        for (int i = 0; i < ReadOperations; i++)
+        {
+            int table = i & (MixedTableCount - 1);
+            long offset = _mixedReadPageStarts[table] + ((i * 61) % (ReadPageSize - 64));
+            checksum += _mixedReadStorages[table].Table_Read(true, offset, 64)[0];
+        }
+        return checksum;
+    }
+
     [Benchmark(OperationsPerInvoke = 1_024)]
     public int Local64ByteRead()
     {
@@ -273,6 +369,9 @@ public class StorageBenchmarks
             value = (value << 8) | item;
         return checked((long)value);
     }
+
+    private static long AlignUp(long value, int alignment) =>
+        checked((value + alignment - 1) / alignment * alignment);
 
     private sealed class BenchmarkCommunicator : IRemoteInstanceCommunicator
     {

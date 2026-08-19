@@ -77,6 +77,7 @@ namespace DBreeze.Storage
         FileStream _fsRollback = null;
         FileStream _fsRollbackHelper = null;
         const int ReadPageSize = 32 * 1024;
+        const int SmallReadThreshold = 256;
         static long _nextInstanceId;
         readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
         long _mutationVersion = 1;
@@ -87,11 +88,12 @@ namespace DBreeze.Storage
 
         sealed class ReadPageCache
         {
-            public readonly byte[] Buffer = GC.AllocateUninitializedArray<byte>(ReadPageSize);
+            public byte[] Buffer;
             public long OwnerId;
             public long MutationVersion;
             public long PageOffset;
             public int PageLength;
+            public byte CandidateAccessCount;
             public bool IsPopulated;
         }
         /// <summary>
@@ -1036,14 +1038,14 @@ namespace DBreeze.Storage
                 if (committedLength == 0)
                     return Array.Empty<byte>();
 
-                if (_rollbackCache.Count == 0 && !TransactionalCommitIsStarted)
+                byte[] committed = GC.AllocateUninitializedArray<byte>(committedLength);
+                if (_rollbackCache.Count == 0 &&
+                    !TransactionalCommitIsStarted &&
+                    TryReadCommittedPage(offset, committed, visibleLength))
                 {
-                    byte[] cached = TryReadCommittedPage(offset, committedLength, visibleLength);
-                    if (cached != null)
-                        return cached;
+                    return committed;
                 }
 
-                byte[] committed = GC.AllocateUninitializedArray<byte>(committedLength);
                 ReadExactlyAt(_fsData, committed, 0, committed.Length, offset);
 
                 foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
@@ -1062,11 +1064,12 @@ namespace DBreeze.Storage
             }
         }
 
-        private byte[] TryReadCommittedPage(long offset, int count, long visibleLength)
+        private bool TryReadCommittedPage(long offset, byte[] result, long visibleLength)
         {
             int offsetInPage = (int)(offset & (ReadPageSize - 1));
+            int count = result.Length;
             if (count > ReadPageSize - offsetInPage)
-                return null;
+                return false;
 
             long pageOffset = offset - offsetInPage;
             int pageLength = (int)Math.Min(ReadPageSize, visibleLength - pageOffset);
@@ -1084,21 +1087,28 @@ namespace DBreeze.Storage
                 cache.MutationVersion = mutationVersion;
                 cache.PageOffset = pageOffset;
                 cache.PageLength = pageLength;
+                cache.CandidateAccessCount = 1;
                 cache.IsPopulated = false;
-                return null;
+                return false;
             }
 
-            // One exact read acts as admission: isolated random pages never turn a tiny read
-            // into a full-page read, while the second local access amortizes later system calls.
             if (!cache.IsPopulated)
             {
+                // Small reads need two exact-read samples before admission. Larger reads retain
+                // the previous second-access policy because a page fill amortizes much sooner.
+                if (cache.CandidateAccessCount < byte.MaxValue)
+                    cache.CandidateAccessCount++;
+                int requiredAccessCount = count <= SmallReadThreshold ? 3 : 2;
+                if (cache.CandidateAccessCount < requiredAccessCount)
+                    return false;
+
+                cache.Buffer ??= GC.AllocateUninitializedArray<byte>(ReadPageSize);
                 ReadExactlyAt(_fsData, cache.Buffer, 0, pageLength, pageOffset);
                 cache.IsPopulated = true;
             }
 
-            byte[] result = GC.AllocateUninitializedArray<byte>(count);
             Buffer.BlockCopy(cache.Buffer, offsetInPage, result, 0, count);
-            return result;
+            return true;
         }
 
         private static int GetReadLength(long offset, int count, long length)

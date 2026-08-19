@@ -26,6 +26,7 @@ internal static class Program
             (nameof(RemoteInitializationFailureIsTerminal), RemoteInitializationFailureIsTerminal),
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
             (nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle), StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle),
+            (nameof(StorageRegressionTests.CommittedPageCacheAdmissionIsLazy), StorageRegressionTests.CommittedPageCacheAdmissionIsLazy),
             (nameof(StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits),
             (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
             (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),

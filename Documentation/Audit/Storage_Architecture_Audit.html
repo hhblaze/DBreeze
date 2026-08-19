@@ -290,16 +290,16 @@
         <p class="lead">
           Основной дисковый контракт сохранён, а .NET 8 Storage стал заметно лучше по параллельным чтениям,
           allocations, bounded recovery и remote large I/O. Однако до полной архитектурной эквивалентности
-          с эталоном остаются <strong>две подтверждённые потери legacy-поведения</strong> и
+          с эталоном остаётся <strong>одна подтверждённая потеря legacy-поведения</strong> и
           <strong>одно подтверждённое ухудшение steady-state memory</strong>.
         </p>
 
         <div class="stats">
           <div class="stat"><b class="good">PASS</b><span>binary API diff net8/net472</span></div>
           <div class="stat"><b class="good">PASS</b><span>cross-version read/extend/restore + SHA-256</span></div>
-          <div class="stat"><b class="danger">2</b><span>подтверждённых legacy contract breaks</span></div>
+          <div class="stat"><b class="danger">1</b><span>подтверждённый legacy contract break</span></div>
           <div class="stat"><b class="warn">1.08 MiB</b><span>возможное удержание seq-buffer на hot table</span></div>
-          <div class="stat"><b class="warn">+14.31%</b><span>cold Random64ByteRead, median time</span></div>
+          <div class="stat"><b class="good">PASS ≤+0.55%</b><span>random/cold/mixed P1 gate</span></div>
           <div class="stat"><b class="good">−26…−82%</b><span>ускорение ключевых read/backup/remote сценариев</span></div>
         </div>
 
@@ -317,7 +317,6 @@
           <article class="card">
             <h3 class="danger">Что нарушает legacy</h3>
             <ul>
-              <li>Portable <code>BackupRestorer</code> теперь игнорирует backup-файлы без <code>.ibp</code>.</li>
               <li>MEMORY <code>RestoreTableFromTheOtherTable</code>: исторический no-op заменён на <code>NotSupportedException</code>.</li>
               <li>Тест на MEMORY сейчас закрепляет новое поведение, а не защищает эталонный контракт.</li>
             </ul>
@@ -328,7 +327,6 @@
               <li><code>Clear(true)</code> → <code>Clear(false)</code> ускоряет append, но удерживает до 1,127,424 байт на таблицу.</li>
               <li>Raw remote v1 теперь возвращает actual short read и отвергает read &gt;64 MiB.</li>
               <li>Backup restore больше не вызывает managed <code>Flush()</code> после каждой записи.</li>
-              <li>Cold random 64-byte read пересёк performance gate +5%.</li>
             </ul>
           </article>
         </div>
@@ -471,13 +469,13 @@
             <p class="risk-p1">Это ускоряет append и резко снижает allocations, но ухудшает steady-state working set.</p>
           </article>
           <article class="card">
-            <span class="badge warn">P1 · performance gate</span>
-            <h3>Cold random 64-byte read: +14.31%</h3>
+            <span class="badge good">DONE · performance gate</span>
+            <h3>Random64ByteRead gate закрыт</h3>
             <p>
-              Из девяти Storage benchmarks только <code>Random64ByteRead</code> устойчиво превысил gate +5% по median time.
-              Allocated снизился с 168 до 88 B/op, остальные read-сценарии ускорились.
+              Metadata и 32 KiB buffer разделены. Small reads ≤256 байт допускают page на третьем последовательном
+              обращении к тому же owner/version/page, более крупные — на втором. Cold и mixed workers buffer не удерживают.
             </p>
-            <p class="risk-p1">Это узкий regression, но формально release gate сейчас красный.</p>
+            <p class="risk-p3">Три запуска: random/cold/mixed не хуже эталона более чем на +0.55%; hot reads не хуже pre-change более чем на +2.86%.</p>
           </article>
         </div>
       </section>
@@ -519,7 +517,7 @@
             </thead>
             <tbody>
               <tr data-component="binding" data-risk="p2"><td>B-01</td><td>Project binding</td><td>.NET 8 FSR linked из NetStandard; Backup/Remote локальны.</td><td>.NET 8 FSR/MSR/Memory локальны; Backup/RISR/Remote linked из common.</td><td>Modern specialization изолирована, общие wire fixes централизованы. Ошибка common теперь затрагивает больше targets.</td><td><span class="risk-p2">P2 · осознанная замена</span></td><td><code>DBreeze.Net8.csproj</code> Compile Remove/Include.</td></tr>
-              <tr data-component="binding" data-risk="p0"><td>B-02</td><td>Portable split</td><td>Portable имел собственные FSR/Backup/Remote и common MSR/RISR.</td><td>Смешанная схема сохранена, но common и Portable реализации разошлись.</td><td>Common legacy-backup и containment fixes не покрывают Portable.</td><td><span class="risk-p0">P0 · target drift</span></td><td>Активные строки 90–106 и 186–193 Portable csproj.</td></tr>
+              <tr data-component="binding" data-risk="p1"><td>B-02</td><td>Portable split</td><td>Portable имел собственные FSR/Backup/Remote и common MSR/RISR.</td><td>Смешанная схема сохранена; legacy backup selector синхронизирован, remote containment всё ещё target-specific.</td><td>Backup parity восстановлен; common containment fix пока не покрывает Portable.</td><td><span class="risk-p1">P1 · security parity</span></td><td>Активные строки 90–106 и 186–193 Portable csproj.</td></tr>
               <tr data-component="contract" data-risk="p3"><td>C-01</td><td>IStorage / TrieSettings</td><td>Public members и настройки.</td><td>Исходники byte-identical относительно эталона.</td><td>Surface и базовая модель не потеряны.</td><td><span class="risk-p3">OK</span></td><td>Binary API diff net8/net472 PASS.</td></tr>
               <tr data-component="contract" data-risk="p2"><td>C-02</td><td>StorageLayer validation</td><td>Invalid enum/pointer мог оставить <code>_tableStorage=null</code> или создать файлы до incidental fail.</td><td>Null, pointer 1…8 и storage enum проверяются до I/O.</td><td>Ранее fail-fast только для invalid arguments; валидные сценарии не меняются.</td><td><span class="risk-p2">P2 · correctness</span></td><td><code>StorageLayer.cs:22–70</code>.</td></tr>
               <tr data-component="fsr" data-risk="p3"><td>F-01</td><td>Random buffer thresholds</td><td>3,000,000 bytes; 500 elements; flush при <code>Count &gt; 500</code>.</td><td>Те же thresholds; то есть фактический count-trigger — 501-й distinct offset.</td><td>Исторический batching сохранён.</td><td><span class="risk-p3">OK</span></td><td><code>FSR.cs:61–62, 821</code>; RISR аналогично.</td></tr>
@@ -529,7 +527,7 @@
               <tr data-component="fsr" data-risk="p3"><td>F-05</td><td>.NET 8 locking</td><td>Один monitor сериализовал read/write/commit.</td><td><code>ReaderWriterLockSlim</code>: несколько committed reads, exclusive mutations.</td><td>Сильное ускорение параллельных reads; state transitions остаются atomic.</td><td><span class="risk-p3">OK · modern</span></td><td>8-thread committed read −82.43% median.</td></tr>
               <tr data-component="fsr" data-risk="p3"><td>F-06</td><td>.NET 8 file I/O</td><td>3 FileStream с buffer 8192, mutable <code>Position</code>, WriteThrough.</td><td>BufferSize=1, WriteThrough|RandomAccess, positioned <code>RandomAccess.Read/Write</code>, explicit physical length.</td><td>Исключена гонка Position; fewer per-table buffers; exact partial-read loop.</td><td><span class="risk-p3">OK · modern</span></td><td><code>FSR.cs:431–483</code>.</td></tr>
               <tr data-component="fsr" data-risk="p3"><td>F-07</td><td>Hard flush</td><td>Эффективный modern build использовал <code>FileStream.Flush(true)</code> через <code>NET40</code> define.</td><td>.NET 8: managed Flush + <code>RandomAccess.FlushToDisk</code>.</td><td>Durability intent сохранён; primitive modernized.</td><td><span class="risk-p3">OK</span></td><td><code>FSR.cs:425–429</code>.</td></tr>
-              <tr data-component="fsr" data-risk="p2"><td>F-08</td><td>Committed page cache</td><td>Отдельного Storage cache не было; полагались на FileStream/OS cache.</td><td>Один 32 KiB <code>[ThreadStatic]</code> page на worker thread, shared между FSR instances; second-access admission.</td><td>Локальные/parallel reads быстрее; +32 KiB на читающий thread и thrash при чередовании таблиц.</td><td><span class="risk-p2">P2 · tradeoff</span></td><td>OwnerId + mutationVersion не удерживают FSR reference.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-08</td><td>Committed page cache</td><td>Отдельного Storage cache не было; полагались на FileStream/OS cache.</td><td>Один 32 KiB <code>[ThreadStatic]</code> page на worker thread; metadata создаётся отдельно, buffer лениво. Reads ≤256 B: admission на третьем same-page обращении, крупнее: на втором.</td><td>Cold/mixed workers не удерживают 32 KiB; admitted buffer переиспользуется, page-cache wins сохранены.</td><td><span class="risk-p3">OK · P1 closed</span></td><td>Reflection test + 3-way benchmark gate PASS.</td></tr>
               <tr data-component="fsr" data-risk="p3"><td>F-09</td><td>Rollback coverage</td><td>Cache keyed только exact start; overlap с другим start мог сохранить уже изменённые байты.</td><td>Сохраняются только ещё не покрытые интервалы оригинала.</td><td>Rollback исправлен; wire record layout прежний, segmentation может отличаться.</td><td><span class="risk-p3">OK · bug fix</span></td><td>Auto-flush + grown overlap + crash recovery PASS.</td></tr>
               <tr data-component="fsr" data-risk="p3"><td>F-10</td><td>Startup recovery</td><td>Concat/Substring + recursive parser; потенциально O(n²) allocations и полный record в памяти.</td><td>Iterative header parser + 64 KiB copy; marker/range/truncation validation.</td><td>Bounded memory, earlier fail on corrupted rollback, same encoding.</td><td><span class="risk-p3">OK · modern</span></td><td>Fragmented remote recovery и malformed local rollback tests PASS.</td></tr>
               <tr data-component="fsr" data-risk="p3"><td>F-11</td><td>Table replacement</td><td>Destination удалялся до проверки/успешного move source.</td><td>Source validate; destination trio staging; best-effort reverse move при failure.</td><td>Success semantics (source consumed) сохранены, failure больше не уничтожает destination.</td><td><span class="risk-p3">OK · safety</span></td><td>Missing source leaves destination intact.</td></tr>
@@ -543,7 +541,7 @@
               <tr data-component="backup" data-risk="p3"><td>BK-03</td><td>Common restore parser</td><td>100 KB reads + growing Concat buffer + Substring records.</td><td>Exact header reads + 64 KiB streaming copy; foreign files excluded from progress.</td><td>Peak memory bounded независимо от record size.</td><td><span class="risk-p3">OK · modern</span></td><td>Restore alloc 9,913,163→79,798 B/op.</td></tr>
               <tr data-component="backup" data-risk="p1"><td>BK-04</td><td>Restore flush cadence</td><td>Target <code>FileStream.Flush()</code> после каждого type 0/1/2 record.</td><td>Flush target handles только при close/recreate/delete/completion.</td><td>Successful return durable на уровне close, но crash посреди restore может потерять больший buffered tail.</td><td><span class="risk-p1">P1 · durability tradeoff</span></td><td>Restore и раньше не был transactional; hard flush per record не было.</td></tr>
               <tr data-component="backup" data-risk="p3"><td>BK-05</td><td>Common legacy selector</td><td>Любой prefix <code>dbreeze_ibp_</code>, default sort.</td><td>Любой prefix, ordinal sort; unrelated files не влияют на progress.</td><td>Legacy behavior восстановлено и детерминировано.</td><td><span class="risk-p3">OK</span></td><td>Без extension + custom extension + order test PASS.</td></tr>
-              <tr data-component="backup" data-risk="p0"><td>BK-06</td><td>Portable legacy selector</td><td>Любой prefix <code>dbreeze_ibp_</code>.</td><td>Требует prefix и suffix <code>.ibp</code>.</td><td>Молча теряет валидные historical files.</td><td><span class="risk-p0">P0 · confirmed regression</span></td><td><code>NETPortable/.../BackupRestorer.cs:56</code>.</td></tr>
+              <tr data-component="backup" data-risk="p3"><td>BK-06</td><td>Portable legacy selector</td><td>Любой prefix <code>dbreeze_ibp_</code>.</td><td>Любой ordinal prefix независимо от extension; ordinal sort; foreign files исключены из progress.</td><td>Historical no-extension/custom-extension behavior восстановлено.</td><td><span class="risk-p3">OK · fixed</span></td><td>Portable compatibility test и SHA-256 parity PASS.</td></tr>
               <tr data-component="remote" data-risk="p3"><td>R-01</td><td>Large remote I/O</td><td>Один protocol byte[] на весь request/response; несколько полных payload copies.</td><td>RISR режет read/write на 1 MiB; flush только в последнем write chunk.</td><td>Peak protocol memory O(1 MiB), large remote round-trip быстрее.</td><td><span class="risk-p3">OK · modern</span></td><td>2 MiB+137, partial reads, offsets и final flush tests PASS.</td></tr>
               <tr data-component="remote" data-risk="p3"><td>R-02</td><td>Commander positions</td><td>Read/write не продвигали positions; read игнорировал destination offset и возвращал array length.</td><td>Advance по actual read/requested write; Buffer.BlockCopy в caller offset; exact response validation.</td><td>Chunking становится корректным, EOF short-read observable.</td><td><span class="risk-p3">OK · bug fix</span></td><td>Caller-offset + EOF-limited read PASS.</td></tr>
               <tr data-component="remote" data-risk="p2"><td>R-03</td><td>Server table cache/lifetime</td><td>Path→RemoteTable map оставался после Close; shared Close закрывал streams других clients; unique paths росли до Dispose.</td><td>Open ref-count; последний Close удаляет object/map; повторный open получает новый id.</td><td>Исправлен shared-client bug и unbounded metadata cache; reopen чаще alloc/open.</td><td><span class="risk-p2">P2 · intentional replacement</span></td><td>Two-client close test PASS.</td></tr>
@@ -583,7 +581,7 @@
             <ul>
               <li>Read concurrency вместо полной сериализации.</li>
               <li>Positioned I/O вместо общей mutable <code>FileStream.Position</code>.</li>
-              <li>32 KiB per-thread page cache с admission на втором обращении.</li>
+              <li>32 KiB per-thread page cache с lazy buffer; admission на третьем small-read или втором крупном read.</li>
               <li>FileStream managed buffer фактически отключён (<code>BufferSize=1</code>).</li>
               <li>Sequential allocation amortized ценой retained capacity.</li>
             </ul>
@@ -718,9 +716,11 @@
       <section id="performance">
         <h2>8. Производительность: 3-run comparison</h2>
         <p>
-          Ниже — устойчивое изменение median time текущей DLL против эталонной минимум по трём запускам и
-          <code>Allocated</code> baseline→current. Gate: median time не хуже более чем на 5%, без систематического роста allocations.
+          Исходный срез ниже зафиксировал P1 до изменения admission. Следом приведён отдельный трёхсторонний follow-up:
+          эталон, сохранённая pre-change 32 KiB DLL и candidate. Gate: median time не хуже более чем на 5%,
+          без систематического роста allocations.
         </p>
+        <h3>Исходный срез до lazy admission</h3>
         <div class="table-wrap">
           <table class="compact">
             <thead><tr><th>Benchmark</th><th>Median time delta</th><th>Allocated B/op</th><th>Gate</th></tr></thead>
@@ -736,6 +736,33 @@
               <tr><td>LargeRemoteRoundTrip</td><td class="good">−26.51%</td><td>29,366,121 → 12,587,432</td><td class="good">PASS</td></tr>
             </tbody>
           </table>
+        </div>
+        <h3>P1 follow-up: reference / pre-change / candidate</h3>
+        <p>
+          Значения — median трёх независимых ShortRun-запусков, ns/op. Для random/cold/mixed gate-base — эталон;
+          для hot/local/eight-thread/page reads — pre-change DLL. Полные medians каждого запуска, SHA-256 бинарников
+          и методика сохранены в
+          <a href="../../DBreeze.Net8.Benchmarks/StorageRandom64GateComparison.md"><code>StorageRandom64GateComparison.md</code></a>.
+        </p>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Benchmark</th><th>Reference</th><th>Pre-change</th><th>Candidate</th><th>Gate base / delta</th><th>Allocated ref/pre/cand</th><th>Gate</th></tr></thead>
+            <tbody>
+              <tr><td>Random64ByteRead</td><td>2,885.99</td><td>2,927.74</td><td>2,892.67</td><td>reference / +0.23%</td><td>88 / 88 / 88</td><td class="good">PASS</td></tr>
+              <tr><td>ColdRandomPages64ByteRead</td><td>4,952.97</td><td>5,030.18</td><td>4,980.41</td><td>reference / +0.55%</td><td>88 / 88 / 88</td><td class="good">PASS</td></tr>
+              <tr><td>MixedTableWorker64ByteRead</td><td>2,892.39</td><td>2,923.16</td><td>2,906.14</td><td>reference / +0.48%</td><td>88 / 88 / 88</td><td class="good">PASS</td></tr>
+              <tr><td>RepeatedSamePage64ByteRead</td><td>74.69</td><td>74.36</td><td>44.77</td><td>pre-change / −39.79%</td><td>88 / 88 / 88</td><td class="good">PASS</td></tr>
+              <tr><td>Local64ByteRead</td><td>44.13</td><td>77.96</td><td>73.66</td><td>pre-change / −5.52%</td><td>88 / 88 / 88</td><td class="good">PASS</td></tr>
+              <tr><td>EightThread64ByteRead</td><td>70.85</td><td>119.67</td><td>75.79</td><td>pre-change / −36.67%</td><td>91 / 91 / 91</td><td class="good">PASS</td></tr>
+              <tr><td>CommittedRead</td><td>898.78</td><td>890.14</td><td>882.01</td><td>pre-change / −0.91%</td><td>4,120 / 4,120 / 4,120</td><td class="good">PASS</td></tr>
+              <tr><td>EightThreadCommittedRead</td><td>1,390.43</td><td>1,385.84</td><td>1,425.54</td><td>pre-change / +2.86%</td><td>4,443 / 4,444 / 4,444</td><td class="good">PASS</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout good">
+          <strong>P1 закрыт.</strong> Cold unique pages и mixed-table workers создают только metadata и не удерживают
+          32 KiB buffer. Small same-page read заполняет cache на третьем обращении, 4 KiB read — на втором.
+          Random/cold/mixed не хуже эталона более чем на +0.55%; максимальное ухудшение против pre-change среди hot gates — +2.86%.
         </div>
         <p class="muted small">
           Результаты подтверждают пользу новых I/O и streaming paths, но не отменяют отдельный retained-memory gate.
@@ -760,7 +787,7 @@
             <h3 class="warn">Требует отдельного контракта/теста</h3>
             <ul>
               <li>Behavioral MEMORY no-op нельзя увидеть binary API diff-ом.</li>
-              <li>Portable historical backup selector не покрыт net8 regression suite.</li>
+              <li>Portable historical backup selector проверяется отдельным FSFactory compatibility test, а не net8 suite.</li>
               <li>Старый raw remote commander ↔ новый handler в обе стороны не проверен отдельной DLL matrix.</li>
               <li>Old DLL opening current crash-left segmented rollback не выделен в самостоятельный probe.</li>
               <li>Независимо созданные DB не обязаны быть byte-identical из-за resource table.</li>
@@ -777,9 +804,10 @@
             <ul>
               <li>DISK/MEMORY: exact 1 MiB и &gt;1 MiB append, writer/committed views.</li>
               <li>501 distinct updates, replacement growth, transactional rollback/finish.</li>
-              <li>Page cache: lifecycle, cross-page, restore/recreate и concurrent commits.</li>
+              <li>Page cache: lazy metadata/buffer admission, lifecycle, cross-page, restore/recreate и concurrent commits.</li>
               <li>Disk crash recovery с overlapping updates; remote fragmented exact reads.</li>
               <li>Common backup: no extension/custom extension/order/foreign progress/truncation/delete.</li>
+              <li>Portable backup: no extension/custom extension/order/foreign progress и SHA-256 parity.</li>
               <li>Remote: shared opens, caller offsets, partial reads, 1 MiB chunks, single final flush.</li>
               <li>Containment: <code>..</code>, absolute, sibling-prefix, invalid UTF-8, valid nested.</li>
               <li>Missing restore source не уничтожает destination; invalid settings fail before files.</li>
@@ -788,7 +816,6 @@
           <article class="card">
             <h3 class="danger">Нет достаточной проверки</h3>
             <ul>
-              <li>Portable backup files без <code>.ibp</code> — текущая версия ожидаемо провалит тест.</li>
               <li>Retained heap при 100/1,000 hot tables и thread-pool churn.</li>
               <li>Reverse-order overlapping pending updates в одном random buffer.</li>
               <li>Process/power loss посреди backup restoration после удаления per-record Flush.</li>
@@ -808,11 +835,11 @@
       <section id="priorities">
         <h2>11. Приоритеты доводки</h2>
         <div class="priority">
-          <div class="p p0">P0</div>
+          <div class="p p3">DONE</div>
           <div>
-            <strong>Вернуть Portable historical backup selector.</strong>
-            Выбирать все файлы с ordinal prefix <code>dbreeze_ibp_</code> независимо от extension, сортировать ordinal,
-            progress считать только по выбранным. Добавить Portable/FSFactory regression с no-extension, custom-extension и foreign file.
+            <strong>Portable historical backup selector восстановлен.</strong>
+            Все файлы с ordinal prefix <code>dbreeze_ibp_</code> выбираются независимо от extension, сортируются ordinal;
+            progress считает только выбранные. Portable/FSFactory regression и SHA-256 parity проходят.
           </div>
           <div class="p p0">P0</div>
           <div>
@@ -826,11 +853,11 @@
             Минимум — вернуть <code>Clear(true)</code>. Компромисс — retain до измеренного порога (например 128/256 KiB),
             а buffers крупнее порога shrink после commit/rollback/recreate. Gate — working set при большом числе открытых tables.
           </div>
-          <div class="p p1">P1</div>
+          <div class="p p3">DONE</div>
           <div>
-            <strong>Закрыть Random64ByteRead gate.</strong>
-            Разделить cold random pages, повторные reads в одной page и mixed-table worker. Не ухудшать page-cache wins;
-            оценить admission metadata без немедленной аренды 32 KiB либо специализированный small-read path.
+            <strong>Random64ByteRead gate закрыт.</strong>
+            Lazy 32 KiB buffer и admission 3/2 подтверждены thread-local regression-тестом. Три новых сценария разделяют
+            cold unique pages, repeated same-page и mixed-table worker; трёхсторонний median gate и allocations проходят.
           </div>
           <div class="p p1">P1</div>
           <div>
@@ -867,13 +894,14 @@
         </p>
         <p>
           Главный глобальный урок — проверять не папки, а <strong>граф компиляции target-ов</strong>. Именно отдельная Portable ветка
-          сохранила незакрытый path gap и повторно внесла legacy backup regression, тогда как common implementation уже правильная.
+          сохранила незакрытый remote path gap и ранее повторно внесла legacy backup regression; selector теперь синхронизирован и проверен.
           Второй урок — <code>Allocated/op</code> и latency не заменяют working-set контракт: <code>Clear(false)</code> дал сильный выигрыш,
           но изменил память с «почти 1 KiB после flush» на «до 1.08 MiB на каждую hot table».
         </p>
         <div class="callout good">
-          Рекомендация: не откатывать современные .NET 8 решения. Исправить два P0, ввести bounded shrink policy и закрыть один
-          performance gate; после этого архитектуру Storage можно считать совместимой с эталоном при существенно лучшем high-load профиле.
+          Рекомендация: не откатывать современные .NET 8 решения. Random64ByteRead gate и Portable backup P0 закрыты.
+          Остаётся решить MEMORY no-op contract, ввести bounded shrink policy и определить Portable remote containment;
+          после этого архитектуру Storage можно считать совместимой с эталоном при существенно лучшем high-load профиле.
         </div>
       </section>
     </main>
