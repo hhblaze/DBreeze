@@ -6,11 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <Optimize>true</Optimize>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == ''">
     <ProjectReference Include="..\DBreeze.Net8\DBreeze.Net8.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' != ''">
+    <Reference Include="DBreeze" HintPath="$(DBreezeAssemblyReference)" Private="true" />
   </ItemGroup>
 
 </Project>

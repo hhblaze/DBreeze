@@ -3,6 +3,7 @@
   It's free software for those who think that it should be free.
 */
 using System;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 using DBreeze.Transactions;
@@ -15,7 +16,11 @@ namespace DBreeze
     public class DBreezeRemoteEngine : DBreezeEngine
     {
         private readonly DBreezeConfiguration conf;
-        private int inited;
+        private const int NotInitialized = 0;
+        private const int Initialized = 1;
+        private const int Faulted = 2;
+        private int initializationState = NotInitialized;
+        private ExceptionDispatchInfo initializationException;
         private readonly object lock_init = new object();
         
 
@@ -37,17 +42,44 @@ namespace DBreeze
         /// </summary>
         void Init()
         {
-            if (Volatile.Read(ref inited) == 0)
+            int state = Volatile.Read(ref initializationState);
+            if (state == Faulted)
+                ThrowInitializationException();
+            if (Disposed)
+                throw new ObjectDisposedException(nameof(DBreezeRemoteEngine));
+            if (state == Initialized)
+                return;
+
+            lock (lock_init)
             {
-                lock (lock_init)
+                state = initializationState;
+                if (state == Faulted)
+                    ThrowInitializationException();
+                if (Disposed)
+                    throw new ObjectDisposedException(nameof(DBreezeRemoteEngine));
+                if (state == Initialized)
+                    return;
+
+                try
                 {
-                    if (inited == 0)
-                    {
-                        this.ConstructFromConfiguration(conf);
-                        Volatile.Write(ref inited, 1);
-                    }
+                    this.ConstructFromConfiguration(conf);
+                    if (Disposed)
+                        throw new ObjectDisposedException(nameof(DBreezeRemoteEngine));
+
+                    Volatile.Write(ref initializationState, Initialized);
+                }
+                catch (Exception ex)
+                {
+                    initializationException = ExceptionDispatchInfo.Capture(ex);
+                    Volatile.Write(ref initializationState, Faulted);
+                    throw;
                 }
             }
+        }
+
+        private void ThrowInitializationException()
+        {
+            initializationException.Throw();
         }
 
         internal override void EnsureInitialized()

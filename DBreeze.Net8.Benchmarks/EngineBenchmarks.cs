@@ -9,6 +9,8 @@ namespace DBreeze.Net8.Benchmarks;
 public class EngineBenchmarks
 {
     private const string TableName = "engine-hot-table";
+    private const string SchemeTableName = "engine-scheme-table";
+    private const string MissingSchemeTableName = "engine-scheme-missing";
     private DBreezeEngine _engine;
     private DBreeze.Transactions.Transaction _tableKeeper;
     private DBreezeEngine _batchWriteEngine;
@@ -21,6 +23,7 @@ public class EngineBenchmarks
     private DBreezeResources.Settings _noCache;
     private DBreezeResources.Settings _forceWrite;
     private byte[] _hotValue;
+    private readonly object _serializedSchemeReadLock = new();
 
     [Params(8)]
     public int Workers { get; set; }
@@ -48,9 +51,13 @@ public class EngineBenchmarks
 
         using (var transaction = _engine.GetTransaction())
         {
+            transaction.SynchronizeTables(TableName, SchemeTableName);
             transaction.Insert(TableName, 1, 1);
+            transaction.Insert(SchemeTableName, 1, 1);
             transaction.Commit();
         }
+
+        _ = _engine.Scheme.GetTablePathFromTableName(SchemeTableName);
 
         // Keep the disk table open so this benchmark isolates the Scheme hot lookup path.
         _tableKeeper = _engine.GetTransaction();
@@ -118,6 +125,104 @@ public class EngineBenchmarks
             using var transaction = _engine.GetTransaction();
             if (transaction.Select<int, int>(TableName, 1).Exists)
                 Interlocked.Increment(ref checksum);
+        });
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 2_000)]
+    public int WarmedSchemeExists()
+    {
+        int checksum = 0;
+        for (int i = 0; i < 1_000; i++)
+        {
+            checksum += _engine.Scheme.IfUserTableExists(SchemeTableName) ? 1 : 0;
+            checksum += _engine.Scheme.IfUserTableExists(MissingSchemeTableName) ? 1 : 0;
+        }
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 2_000)]
+    public int WarmedSchemePath()
+    {
+        int checksum = 0;
+        for (int i = 0; i < 1_000; i++)
+        {
+            checksum += _engine.Scheme.GetTablePathFromTableName(SchemeTableName).Length;
+            checksum += _engine.Scheme.GetTablePathFromTableName(MissingSchemeTableName).Length;
+        }
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 4_096)]
+    public int ParallelSchemeExists()
+    {
+        int checksum = 0;
+        Parallel.For(0, Workers, _ =>
+        {
+            int local = 0;
+            for (int i = 0; i < 256; i++)
+            {
+                local += _engine.Scheme.IfUserTableExists(SchemeTableName) ? 1 : 0;
+                local += _engine.Scheme.IfUserTableExists(MissingSchemeTableName) ? 1 : 0;
+            }
+            Interlocked.Add(ref checksum, local);
+        });
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 4_096)]
+    public int ParallelSchemePath()
+    {
+        int checksum = 0;
+        Parallel.For(0, Workers, _ =>
+        {
+            int local = 0;
+            for (int i = 0; i < 256; i++)
+            {
+                local += _engine.Scheme.GetTablePathFromTableName(SchemeTableName).Length;
+                local += _engine.Scheme.GetTablePathFromTableName(MissingSchemeTableName).Length;
+            }
+            Interlocked.Add(ref checksum, local);
+        });
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 4_096)]
+    public int ParallelSerializedSchemeExistsBaseline()
+    {
+        int checksum = 0;
+        Parallel.For(0, Workers, _ =>
+        {
+            int local = 0;
+            for (int i = 0; i < 256; i++)
+            {
+                lock (_serializedSchemeReadLock)
+                {
+                    local += _engine.Scheme.IfUserTableExists(SchemeTableName) ? 1 : 0;
+                    local += _engine.Scheme.IfUserTableExists(MissingSchemeTableName) ? 1 : 0;
+                }
+            }
+            Interlocked.Add(ref checksum, local);
+        });
+        return checksum;
+    }
+
+    [Benchmark(OperationsPerInvoke = 4_096)]
+    public int ParallelSerializedSchemePathBaseline()
+    {
+        int checksum = 0;
+        Parallel.For(0, Workers, _ =>
+        {
+            int local = 0;
+            for (int i = 0; i < 256; i++)
+            {
+                lock (_serializedSchemeReadLock)
+                {
+                    local += _engine.Scheme.GetTablePathFromTableName(SchemeTableName).Length;
+                    local += _engine.Scheme.GetTablePathFromTableName(MissingSchemeTableName).Length;
+                }
+            }
+            Interlocked.Add(ref checksum, local);
         });
         return checksum;
     }

@@ -15,7 +15,11 @@ namespace DBreeze
     public class DBreezeRemoteEngine : DBreezeEngine
     {
         private readonly DBreezeConfiguration conf;
-        private int inited;
+        private const int NotInitialized = 0;
+        private const int Initialized = 1;
+        private const int Faulted = 2;
+        private int initializationState = NotInitialized;
+        private Exception initializationException;
         private readonly object lock_init = new object();
         
 
@@ -38,17 +42,44 @@ namespace DBreeze
         /// </summary>
         void Init()
         {
-            if (Interlocked.CompareExchange(ref inited, 0, 0) == 0)
+            int state = Interlocked.CompareExchange(ref initializationState, 0, 0);
+            if (state == Faulted)
+                ThrowInitializationException();
+            if (Disposed)
+                throw new ObjectDisposedException(nameof(DBreezeRemoteEngine));
+            if (state == Initialized)
+                return;
+
+            lock (lock_init)
             {
-                lock (lock_init)
+                state = initializationState;
+                if (state == Faulted)
+                    ThrowInitializationException();
+                if (Disposed)
+                    throw new ObjectDisposedException(nameof(DBreezeRemoteEngine));
+                if (state == Initialized)
+                    return;
+
+                try
                 {
-                    if (inited == 0)
-                    {
-                        this.ConstructFromConfiguration(conf);
-                        Interlocked.Exchange(ref inited, 1);
-                    }
+                    this.ConstructFromConfiguration(conf);
+                    if (Disposed)
+                        throw new ObjectDisposedException(nameof(DBreezeRemoteEngine));
+
+                    Interlocked.Exchange(ref initializationState, Initialized);
+                }
+                catch (Exception ex)
+                {
+                    initializationException = ex;
+                    Interlocked.Exchange(ref initializationState, Faulted);
+                    throw;
                 }
             }
+        }
+
+        private void ThrowInitializationException()
+        {
+            throw initializationException;
         }
 
         internal override void EnsureInitialized()

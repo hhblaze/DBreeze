@@ -171,6 +171,16 @@ internal static class DiskCompatibilityProbe
             transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), contains, "group" + (i % 4));
         }
         transaction.Commit();
+
+        engine.Resources.Insert<byte[]>("compat-resource-null", null);
+        engine.Resources.Insert("compat-resource-empty", Array.Empty<byte>());
+        engine.Resources.Insert("compat-resource-value", new byte[] { 1, 2, 3 });
+        engine.Resources.Insert("compat-resource-update", new byte[] { 4 });
+        engine.Resources.Insert("compat-resource-remove", new byte[] { 5 });
+        engine.Resources.Insert("compat-resource-prefix-a", new byte[] { 10 });
+        engine.Resources.Insert("compat-resource-prefix-empty", Array.Empty<byte>());
+        engine.Resources.Insert<byte[]>("compat-resource-prefix-null", null);
+        engine.Resources.Insert("compat-resource-prefix-z", new byte[] { 26 });
     }
 
     private static void Extend(string databasePath)
@@ -203,6 +213,11 @@ internal static class DiskCompatibilityProbe
             for (int i = 128; i < 160; i++)
                 transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), "compatibility added", "extended");
             transaction.Commit();
+
+            engine.Resources.Insert("compat-resource-update", new byte[] { 40, 41 });
+            engine.Resources.Remove("compat-resource-remove");
+            engine.Resources.Insert("compat-resource-added", new byte[] { 6, 7 });
+            engine.Resources.Insert("compat-resource-prefix-a", new byte[] { 100 });
         }
 
         Validate(databasePath, extended: true);
@@ -306,9 +321,68 @@ internal static class DiskCompatibilityProbe
             rowCount++;
         }
 
-        long expectedRows = extended ? 3_504 : 3_424;
+        ValidateResources(engine, extended, checksum, ref rowCount);
+
+        long expectedRows = extended ? 3_513 : 3_433;
         Ensure(rowCount == expectedRows, $"Total compatibility row count: {rowCount}");
         return new CompatibilitySummary(rowCount, checksum.Value);
+    }
+
+    private static void ValidateResources(
+        DBreezeEngine engine,
+        bool extended,
+        StableChecksum checksum,
+        ref long rowCount)
+    {
+        KeyValuePair<string, byte[]>[] resources = engine.Resources
+            .SelectStartsWith<byte[]>("compat-resource-")
+            .ToArray();
+        Ensure(resources.Length == 9, $"compat-resources count: {resources.Length}");
+
+        var expected = new Dictionary<string, byte[]>(StringComparer.Ordinal)
+        {
+            ["compat-resource-null"] = null,
+            ["compat-resource-empty"] = Array.Empty<byte>(),
+            ["compat-resource-value"] = new byte[] { 1, 2, 3 },
+            ["compat-resource-update"] = extended ? new byte[] { 40, 41 } : new byte[] { 4 },
+            [extended ? "compat-resource-added" : "compat-resource-remove"] =
+                extended ? new byte[] { 6, 7 } : new byte[] { 5 },
+            ["compat-resource-prefix-a"] = extended ? new byte[] { 100 } : new byte[] { 10 },
+            ["compat-resource-prefix-empty"] = Array.Empty<byte>(),
+            ["compat-resource-prefix-null"] = null,
+            ["compat-resource-prefix-z"] = new byte[] { 26 },
+        };
+
+        foreach (KeyValuePair<string, byte[]> resource in resources)
+        {
+            Ensure(expected.TryGetValue(resource.Key, out byte[] expectedValue),
+                $"Unexpected compatibility resource: {resource.Key}");
+            Ensure(expectedValue == null
+                    ? resource.Value == null
+                    : resource.Value != null && resource.Value.SequenceEqual(expectedValue),
+                $"Compatibility resource mismatch: {resource.Key}");
+            checksum.Add(resource.Key);
+            checksum.Add(resource.Value == null ? -1 : resource.Value.Length);
+            if (resource.Value != null)
+                checksum.Add(resource.Value);
+            rowCount++;
+        }
+
+        KeyValuePair<string, byte[]>[] prefix = engine.Resources
+            .SelectStartsWith<byte[]>("compat-resource-prefix-")
+            .ToArray();
+        Ensure(prefix.Length == 4, $"compat-resource prefix count: {prefix.Length}");
+        Ensure(prefix.Any(static pair => pair.Key.EndsWith("-empty", StringComparison.Ordinal)
+            && pair.Value != null && pair.Value.Length == 0), "Empty resource was not preserved.");
+        Ensure(prefix.Any(static pair => pair.Key.EndsWith("-null", StringComparison.Ordinal)
+            && pair.Value == null), "Null resource was not preserved.");
+
+        Ensure(engine.Resources.Select<byte[]>("compat-resource-missing") == null,
+            "Missing compatibility resource unexpectedly exists.");
+        Ensure(extended
+                ? engine.Resources.Select<byte[]>("compat-resource-remove") == null
+                : engine.Resources.Select<byte[]>("compat-resource-remove")?.SequenceEqual(new byte[] { 5 }) == true,
+            "Compatibility resource remove state mismatch.");
     }
 
     private static int[] TextIds(DBreeze.Transactions.Transaction transaction, string contains, string exact = "")

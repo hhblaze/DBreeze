@@ -779,7 +779,7 @@ namespace DBreeze
 
                 ////Searching on the disk
                 byte[] btTableName = this.GetUserTableNameAsByte(userTableName);
-                var row = LTrie.GetKey(btTableName, false, true);
+                var row = LTrie.GetKey(btTableName, true, true);
                 return row.Exists;
             }
             finally

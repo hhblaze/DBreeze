@@ -1,4 +1,5 @@
 using DBreeze;
+using DBreeze.Storage.RemoteInstance;
 using DBreeze.Utils;
 
 internal static class Program
@@ -22,6 +23,7 @@ internal static class Program
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
             (nameof(ParallelMultiTableCommitsRemainDurable), ParallelMultiTableCommitsRemainDurable),
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
+            (nameof(RemoteInitializationFailureIsTerminal), RemoteInitializationFailureIsTerminal),
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
             (nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle), StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle),
             (nameof(StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits),
@@ -52,6 +54,7 @@ internal static class Program
             (nameof(ResourcesRemainCoherentUnderConcurrentWrites), ResourcesRemainCoherentUnderConcurrentWrites),
             (nameof(ResourcesRefreshCommittedReadRoots), ResourcesRefreshCommittedReadRoots),
             (nameof(ResourcesKeepCommittedReadRootsExclusive), ResourcesKeepCommittedReadRootsExclusive),
+            (nameof(SchemeCommittedReadsRemainCoherent), SchemeCommittedReadsRemainCoherent),
             (nameof(SchemeRenamePreservesDataAndReplacementSemantics), SchemeRenamePreservesDataAndReplacementSemantics),
             (nameof(SchemeRenameReplacesDiskDestination), SchemeRenameReplacesDiskDestination),
             (nameof(SchemeRenameRejectsStorageRouteChanges), SchemeRenameRejectsStorageRouteChanges),
@@ -200,6 +203,44 @@ internal static class Program
             using var engine = CreateMemoryEngine();
             using var transaction = engine.GetTransaction();
         });
+    }
+
+    private static void RemoteInitializationFailureIsTerminal()
+    {
+        var communicator = new FailingRemoteCommunicator();
+        var configuration = new DBreezeConfiguration
+        {
+            Storage = DBreezeConfiguration.eStorage.RemoteInstance,
+            RICommunicator = communicator,
+        };
+        using var remote = new DBreezeRemoteEngine(configuration);
+
+        Exception first = null;
+        Exception second = null;
+        try
+        {
+            _ = remote.Scheme;
+        }
+        catch (Exception ex)
+        {
+            first = ex;
+        }
+
+        int callsAfterFirstFailure = communicator.SendCalls;
+        try
+        {
+            _ = remote.GetTransaction();
+        }
+        catch (Exception ex)
+        {
+            second = ex;
+        }
+
+        Assert(first != null, "Remote initialization unexpectedly succeeded.");
+        Assert(ReferenceEquals(first, second),
+            "A repeated remote initialization did not rethrow the original exception instance.");
+        AssertEqual(callsAfterFirstFailure, communicator.SendCalls,
+            "A repeated remote initialization created another remote component set.");
     }
 
     private static void DeferredIndexerRunsInParallelAndCoalescesStarts()
@@ -768,6 +809,96 @@ internal static class Program
             resources.Add(keys[i], value);
         }
         return resources;
+    }
+
+    private static void SchemeCommittedReadsRemainCoherent()
+    {
+        string folder = CreateDatabaseFolder(nameof(SchemeCommittedReadsRemainCoherent));
+        const string stableTable = "scheme-stable";
+        const string missingTable = "scheme-never-created";
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                PutValue(engine, stableTable, 123);
+                string stablePath = engine.Scheme.GetTablePathFromTableName(stableTable);
+                Assert(stablePath.Length != 0, "Stable schema path is missing.");
+
+                int publishedIteration = -1;
+                using var stop = new CancellationTokenSource();
+                int readerCount = Math.Min(16, Math.Max(4, Environment.ProcessorCount * 2));
+                Task[] readers = Enumerable.Range(0, readerCount).Select(readerIndex => Task.Run(() =>
+                {
+                    while (!stop.IsCancellationRequested)
+                    {
+                        Assert(engine.Scheme.IfUserTableExists(stableTable),
+                            "A committed stable table disappeared from the schema.");
+                        AssertEqual(stablePath, engine.Scheme.GetTablePathFromTableName(stableTable),
+                            "A committed stable table returned another physical path.");
+                        Assert(!engine.Scheme.IfUserTableExists(missingTable),
+                            "A permanently missing table appeared in the schema.");
+                        AssertEqual(String.Empty, engine.Scheme.GetTablePathFromTableName(missingTable),
+                            "A permanently missing table returned a physical path.");
+
+                        int current = Volatile.Read(ref publishedIteration);
+                        if (current >= 0)
+                        {
+                            string transient = "scheme-churn-" + current;
+                            _ = engine.Scheme.IfUserTableExists(transient);
+                            _ = engine.Scheme.GetTablePathFromTableName(transient);
+                            _ = engine.Scheme.IfUserTableExists(transient + "-renamed");
+                            _ = engine.Scheme.GetTablePathFromTableName(transient + "-renamed");
+                        }
+                    }
+                })).ToArray();
+
+                try
+                {
+                    for (int i = 0; i < 80; i++)
+                    {
+                        string table = "scheme-churn-" + i;
+                        string renamed = table + "-renamed";
+                        Volatile.Write(ref publishedIteration, i);
+
+                        Assert(!engine.Scheme.IfUserTableExists(table), "Transient table was stale before create.");
+                        PutValue(engine, table, i);
+                        Assert(engine.Scheme.IfUserTableExists(table), "Created table is absent from schema.");
+                        Assert(engine.Scheme.GetTablePathFromTableName(table).Length != 0,
+                            "Created table has no physical path.");
+
+                        engine.Scheme.RenameTable(table, renamed);
+                        Assert(!engine.Scheme.IfUserTableExists(table), "Renamed source remained in schema.");
+                        Assert(engine.Scheme.IfUserTableExists(renamed), "Renamed destination is absent.");
+
+                        engine.Scheme.DeleteTable(renamed);
+                        Assert(!engine.Scheme.IfUserTableExists(renamed), "Deleted table remained in schema.");
+                        AssertEqual(String.Empty, engine.Scheme.GetTablePathFromTableName(renamed),
+                            "Deleted table retained a physical path.");
+                    }
+                }
+                finally
+                {
+                    stop.Cancel();
+                    Task.WaitAll(readers);
+                }
+
+                Assert(!engine.Scheme.GetUserTableNamesStartingWith("scheme-churn-").Any(),
+                    "Deleted transient schema records survived the stress run.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            Assert(reopened.Scheme.IfUserTableExists(stableTable),
+                "Stable schema record did not survive reopen.");
+            Assert(!reopened.Scheme.IfUserTableExists(missingTable),
+                "Missing schema record appeared after reopen.");
+            Assert(!reopened.Scheme.GetUserTableNamesStartingWith("scheme-churn-").Any(),
+                "Deleted transient schema records reappeared after reopen.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
     }
 
     private static void SchemeRenamePreservesDataAndReplacementSemantics()
@@ -2327,6 +2458,19 @@ internal static class Program
             if (y == null)
                 return 1;
             return x.AsSpan().SequenceCompareTo(y);
+        }
+    }
+
+    private sealed class FailingRemoteCommunicator : IRemoteInstanceCommunicator
+    {
+        private int _sendCalls;
+
+        internal int SendCalls => Volatile.Read(ref _sendCalls);
+
+        public byte[] Send(byte[] data)
+        {
+            Interlocked.Increment(ref _sendCalls);
+            throw new InvalidOperationException("Injected remote initialization failure.");
         }
     }
 

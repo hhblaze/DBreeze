@@ -1,6 +1,10 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Any(static arg => string.Equals(arg, "--api-surface", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(arg, "--api-compare", StringComparison.OrdinalIgnoreCase)))
+    return ApiSurfaceProbe.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--focused-compare", StringComparison.OrdinalIgnoreCase)))
     return FocusedBenchmarkComparison.Run(args);
 
