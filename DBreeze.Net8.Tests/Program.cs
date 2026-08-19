@@ -20,6 +20,7 @@ internal static class Program
             // This test injects a durable journal marker directly and therefore must run before
             // the legacy process-global in-memory journal has been created and disposed.
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
+            (nameof(ParallelMultiTableCommitsRemainDurable), ParallelMultiTableCommitsRemainDurable),
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
             (nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle), StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle),
@@ -64,15 +65,19 @@ internal static class Program
             (nameof(RandomKeySorterKeepsFinalOperation), RandomKeySorterKeepsFinalOperation),
             (nameof(RandomKeySorterRollbackDropsPendingOperations), RandomKeySorterRollbackDropsPendingOperations),
             (nameof(RandomKeySorterUsesValueConversionAndNeverAutoFlushes), RandomKeySorterUsesValueConversionAndNeverAutoFlushes),
+            (nameof(RandomKeySorterBorrowsValuesUntilFlush), RandomKeySorterBorrowsValuesUntilFlush),
+            (nameof(RandomKeySorterSupportsFlushRollbackAndRepeatedCommits), RandomKeySorterSupportsFlushRollbackAndRepeatedCommits),
             (nameof(ObjectInsertNewEntityDoesNotDependOnRksLimit), ObjectInsertNewEntityDoesNotDependOnRksLimit),
             (nameof(ObjectIdentityRemainsBufferedUntilCommit), ObjectIdentityRemainsBufferedUntilCommit),
             (nameof(SelectDirectOnMissingTableIsEmpty), SelectDirectOnMissingTableIsEmpty),
             (nameof(MutationsAreRejectedOnAnotherThread), MutationsAreRejectedOnAnotherThread),
             (nameof(CoordinatorDoesNotLoseWakeups), CoordinatorDoesNotLoseWakeups),
             (nameof(MultiSelectMergesAndKeepsTieOrder), MultiSelectMergesAndKeepsTieOrder),
+            (nameof(MultiSelectRejectsVariableLengthKeys), MultiSelectRejectsVariableLengthKeys),
             (nameof(LockedTransactionsRespectExclusiveWaiter), LockedTransactionsRespectExclusiveWaiter),
             (nameof(LockedTransactionCanBeDisposedOnAnotherThread), LockedTransactionCanBeDisposedOnAnotherThread),
             (nameof(DictionaryAndHashSetReplacementRemoveMissingKeys), DictionaryAndHashSetReplacementRemoveMissingKeys),
+            (nameof(CollectionReplacementUsesDatabaseKeyEquality), CollectionReplacementUsesDatabaseKeyEquality),
             (nameof(ReadRootRefreshesAfterRapidCommits), ReadRootRefreshesAfterRapidCommits),
             (nameof(ReadVisibilityUsesCommittedNodeImages), ReadVisibilityUsesCommittedNodeImages),
             (nameof(RangeIterationStopsAtItsBoundary), RangeIterationStopsAtItsBoundary),
@@ -83,6 +88,7 @@ internal static class Program
             (nameof(RandomizedOperationsMatchReferenceModel), RandomizedOperationsMatchReferenceModel),
             // Deadlock cancellation exercises forced rollback of concurrent writers. Keep it
             // last because the legacy in-memory journal storage is process-global.
+            (nameof(CoordinatorCleansUpNotifyAheadFailure), CoordinatorCleansUpNotifyAheadFailure),
             (nameof(CoordinatorDetectsThreeWayDeadlock), CoordinatorDetectsThreeWayDeadlock),
         };
 
@@ -969,6 +975,52 @@ internal static class Program
             "RKS stored the key after caller mutation.");
     }
 
+    private static void RandomKeySorterBorrowsValuesUntilFlush()
+    {
+        using var engine = CreateMemoryEngine();
+        byte[] value = { 1, 2, 3 };
+
+        using (var transaction = engine.GetTransaction())
+        {
+            transaction.RandomKeySorter.Insert("rks-borrowed-value", 1, value);
+            value[0] = 9;
+            transaction.Commit();
+        }
+
+        using var reader = engine.GetTransaction();
+        AssertSequenceEqual(new byte[] { 9, 2, 3 }, reader.Select<int, byte[]>("rks-borrowed-value", 1).Value,
+            "RKS did not borrow the serialized value until Commit.");
+    }
+
+    private static void RandomKeySorterSupportsFlushRollbackAndRepeatedCommits()
+    {
+        using var engine = CreateMemoryEngine();
+        using var transaction = engine.GetTransaction();
+
+        transaction.RandomKeySorter.Insert("rks-cycles", 1, 10);
+        transaction.RandomKeySorter.Remove("rks-cycles", 1);
+        transaction.RandomKeySorter.Insert("rks-cycles", 1, 20);
+        transaction.Commit();
+        AssertEqual(20, transaction.Select<int, int>("rks-cycles", 1).Value,
+            "RKS did not preserve last-operation-wins for Remove->Insert.");
+
+        transaction.RandomKeySorter.Insert("rks-cycles", 2, 30);
+        transaction.RandomKeySorter.Flush("rks-cycles");
+        transaction.Rollback();
+        Assert(!transaction.Select<int, int>("rks-cycles", 2).Exists,
+            "Rollback did not undo an explicitly flushed RKS operation.");
+
+        transaction.RandomKeySorter.Insert("rks-cycles", 3, 40);
+        transaction.Commit();
+        transaction.RandomKeySorter.Insert("rks-cycles", 4, 50);
+        transaction.Commit();
+
+        AssertEqual(40, transaction.Select<int, int>("rks-cycles", 3).Value,
+            "First repeated Commit lost an RKS operation.");
+        AssertEqual(50, transaction.Select<int, int>("rks-cycles", 4).Value,
+            "Second repeated Commit lost an RKS operation.");
+    }
+
     private static void ObjectInsertNewEntityDoesNotDependOnRksLimit()
     {
         using var engine = CreateMemoryEngine();
@@ -1159,6 +1211,28 @@ internal static class Program
         }
     }
 
+    private static void MultiSelectRejectsVariableLengthKeys()
+    {
+        using var engine = CreateMemoryEngine();
+        using (var transaction = engine.GetTransaction())
+        {
+            transaction.Insert("merge-variable-a", new byte[] { 1 }, 1);
+            transaction.Insert("merge-variable-a", new byte[] { 2, 0 }, 2);
+            transaction.Insert("merge-variable-b", new byte[] { 1 }, 3);
+            transaction.Insert("merge-variable-b", new byte[] { 3, 0 }, 4);
+            transaction.Commit();
+        }
+
+        var tables = new HashSet<string> { "merge-variable-a", "merge-variable-b" };
+        using var reader = engine.GetTransaction();
+        AssertThrows<DBreeze.Exceptions.DBreezeException>(() =>
+            reader.Multi_SelectForwardFromTo<byte[], int>(
+                tables, new byte[] { 0 }, true, new byte[] { 255, 255 }, true).ToArray());
+        AssertThrows<DBreeze.Exceptions.DBreezeException>(() =>
+            reader.Multi_SelectBackwardFromTo<byte[], int>(
+                tables, new byte[] { 255, 255 }, true, new byte[] { 0 }, true).ToArray());
+    }
+
     private static void LockedTransactionsRespectExclusiveWaiter()
     {
         using var engine = CreateMemoryEngine();
@@ -1252,6 +1326,84 @@ internal static class Program
             Assert(new HashSet<int> { 2, 4 }.SetEquals(transaction.SelectHashSet<int>("replace-hashset")),
                 "HashSet replacement did not remove missing keys.");
         }
+    }
+
+    private static void CollectionReplacementUsesDatabaseKeyEquality()
+    {
+        using var engine = CreateMemoryEngine();
+        using (var transaction = engine.GetTransaction())
+        {
+            transaction.InsertDictionary("custom-dictionary", new Dictionary<string, int> { ["A"] = 1 }, false);
+            transaction.InsertHashSet("custom-hashset", new HashSet<string> { "A" }, false);
+            transaction.InsertDictionary("custom-nested-dictionary", 7,
+                new Dictionary<string, int> { ["A"] = 1 }, 0, false);
+            transaction.InsertHashSet("custom-nested-hashset", 7,
+                new HashSet<string> { "A" }, 0, false);
+            transaction.Commit();
+        }
+
+        using (var transaction = engine.GetTransaction())
+        {
+            transaction.InsertDictionary("custom-dictionary",
+                new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["a"] = 2 }, true);
+            transaction.InsertHashSet("custom-hashset",
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" }, true);
+            transaction.InsertDictionary("custom-nested-dictionary", 7,
+                new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["a"] = 2 }, 0, true);
+            transaction.InsertHashSet("custom-nested-hashset", 7,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" }, 0, true);
+            transaction.Commit();
+        }
+
+        using var reader = engine.GetTransaction();
+        Dictionary<string, int> dictionary = reader.SelectDictionary<string, int>("custom-dictionary");
+        AssertEqual(1, dictionary.Count, "Custom-comparer dictionary replacement left a binary-distinct DB key.");
+        AssertEqual(2, dictionary["a"], "Custom-comparer dictionary replacement value.");
+
+        HashSet<string> hashSet = reader.SelectHashSet<string>("custom-hashset");
+        Assert(hashSet.SetEquals(new[] { "a" }),
+            "Custom-comparer HashSet replacement left a binary-distinct DB key.");
+
+        Dictionary<string, int> nestedDictionary =
+            reader.SelectDictionary<int, string, int>("custom-nested-dictionary", 7, 0);
+        AssertEqual(1, nestedDictionary.Count,
+            "Nested custom-comparer dictionary replacement left a binary-distinct DB key.");
+        AssertEqual(2, nestedDictionary["a"], "Nested custom-comparer dictionary replacement value.");
+
+        HashSet<string> nestedHashSet = reader.SelectHashSet<int, string>("custom-nested-hashset", 7, 0);
+        Assert(nestedHashSet.SetEquals(new[] { "a" }),
+            "Nested custom-comparer HashSet replacement left a binary-distinct DB key.");
+    }
+
+    private static void CoordinatorCleansUpNotifyAheadFailure()
+    {
+        using var engine = new DBreezeEngine(new DBreezeConfiguration
+        {
+            Storage = DBreezeConfiguration.eStorage.MEMORY,
+            NotifyAhead_WhenWriteTablePossibleDeadlock = true,
+        });
+
+        using (var failedTransaction = engine.GetTransaction())
+        {
+            failedTransaction.Insert("notify-a", 1, 1);
+            AssertThrows<DBreeze.Exceptions.DBreezeException>(() =>
+                failedTransaction.Insert("notify-b", 1, 1));
+        }
+
+        Task writer = Task.Factory.StartNew(() =>
+        {
+            using var transaction = engine.GetTransaction();
+            transaction.Insert("notify-a", 1, 2);
+            transaction.Commit();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        Assert(writer.Wait(TimeSpan.FromSeconds(5)),
+            "NotifyAhead registration failure leaked a reservation and blocked the next writer.");
+        using var reader = engine.GetTransaction();
+        AssertEqual(2, reader.Select<int, int>("notify-a", 1).Value,
+            "NotifyAhead cleanup did not roll back the failed transaction.");
+        Assert(!reader.Select<int, int>("notify-b", 1).Exists,
+            "NotifyAhead cleanup persisted data from the failed transaction.");
     }
 
     private static void RemoveAllResetsEmptyKeyState()
@@ -1768,6 +1920,7 @@ internal static class Program
             DBreezeDataFolderName = folder,
             NotifyAhead_WhenWriteTablePossibleDeadlock = false,
         };
+        configuration.AlternativeTablesLocations["journal-b"] = Path.Combine(folder, "alternative");
 
         try
         {
@@ -1814,6 +1967,60 @@ internal static class Program
 
             AssertEqual(0, ReadJournalPayloads(folder, configuration).Length,
                 "Crash recovery did not clear the durable journal marker.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ParallelMultiTableCommitsRemainDurable()
+    {
+        string folder = CreateDatabaseFolder(nameof(ParallelMultiTableCommitsRemainDurable));
+        const int workers = 6;
+        const int iterations = 25;
+
+        try
+        {
+            using (var engine = new DBreezeEngine(new DBreezeConfiguration
+            {
+                DBreezeDataFolderName = folder,
+                NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+            }))
+            using (var start = new ManualResetEventSlim(false))
+            {
+                Task[] tasks = Enumerable.Range(0, workers).Select(worker => Task.Factory.StartNew(() =>
+                {
+                    string firstTable = $"parallel-journal-{worker}-a";
+                    string secondTable = $"parallel-journal-{worker}-b";
+                    start.Wait();
+                    for (int iteration = 0; iteration < iterations; iteration++)
+                    {
+                        using var transaction = engine.GetTransaction();
+                        transaction.Insert(firstTable, iteration, worker);
+                        transaction.Insert(secondTable, iteration, worker);
+                        transaction.Commit();
+                    }
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
+
+                start.Set();
+                Assert(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)),
+                    "Parallel multi-table commits did not complete.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            using var reader = reopened.GetTransaction();
+            for (int worker = 0; worker < workers; worker++)
+            {
+                foreach (string suffix in new[] { "a", "b" })
+                {
+                    string table = $"parallel-journal-{worker}-{suffix}";
+                    var rows = reader.SelectForward<int, int>(table).ToArray();
+                    AssertEqual(iterations, rows.Length, $"Durable row count for {table}.");
+                    Assert(rows.All(row => row.Value == worker), $"Durable values for {table}.");
+                }
+            }
         }
         finally
         {

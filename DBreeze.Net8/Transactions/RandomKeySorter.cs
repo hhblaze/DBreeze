@@ -15,6 +15,8 @@ namespace DBreeze.Transactions
     /// <summary>
     /// Net8 implementation of the transaction-local random-key buffer.
     /// It stores one final operation per binary key and never expands keys to hex strings.
+    /// Binary keys are copied because they participate in dictionary identity; converted values
+    /// are borrowed until Flush or Commit and must not be mutated by the caller meanwhile.
     /// </summary>
     public sealed class RandomKeySorter
     {
@@ -114,6 +116,13 @@ namespace DBreeze.Transactions
             return operation.Value;
         }
 
+        /// <summary>
+        /// Buffers an insert; the last operation for the same serialized key wins.
+        /// </summary>
+        /// <remarks>
+        /// The serialized value buffer is borrowed until <see cref="Flush(string)"/> or transaction Commit.
+        /// A mutable <c>byte[]</c> value must not be changed by the caller during that interval.
+        /// </remarks>
         public void Insert<TKey, TValue>(string tableName, TKey key, TValue value)
         {
             _t.EnsureTransactionOwner();
@@ -127,14 +136,12 @@ namespace DBreeze.Transactions
 
             if (batch.Operations.TryGetValue(lookup, out PendingOperation existing))
             {
-                byte[] ownedValue = valueBytes == null ? null : (byte[])valueBytes.Clone();
-                batch.Operations[lookup] = new PendingOperation(existing.Key, ownedValue, false);
+                batch.Operations[lookup] = new PendingOperation(existing.Key, valueBytes, false);
             }
             else
             {
                 ByteKey ownedKey = new ByteKey(keyBytes, true);
-                byte[] ownedValue = valueBytes == null ? null : (byte[])valueBytes.Clone();
-                batch.Operations.Add(ownedKey, new PendingOperation(ownedKey, ownedValue, false));
+                batch.Operations.Add(ownedKey, new PendingOperation(ownedKey, valueBytes, false));
             }
 
         }

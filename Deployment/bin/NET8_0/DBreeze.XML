@@ -1223,12 +1223,12 @@
             Can be called from anywhere, even from other transactions. There is no need to add into sync table
             </summary>
         </member>
-        <member name="P:DBreeze.DBreezeEngine.DBisOperable">
+        <member name="F:DBreeze.DBreezeEngine._dbIsOperable">
             <summary>
             Db is not operable any more by DBisOperableReason reason 
             </summary>
         </member>
-        <member name="P:DBreeze.DBreezeEngine.DBisOperableReason">
+        <member name="F:DBreeze.DBreezeEngine._dbIsOperableReason">
             <summary>
             Is filled with a text note who brought to DBisOperable = false
             </summary>
@@ -1358,99 +1358,144 @@
         </member>
         <member name="T:DBreeze.DBreezeResources">
             <summary>
-            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
-            Key is a string, Value any standard DBreeze.DataType (or serialized object, when custom serializer is supplied).
-            Can be called from anywhere, even from other transactions. There is no need to add into sync table
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeResources._urp">
-            <summary>
-            UserResourcePrefix. Having prefixes gives us ability to reuse the table for smth. else
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.#ctor(DBreeze.DBreezeEngine)">
-            <summary>
-            constructor
-            </summary>
-            <param name="engine"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Dispose">
-            <summary>
-            Disposing
+            DBreeze resources represents an in-memory dictionary synchronized with an internal DBreeze table.
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeResources.Settings">
-            <summary>
-            Settings regulating resources behaviour
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
-            <summary>
-            Resource will be stored in-memory, for the fast access. Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.HoldOnDisk">
-            <summary>
-            Resource will be stored on-disk. Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.FastUpdates">
-            <summary>            
-            Sets OverWriteIsAllowed = false. Toggle only if it's not enough the speed of the update. Default is false.
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.InsertWithVerification">
-            <summary>
-            Prevents disk insert of the identical value of the existing key. Default is true.
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.SortingAscending">
-            <summary>
-            Needed for getting resources via SelectStartsWith. Default is true.
-            </summary>
+            <summary>Settings regulating resources behaviour.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Insert resource
-            </summary>
+            <summary>Inserts a resource.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Insert``1(System.Collections.Generic.IDictionary{System.String,``0},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Batch insert of resources where value is a defined DBreeze or DBreeze.CustomSerializer type
-            </summary>
+            <summary>Batch insert of resources converted through DataTypesConvertor.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Batch insert of resources where value is a byte[]
-            </summary>
+            <summary>Batch insert of byte-array resources.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
-            <summary>
-            Removes resources from database and In-Memory dictionary 
-            </summary>
+            <summary>Removes a batch of resources.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Remove(System.String)">
-            <summary>
-            Removes resource from database and 
-            </summary>        
+            <summary>Removes one resource.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.SelectStartsWith``1(System.String,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            SelectStartsWith.
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
+            <summary>Returns resources with the supplied prefix.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Gets resources of the same type as a batch from memory or database (if not yet loaded).
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
+            <summary>Gets a batch of resources.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
+            <summary>Gets one resource from memory or committed storage.</summary>
+        </member>
+        <member name="F:DBreeze.Scheme.AutoCloseOpenTables">
             <summary>
-            Gets resource from memory or database (if not yet loaded)
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
+            Flag that closes file of the table if threads don't use it for reading or writing.
             </summary>
+        </member>
+        <member name="M:DBreeze.Scheme.GetPhysicalPathToTheUserTable(System.String)">
+            <summary>
+            ONLY FOR INTERNAL NEEDS, lock must be handeled by outer procedure.
+            Users must use GetTablePathFromTableName.
+            Transactions Journal after start will try to delete RollbackFiles of the finished transactions.
+            For this it needs to know exact pathes.
+            For now all tables stored in one folder. Later we will have extra config file which lets to reside
+            some of tables in the other folders.
+            This function is an access globalizer to physical file locations by userTableName.
+            !!!!TRAnJRNL, WHEN RESTORES ROLLBACK, MUST REFER TO Scheme trie settings in the future, FOR NOW DEFAULT
+            </summary>
+            <param name="userTableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.OpenTableForRollbackRecovery(System.String)">
+            <summary>
+            Opens an existing user table only to let its storage restore a committed rollback.
+            Uses the same storage override decision as the normal table-opening path.
+            Returns null for removed and in-memory tables.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Scheme.GetTablePathFromTableName(System.String)">
+            <summary>
+            Returns physical path to the table file, if table doesn't exists in the Scheme returns String.Empty
+            </summary>
+            <param name="userTableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.GetUserTableNameAsByte(System.String)">
+            <summary>
+            Adds static prefix to all user table names, to
+            make selection of tables for different purposes easier with StartsWith function
+            </summary>
+            <param name="tableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.GetTable(System.String)">
+            <summary>
+            Returns table for READ, WRITE FUNC
+            </summary>
+            <param name="userTableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.CheckAlternativeTableLocationsIntersections(System.String,System.String@)">
+            <summary>
+            Checks if in configuration was supplied alternative path for table location.
+            Returns true if intersection was found.
+            Alternative Path equals to String.Empty - locate in Memory
+            </summary>
+            <param name="userTableName"></param>
+            <param name="alternativePath"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.CloseTables(System.Collections.Generic.Dictionary{System.String,System.Nullable{System.UInt64}})">
+            <summary>
+            Called by Transaction, when it's time to be Disposed and close tables.
+            Tables will be closed only in case of other threads don't use it.
+            </summary>
+            <param name="closeOpenTables"></param>
+        </member>
+        <member name="M:DBreeze.Scheme.DeleteAllReleatedTableFiles(System.String)">
+            <summary>
+            Used by GetTableFor Write, if table is newly created and we have such file name
+            </summary>
+            <param name="fullTableFilePath"></param>
+        </member>
+        <member name="M:DBreeze.Scheme.IfUserTableExists(System.String)">
+            <summary>
+            Returns if user table exists
+            </summary>
+            <param name="userTableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.GetUserTableNamesStartingWith(System.String)">
+            <summary>
+            Returns List of user tables starting from specified mask.
+            If mask is String.Empty returns all user tables
+            </summary>
+            <param name="mask"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.DeleteTable(System.String)">
+            <summary>
+            Deletes user table
+            </summary>
+            <param name="userTableName"></param>
+        </member>
+        <member name="M:DBreeze.Scheme.RenameTable(System.String,System.String)">
+            <summary>
+            Renames user table, if it existed.
+            <para>Safe, will make operation only when other threads stop to work with the oldTable</para>
+            </summary>
+            <param name="oldUserTableName"></param>
+            <param name="newUserTableName"></param>
+        </member>
+        <member name="M:DBreeze.Scheme.RenameTableInternal(System.String,System.String)">
+            <summary>
+            Renames user table, if it existed.
+            <para>If there are threads which are working with this table, rename will not be finished and will return false</para>
+            </summary>
+            <param name="oldUserTableName"></param>
+            <param name="newUserTableName"></param>
+            <returns>true if successfully renamed, otherwise false</returns>
         </member>
         <member name="T:DBreeze.Exceptions.TableNotOperableException">
             <summary>
@@ -1728,7 +1773,7 @@
             <summary>
             Returns NULL if not found
             </summary>
-            <param name="generationMapLine"></param>
+            <param name="pointer"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingEnd(System.Byte[],System.Byte[])">
@@ -1741,13 +1786,12 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[],System.Byte[])">
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[])">
             <summary>
             OverWriting Generation Node, we supply params where, oldData and newData.
             </summary>
             <param name="pointer"></param>
             <param name="newData"></param>
-            <param name="generationMapLine"></param>
             <param name="kidsBeforeModification"></param>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
@@ -1906,7 +1950,7 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.ItBwdFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             ItBwdFromTo
             </summary>
@@ -1914,8 +1958,6 @@
             <param name="generationMapLine"></param>
             <param name="useCache"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             IterateBackwardFromTo
             </summary>
@@ -1931,7 +1973,7 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.ItFrwFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             ItFrwFromTo
             </summary>
@@ -1939,8 +1981,6 @@
             <param name="generationMapLine"></param>
             <param name="useCache"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             IterateForwardFromTo
             </summary>
@@ -1967,7 +2007,7 @@
             Used via TableIsModified
             </summary>
         </member>
-        <member name="F:DBreeze.LianaTrie.LTrie._DtTableFixed">
+        <member name="F:DBreeze.LianaTrie.LTrie._tableVersion">
             <summary>
             Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
             Access via DtTableFixed interface ITrie
@@ -2302,89 +2342,189 @@
             <param name="p1">pattern 1</param>
             <param name="p2">pattern 2</param>
         </member>
-        <member name="M:DBreeze.Storage.Backup.#ctor(System.String)">
+        <member name="T:DBreeze.Storage.FSR">
             <summary>
+            DBreeze random and sequential disk IO buffers implementation.
+            Specially designed for DBreeze specific storage format.
+            Not for common usage.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR.IsOperable">
+            <summary>
+            Indicates subsystem vitality
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR._randBuf">
+            <summary>
+            Random buffer
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.FSR.RollbackRecord">
+            <summary>
+            Record in rollback is characterized with
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.RollbackRecord.o">
+            <summary>
+            offset in rollback file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.RollbackRecord.l">
+            <summary>
+            Length in rollback file
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR._rollbackCache">
+            <summary>
+            Rollback cache
+            Key is offset in data file, value is corresponding offset and length in rollback file
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR.maxRandomBufferSize">
+            <summary>
+            Random buffer maximal size before flush
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR.MaxRollbackFileSize">
+            <summary>
+            Rollback file re-creation after initialization
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR.eofData">
+            <summary>
+            Pointer to the end of file, before current commit
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.FSR._storageFixTime">
+            <summary>
+            DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
+            If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
+            LTrieRow will have different version and will return exception.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.Length">
+            <summary>
+            Physical length of the storage file
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.StorageFixTime">
+            <summary>
+            Returns time of file initiation, ead remarks on
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.FSR.TrieSettings">
+             <summary>
             
-            </summary>
-            <param name="backupFolderName">Folder where will be restored incremental backup</param>
+             </summary>
         </member>
-        <member name="P:DBreeze.Storage.Backup.IncrementalBackupFileIntervalMin">
-            <summary>
-            Identifies how often will be created new file for backup (Minimum 5 minutes).
-            Default value is one day
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.Backup.BackupFolderName">
-            <summary>
-            Folder where backup files will be created
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.Backup.BackupFileNamesParser.ParseFilename(System.String)">
-            <summary>
-            Helper for table file names transitions for backup
-            </summary>
-            <param name="fileName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.Backup.BackupFileNamesParser.ParseFilenameBack(System.UInt64)">
-            <summary>
+        <member name="P:DBreeze.Storage.FSR.DbreezeConfiguration">
+             <summary>
             
-            </summary>
-            <param name="filenumber"></param>
-            <returns></returns>
+             </summary>
         </member>
-        <member name="M:DBreeze.Storage.Backup.WriteBackupElement(System.UInt64,System.Byte,System.Int64,System.Byte[])">
-            <summary>
-            Represents incremental backup of protocol 1
-            </summary>
-            <param name="fileNumber"></param>
-            <param name="type">0 - table file, 1 - rollback file, 2 - rollbackhelper, 3 - recreate table file, 5 - removing complete table </param>
-            <param name="pos"></param>
-            <param name="data"></param>
+        <member name="P:DBreeze.Storage.FSR.Table_FileName">
+             <summary>
+            
+             </summary>
         </member>
-        <member name="T:DBreeze.Storage.BackupRestorer">
-            <summary>
-            Access to Database restoration from incremental backups.
-            </summary>
+        <member name="M:DBreeze.Storage.FSR.Table_Dispose">
+             <summary>
+            
+             </summary>
         </member>
-        <member name="T:DBreeze.Storage.BackupRestorer.BackupRestorationProcess">
-            <summary>
-            Object characterizes the backup restoration process
-            </summary>
+        <member name="M:DBreeze.Storage.FSR.RestoreInitRollback">
+             <summary>
+            
+             </summary>
         </member>
-        <member name="P:DBreeze.Storage.BackupRestorer.BackupRestorationProcess.ReadinessInProcent">
-            <summary>
-            How many procesnt of restoration is done
-            </summary>
+        <member name="M:DBreeze.Storage.FSR.RestoreTableFromTheOtherTable(System.String)">
+             <summary>
+            
+             </summary>
+             <param name="newTableFullPath"></param>
         </member>
-        <member name="P:DBreeze.Storage.BackupRestorer.BackupRestorationProcess.Finished">
-            <summary>
-            true when restore is completed
-            </summary>
+        <member name="M:DBreeze.Storage.FSR.RecreateFiles">
+             <summary>
+            
+             </summary>
         </member>
-        <member name="E:DBreeze.Storage.BackupRestorer.OnRestore">
+        <member name="M:DBreeze.Storage.FSR.FlushSequentialBuffer">
             <summary>
-            Subscribe on it to receive notification about restore process
+            Must be called from lock_fs
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.BackupRestorer.DataBaseFolder">
+        <member name="M:DBreeze.Storage.FSR.Table_WriteToTheEnd(System.Byte[])">
+             <summary>
+            
+             </summary>
+             <param name="data"></param>
+             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.Table_WriteByOffset(System.Byte[],System.Byte[])">
+             <summary>
+            
+             </summary>
+             <param name="offset"></param>
+             <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.Table_WriteByOffset(System.Int64,System.Byte[])">
+             <summary>
+            
+             </summary>
+             <param name="offset"></param>
+             <param name="data"></param>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.FlushRandomBuffer">
             <summary>
-            Place where resides or should reside database
+            Is called only from lock_fs and must be finished by calling NET_Flush
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.BackupRestorer.BackupFolder">
+        <member name="M:DBreeze.Storage.FSR.Table_Read(System.Boolean,System.Byte[],System.Int32)">
+             <summary>
+            
+             </summary>
+             <param name="useCache"></param>
+             <param name="offset"></param>
+             <param name="count"></param>
+             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.Table_Read(System.Boolean,System.Int64,System.Int32)">
+             <summary>
+            
+             </summary>
+             <param name="useCache"></param>
+             <param name="offset"></param>
+             <param name="count"></param>
+             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.Commit">
             <summary>
-            Place where reside incremnetal dbreeze backup files
+            Cleans all buffers and flushes data to the disk
             </summary>
         </member>
-        <member name="F:DBreeze.Storage.BackupRestorer.ds">
+        <member name="F:DBreeze.Storage.FSR.TransactionalCommitIsStarted">
             <summary>
-            Holder of filenames and file handlers
+            Transactional Commit is started
             </summary>
         </member>
-        <member name="M:DBreeze.Storage.BackupRestorer.StartRestoration">
+        <member name="M:DBreeze.Storage.FSR.TransactionalCommit">
+             <summary>
+            
+             </summary>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.TransactionalCommitIsFinished">
+             <summary>
+            
+             </summary>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.TransactionalRollback">
+             <summary>
+            
+             </summary>
+        </member>
+        <member name="M:DBreeze.Storage.FSR.Rollback">
             <summary>
-            Starts backup restore routine
+            Standard and transactional rollback
             </summary>
         </member>
         <member name="T:DBreeze.Storage.MemoryStorage">
@@ -2487,17 +2627,17 @@
             Random buffer
             </summary>
         </member>
-        <member name="T:DBreeze.Storage.MSR.r">
+        <member name="T:DBreeze.Storage.MSR.RollbackRecord">
             <summary>
             Record in rollback is characterized with 
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.MSR.r.o">
+        <member name="P:DBreeze.Storage.MSR.RollbackRecord.o">
             <summary>
             offset in rollback file
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.MSR.r.l">
+        <member name="P:DBreeze.Storage.MSR.RollbackRecord.l">
             <summary>
             Length in rollback file
             </summary>
@@ -2624,6 +2764,91 @@
             Standard and transactional rollback
             </summary>
         </member>
+        <member name="M:DBreeze.Storage.Backup.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="backupFolderName">Folder where will be restored incremental backup</param>
+        </member>
+        <member name="P:DBreeze.Storage.Backup.IncrementalBackupFileIntervalMin">
+            <summary>
+            Identifies how often will be created new file for backup (Minimum 5 minutes).
+            Default value is one day
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.Backup.BackupFolderName">
+            <summary>
+            Folder where backup files will be created
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.Backup.BackupFileNamesParser.ParseFilename(System.String)">
+            <summary>
+            Helper for table file names transitions for backup
+            </summary>
+            <param name="fileName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.Backup.BackupFileNamesParser.ParseFilenameBack(System.UInt64)">
+            <summary>
+            
+            </summary>
+            <param name="filenumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Storage.Backup.WriteBackupElement(System.UInt64,System.Byte,System.Int64,System.Byte[])">
+            <summary>
+            Represents incremental backup of protocol 1
+            </summary>
+            <param name="fileNumber"></param>
+            <param name="type">0 - table file, 1 - rollback file, 2 - rollbackhelper, 3 - recreate table file, 5 - removing complete table </param>
+            <param name="pos"></param>
+            <param name="data"></param>
+        </member>
+        <member name="T:DBreeze.Storage.BackupRestorer">
+            <summary>
+            Access to Database restoration from incremental backups.
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.BackupRestorer.BackupRestorationProcess">
+            <summary>
+            Object characterizes the backup restoration process
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.BackupRestorer.BackupRestorationProcess.ReadinessInProcent">
+            <summary>
+            How many procesnt of restoration is done
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.BackupRestorer.BackupRestorationProcess.Finished">
+            <summary>
+            true when restore is completed
+            </summary>
+        </member>
+        <member name="E:DBreeze.Storage.BackupRestorer.OnRestore">
+            <summary>
+            Subscribe on it to receive notification about restore process
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.BackupRestorer.DataBaseFolder">
+            <summary>
+            Place where resides or should reside database
+            </summary>
+        </member>
+        <member name="P:DBreeze.Storage.BackupRestorer.BackupFolder">
+            <summary>
+            Place where reside incremnetal dbreeze backup files
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.BackupRestorer.ds">
+            <summary>
+            Holder of filenames and file handlers
+            </summary>
+        </member>
+        <member name="M:DBreeze.Storage.BackupRestorer.StartRestoration">
+            <summary>
+            Starts backup restore routine
+            </summary>
+        </member>
         <member name="T:DBreeze.Storage.RemoteInstance.IRemoteInstanceCommander">
             <summary>
             NSR works via this interface
@@ -2650,7 +2875,7 @@
         </member>
         <member name="P:DBreeze.Storage.RemoteInstance.IRemoteInstanceCommander.DataFileLength">
             <summary>
-            Operations like OpenRemoteFile, Read etc always return back the length of data and rollback file, which must be set to this variable by interface implementer
+            Operations like OpenRemoteFile, Read etc always return back the lenght of data and rollback file, which must be set to this variable by interface implementer
             </summary>
         </member>
         <member name="P:DBreeze.Storage.RemoteInstance.IRemoteInstanceCommander.DataFilePosition">
@@ -2855,7 +3080,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.DataFileWrite(System.Int64,System.Boolean,System.Byte[])">
+        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.DataFileWrite(System.Int64,System.Boolean,System.Byte[],System.Int32,System.Int32)">
             <summary>
             DataFileWrite
             </summary>
@@ -2864,7 +3089,7 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackFileWrite(System.Int64,System.Boolean,System.Byte[])">
+        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackFileWrite(System.Int64,System.Boolean,System.Byte[],System.Int32,System.Int32)">
             <summary>
             RollbackFileWrite
             </summary>
@@ -2873,7 +3098,7 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackHelperFileWrite(System.Int64,System.Boolean,System.Byte[])">
+        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackHelperFileWrite(System.Int64,System.Boolean,System.Byte[],System.Int32,System.Int32)">
             <summary>
             RollbackFileWrite
             </summary>
@@ -2949,197 +3174,6 @@
             <param name="protocol"></param>
             <returns></returns>
         </member>
-        <member name="T:DBreeze.Storage.FSR">
-            <summary>
-            DBreeze random and sequential disk IO buffers implementation.
-            Specially designed for DBreeze specific storage format.
-            Not for common usage.
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR.IsOperable">
-            <summary>
-            Indicates subsystem vitality
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR._randBuf">
-            <summary>
-            Random buffer
-            </summary>
-        </member>
-        <member name="T:DBreeze.Storage.FSR.r">
-            <summary>
-            Record in rollback is characterized with 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.r.o">
-            <summary>
-            offset in rollback file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.r.l">
-            <summary>
-            Length in rollback file
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR._rollbackCache">
-            <summary>
-            Rollback cache
-            Key is offset in data file, value is corresponding offset and length in rollback file
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR.maxRandomBufferSize">
-            <summary>
-            Random buffer maximal size before flush
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR.MaxRollbackFileSize">
-            <summary>
-            Rollback file re-creation after initialization
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR.eofData">
-            <summary>
-            Pointer to the end of file, before current commit
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR._storageFixTime">
-            <summary>
-            DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
-            If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
-            LTrieRow will have different version and will return exception.
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.Length">
-            <summary>
-            Physical length of the storage file
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.StorageFixTime">
-            <summary>
-            Returns time of file initiation, ead remarks on 
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.TrieSettings">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.DbreezeConfiguration">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="P:DBreeze.Storage.FSR.Table_FileName">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Table_Dispose">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.RestoreInitRollback">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.ParseRollBackFile(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="rbd"></param>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.RestoreTableFromTheOtherTable(System.String)">
-            <summary>
-            
-            </summary>
-            <param name="newTableFullPath"></param>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.RecreateFiles">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.FlushSequentialBuffer">
-            <summary>
-            Must be called from lock_fs
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Table_WriteToTheEnd(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="data"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Table_WriteByOffset(System.Byte[],System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="offset"></param>
-            <param name="data"></param>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Table_WriteByOffset(System.Int64,System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="offset"></param>
-            <param name="data"></param>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.FlushRandomBuffer">
-            <summary>
-            Is called only from lock_fs and must be finished by calling NET_Flush
-            </summary>     
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Table_Read(System.Boolean,System.Byte[],System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="useCache"></param>
-            <param name="offset"></param>
-            <param name="count"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Table_Read(System.Boolean,System.Int64,System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="useCache"></param>
-            <param name="offset"></param>
-            <param name="count"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Commit">
-            <summary>
-            Cleans all buffers and flushes data to the disk
-            </summary>
-        </member>
-        <member name="F:DBreeze.Storage.FSR.TransactionalCommitIsStarted">
-            <summary>
-            Transactional Commit is started
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.TransactionalCommit">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.TransactionalCommitIsFinished">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.TransactionalRollback">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.Rollback">
-            <summary>
-            Standard and transactional rollback
-            </summary>
-        </member>
         <member name="T:DBreeze.Storage.IStorage">
             <summary>
             Storage interface
@@ -3196,17 +3230,17 @@
             Random buffer
             </summary>
         </member>
-        <member name="T:DBreeze.Storage.RISR.r">
+        <member name="T:DBreeze.Storage.RISR.RollbackRecord">
             <summary>
             Record in rollback is characterized with 
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.RISR.r.o">
+        <member name="P:DBreeze.Storage.RISR.RollbackRecord.o">
             <summary>
             offset in rollback file
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.RISR.r.l">
+        <member name="P:DBreeze.Storage.RISR.RollbackRecord.l">
             <summary>
             Length in rollback file
             </summary>
@@ -3273,12 +3307,6 @@
             <summary>
             
             </summary>
-        </member>
-        <member name="M:DBreeze.Storage.RISR.ParseRollBackFile(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="rbd"></param>
         </member>
         <member name="M:DBreeze.Storage.RISR.RestoreTableFromTheOtherTable(System.String)">
             <summary>
@@ -3404,6 +3432,653 @@
             Next 3 concern alternative table storage pathes.
             </summary>
         </member>
+        <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
+            <summary>
+            Durable queue and single background worker for deferred text indexing.
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.RequestStop">
+            <summary>
+            Stops accepting work and asks the active worker to leave at the next safe boundary.
+            The durable queue is kept intact for the next engine start.
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Adds tables and their internal document IDs for parallel indexing of the Text Engine.
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.AddVectors(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
+            <summary>
+            Queues the legacy vector-work record format (protocol 0,0).
+            </summary>
+            <remarks>
+            Public VectorsInsert overloads build HNSW synchronously and never call this method.
+            VectorsDoIndexing is currently a compatibility no-op, so this queue path does not perform
+            HNSW indexing and must not be used as a production indexing path.
+            </remarks>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.StartDefferedIndexing">
+            <summary>
+            Schedules indexing. Calls are coalesced while the single worker is active.
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler">
+            <summary>
+            New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.DeferredVectors">
+            <summary>
+            TextSearch handler becomes universal for other entites
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">
+            <summary>
+            Internal search-table structure.       
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.e2i">
+            <summary>
+            External document index to internal - 1. Key byte, Value NestedTable
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.i2e">
+            <summary>
+            Internal document index to external - 2. Key byte, Value NestedTable
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.srch">
+            <summary>
+            Searchables to insert - 3 (byte). internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
+            Insert always compares newly intended with current and if no changes exits. 
+            Indexer replaces new with current.
+            itbls.Value.ChangedDocIds contains IDs of changed docs per search table
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.blocks">
+            <summary>
+            Key 10: [uint,byte[]] where K is BlockID[uint] (1000 words per block), Value is GzippedAndProtobufed Dictionary of [uint, byte[]] where K is ID of the word in Key2 and value its WAH reserved (init reservation 100KB per block)            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.currentBlock">
+            <summary>
+            Key 11: [int]-[0,0,0,11], Value uint; - current blockNumber
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.numberInBlock">
+            <summary>
+            Key 12: [int][0,0,0,12], Value uint; used number in the block
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.words">
+            <summary>
+            Key 20 : [string,byte[]] NestedTable(Index to search by words)
+            <para>Where Key: string - word</para>
+            <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.Encryption">
+            <summary>
+            Key 14 (byte): Value: int, where 0 - legacy, non-encrypted; Otherwise encryption type. 1 - ITextStreamCrypto bound to TextConfiguration.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchHandler.itbls">
+            <summary>
+            Registering all search-tables mutated during transaction
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetDocumentsSearchables(DBreeze.Transactions.Transaction,System.String,System.Collections.Generic.HashSet{System.Byte[]})">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+            <param name="documentIDs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+            <param name="documentId"></param>
+            <param name="containsWords"></param>
+            <param name="fullMatchWords"></param>
+            <param name="deferredIndexing"></param>
+            <param name="containsMinimalLength"></param>
+            <param name="iMode"></param>        
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.BlockId">
+            <summary>
+            Wah2 block id
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.NumberInBlock">
+            <summary>
+            Number in Wah2 block
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.Processed">
+            <summary>
+            Processed
+            </summary>
+        </member>
+        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.wahArray">
+            <summary>
+            Unzipped WABI
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.BeforeCommit">
+            <summary>
+            Started only in case if InsertWasPerformed in deffered or not deffered way
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.AfterCommit">
+            <summary>
+             Started only in case if InsertWasPerformed in deffered or not deffered way
+            </summary>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordChange">
+            <summary>
+            itbls and transaction must be supplied, to make it working from outside
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String,DBreeze.TextSearch.ITextStreamCrypto)">
+            <summary>
+            Converter from searchbales to byte[]
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
+            <summary>
+            Converter from byte[] searchables.
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
+            <summary>
+            
+            </summary>
+            <param name="searchables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,System.String,System.Int32,System.Int32)">
+            <summary>
+            Returns null in case of notfound anything or what ever
+            </summary>
+            <param name="containsWords"></param>
+            <param name="fullMatchWords"></param>
+            <param name="containsMinimalLength"></param>
+            <param name="maxWordSize">Taken from configuration. Default is 50. word separated by spaces</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchHandler.MigrateTextSearchTableToEncrypted(System.String,System.String)">
+            <summary>
+            Migrates a non-encrypted TextSearch table to a new encrypted TextSearch table.
+            <para>The encryptor must be configured in Configuration.TextSearchConfig.TextEncryptor before calling.</para>
+            <para>After migration the new table is immediately usable in encrypted mode.</para>
+            <para>The old table is left untouched — the caller may drop it if no longer needed.</para>
+            </summary>
+            <param name="oldTableName">Source non-encrypted table name.</param>
+            <param name="newTableName">Destination encrypted table name (must differ from oldTableName).</param>
+        </member>
+        <member name="T:DBreeze.TextSearch.WABI">
+            <summary>
+            Word aligned bitmap index
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.#ctor(System.Byte[])">
+            <summary>
+            Must be supplied CompressedByteArray taken from GetCompressedByteArray function
+            </summary>
+            <param name="array"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.GetUncompressedByteArray">
+            <summary>
+            Working byte[]
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.GetCompressedByteArray">
+            <summary>
+            With extra protocol definition, ready for save into DB
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Add(System.Int32,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <param name="value"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Add(System.Collections.Generic.IEnumerable{System.Int32},System.Boolean)">
+            <summary>
+            Applies many bit changes with a single capacity calculation. Index enumeration is
+            consumed exactly once.
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Resize(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="len"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.Contains(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="index"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByAndLogic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using AND logic: 1 and 1 = 1; 1 and 0 = 0; 0 and 0 = 0
+            </summary>
+            <param name="arraysToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByOrLogic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using OR logic: 1or1 = 1or0 = 1; 0or0 = 0
+            </summary>
+            <param name="arraysToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByXorLogic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Using XOR logic: 1xor1 = 0; 0xor0 = 0; 1xor0 = 1
+            </summary>
+            <param name="arraysToMerge"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.MergeByExcludeLogic(System.Byte[],System.Byte[])">
+            <summary>
+            Using EXCLUDE logic: 1notin1 = 0; 1notin0 = 1; 0notin0 = 0; 0notin1 = 0;
+            </summary>
+            <param name="array1"></param>
+            <param name="array2"></param>
+            <returns></returns>
+        </member>
+        <member name="F:DBreeze.TextSearch.WABI.ExistsInDB">
+            <summary>
+            Technical if already in DB
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]})">
+            <summary>
+            Returns last added documents first
+            </summary>
+            <param name="indexesToCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]},System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="indexesToCheck"></param>
+            <param name="docStart">when 0 not counted</param>
+            <param name="docStop">when 0 not counted</param>
+            <param name="descending"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.WABI.TextSearch_OR_logic(System.Collections.Generic.List{System.Byte[]},System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="indexesToCheck"></param>
+            <param name="maximalReturnQuantity"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.WabiStreamCrypto">
+            <summary>
+            Deterministic AES-CTR transform used by encrypted TextSearch tables.
+            </summary>
+            <remarks>
+            The fixed IV is required to preserve encrypted prefixes for prefix search. Consequently,
+            this transform intentionally does not hide repeated prefixes and does not authenticate the
+            ciphertext. Use it only for the TextSearch storage protocol, not as a general-purpose AEAD.
+            </remarks>
+        </member>
+        <member name="T:DBreeze.TextSearch.BlockAnd">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.BlockAnd.#ctor(System.String,System.String)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockAnd("blue", "#LNDDE"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        </member>
+        <member name="T:DBreeze.TextSearch.BlockOr">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.BlockOr.#ctor(System.String,System.String)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockOr("blue red", "#LNDDE"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+        </member>
+        <member name="T:DBreeze.TextSearch.SBlock">
+            <summary>
+            Text search block
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.AND">
+            <summary>
+            Possible in and between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.OR">
+            <summary>
+            Possible in and between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.XOR">
+            <summary>
+            Possible only between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.eOperation.EXCLUDE">
+            <summary>
+            Possible only between blocks
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.Ignored">
+            <summary>
+            Block will not be counted in intersection calculations if has empty FullMatch and Contains words
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock._tsm">
+            <summary>
+            TextSearchManager
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.ParsedWords">
+            <summary>
+            Word, fullMatch  
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.BlockId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.IsLogicalBlock">
+            <summary>
+            This block is a result of operation between 2 other blocks.
+            False is a pure block added via TextSearchManager
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.InternalBlockOperation">
+            <summary>
+            Internal in-block operation between words.
+            Generation-term
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.SBlock.foundArrays">
+            <summary>
+            Generation-term
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.And(System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Or(System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Xor(System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Exclude(System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Adding new logical block (And or Or, depending upon parameter blockAnd)
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating and block</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.And(DBreeze.TextSearch.SBlock,System.Boolean)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Or(DBreeze.TextSearch.SBlock,System.Boolean)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Xor(DBreeze.TextSearch.SBlock,System.Boolean)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.Exclude(DBreeze.TextSearch.SBlock,System.Boolean)">
+            <summary>
+            Returns last added block. Can be added existing block or new block in format
+            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
+            </summary>
+            <param name="block"></param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.GetDocumentIDs">
+            <summary>
+            IEnumerable returning External GetDocumentIDs
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.GetArrays">
+            <summary>
+            Universal function resulting final one/many arrays (in AND) and one array in (OR, XOR, EXCLUDE)
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.SBlock.GetPureBlockArrays">
+            <summary>
+            Fills up foundArrays for the current block. If logic is And and word is not found can clear already array on that level.
+            Concenrs only pure (not logical) blocks
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.TextSearchTable">
+            <summary>
+            Manager for word aligned bitmap indexes
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable._tran">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.NoisyQuantity">
+            <summary>
+            Default value is 1000
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.SearchCriteriaIsNoisy">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.ExternalDocumentIdStart">
+            <summary>
+            If not null limits the search range of the documents.
+            ExternalDocumentID will be converted into InternalID and will be used as a ranges start
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.ExternalDocumentIdStop">
+            <summary>
+            If not null limits the search range of the documents.
+            ExternalDocumentID will be converted into InternalID and will be used as a ranges stop
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.Descending">
+            <summary>
+            Default found documents will be returned descending (last added document first)
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdA">
+            <summary>
+            Converted ExternalDocumentIdStart
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdZ">
+            <summary>
+            Converted ExternalDocumentIdStop
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.ResolveDocumentRange">
+            <summary>
+            Resolves external bounds once per query enumeration. False means that the requested
+            interval does not intersect any external document id.
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.PureWords">
+            <summary>
+            Second preparation layer after parsing. After this layer we grab words from db and put into real words
+            </summary>
+        </member>
+        <member name="F:DBreeze.TextSearch.TextSearchTable.PureWordDef.StartsWith">
+            <summary>
+            In case if word must be searched using contains logic in db can be StartsWith echoes
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.#ctor(DBreeze.Transactions.Transaction,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="tran"></param>
+            <param name="tableName"></param>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.ComputeWordsOrigin">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.Block(System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="blockAnd">default value is true, indicating BlockAnd</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.String,System.String,System.Boolean)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>   
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.String,System.String,System.Boolean)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>
+            Generates a logical block: 
+            var tsm = tran.TextSearch("MyTextSearchTable");
+            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
+            .GetDocumentIDs
+            </summary>
+            <param name="containsWords">space separated words to be used by "contains" logic</param>
+            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
+            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.WordsPrepare(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Collections.Generic.Dictionary{System.String,System.Boolean}@)">
+            <summary>
+            
+            </summary>
+            <param name="searchKeywords"></param>
+            <param name="fullMatch"></param>
+            <param name="wordsList"></param>
+        </member>
         <member name="M:DBreeze.Transactions.ITransactable.ITRCommitFinished">
             <summary>
             Is called by Transaction Journal, to make root available for all and delete rollback file
@@ -3423,255 +4098,30 @@
             </summary>
             <param name="transactionThreadId"></param>
         </member>
-        <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
-            <summary>
-            We try to clear tranasction file, when its length is more then 10MB and if it's possible
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionsJournal._transactionsTables">
-            <summary>
-            Key: transaction number, counting up from the engine start
-            Value: Dictionary containing as a Key usertableName, as value link to the table
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsJournal.AddTableForTransaction(System.UInt64,DBreeze.Transactions.ITransactable)">
-            <summary>
-            Every table inside of the transaction before calling Transaction Commit, goes to this in-memory dictionary
-            </summary>
-            <param name="tranNumber"></param>
-            <param name="table"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsJournal.RemoveTransactionFromDictionary(System.UInt64)">
-            <summary>
-            Used in case of failed transaction of multiple tables, to clean in-memory dictionary
-            </summary>
-            <param name="tranNumber"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsJournal.GetTransactionNumber">
-            <summary>
-            Returns new transaction number
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.Transactions.TransactionUnit">
-            <summary>
-            This object includes class Transaction (visible for the user) and holds internally technical transaction information.
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._transaction">
-            <summary>
-            Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
-            <summary>
-            Easy access to transactin coordinator for the Transaction which is visible for the user
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.Transaction">
-            <summary>
-            Transaction visible for the user
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionThreadId">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._sync_transactionWriteTables">
-            <summary>
-            Lock for all tables definitions inside current transaction
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTables">
-            <summary>
-            It holds all tables marked for possible mutations
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTablesAwaitingReservation">
-            <summary>
-            List of tables which are waiting for reservation for writing, we need it to predict deadlock situations.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTablesAwaitingReservation(System.Collections.Generic.List{System.String})">
-            <summary>
-            Used by TransactionCoordinator.RegisterWriteTablesForTransaction
-            </summary>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTable(System.String,DBreeze.Transactions.ITransactable)">
-            <summary>
-            Adds a table which will take place in transaction operations.
-            Reserved has value null, Real (which are acquired by Transaction for Write) has ITransactable filled.
-            ITransactable = null, gives to differ from toched and reserved.
-            </summary>
-            <param name="tableName"></param>
-            <param name="table">if null - will be added to Reservation table</param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTables">
-            <summary>
-            Doesn't need pattern check
-            Returns all tables which took place in write operation for the current transaction
-            Without reserved as Text tables only which have real ITransactable inside
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionWriteTablesCount">
-            <summary>
-            returns count of reserved tables, used by transaction just to find out if reservation (or first table modification) was done or not.
-            reservation can be done only once.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.If_TableIsReservedForWrite(System.String)">
-            <summary>
-            Used inside of Transaction, we can choose fot READ or READ_SYNCHRO for READ FUNCs
-            </summary>
-            <param name="tableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTablesNames">
-            <summary>
-            Returns only table names for reservation
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.Commit">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
-            <summary>
-            Dictionary of all active transactions. Key is ManagedThreadId
-            </summary>
-        </member>
-        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
-            <summary>
-            Fast access to the Schema object.
-            Used by Transaction class
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
-            <summary>
-            
-            </summary>
-            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
-            <param name="lockType"></param>
-            <param name="tables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="transactionThreadId"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
-            <summary>
-            Is called by the engine on Dispose.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
-            <summary>
-            Access synchronizer.
-            All calls of the WRITE LOCATOR come over this function.
-            </summary>
-            <param name="transactionThreadId"></param>
-            <param name="tablesNames"></param>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
-            <summary>
-            Can return NULL (if DbIsNotOperatable)
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
-            <summary>
-            Can return NULL if table doesn't exist
-            Can return NULL (if DbIsNotOperatable)
-            
-            Differs from GetTable_Write:
-            1. table is not registered for Write;
-            2. Table is not created, if doesn't exist.
-            </summary>
-            <param name="tableName"></param>
-            <param name="transactionThreadId"></param>
-            <param name="ignoreThreadIdCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
-            <summary>
-            Normal Engine Stop, usually in case of Main Thread or DLL disposing
-            </summary>
-        </member>
         <member name="T:DBreeze.Transactions.RandomKeySorter">
             <summary>
-            Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Net8 implementation of the transaction-local random-key buffer.
+            It stores one final operation per binary key and never expands keys to hex strings.
+            Binary keys are copied because they participate in dictionary identity; converted values
+            are borrowed until Flush or Commit and must not be mutated by the caller meanwhile.
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
             <summary>
-            <para>NOT USED ANYMORE</para>
-            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
-            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
+            NOT USED ANYMORE. Preserved for public API compatibility.
+            Automatic flush makes TryGetValueByKey ambiguous after flushing: a miss can mean
+            either "not buffered" or "already flushed", forcing an LTrie/storage lookup and
+            breaking the object-layer fast path.
             </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
-            <summary>
-            Internal regulator telling, that specified tables should work via fast update
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.TryGetValueByKey(System.String,System.String)">
-            <summary>
-            
-            </summary>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.Insert``2(System.String,``0,``1)">
             <summary>
-            
+            Buffers an insert; the last operation for the same serialized key wins.
             </summary>
-            <param name="tableName"></param>
-            <param name="key"></param>
-            <param name="value"></param>        
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
-            <summary>
-            Removes from the table key
-            </summary>
-            <typeparam name="TKey"></typeparam>
-            <param name="tableName"></param>
-            <param name="key"></param>
-        </member>
-        <member name="F:DBreeze.Transactions.RandomKeySorter.tbls">
-            <summary>
-            Contains writing LTrie tables
-            </summary>
-        </member>
-        <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
-            <summary>
-            Flushing all 
-            </summary>
+            <remarks>
+            The serialized value buffer is borrowed until <see cref="M:DBreeze.Transactions.RandomKeySorter.Flush(System.String)"/> or transaction Commit.
+            A mutable <c>byte[]</c> value must not be changed by the caller during that interval.
+            </remarks>
         </member>
         <member name="T:DBreeze.Transactions.Transaction">
             <summary>
@@ -3702,9 +4152,8 @@
         <member name="F:DBreeze.Transactions.Transaction.RandomKeySorter">
             <summary>
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed, then inserted),
+            sorted by key ascending.
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.#ctor(System.Int32,DBreeze.Transactions.TransactionUnit,DBreeze.eTransactionTablesLockTypes,System.String[])">
@@ -3715,6 +4164,12 @@
             <param name="transactionUnit"></param>
             <param name="lockType"></param>
             <param name="tables"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.EnsureTransactionOwner">
+            <summary>
+            Transactions are deliberately thread-bound. Parallel read APIs explicitly opt out
+            of this check; all state-changing operations must stay on the creating thread.
+            </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Dispose">
             <summary>
@@ -3838,9 +4293,8 @@
             Syntax-sugar for  this.RandomKeySorter.Remove(tableName, key, value);
             
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed, then inserted),
+            sorted by key ascending.
             </summary>
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
@@ -3973,9 +4427,8 @@
             Syntax-sugar for  this.RandomKeySorter.Insert(tableName, key, value);
             
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed, then inserted),
+            sorted by key ascending.
             </summary>
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
@@ -4799,7 +5252,18 @@
             <returns></returns>
             <exception cref="T:System.NotSupportedException"></exception>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:DBreeze.Transactions.Transaction.VectorsGetAll``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{``0},System.Boolean)" -->
+        <member name="M:DBreeze.Transactions.Transaction.VectorsGetAll``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{``0},System.Boolean)">
+            <summary>
+            Gets all vectors from storage useful for graph compaction and batch processing.
+            Returns nested enumerables where each inner enumerable contains up to chunkSize items.
+            </summary>
+            <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
+            <param name="tableName">Table name where vectors are stored</param>        
+            <param name="vectorTableParameters">Optional vector table configuration parameters</param>
+            <param name="ignoreDeleted">If true (default), only returns non-soft-deleted vectors</param>
+            <returns>Stored external identifiers and their vectors.</returns>
+            <exception cref="T:System.NotSupportedException"></exception>
+        </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList{System.ValueTuple{System.Int64,System.Single[]}},DBreeze.Transactions.Transaction.VectorTableParameters{System.Single[]})">
             <summary>
             
@@ -4807,6 +5271,10 @@
             <param name="tableName"></param>
             <param name="vectors">(long ExternalId of the Vector, float[] vector itself - will be auto normalized)</param>
             <param name="vectorTableParameters"></param>
+            <remarks>
+            Builds the HNSW index synchronously inside this transaction. The changes become visible
+            after the normal transaction commit. TextDeferredIndexer is not used by this API.
+            </remarks>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList{System.ValueTuple{System.Int64,System.Double[]}},DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
             <summary>
@@ -4815,6 +5283,10 @@
             <param name="tableName"></param>
             <param name="vectors">(long ExternalId of the Vector, double[] vector itself - will be auto normalized)</param>
             <param name="vectorTableParameters"></param>
+            <remarks>
+            Builds the HNSW index synchronously inside this transaction. The changes become visible
+            after the normal transaction commit. TextDeferredIndexer is not used by this API.
+            </remarks>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsRemove``1(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{``0})">
             <summary>
@@ -4848,10 +5320,211 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
             <summary>
-            CAP Possible future implementation, can be called from TextDeferredIndexer
+            Legacy compatibility hook for the vector branch of TextDeferredIndexer.
             </summary>
+            <remarks>
+            This method intentionally performs no HNSW indexing. It is a compatibility placeholder
+            and must not be used as a production indexing path. Public VectorsInsert overloads build
+            HNSW synchronously and do not enqueue deferred vector work.
+            </remarks>
             <param name="tableName"></param>
             <param name="internalIDs">must be already sorted ascending</param>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
+            <summary>
+            Dictionary of all active transactions. Key is ManagedThreadId
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionsCoordinator.GetSchema">
+            <summary>
+            Fast access to the Schema object.
+            Used by Transaction class
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransaction(System.Int32,DBreeze.eTransactionTablesLockTypes,System.String[])">
+            <summary>
+            
+            </summary>
+            <param name="transactionType">0 = standard transaction, 1 - locked transaction</param>
+            <param name="lockType"></param>
+            <param name="tables"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTransactionUnit(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterTransaction(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="transactionThreadId"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.UnregisterAllTransactions">
+            <summary>
+            Is called by the engine on Dispose.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.RegisterWriteTablesForTransaction(System.Int32,System.Collections.Generic.List{System.String},System.Boolean)">
+            <summary>
+            Access synchronizer.
+            All calls of the WRITE LOCATOR come over this function.
+            </summary>
+            <param name="transactionThreadId"></param>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_WRITE(System.String,System.Int32)">
+            <summary>
+            Can return NULL (if DbIsNotOperatable)
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.GetTable_READ(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Can return NULL if table doesn't exist
+            Can return NULL (if DbIsNotOperatable)
+            
+            Differs from GetTable_Write:
+            1. table is not registered for Write;
+            2. Table is not created, if doesn't exist.
+            </summary>
+            <param name="tableName"></param>
+            <param name="transactionThreadId"></param>
+            <param name="ignoreThreadIdCheck"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsCoordinator.StopEngine">
+            <summary>
+            Normal Engine Stop, usually in case of Main Thread or DLL disposing
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsJournal.MaxlengthOfTransactionFile">
+            <summary>
+            We try to clear tranasction file, when its length is more then 10MB and if it's possible
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionsJournal._transactionsTables">
+            <summary>
+            Key: transaction number, counting up from the engine start
+            Value: Dictionary containing as a Key usertableName, as value link to the table
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.AddTableForTransaction(System.UInt64,DBreeze.Transactions.ITransactable)">
+            <summary>
+            Every table inside of the transaction before calling Transaction Commit, goes to this in-memory dictionary
+            </summary>
+            <param name="tranNumber"></param>
+            <param name="table"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.RemoveTransactionFromDictionary(System.UInt64)">
+            <summary>
+            Used in case of failed transaction of multiple tables, to clean in-memory dictionary
+            </summary>
+            <param name="tranNumber"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionsJournal.GetTransactionNumber">
+            <summary>
+            Returns new transaction number
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:DBreeze.Transactions.TransactionUnit">
+            <summary>
+            This object includes class Transaction (visible for the user) and holds internally technical transaction information.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._transaction">
+            <summary>
+            Represents object which will be used by user, there we have all query methods, depending upon query we now if the table has to be locked or not.
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionsCoordinator">
+            <summary>
+            Easy access to transactin coordinator for the Transaction which is visible for the user
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.Transaction">
+            <summary>
+            Transaction visible for the user
+            </summary>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionThreadId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._sync_transactionWriteTables">
+            <summary>
+            Lock for all tables definitions inside current transaction
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTables">
+            <summary>
+            It holds all tables marked for possible mutations
+            </summary>
+        </member>
+        <member name="F:DBreeze.Transactions.TransactionUnit._transactionWriteTablesAwaitingReservation">
+            <summary>
+            List of tables which are waiting for reservation for writing, we need it to predict deadlock situations.
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTablesAwaitingReservation(System.Collections.Generic.List{System.String})">
+            <summary>
+            Used by TransactionCoordinator.RegisterWriteTablesForTransaction
+            </summary>
+            <param name="tablesNames"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.AddTransactionWriteTable(System.String,DBreeze.Transactions.ITransactable)">
+            <summary>
+            Adds a table which will take place in transaction operations.
+            Reserved has value null, Real (which are acquired by Transaction for Write) has ITransactable filled.
+            ITransactable = null, gives to differ from toched and reserved.
+            </summary>
+            <param name="tableName"></param>
+            <param name="table">if null - will be added to Reservation table</param>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTables">
+            <summary>
+            Doesn't need pattern check
+            Returns all tables which took place in write operation for the current transaction
+            Without reserved as Text tables only which have real ITransactable inside
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:DBreeze.Transactions.TransactionUnit.TransactionWriteTablesCount">
+            <summary>
+            returns count of reserved tables, used by transaction just to find out if reservation (or first table modification) was done or not.
+            reservation can be done only once.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.If_TableIsReservedForWrite(System.String)">
+            <summary>
+            Used inside of Transaction, we can choose fot READ or READ_SYNCHRO for READ FUNCs
+            </summary>
+            <param name="tableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.GetTransactionWriteTablesNames">
+            <summary>
+            Returns only table names for reservation
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.Commit">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.TransactionUnit.RollBack">
+            <summary>
+            
+            </summary>
         </member>
         <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
             <summary>
@@ -4864,6 +5537,11 @@
         <member name="M:DBreeze.TransactionTablesLocker.RemoveSession">
             <summary>
             
+            </summary>
+        </member>
+        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession(System.Int32)">
+            <summary>
+            Removes a session by its creating thread id.
             </summary>
         </member>
         <member name="M:DBreeze.TransactionTablesLocker.Dispose">
@@ -6953,6 +7631,74 @@
             <param name="keys"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.HNSW.BinaryHeap`1">
+            <summary>
+            Binary heap wrapper around the <see cref="T:System.Collections.Generic.IList`1"/>
+            It's a max-heap implementation i.e. the maximum element is always on top.
+            But the order of elements can be customized by providing <see cref="T:System.Collections.Generic.IComparer`1"/> instance.
+            </summary>
+            <typeparam name="T">The type of the items in the source list.</typeparam>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.#ctor(System.Collections.Generic.List{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.BinaryHeap`1"/> class.
+            </summary>
+            <param name="buffer">The buffer to store heap items.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.#ctor(System.Collections.Generic.List{`0},System.Collections.Generic.IComparer{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:DBreeze.HNSW.BinaryHeap`1"/> class.
+            </summary>
+            <param name="buffer">The buffer to store heap items.</param>
+            <param name="comparer">The comparer which defines order of items.</param>
+        </member>
+        <member name="P:DBreeze.HNSW.BinaryHeap`1.Comparer">
+            <summary>
+            Gets the heap comparer.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.BinaryHeap`1.Buffer">
+            <summary>
+            Gets the buffer of the heap.
+            </summary>
+        </member>
+        <member name="P:DBreeze.HNSW.BinaryHeap`1.Count">
+            <summary>
+            Gets the number of items in the heap.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Peek">
+            <summary>
+            Gets the maximum item without removing it.
+            </summary>
+            <returns>The maximum item.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Push(`0)">
+            <summary>
+            Pushes item to the heap.
+            </summary>
+            <param name="item">The item to push.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Pop">
+            <summary>
+            Pops the item from the heap.
+            </summary>
+            <returns>The popped item.</returns>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftDown(System.Int32)">
+            <summary>
+            Restores the heap property starting from i'th position down to the bottom
+            given that the downstream items fulfill the rule.
+            </summary>
+            <param name="i">The position of item where heap property is violated.</param>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftUp(System.Int32)">
+            <summary>
+            Restores the heap property starting from i'th position up to the head
+            given that the upstream items fulfill the rule.
+            </summary>
+            <param name="i">The position of item where heap property is violated.</param>
+        </member>
         <member name="T:DBreeze.HNSW.CosineDistance">
              <summary>
              Calculates cosine similarity.
@@ -7007,70 +7753,6 @@
             <summary>
             Deterministic xorshift64* PRNG optimized to cache normal generations natively.
             </summary>
-        </member>
-        <member name="T:DBreeze.HNSW.BinaryHeap`1">
-            <summary>
-            Binary heap wrapper around the <see cref="T:System.Collections.Generic.IList`1"/>
-            It's a max-heap implementation i.e. the maximum element is always on top.
-            But the order of elements can be customized by providing <see cref="T:System.Collections.Generic.IComparer`1"/> instance.
-            </summary>
-            <typeparam name="T">The type of the items in the source list.</typeparam>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.#ctor(System.Collections.Generic.List{`0})">
-            <summary>
-            Initializes a new instance of the <see cref="T:DBreeze.HNSW.BinaryHeap`1"/> class.
-            </summary>
-            <param name="buffer">The buffer to store heap items.</param>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.#ctor(System.Collections.Generic.List{`0},System.Collections.Generic.IComparer{`0})">
-            <summary>
-            Initializes a new instance of the <see cref="T:DBreeze.HNSW.BinaryHeap`1"/> class.
-            </summary>
-            <param name="buffer">The buffer to store heap items.</param>
-            <param name="comparer">The comparer which defines order of items.</param>
-        </member>
-        <member name="P:DBreeze.HNSW.BinaryHeap`1.Comparer">
-            <summary>
-            Gets the heap comparer.
-            </summary>
-        </member>
-        <member name="P:DBreeze.HNSW.BinaryHeap`1.Buffer">
-            <summary>
-            Gets the buffer of the heap.
-            </summary>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.Push(`0)">
-            <summary>
-            Pushes item to the heap.
-            </summary>
-            <param name="item">The item to push.</param>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.Pop">
-            <summary>
-            Pops the item from the heap.
-            </summary>
-            <returns>The popped item.</returns>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftDown(System.Int32)">
-            <summary>
-            Restores the heap property starting from i'th position down to the bottom
-            given that the downstream items fulfill the rule.
-            </summary>
-            <param name="i">The position of item where heap property is violated.</param>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.SiftUp(System.Int32)">
-            <summary>
-            Restores the heap property starting from i'th position up to the head
-            given that the upstream items fulfill the rule.
-            </summary>
-            <param name="i">The position of item where heap property is violated.</param>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.Swap(System.Int32,System.Int32)">
-            <summary>
-            Swaps items with the specified indicies.
-            </summary>
-            <param name="i">The first index.</param>
-            <param name="j">The second index.</param>
         </member>
         <member name="T:DBreeze.HNSW.SmallWorld`2">
             <summary>
@@ -7887,108 +8569,6 @@
             Configuration 
             </summary>
         </member>
-        <member name="F:DBreeze.Scheme.AutoCloseOpenTables">
-            <summary>
-            Flag that closes file of the table if threads don't use it for reading or writing.
-            </summary>
-        </member>
-        <member name="M:DBreeze.Scheme.GetPhysicalPathToTheUserTable(System.String)">
-            <summary>
-            ONLY FOR INTERNAL NEEDS, lock must be handeled by outer procedure.
-            Users must use GetTablePathFromTableName.
-            Transactions Journal after start will try to delete RollbackFiles of the finished transactions.
-            For this it needs to know exact pathes.
-            For now all tables stored in one folder. Later we will have extra config file which lets to reside 
-            some of tables in the other folders. 
-            This function is an access globalizer to physical file locations by userTableName.
-            !!!!TRAnJRNL, WHEN RESTORES ROLLBACK, MUST REFER TO Scheme trie settings in the future, FOR NOW DEFAULT
-            </summary>
-            <param name="userTableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.GetTablePathFromTableName(System.String)">
-            <summary>
-            Returns physical path to the table file, if table doesn't exists in the Scheme returns String.Empty
-            </summary>
-            <param name="userTableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.GetUserTableNameAsByte(System.String)">
-            <summary>
-            Adds static prefix to all user table names, to
-            make selection of tables for different purposes easier with StartsWith function
-            </summary>
-            <param name="tableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.GetTable(System.String)">
-            <summary>
-            Returns table for READ, WRITE FUNC
-            </summary>
-            <param name="userTableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.CheckAlternativeTableLocationsIntersections(System.String,System.String@)">
-            <summary>
-            Checks if in configuration was supplied alternative path for table location.
-            Returns true if intersection was found.
-            Alternative Path equals to String.Empty - locate in Memory
-            </summary>
-            <param name="userTableName"></param>
-            <param name="alternativePath"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.CloseTables(System.Collections.Generic.Dictionary{System.String,System.Nullable{System.UInt64}})">
-            <summary>
-            Called by Transaction, when it's time to be Disposed and close tables.
-            Tables will be closed only in case of other threads don't use it.
-            </summary>
-            <param name="closeOpenTables"></param>
-        </member>
-        <member name="M:DBreeze.Scheme.DeleteAllReleatedTableFiles(System.String)">
-            <summary>
-            Used by GetTableFor Write, if table is newly created and we have such file name
-            </summary>
-            <param name="fullTableFilePath"></param>
-        </member>
-        <member name="M:DBreeze.Scheme.IfUserTableExists(System.String)">
-            <summary>
-            Returns if user table exists
-            </summary>
-            <param name="userTableName"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.GetUserTableNamesStartingWith(System.String)">
-            <summary>
-            Returns List of user tables starting from specified mask.
-            If mask is String.Empty returns all user tables
-            </summary>
-            <param name="mask"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.Scheme.DeleteTable(System.String)">
-            <summary>
-            Deletes user table
-            </summary>
-            <param name="userTableName"></param>
-        </member>
-        <member name="M:DBreeze.Scheme.RenameTable(System.String,System.String)">
-            <summary>
-            Renames user table, if it existed.
-            <para>Safe, will make operation only when other threads stop to work with the oldTable</para>
-            </summary>
-            <param name="oldUserTableName"></param>
-            <param name="newUserTableName"></param>
-        </member>
-        <member name="M:DBreeze.Scheme.RenameTableInternal(System.String,System.String)">
-            <summary>
-            Renames user table, if it existed.
-            <para>If there are threads which are working with this table, rename will not be finished and will return false</para>
-            </summary>
-            <param name="oldUserTableName"></param>
-            <param name="newUserTableName"></param>
-            <returns>true if successfully renamed, otherwise false</returns>
-        </member>
         <member name="T:DBreeze.Objects.DBreezeIndex">
             <summary>
             Concept of the objects storage (read docu from 20170321)
@@ -8093,646 +8673,6 @@
             <summary>
             Pointer to DBreezeObject, ObjectGetByFixedAddress should help to retrieve it.
             </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.BlockAnd">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.BlockAnd.#ctor(System.String,System.String)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockAnd("blue", "#LNDDE"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-        </member>
-        <member name="T:DBreeze.TextSearch.BlockOr">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.BlockOr.#ctor(System.String,System.String)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.BlockAnd("pill").OR(new DBreeze.TextSearch.BlockOr("blue red", "#LNDDE"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-        </member>
-        <member name="T:DBreeze.TextSearch.SBlock">
-            <summary>
-            Text search block
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.eOperation.AND">
-            <summary>
-            Possible in and between blocks
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.eOperation.OR">
-            <summary>
-            Possible in and between blocks
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.eOperation.XOR">
-            <summary>
-            Possible only between blocks
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.eOperation.EXCLUDE">
-            <summary>
-            Possible only between blocks
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.Ignored">
-            <summary>
-            Block will not be counted in intersection calculations if has empty FullMatch and Contains words
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock._tsm">
-            <summary>
-            TextSearchManager
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.ParsedWords">
-            <summary>
-            Word, fullMatch  
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.BlockId">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.IsLogicalBlock">
-            <summary>
-            This block is a result of operation between 2 other blocks.
-            False is a pure block added via TextSearchManager
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.InternalBlockOperation">
-            <summary>
-            Internal in-block operation between words.
-            Generation-term
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.SBlock.foundArrays">
-            <summary>
-            Generation-term
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.And(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Adding new logical block (And or Or, depending upon parameter blockAnd)
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="blockAnd">default value is true, indicating and block</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Or(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Adding new logical block (And or Or, depending upon parameter blockAnd)
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="blockAnd">default value is true, indicating and block</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Xor(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Adding new logical block (And or Or, depending upon parameter blockAnd)
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="blockAnd">default value is true, indicating and block</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Exclude(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Adding new logical block (And or Or, depending upon parameter blockAnd)
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="blockAnd">default value is true, indicating and block</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.And(DBreeze.TextSearch.SBlock,System.Boolean)">
-            <summary>
-            Returns last added block. Can be added existing block or new block in format
-            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
-            </summary>
-            <param name="block"></param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Or(DBreeze.TextSearch.SBlock,System.Boolean)">
-            <summary>
-            Returns last added block. Can be added existing block or new block in format
-            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
-            </summary>
-            <param name="block"></param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Xor(DBreeze.TextSearch.SBlock,System.Boolean)">
-            <summary>
-            Returns last added block. Can be added existing block or new block in format
-            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
-            </summary>
-            <param name="block"></param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.Exclude(DBreeze.TextSearch.SBlock,System.Boolean)">
-            <summary>
-            Returns last added block. Can be added existing block or new block in format
-            new DBreeze.TextSearch.BlockAnd(... or new DBreeze.TextSearch.BlockOr(
-            </summary>
-            <param name="block"></param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.GetDocumentIDs">
-            <summary>
-            IEnumerable returning External GetDocumentIDs
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.GetArrays">
-            <summary>
-            Universal function resulting final one/many arrays (in AND) and one array in (OR, XOR, EXCLUDE)
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.SBlock.GetPureBlockArrays">
-            <summary>
-            Fills up foundArrays for the current block. If logic is And and word is not found can clear already array on that level.
-            Concenrs only pure (not logical) blocks
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
-            <summary>
-            TextDeferredIndexer
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Dispose">
-            <summary>
-            Disposing
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
-            <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing of the Text Engine
-            </summary>
-            <param name="defferedDocIds"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.AddVectors(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
-            <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing of the Vector Engine, protocol 0,0
-            </summary>
-            <param name="defferedDocIds"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.StartDefferedIndexing">
-            <summary>
-            Runs Indexer. Only one instance is allowed
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Indexer">
-            <summary>
-            Indexer self
-            </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler">
-            <summary>
-            New instance per transaction. Is created by necessity, while inserting or selecting anything concerning TextSearch subsystem.
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.DeferredVectors">
-            <summary>
-            TextSearch handler becomes universal for other entites
-            </summary>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler.ITS">
-            <summary>
-            Internal search-table structure.       
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.e2i">
-            <summary>
-            External document index to internal - 1. Key byte, Value NestedTable
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.i2e">
-            <summary>
-            Internal document index to external - 2. Key byte, Value NestedTable
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.srch">
-            <summary>
-            Searchables to insert - 3 (byte). internal docId(int)+ new byte[]{0}/new byte[]{1} (0 for current searchables, 1 for new intended to be saved searchables), Value is searchables.
-            Insert always compares newly intended with current and if no changes exits. 
-            Indexer replaces new with current.
-            itbls.Value.ChangedDocIds contains IDs of changed docs per search table
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.blocks">
-            <summary>
-            Key 10: [uint,byte[]] where K is BlockID[uint] (1000 words per block), Value is GzippedAndProtobufed Dictionary of [uint, byte[]] where K is ID of the word in Key2 and value its WAH reserved (init reservation 100KB per block)            
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.currentBlock">
-            <summary>
-            Key 11: [int]-[0,0,0,11], Value uint; - current blockNumber
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.numberInBlock">
-            <summary>
-            Key 12: [int][0,0,0,12], Value uint; used number in the block
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.words">
-            <summary>
-            Key 20 : [string,byte[]] NestedTable(Index to search by words)
-            <para>Where Key: string - word</para>
-            <para>Value: [byte[]] BlockId[uint] + NumberInBlock[uint] (reference to Key 10)</para>
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.ITS.Encryption">
-            <summary>
-            Key 14 (byte): Value: int, where 0 - legacy, non-encrypted; Otherwise encryption type. 1 - ITextStreamCrypto bound to TextConfiguration.
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchHandler.itbls">
-            <summary>
-            Registering all search-tables mutated during transaction
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetDocumentsSearchables(DBreeze.Transactions.Transaction,System.String,System.Collections.Generic.HashSet{System.Byte[]})">
-            <summary>
-            
-            </summary>
-            <param name="tran"></param>
-            <param name="tableName"></param>
-            <param name="documentIDs"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.InsertDocumentText(DBreeze.Transactions.Transaction,System.String,System.Byte[],System.String,System.String,System.Boolean,System.Int32,DBreeze.TextSearch.TextSearchHandler.eInsertMode)">
-            <summary>
-            
-            </summary>
-            <param name="tran"></param>
-            <param name="tableName"></param>
-            <param name="documentId"></param>
-            <param name="containsWords"></param>
-            <param name="fullMatchWords"></param>
-            <param name="deferredIndexing"></param>
-            <param name="containsMinimalLength"></param>
-            <param name="iMode"></param>        
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.BlockId">
-            <summary>
-            Wah2 block id
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.NumberInBlock">
-            <summary>
-            Number in Wah2 block
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.Processed">
-            <summary>
-            Processed
-            </summary>
-        </member>
-        <member name="P:DBreeze.TextSearch.TextSearchHandler.WordInDocs.wahArray">
-            <summary>
-            Unzipped WABI
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.BeforeCommit">
-            <summary>
-            Started only in case if InsertWasPerformed in deffered or not deffered way
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.AfterCommit">
-            <summary>
-             Started only in case if InsertWasPerformed in deffered or not deffered way
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing(DBreeze.Transactions.Transaction,System.Collections.Generic.Dictionary{System.String,DBreeze.TextSearch.TextSearchHandler.ITS})">
-            <summary>
-            itbls and transaction must be supplied, to make it working from outside
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
-            <summary>
-            This function accepts old value of searchables for one document and new value,
-            decides what must be Removed (par1) and what should be Added (par2)
-            </summary>
-            <param name="oldtext"></param>
-            <param name="newtext"></param>
-            <returns>List 2remove, List 2add</returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String,DBreeze.TextSearch.ITextStreamCrypto)">
-            <summary>
-            Converter from searchbales to byte[]
-            </summary>
-            <param name="searchables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray(System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
-            <summary>
-            Converter from byte[] searchables.
-            </summary>
-            <param name="searchables"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetSearchablesFromByteArray_AsHashSet(System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
-            <summary>
-            
-            </summary>
-            <param name="searchables"></param>
-            <returns></returns>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordDefinition">
-            <summary>
-            
-            </summary>        
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,System.String,System.Int32,System.Int32)">
-            <summary>
-            Returns null in case of notfound anything or what ever
-            </summary>
-            <param name="containsWords"></param>
-            <param name="fullMatchWords"></param>
-            <param name="containsMinimalLength"></param>
-            <param name="maxWordSize">Taken from configuration. Default is 50. word separated by spaces</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.MigrateTextSearchTableToEncrypted(System.String,System.String)">
-            <summary>
-            Migrates a non-encrypted TextSearch table to a new encrypted TextSearch table.
-            <para>The encryptor must be configured in Configuration.TextSearchConfig.TextEncryptor before calling.</para>
-            <para>After migration the new table is immediately usable in encrypted mode.</para>
-            <para>The old table is left untouched — the caller may drop it if no longer needed.</para>
-            </summary>
-            <param name="oldTableName">Source non-encrypted table name.</param>
-            <param name="newTableName">Destination encrypted table name (must differ from oldTableName).</param>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchTable">
-            <summary>
-            Manager for word aligned bitmap indexes
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable._tran">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.NoisyQuantity">
-            <summary>
-            Default value is 1000
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.SearchCriteriaIsNoisy">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.ExternalDocumentIdStart">
-            <summary>
-            If not null limits the search range of the documents.
-            ExternalDocumentID will be converted into InternalID and will be used as a ranges start
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.ExternalDocumentIdStop">
-            <summary>
-            If not null limits the search range of the documents.
-            ExternalDocumentID will be converted into InternalID and will be used as a ranges stop
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.Descending">
-            <summary>
-            Default found documents will be returned descending (last added document first)
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdA">
-            <summary>
-            Converted ExternalDocumentIdStart
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdZ">
-            <summary>
-            Converted ExternalDocumentIdStop
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.PureWords">
-            <summary>
-            Second preparation layer after parsing. After this layer we grab words from db and put into real words
-            </summary>
-        </member>
-        <member name="F:DBreeze.TextSearch.TextSearchTable.PureWordDef.StartsWith">
-            <summary>
-            In case if word must be searched using contains logic in db can be StartsWith echoes
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.#ctor(DBreeze.Transactions.Transaction,System.String)">
-            <summary>
-            
-            </summary>
-            <param name="tran"></param>
-            <param name="tableName"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.ComputeWordsOrigin">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.Block(System.String,System.String,System.Boolean,System.Boolean)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="blockAnd">default value is true, indicating BlockAnd</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.String,System.String,System.Boolean)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>   
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockAnd(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.String,System.String,System.Boolean)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic or startswith if words were stored by full-match logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.BlockOr(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
-            <summary>
-            Generates a logical block: 
-            var tsm = tran.TextSearch("MyTextSearchTable");
-            tsm.Block("choose").And(new DBreeze.TextSearch.BlockAnd("pill")).Or(tsm.BlockOr("blue red"))
-            .GetDocumentIDs
-            </summary>
-            <param name="containsWords">space separated words to be used by "contains" logic</param>
-            <param name="fullMatchWords">space separated words to be used by "full-match" logic</param>
-            <param name="ignoreOnEmptyParameters">Block will not be counted in intersection calculations if has empty FullMatch and Contains words</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchTable.WordsPrepare(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Collections.Generic.Dictionary{System.String,System.Boolean}@)">
-            <summary>
-            
-            </summary>
-            <param name="searchKeywords"></param>
-            <param name="fullMatch"></param>
-            <param name="wordsList"></param>
-        </member>
-        <member name="T:DBreeze.TextSearch.WABI">
-            <summary>
-            Word aligned bitmap index
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.#ctor">
-            <summary>
-            
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.#ctor(System.Byte[])">
-            <summary>
-            Must be supplied CompressedByteArray taken from GetCompressedByteArray function
-            </summary>
-            <param name="array"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.GetUncompressedByteArray">
-            <summary>
-            Working byte[]
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.GetCompressedByteArray">
-            <summary>
-            With extra protocol definition, ready for save into DB
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.Add(System.Int32,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="index"></param>
-            <param name="value"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.Resize(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="len"></param>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.Contains(System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="index"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.MergeByAndLogic(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            Using AND logic: 1 and 1 = 1; 1 and 0 = 0; 0 and 0 = 0
-            </summary>
-            <param name="arraysToMerge"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.MergeByOrLogic(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            Using OR logic: 1or1 = 1or0 = 1; 0or0 = 0
-            </summary>
-            <param name="arraysToMerge"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.MergeByXorLogic(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            Using XOR logic: 1xor1 = 0; 0xor0 = 0; 1xor0 = 1
-            </summary>
-            <param name="arraysToMerge"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.MergeByExcludeLogic(System.Byte[],System.Byte[])">
-            <summary>
-            Using EXCLUDE logic: 1notin1 = 0; 1notin0 = 1; 0notin0 = 0; 0notin1 = 0;
-            </summary>
-            <param name="array1"></param>
-            <param name="array2"></param>
-            <returns></returns>
-        </member>
-        <member name="F:DBreeze.TextSearch.WABI.ExistsInDB">
-            <summary>
-            Technical if already in DB
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]})">
-            <summary>
-            Returns last added documents first
-            </summary>
-            <param name="indexesToCheck"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.TextSearch_AND_logic(System.Collections.Generic.List{System.Byte[]},System.Int32,System.Int32,System.Boolean)">
-            <summary>
-            
-            </summary>
-            <param name="indexesToCheck"></param>
-            <param name="docStart">when 0 not counted</param>
-            <param name="docStop">when 0 not counted</param>
-            <param name="descending"></param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.TextSearch.WABI.TextSearch_OR_logic(System.Collections.Generic.List{System.Byte[]},System.Int32)">
-            <summary>
-            
-            </summary>
-            <param name="indexesToCheck"></param>
-            <param name="maximalReturnQuantity"></param>
-            <returns></returns>
         </member>
     </members>
 </doc>

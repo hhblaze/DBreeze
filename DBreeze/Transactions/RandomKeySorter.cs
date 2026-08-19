@@ -15,6 +15,7 @@ namespace DBreeze.Transactions
     /// Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
     /// Operations are flushed explicitly or by Commit (first removed then inserted),
     /// sorted by key ascending.
+    /// For the same serialized key the last buffered operation wins.
     /// </summary>
     public class RandomKeySorter
     {
@@ -76,6 +77,10 @@ namespace DBreeze.Transactions
         /// <param name="tableName"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>        
+        /// <remarks>
+        /// The serialized value buffer is borrowed until <see cref="Flush(string)"/> or transaction Commit.
+        /// A mutable <c>byte[]</c> value must not be changed by the caller during that interval.
+        /// </remarks>
         public void Insert<TKey,TValue>(string tableName, TKey key, TValue value)
         {
             _t.EnsureTransactionOwner();

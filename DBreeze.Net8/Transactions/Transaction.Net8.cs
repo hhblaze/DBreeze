@@ -23,12 +23,18 @@ namespace DBreeze.Transactions
                 Enumerator = enumerator;
             }
 
-            internal bool MoveNext()
+            internal bool MoveNext(ref int keyLength)
             {
                 if (!Enumerator.MoveNext())
                     return false;
                 Current = Enumerator.Current;
                 KeyBytes = Current.Key.ToBytes();
+                if (keyLength < 0)
+                    keyLength = KeyBytes.Length;
+                else if (KeyBytes.Length != keyLength)
+                    throw DBreezeException.Throw(
+                        DBreezeException.eDBreezeExceptions.KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE,
+                        new Exception());
                 return true;
             }
 
@@ -118,13 +124,8 @@ namespace DBreeze.Transactions
                 {
                     var cursor = new MergeCursor<TKey, TValue>(tableName, tableOrder++, sequenceFactory(tableName).GetEnumerator());
                     cursors.Add(cursor);
-                    if (!cursor.MoveNext())
+                    if (!cursor.MoveNext(ref keyLength))
                         continue;
-
-                    if (keyLength < 0)
-                        keyLength = cursor.KeyBytes.Length;
-                    else if (cursor.KeyBytes.Length != keyLength)
-                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE, new Exception());
 
                     queue.Enqueue(cursor, new MergePriority(cursor.KeyBytes, cursor.TableOrder));
                 }
@@ -135,7 +136,7 @@ namespace DBreeze.Transactions
                     row.TableName = cursor.TableName;
                     yield return row;
 
-                    if (cursor.MoveNext())
+                    if (cursor.MoveNext(ref keyLength))
                         queue.Enqueue(cursor, new MergePriority(cursor.KeyBytes, cursor.TableOrder));
                 }
             }

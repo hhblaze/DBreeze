@@ -1393,132 +1393,35 @@
         </member>
         <member name="T:DBreeze.DBreezeResources">
             <summary>
-            DBreeze resources represents an In-Memory dictionary synchronized with an internal DBreeze table. 
-            Key is a string, Value any standard DBreeze.DataType (or serialized object, when custom serializer is supplied).
-            Can be called from anywhere, even from other transactions. There is no need to add into sync table
-            </summary>
-        </member>
-        <member name="F:DBreeze.DBreezeResources._urp">
-            <summary>
-            UserResourcePrefix. Having prefixes gives us ability to reuse the table for smth. else
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.#ctor(DBreeze.DBreezeEngine)">
-            <summary>
-            constructor
-            </summary>
-            <param name="engine"></param>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Dispose">
-            <summary>
-            Disposing
+            DBreeze resources represents an in-memory dictionary synchronized with an internal DBreeze table.
             </summary>
         </member>
         <member name="T:DBreeze.DBreezeResources.Settings">
-            <summary>
-            Settings regulating resources behaviour
-            </summary>
-        </member>
-        <member name="M:DBreeze.DBreezeResources.Settings.#ctor">
-            <summary>
-            Constructor
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.HoldInMemory">
-            <summary>
-            Resource will be stored in-memory, for the fast access.
-            Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.HoldOnDisk">
-            <summary>
-            Resource will be stored on-disk
-            Default is true
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.FastUpdates">
-            <summary>            
-            Sets OverWriteIsAllowed = false.
-            Toggle only if it's not enough the speed of the update.
-            Default is false.
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.InsertWithVerification">
-            <summary>
-            Prevents disk insert of the identical value of the existing key.
-            Is interesting in case of intensive writes.
-            Default is true.
-            </summary>
-        </member>
-        <member name="P:DBreeze.DBreezeResources.Settings.SortingAscending">
-            <summary>
-            Needed for getting resources via SelectStartsWith.
-            Default is true.
-            </summary>
+            <summary>Settings regulating resources behaviour.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Insert``1(System.String,``0,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Insert resource
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourceName"></param>
-            <param name="resourceObject"></param>
-            <param name="resourceSettings">resource extra behaviour</param>        
+            <summary>Inserts a resource.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Insert``1(System.Collections.Generic.IDictionary{System.String,``0},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Batch insert of resources where value is a defined DBreeze or DBreeze.CustomSerializer type
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resources"></param>
-            <param name="resourceSettings"></param>
+            <summary>Batch insert of resources converted through DataTypesConvertor.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Insert(System.Collections.Generic.IDictionary{System.String,System.Byte[]},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Batch insert of resources where value is a byte[]
-            </summary>
-            <param name="resources"></param>
-            <param name="resourceSettings">resource extra behaviour</param>
+            <summary>Batch insert of byte-array resources.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Remove(System.Collections.Generic.IList{System.String})">
-            <summary>
-            Removes resources from database and In-Memory dictionary 
-            </summary>
+            <summary>Removes a batch of resources.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Remove(System.String)">
-            <summary>
-            Removes resource from database and 
-            </summary>        
+            <summary>Removes one resource.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.SelectStartsWith``1(System.String,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            SelectStartsWith.
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourceNameStartsWith"></param>
-            <param name="resourceSettings"></param>
-            <returns></returns>
+            <summary>Returns resources with the supplied prefix.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.Collections.Generic.IList{System.String},DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Gets resources of the same type as a batch from memory or database (if not yet loaded).
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourcesNames"></param>
-            <param name="resourceSettings">resource extra behaviour</param>
-            <returns></returns>
+            <summary>Gets a batch of resources.</summary>
         </member>
         <member name="M:DBreeze.DBreezeResources.Select``1(System.String,DBreeze.DBreezeResources.Settings)">
-            <summary>
-            Gets resource from memory or database (if not yet loaded)
-            Value instance, when byte[], must stay immutable, please use Dbreeze.Utils.CloneArray
-            </summary>
-            <typeparam name="TValue"></typeparam>
-            <param name="resourceName"></param>
-            <param name="resourceSettings">resource extra behaviour</param>
-            <returns></returns>
+            <summary>Gets one resource from memory or committed storage.</summary>
         </member>
         <member name="M:DBreeze.LianaTrie.NestedTableStorage.RestoreTableFromTheOtherTable(System.String)">
             <summary>
@@ -1591,7 +1494,7 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.ItBwdFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             ItBwdFromTo
             </summary>
@@ -1599,8 +1502,6 @@
             <param name="generationMapLine"></param>
             <param name="useCache"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             IterateBackwardFromTo
             </summary>
@@ -1616,7 +1517,7 @@
             If we use load Key already With Value, or just key and link to the value
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.ItFrwFromTo(DBreeze.LianaTrie.LTrieGenerationNode,System.Byte[],System.Boolean)">
+        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             ItFrwFromTo
             </summary>
@@ -1624,8 +1525,6 @@
             <param name="generationMapLine"></param>
             <param name="useCache"></param>
             <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             IterateForwardFromTo
             </summary>
@@ -1737,7 +1636,7 @@
             Used via TableIsModified
             </summary>
         </member>
-        <member name="F:DBreeze.LianaTrie.LTrie._DtTableFixed">
+        <member name="F:DBreeze.LianaTrie.LTrie._tableVersion">
             <summary>
             Is by Commit and Rollback only, we will use it to return correct ReadRootNodes out to the system
             Access via DtTableFixed interface ITrie
@@ -2153,7 +2052,7 @@
             <summary>
             Returns NULL if not found
             </summary>
-            <param name="generationMapLine"></param>
+            <param name="pointer"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingEnd(System.Byte[],System.Byte[])">
@@ -2166,13 +2065,12 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[],System.Byte[])">
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeWritingOver(System.Byte[],System.Byte[],System.Byte[])">
             <summary>
             OverWriting Generation Node, we supply params where, oldData and newData.
             </summary>
             <param name="pointer"></param>
             <param name="newData"></param>
-            <param name="generationMapLine"></param>
             <param name="kidsBeforeModification"></param>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
@@ -2357,13 +2255,20 @@
             Users must use GetTablePathFromTableName.
             Transactions Journal after start will try to delete RollbackFiles of the finished transactions.
             For this it needs to know exact pathes.
-            For now all tables stored in one folder. Later we will have extra config file which lets to reside 
-            some of tables in the other folders. 
+            For now all tables stored in one folder. Later we will have extra config file which lets to reside
+            some of tables in the other folders.
             This function is an access globalizer to physical file locations by userTableName.
             !!!!TRAnJRNL, WHEN RESTORES ROLLBACK, MUST REFER TO Scheme trie settings in the future, FOR NOW DEFAULT
             </summary>
             <param name="userTableName"></param>
             <returns></returns>
+        </member>
+        <member name="M:DBreeze.Scheme.OpenTableForRollbackRecovery(System.String)">
+            <summary>
+            Opens an existing user table only to let its storage restore a committed rollback.
+            Uses the same storage override decision as the normal table-opening path.
+            Returns null for removed and in-memory tables.
+            </summary>
         </member>
         <member name="M:DBreeze.Scheme.GetTablePathFromTableName(System.String)">
             <summary>
@@ -2489,17 +2394,17 @@
             Random buffer
             </summary>
         </member>
-        <member name="T:DBreeze.Storage.FSR.r">
+        <member name="T:DBreeze.Storage.FSR.RollbackRecord">
             <summary>
             Record in rollback is characterized with 
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.FSR.r.o">
+        <member name="P:DBreeze.Storage.FSR.RollbackRecord.o">
             <summary>
             offset in rollback file
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.FSR.r.l">
+        <member name="P:DBreeze.Storage.FSR.RollbackRecord.l">
             <summary>
             Length in rollback file
             </summary>
@@ -2566,12 +2471,6 @@
             <summary>
             
             </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.ParseRollBackFile(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="rbd"></param>
         </member>
         <member name="M:DBreeze.Storage.FSR.RestoreTableFromTheOtherTable(System.String)">
             <summary>
@@ -2784,7 +2683,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.DataFileWrite(System.Int64,System.Boolean,System.Byte[])">
+        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.DataFileWrite(System.Int64,System.Boolean,System.Byte[],System.Int32,System.Int32)">
             <summary>
             DataFileWrite
             </summary>
@@ -2793,7 +2692,7 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackFileWrite(System.Int64,System.Boolean,System.Byte[])">
+        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackFileWrite(System.Int64,System.Boolean,System.Byte[],System.Int32,System.Int32)">
             <summary>
             RollbackFileWrite
             </summary>
@@ -2802,7 +2701,7 @@
             <param name="data"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackHelperFileWrite(System.Int64,System.Boolean,System.Byte[])">
+        <member name="M:DBreeze.Storage.RemoteInstance.RemoteTable.RollbackHelperFileWrite(System.Int64,System.Boolean,System.Byte[],System.Int32,System.Int32)">
             <summary>
             RollbackFileWrite
             </summary>
@@ -2895,17 +2794,17 @@
             Random buffer
             </summary>
         </member>
-        <member name="T:DBreeze.Storage.RISR.r">
+        <member name="T:DBreeze.Storage.RISR.RollbackRecord">
             <summary>
             Record in rollback is characterized with 
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.RISR.r.o">
+        <member name="P:DBreeze.Storage.RISR.RollbackRecord.o">
             <summary>
             offset in rollback file
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.RISR.r.l">
+        <member name="P:DBreeze.Storage.RISR.RollbackRecord.l">
             <summary>
             Length in rollback file
             </summary>
@@ -2972,12 +2871,6 @@
             <summary>
             
             </summary>
-        </member>
-        <member name="M:DBreeze.Storage.RISR.ParseRollBackFile(System.Byte[])">
-            <summary>
-            
-            </summary>
-            <param name="rbd"></param>
         </member>
         <member name="M:DBreeze.Storage.RISR.RestoreTableFromTheOtherTable(System.String)">
             <summary>
@@ -3171,17 +3064,17 @@
             Random buffer
             </summary>
         </member>
-        <member name="T:DBreeze.Storage.MSR.r">
+        <member name="T:DBreeze.Storage.MSR.RollbackRecord">
             <summary>
             Record in rollback is characterized with 
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.MSR.r.o">
+        <member name="P:DBreeze.Storage.MSR.RollbackRecord.o">
             <summary>
             offset in rollback file
             </summary>
         </member>
-        <member name="P:DBreeze.Storage.MSR.r.l">
+        <member name="P:DBreeze.Storage.MSR.RollbackRecord.l">
             <summary>
             Length in rollback file
             </summary>
@@ -3480,34 +3373,33 @@
         </member>
         <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
             <summary>
-            TextDeferredIndexer
+            Durable queue and single background worker for deferred text indexing.
             </summary>
         </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Dispose">
+        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.RequestStop">
             <summary>
-            Disposing
+            Stops accepting work and asks the active worker to leave at the next safe boundary.
+            The durable queue is kept intact for the next engine start.
             </summary>
         </member>
         <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Add(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
             <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing of the Text Engine
+            Adds tables and their internal document IDs for parallel indexing of the Text Engine.
             </summary>
-            <param name="defferedDocIds"></param>
         </member>
         <member name="M:DBreeze.TextSearch.TextDeferredIndexer.AddVectors(System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.HashSet{System.UInt32}})">
             <summary>
-            Add tables and their InternalDocumentIDs for paraller indexing of the Vector Engine, protocol 0,0
+            Queues the legacy vector-work record format (protocol 0,0).
             </summary>
-            <param name="defferedDocIds"></param>
+            <remarks>
+            Public VectorsInsert overloads build HNSW synchronously and never call this method.
+            VectorsDoIndexing is currently a compatibility no-op, so this queue path does not perform
+            HNSW indexing and must not be used as a production indexing path.
+            </remarks>
         </member>
         <member name="M:DBreeze.TextSearch.TextDeferredIndexer.StartDefferedIndexing">
             <summary>
-            Runs Indexer. Only one instance is allowed
-            </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextDeferredIndexer.Indexer">
-            <summary>
-            Indexer self
+            Schedules indexing. Calls are coalesced while the single worker is active.
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.BlockAnd">
@@ -3813,19 +3705,10 @@
              Started only in case if InsertWasPerformed in deffered or not deffered way
             </summary>
         </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.DoIndexing(DBreeze.Transactions.Transaction,System.Collections.Generic.Dictionary{System.String,DBreeze.TextSearch.TextSearchHandler.ITS})">
+        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordChange">
             <summary>
             itbls and transaction must be supplied, to make it working from outside
             </summary>
-        </member>
-        <member name="M:DBreeze.TextSearch.TextSearchHandler.WordsDiff(System.Byte[],System.Byte[],DBreeze.TextSearch.ITextStreamCrypto)">
-            <summary>
-            This function accepts old value of searchables for one document and new value,
-            decides what must be Removed (par1) and what should be Added (par2)
-            </summary>
-            <param name="oldtext"></param>
-            <param name="newtext"></param>
-            <returns>List 2remove, List 2add</returns>
         </member>
         <member name="M:DBreeze.TextSearch.TextSearchHandler.GetByteArrayFromSearchbles(System.String,DBreeze.TextSearch.ITextStreamCrypto)">
             <summary>
@@ -3847,11 +3730,6 @@
             </summary>
             <param name="searchables"></param>
             <returns></returns>
-        </member>
-        <member name="T:DBreeze.TextSearch.TextSearchHandler.WordDefinition">
-            <summary>
-            
-            </summary>        
         </member>
         <member name="M:DBreeze.TextSearch.TextSearchHandler.GetWordsDefinitionFromText(System.String,System.String,System.Int32,System.Int32)">
             <summary>
@@ -3918,6 +3796,12 @@
         <member name="F:DBreeze.TextSearch.TextSearchTable.DocIdZ">
             <summary>
             Converted ExternalDocumentIdStop
+            </summary>
+        </member>
+        <member name="M:DBreeze.TextSearch.TextSearchTable.ResolveDocumentRange">
+            <summary>
+            Resolves external bounds once per query enumeration. False means that the requested
+            interval does not intersect any external document id.
             </summary>
         </member>
         <member name="F:DBreeze.TextSearch.TextSearchTable.PureWords">
@@ -4046,6 +3930,12 @@
             <param name="index"></param>
             <param name="value"></param>
         </member>
+        <member name="M:DBreeze.TextSearch.WABI.Add(System.Collections.Generic.IEnumerable{System.Int32},System.Boolean)">
+            <summary>
+            Applies many bit changes with a single capacity calculation. Index enumeration is
+            consumed exactly once.
+            </summary>
+        </member>
         <member name="M:DBreeze.TextSearch.WABI.Resize(System.Int32)">
             <summary>
             
@@ -4117,6 +4007,16 @@
             <param name="indexesToCheck"></param>
             <param name="maximalReturnQuantity"></param>
             <returns></returns>
+        </member>
+        <member name="T:DBreeze.TextSearch.WabiStreamCrypto">
+            <summary>
+            Deterministic AES-CTR transform used by encrypted TextSearch tables.
+            </summary>
+            <remarks>
+            The fixed IV is required to preserve encrypted prefixes for prefix search. Consequently,
+            this transform intentionally does not hide repeated prefixes and does not authenticate the
+            ciphertext. Use it only for the TextSearch storage protocol, not as a general-purpose AEAD.
+            </remarks>
         </member>
         <member name="T:DBreeze.Objects.DBreezeIndex">
             <summary>
@@ -4226,16 +4126,17 @@
         <member name="T:DBreeze.Transactions.RandomKeySorter">
             <summary>
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed then inserted),
+            sorted by key ascending.
+            For the same serialized key the last buffered operation wins.
             </summary>
         </member>
         <member name="F:DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable">
             <summary>
-            <para>NOT USED ANYMORE</para>
-            Value indicating when content should be cleared. Default is 1000000 (inserts and removes)
-            <para>Getting rid of Automatic flush, that makes inefficient TryGetValueByKey after flushing (will need always to check HD if not found in sorter)</para> 
+            NOT USED ANYMORE. Preserved for public API compatibility.
+            Automatic flush makes TryGetValueByKey ambiguous after flushing: a miss can mean
+            either "not buffered" or "already flushed", forcing an LTrie/storage lookup and
+            breaking the object-layer fast path.
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.TablesWithOverwriteIsNotAllowed(System.String)">
@@ -4258,6 +4159,10 @@
             <param name="tableName"></param>
             <param name="key"></param>
             <param name="value"></param>        
+            <remarks>
+            The serialized value buffer is borrowed until <see cref="M:DBreeze.Transactions.RandomKeySorter.Flush(System.String)"/> or transaction Commit.
+            A mutable <c>byte[]</c> value must not be changed by the caller during that interval.
+            </remarks>
         </member>
         <member name="M:DBreeze.Transactions.RandomKeySorter.Remove``1(System.String,``0)">
             <summary>
@@ -4275,6 +4180,11 @@
         <member name="M:DBreeze.Transactions.RandomKeySorter.Flush">
             <summary>
             Flushing all 
+            </summary>
+        </member>
+        <member name="M:DBreeze.Transactions.RandomKeySorter.Reset">
+            <summary>
+            Drops all operations which have not been committed. Called by Transaction.Rollback.
             </summary>
         </member>
         <member name="T:DBreeze.Transactions.Transaction">
@@ -4375,6 +4285,10 @@
             <param name="tableName"></param>
             <param name="vectors">(long ExternalId of the Vector, float[] vector itself - will be auto normalized)</param>
             <param name="vectorTableParameters"></param>
+            <remarks>
+            Builds the HNSW index synchronously inside this transaction. The changes become visible
+            after the normal transaction commit. TextDeferredIndexer is not used by this API.
+            </remarks>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList{System.ValueTuple{System.Int64,System.Double[]}},DBreeze.Transactions.Transaction.VectorTableParameters{System.Double[]})">
             <summary>
@@ -4383,6 +4297,10 @@
             <param name="tableName"></param>
             <param name="vectors">(long ExternalId of the Vector, double[] vector itself - will be auto normalized)</param>
             <param name="vectorTableParameters"></param>
+            <remarks>
+            Builds the HNSW index synchronously inside this transaction. The changes become visible
+            after the normal transaction commit. TextDeferredIndexer is not used by this API.
+            </remarks>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsRemove``1(System.String,System.Collections.Generic.List{System.Int64},DBreeze.Transactions.Transaction.VectorTableParameters{``0})">
             <summary>
@@ -4416,8 +4334,13 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsDoIndexing(System.String,System.Collections.Generic.List{System.Int32})">
             <summary>
-            CAP Possible future implementation, can be called from TextDeferredIndexer
+            Legacy compatibility hook for the vector branch of TextDeferredIndexer.
             </summary>
+            <remarks>
+            This method intentionally performs no HNSW indexing. It is a compatibility placeholder
+            and must not be used as a production indexing path. Public VectorsInsert overloads build
+            HNSW synchronously and do not enqueue deferred vector work.
+            </remarks>
             <param name="tableName"></param>
             <param name="internalIDs">must be already sorted ascending</param>
         </member>
@@ -4445,9 +4368,8 @@
         <member name="F:DBreeze.Transactions.Transaction.RandomKeySorter">
             <summary>
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed, then inserted),
+            sorted by key ascending.
             </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.#ctor(System.Int32,DBreeze.Transactions.TransactionUnit,DBreeze.eTransactionTablesLockTypes,System.String[])">
@@ -4458,6 +4380,12 @@
             <param name="transactionUnit"></param>
             <param name="lockType"></param>
             <param name="tables"></param>
+        </member>
+        <member name="M:DBreeze.Transactions.Transaction.EnsureTransactionOwner">
+            <summary>
+            Transactions are deliberately thread-bound. Parallel read APIs explicitly opt out
+            of this check; all state-changing operations must stay on the creating thread.
+            </summary>
         </member>
         <member name="M:DBreeze.Transactions.Transaction.Dispose">
             <summary>
@@ -4581,9 +4509,8 @@
             Syntax-sugar for  this.RandomKeySorter.Remove(tableName, key, value);
             
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed, then inserted),
+            sorted by key ascending.
             </summary>
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
@@ -4716,9 +4643,8 @@
             Syntax-sugar for  this.RandomKeySorter.Insert(tableName, key, value);
             
             Speeding up, space economy. Represents a mechanism helping to store entites into the memory, before insert or remove.
-            When AutomaticFlushLimitQuantityPerTable per table (default 10000) is exceed or 
-            within Commit command, all entites will be flushed (first removed then inserted) on the disk 
-            sorted by key ascending
+            Operations are flushed explicitly or by Commit (first removed, then inserted),
+            sorted by key ascending.
             </summary>
             <typeparam name="TKey"></typeparam>
             <typeparam name="TValue"></typeparam>
@@ -5709,6 +5635,11 @@
             
             </summary>
         </member>
+        <member name="M:DBreeze.TransactionTablesLocker.RemoveSession(System.Int32)">
+            <summary>
+            Removes a session by its creating thread id.
+            </summary>
+        </member>
         <member name="M:DBreeze.TransactionTablesLocker.Dispose">
             <summary>
             MUST BE CALLED BY ENGINE DISPOSE (After all other DBreeze disposes)
@@ -5736,12 +5667,12 @@
             Can be called from anywhere, even from other transactions. There is no need to add into sync table
             </summary>
         </member>
-        <member name="P:DBreeze.DBreezeEngine.DBisOperable">
+        <member name="F:DBreeze.DBreezeEngine._dbIsOperable">
             <summary>
             Db is not operable any more by DBisOperableReason reason 
             </summary>
         </member>
-        <member name="P:DBreeze.DBreezeEngine.DBisOperableReason">
+        <member name="F:DBreeze.DBreezeEngine._dbIsOperableReason">
             <summary>
             Is filled with a text note who brought to DBisOperable = false
             </summary>
@@ -5833,9 +5764,8 @@
         </member>
         <member name="M:DBreeze.DBreezeEngine.Diagnostic_GetActiveTransactionsState">
             <summary>
-            Gets list of reserved for write tables per ManagedThreadId
+            Gets list of reserved for write tables per ManagedThreadId.
             </summary>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.Utils.Async.AsyncOperations.DoAsync``1(System.Action{``0},``0,System.Action)">
             <summary>
@@ -7957,6 +7887,17 @@
             Gets the buffer of the heap.
             </summary>
         </member>
+        <member name="P:DBreeze.HNSW.BinaryHeap`1.Count">
+            <summary>
+            Gets the number of items in the heap.
+            </summary>
+        </member>
+        <member name="M:DBreeze.HNSW.BinaryHeap`1.Peek">
+            <summary>
+            Gets the maximum item without removing it.
+            </summary>
+            <returns>The maximum item.</returns>
+        </member>
         <member name="M:DBreeze.HNSW.BinaryHeap`1.Push(`0)">
             <summary>
             Pushes item to the heap.
@@ -7982,13 +7923,6 @@
             given that the upstream items fulfill the rule.
             </summary>
             <param name="i">The position of item where heap property is violated.</param>
-        </member>
-        <member name="M:DBreeze.HNSW.BinaryHeap`1.Swap(System.Int32,System.Int32)">
-            <summary>
-            Swaps items with the specified indicies.
-            </summary>
-            <param name="i">The first index.</param>
-            <param name="j">The second index.</param>
         </member>
         <member name="T:DBreeze.HNSW.CosineDistance">
              <summary>

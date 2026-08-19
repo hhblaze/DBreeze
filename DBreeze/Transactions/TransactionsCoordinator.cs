@@ -385,119 +385,191 @@ namespace DBreeze.Transactions
         public void RegisterWriteTablesForTransaction(int transactionThreadId, List<string> tablesNames,bool calledBySynchronizer)
         {
             WriteReservationWaiter waiter = null;
+            bool terminatingForDeadlock = false;
 
-            while (true)
+            try
             {
-                TransactionUnit transactionUnit = null;
-                bool deadlock = false;
-                bool transactionMissing = false;
-
-                lock (_sync_dl)
+                while (true)
                 {
-                    if (waiter != null)
-                        waiter.Gate.CloseGate();
+                    TransactionUnit transactionUnit = null;
+                    bool deadlock = false;
+                    bool transactionMissing = false;
+                    bool reservationGranted = false;
 
-                    _sync_transactions.EnterReadLock();
-                    try
+                    lock (_sync_dl)
                     {
-                        this._transactions.TryGetValue(transactionThreadId, out transactionUnit);
-                        if (transactionUnit == null)
+                        if (waiter != null)
+                            waiter.Gate.CloseGate();
+
+                        _sync_transactions.EnterReadLock();
+                        try
                         {
-                            transactionMissing = true;
-                        }
-                        else
-                        {
-                            if (!calledBySynchronizer)
+                            this._transactions.TryGetValue(transactionThreadId, out transactionUnit);
+                            if (transactionUnit == null)
                             {
-                                if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(), tablesNames))
-                                    return;
-                                if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock && transactionUnit.TransactionWriteTablesCount > 0)
-                                    throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
+                                transactionMissing = true;
                             }
-
-                            if (waiter == null)
+                            else
                             {
-                                waiter = new WriteReservationWaiter(transactionThreadId, tablesNames);
-                                _writeWaiters[transactionThreadId] = waiter;
-                                _writeWaiterSequence.Add(transactionThreadId);
-                                transactionUnit.AddTransactionWriteTablesAwaitingReservation(tablesNames);
-                            }
-
-                            List<int> blockers = new List<int>();
-                            foreach (var other in this._transactions)
-                            {
-                                if (other.Key != transactionThreadId &&
-                                    DbUserTables.TableNamesIntersect(waiter.Tables, other.Value.GetTransactionWriteTablesNames()))
-                                    blockers.Add(other.Key);
-                            }
-
-                            // A later request may pass unrelated requests, but never an earlier
-                            // conflicting one. This prevents an exclusive writer from starving.
-                            foreach (int queuedId in _writeWaiterSequence)
-                            {
-                                if (queuedId == transactionThreadId)
-                                    break;
-                                WriteReservationWaiter earlier;
-                                if (_writeWaiters.TryGetValue(queuedId, out earlier) &&
-                                    DbUserTables.TableNamesIntersect(waiter.Tables, earlier.Tables) &&
-                                    !blockers.Contains(queuedId))
-                                    blockers.Add(queuedId);
-                            }
-
-                            waiter.Blockers = blockers;
-                            foreach (int blocker in blockers)
-                            {
-                                if (WaitPathExists(blocker, transactionThreadId, new HashSet<int>()))
+                                if (!calledBySynchronizer)
                                 {
-                                    deadlock = true;
-                                    break;
+                                    if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(), tablesNames))
+                                        return;
+                                    if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock && transactionUnit.TransactionWriteTablesCount > 0)
+                                        throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
+                                }
+
+                                if (waiter == null)
+                                {
+                                    waiter = new WriteReservationWaiter(transactionThreadId, tablesNames);
+                                    _writeWaiters[transactionThreadId] = waiter;
+                                    _writeWaiterSequence.Add(transactionThreadId);
+                                    transactionUnit.AddTransactionWriteTablesAwaitingReservation(tablesNames);
+                                }
+
+                                List<int> blockers = new List<int>();
+                                foreach (var other in this._transactions)
+                                {
+                                    if (other.Key != transactionThreadId &&
+                                        DbUserTables.TableNamesIntersect(waiter.Tables, other.Value.GetTransactionWriteTablesNames()))
+                                        blockers.Add(other.Key);
+                                }
+
+                                // A later request may pass unrelated requests, but never an earlier
+                                // conflicting one. This prevents an exclusive writer from starving.
+                                foreach (int queuedId in _writeWaiterSequence)
+                                {
+                                    if (queuedId == transactionThreadId)
+                                        break;
+                                    WriteReservationWaiter earlier;
+                                    if (_writeWaiters.TryGetValue(queuedId, out earlier) &&
+                                        DbUserTables.TableNamesIntersect(waiter.Tables, earlier.Tables) &&
+                                        !blockers.Contains(queuedId))
+                                        blockers.Add(queuedId);
+                                }
+
+                                waiter.Blockers = blockers;
+                                foreach (int blocker in blockers)
+                                {
+                                    if (WaitPathExists(blocker, transactionThreadId, new HashSet<int>()))
+                                    {
+                                        deadlock = true;
+                                        break;
+                                    }
+                                }
+
+                                if (blockers.Count == 0)
+                                {
+                                    RemoveWriteWaiterUnderLock(transactionThreadId);
+                                    transactionUnit.ClearTransactionWriteTablesAwaitingReservation(tablesNames);
+                                    foreach (string tableName in tablesNames)
+                                        transactionUnit.AddTransactionWriteTable(tableName, null);
                                 }
                             }
+                        }
+                        finally
+                        {
+                            _sync_transactions.ExitReadLock();
+                        }
 
-                            if (blockers.Count == 0)
-                            {
+                        if (transactionMissing)
+                        {
+                            if (waiter != null)
                                 RemoveWriteWaiterUnderLock(transactionThreadId);
-                                transactionUnit.ClearTransactionWriteTablesAwaitingReservation(tablesNames);
-                                foreach (string tableName in tablesNames)
-                                    transactionUnit.AddTransactionWriteTable(tableName, null);
-                            }
+                        }
+                        else if (deadlock)
+                        {
+                            RemoveWriteWaiterUnderLock(transactionThreadId);
+                        }
+                        else if (waiter != null && waiter.Blockers.Count == 0)
+                        {
+                            reservationGranted = true;
                         }
                     }
-                    finally
+
+                    if (reservationGranted)
                     {
-                        _sync_transactions.ExitReadLock();
+                        waiter.Gate.Dispose();
+                        return;
                     }
 
                     if (transactionMissing)
                     {
                         if (waiter != null)
-                            RemoveWriteWaiterUnderLock(transactionThreadId);
-                    }
-                    else if (deadlock)
-                    {
-                        RemoveWriteWaiterUnderLock(transactionThreadId);
-                    }
-                    else if (waiter != null && waiter.Blockers.Count == 0)
-                    {
-                        waiter.Gate.Dispose();
+                            waiter.Gate.Dispose();
                         return;
                     }
+                    if (deadlock)
+                    {
+                        terminatingForDeadlock = true;
+                        Exception cleanupFailure = null;
+                        try
+                        {
+                            waiter.Gate.Dispose();
+                        }
+                        catch (Exception cleanupException)
+                        {
+                            cleanupFailure = cleanupException;
+                        }
+
+                        try
+                        {
+                            this.UnregisterTransaction(transactionThreadId);
+                        }
+                        catch (Exception cleanupException)
+                        {
+                            cleanupFailure = cleanupFailure == null
+                                ? cleanupException
+                                : new Exception(cleanupFailure.ToString() + " --> " + cleanupException.ToString(), cleanupFailure);
+                        }
+
+                        throw cleanupFailure == null
+                            ? DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_IN_DEADLOCK)
+                            : DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_IN_DEADLOCK, cleanupFailure);
+                    }
+
+                    waiter.Gate.PutGateHere();
+                }
+            }
+            catch (Exception ex)
+            {
+                if (terminatingForDeadlock)
+                    throw;
+
+                Exception failure = ex;
+                lock (_sync_dl)
+                {
+                    WriteReservationWaiter registeredWaiter;
+                    if (waiter != null &&
+                        _writeWaiters.TryGetValue(transactionThreadId, out registeredWaiter) &&
+                        Object.ReferenceEquals(waiter, registeredWaiter))
+                        RemoveWriteWaiterUnderLock(transactionThreadId);
                 }
 
-                if (transactionMissing)
+                if (waiter != null)
                 {
-                    if (waiter != null)
+                    try
+                    {
                         waiter.Gate.Dispose();
-                    return;
-                }
-                if (deadlock)
-                {
-                    waiter.Gate.Dispose();
-                    this.UnregisterTransaction(transactionThreadId);
-                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_IN_DEADLOCK);
+                    }
+                    catch (Exception cleanupException)
+                    {
+                        failure = new Exception(failure.ToString() + " --> " + cleanupException.ToString(), failure);
+                    }
                 }
 
-                waiter.Gate.PutGateHere();
+                try
+                {
+                    this.UnregisterTransaction(transactionThreadId);
+                }
+                catch (Exception cleanupException)
+                {
+                    failure = new Exception(failure.ToString() + " --> " + cleanupException.ToString(), failure);
+                }
+
+                throw DBreezeException.Throw(
+                    DBreezeException.eDBreezeExceptions.TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED,
+                    failure);
             }
         }
 

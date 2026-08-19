@@ -1657,9 +1657,15 @@ namespace DBreeze.Transactions
 
             if (withValuesRemove)
             {
+                IEqualityComparer<TDictionaryKey> defaultComparer = EqualityComparer<TDictionaryKey>.Default;
+                HashSet<TDictionaryKey> defaultKeys = ReferenceEquals(value.Comparer, defaultComparer)
+                    ? null
+                    : new HashSet<TDictionaryKey>(value.Keys, defaultComparer);
                 List<TDictionaryKey> keysToRemove = subTable
                     .SelectForward<TDictionaryKey, TDictionaryValue>()
-                    .Where(c => !value.ContainsKey(c.Key))
+                    .Where(c => defaultKeys == null
+                        ? !value.ContainsKey(c.Key)
+                        : !defaultKeys.Contains(c.Key))
                     .Select(c => c.Key)
                     .ToList();
 
@@ -1689,9 +1695,15 @@ namespace DBreeze.Transactions
 
             if (withValuesRemove)
             {
+                IEqualityComparer<TDictionaryKey> defaultComparer = EqualityComparer<TDictionaryKey>.Default;
+                HashSet<TDictionaryKey> defaultKeys = ReferenceEquals(value.Comparer, defaultComparer)
+                    ? null
+                    : new HashSet<TDictionaryKey>(value.Keys, defaultComparer);
                 List<TDictionaryKey> keysToRemove = this
                     .SelectForward<TDictionaryKey, TDictionaryValue>(tableName)
-                    .Where(c => !value.ContainsKey(c.Key))
+                    .Where(c => defaultKeys == null
+                        ? !value.ContainsKey(c.Key)
+                        : !defaultKeys.Contains(c.Key))
                     .Select(c => c.Key)
                     .ToList();
 
@@ -1768,9 +1780,12 @@ namespace DBreeze.Transactions
 
             if (withValuesRemove)
             {
+                HashSet<THashSetKey> defaultKeys = ReferenceEquals(value.Comparer, EqualityComparer<THashSetKey>.Default)
+                    ? value
+                    : new HashSet<THashSetKey>(value, EqualityComparer<THashSetKey>.Default);
                 List<THashSetKey> keysToRemove = subTable
                     .SelectForward<THashSetKey, byte[]>()
-                    .Where(c => !value.Contains(c.Key))
+                    .Where(c => !defaultKeys.Contains(c.Key))
                     .Select(c => c.Key)
                     .ToList();
 
@@ -1799,9 +1814,12 @@ namespace DBreeze.Transactions
            
             if (withValuesRemove)
             {
+                HashSet<THashSetKey> defaultKeys = ReferenceEquals(value.Comparer, EqualityComparer<THashSetKey>.Default)
+                    ? value
+                    : new HashSet<THashSetKey>(value, EqualityComparer<THashSetKey>.Default);
                 List<THashSetKey> keysToRemove = this
                     .SelectForward<THashSetKey, byte[]>(tableName)
-                    .Where(c => !value.Contains(c.Key))
+                    .Where(c => !defaultKeys.Contains(c.Key))
                     .Select(c => c.Key)
                     .ToList();
 
