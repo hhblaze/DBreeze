@@ -17,7 +17,7 @@ internal static class StorageRegressionTests
         string tablePath = Path.Combine(root, "1");
         try
         {
-            byte[] payload = new byte[24 * 1024];
+            byte[] payload = new byte[64 * 1024];
             new Random(6143).NextBytes(payload);
             long start;
 
@@ -33,7 +33,8 @@ internal static class StorageRegressionTests
                 AssertBytes(localExpected, storage.Table_Read(true, start + 97, localExpected.Length),
                     "Cached committed page read failed.");
 
-                long crossPageOffset = ((start + 8192) / 8192 * 8192) - 23;
+                const int readPageSize = 32 * 1024;
+                long crossPageOffset = ((start + readPageSize) / readPageSize * readPageSize) - 23;
                 int payloadOffset = checked((int)(crossPageOffset - start));
                 byte[] crossExpected = payload.AsSpan(payloadOffset, 128).ToArray();
                 AssertBytes(crossExpected, storage.Table_Read(true, crossPageOffset, crossExpected.Length),
@@ -195,6 +196,33 @@ internal static class StorageRegressionTests
             AssertBytes(File.ReadAllBytes(Path.Combine(source, "1")), File.ReadAllBytes(Path.Combine(restored, "1")),
                 "Streaming backup round-trip changed the data file.");
 
+            string legacyBackup = Path.Combine(root, "legacy-backup");
+            string legacyDestination = Path.Combine(root, "legacy-destination");
+            Directory.CreateDirectory(legacyBackup);
+            File.WriteAllBytes(
+                Path.Combine(legacyBackup, "dbreeze_ibp_20000101000002.custom"),
+                BuildBackupWriteRecord(1, 0, 64, new byte[] { 0x22 }));
+            File.WriteAllBytes(
+                Path.Combine(legacyBackup, "dbreeze_ibp_20000101000001"),
+                BuildBackupWriteRecord(1, 0, 64, new byte[] { 0x11 }));
+            File.WriteAllBytes(Path.Combine(legacyBackup, "unrelated-data.bin"), new byte[] { 0xFF });
+            var legacyProgress = new List<int>();
+            var legacyRestorer = new BackupRestorer
+            {
+                BackupFolder = legacyBackup,
+                DataBaseFolder = legacyDestination,
+            };
+            legacyRestorer.OnRestore += progress =>
+            {
+                if (!progress.Finished)
+                    legacyProgress.Add(progress.ReadinessInProcent);
+            };
+            legacyRestorer.StartRestoration();
+            Assert(File.ReadAllBytes(Path.Combine(legacyDestination, "1"))[64] == 0x22,
+                "Legacy backup files were not restored in ordinal filename order.");
+            Assert(legacyProgress.Contains(50),
+                "Unrelated files affected legacy backup restoration progress.");
+
             string malformedBackup = Path.Combine(root, "malformed-backup");
             string malformedDestination = Path.Combine(root, "malformed-destination");
             Directory.CreateDirectory(malformedBackup);
@@ -283,6 +311,115 @@ internal static class StorageRegressionTests
         }
     }
 
+    public static void RemoteStorageChunksLargeIoAndFinalFlush()
+    {
+        const int chunkSize = 1024 * 1024;
+        string root = CreateFolder(nameof(RemoteStorageChunksLargeIoAndFinalFlush));
+        using var handler = new RemoteTablesHandler(root);
+        var communicator = new LimitingCommunicator(handler, chunkSize, 257 * 1024 + 17);
+
+        try
+        {
+            byte[] payload = new byte[2 * chunkSize + 137];
+            new Random(7419).NextBytes(payload);
+
+            using (var configuration = CreateRemoteConfiguration(communicator))
+            {
+                var flushStorage = new StorageLayer(Path.Combine("flush", "1"), new TrieSettings(), configuration);
+                object remoteStorage = typeof(StorageLayer)
+                    .GetField("_tableStorage", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .GetValue(flushStorage);
+                communicator.Reset();
+                Invoke(remoteStorage, "DataWriteExactly", payload, 0, payload.Length, true);
+                Assert(communicator.DataWriteFlushes.SequenceEqual(new[] { false, false, true }),
+                    "A chunked write did not flush only its final packet.");
+                Assert(communicator.MaxProtocolArrayLength <= chunkSize + 19,
+                    "A chunked write allocated an oversized protocol request.");
+                flushStorage.Table_Dispose();
+            }
+
+            using (var configuration = CreateRemoteConfiguration(communicator))
+            {
+                var storage = new StorageLayer(Path.Combine("roundtrip", "2"), new TrieSettings(), configuration);
+                communicator.Reset();
+                long start = DecodePointer(storage.Table_WriteToTheEnd(payload));
+                storage.Commit();
+
+                Assert(communicator.DataWritePositions.SequenceEqual(new[]
+                    {
+                        start,
+                        start + chunkSize,
+                        start + 2L * chunkSize,
+                    }), "Chunked remote writes used incorrect offsets.");
+                Assert(communicator.DataWritePayloads.SequenceEqual(new[] { chunkSize, chunkSize, 137 }),
+                    "Large remote write was not split into 1 MiB packets.");
+                Assert(communicator.DataFlushCommands == 1,
+                    "A committed large remote write did not issue exactly one final data flush.");
+                Assert(communicator.MaxProtocolArrayLength <= chunkSize + 19,
+                    "A large remote write created an oversized protocol array.");
+
+                communicator.Reset();
+                AssertBytes(payload, storage.Table_Read(true, start, payload.Length),
+                    "Chunked partial remote reads changed the payload.");
+                Assert(communicator.MaxReadRequest <= chunkSize,
+                    "A remote read exceeded the 1 MiB client chunk limit.");
+                Assert(communicator.DataReadPositions.Count > 3,
+                    "The limiting communicator did not exercise partial remote reads.");
+                for (int i = 1; i < communicator.DataReadPositions.Count; i++)
+                {
+                    Assert(communicator.DataReadPositions[i] ==
+                           communicator.DataReadPositions[i - 1] + communicator.DataReadReturns[i - 1],
+                        "Remote read position did not advance by the actual returned byte count.");
+                }
+                storage.Table_Dispose();
+            }
+        }
+        finally
+        {
+            DeleteFolder(root);
+        }
+    }
+
+    public static void RemoteHandlerContainsTablePaths()
+    {
+        string root = CreateFolder(nameof(RemoteHandlerContainsTablePaths));
+        string siblingRoot = root + "-sibling";
+        string parentEscape = Path.Combine(Path.GetDirectoryName(root), "remote-escape-" + Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            using var handler = new RemoteTablesHandler(root);
+            byte[] opened = handler.ParseProtocol(BuildOpenProtocol(Path.Combine("nested", "valid")));
+            Assert(opened.Length == 33 && opened[0] == 1,
+                "A valid nested remote table was rejected.");
+            ulong tableId = BitConverter.ToUInt64(opened, 1);
+            AssertBytes(new byte[] { 1 }, handler.ParseProtocol(BuildTableCommand(2, tableId)),
+                "A valid nested remote table could not be closed.");
+            Assert(File.Exists(Path.Combine(root, "nested", "valid")),
+                "A valid nested remote table was not created below the configured root.");
+
+            string siblingRelative = Path.Combine("..", Path.GetFileName(siblingRoot), "escaped");
+            AssertBytes(new byte[] { 255 }, handler.ParseProtocol(BuildOpenProtocol(Path.Combine("..", Path.GetFileName(parentEscape)))),
+                "A parent-traversal remote path was accepted.");
+            AssertBytes(new byte[] { 255 }, handler.ParseProtocol(BuildOpenProtocol(parentEscape)),
+                "An absolute remote path was accepted.");
+            AssertBytes(new byte[] { 255 }, handler.ParseProtocol(BuildOpenProtocol(siblingRelative)),
+                "A sibling-prefix remote path was accepted.");
+            AssertBytes(new byte[] { 255 }, handler.ParseProtocol(BuildOpenProtocol(new byte[] { 0xC3, 0x28 })),
+                "An invalid UTF-8 remote table name was accepted.");
+            Assert(!File.Exists(parentEscape) && !Directory.Exists(siblingRoot),
+                "A rejected remote path created data outside the configured root.");
+        }
+        finally
+        {
+            DeleteFolder(root);
+            DeleteFolder(siblingRoot);
+            if (File.Exists(parentEscape))
+                File.Delete(parentEscape);
+            DeleteFolder(parentEscape);
+        }
+    }
+
     public static void RollbackRecoveryIsBoundedAndExact()
     {
         string root = CreateFolder(nameof(RollbackRecoveryIsBoundedAndExact));
@@ -303,6 +440,30 @@ internal static class StorageRegressionTests
             File.WriteAllBytes(tablePath + ".rhp", Int64BigEndian(5));
             using (var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
                 AssertThrows<Exception>(() => new StorageLayer(tablePath, new TrieSettings(), configuration));
+
+            string recoveryPath = Path.Combine(diskFolder, "3");
+            byte[] diskOriginal = new byte[4096];
+            new Random(6790).NextBytes(diskOriginal);
+            long diskStart;
+            using (var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
+            {
+                var storage = new StorageLayer(recoveryPath, new TrieSettings(), configuration);
+                diskStart = DecodePointer(storage.Table_WriteToTheEnd(diskOriginal));
+                storage.Commit();
+                for (int i = 0; i <= 500; i++)
+                    storage.Table_WriteByOffset(diskStart + 512 + i, new byte[] { (byte)(diskOriginal[512 + i] ^ 0xFF) });
+                storage.Table_WriteByOffset(diskStart + 700, Enumerable.Repeat((byte)0xA7, 128).ToArray());
+                storage.TransactionalCommit();
+                storage.Table_Dispose();
+            }
+
+            using (var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
+            {
+                var recovered = new StorageLayer(recoveryPath, new TrieSettings(), configuration);
+                AssertBytes(diskOriginal, recovered.Table_Read(true, diskStart, diskOriginal.Length),
+                    "Disk crash recovery did not restore overlapping auto-flushed updates.");
+                recovered.Table_Dispose();
+            }
 
             string remoteRoot = Path.Combine(root, "remote");
             using var handler = new RemoteTablesHandler(remoteRoot);
@@ -400,6 +561,28 @@ internal static class StorageRegressionTests
             long start = DecodePointer(storage.Table_WriteToTheEnd(original));
             storage.Commit();
 
+            byte[] exactSequentialBuffer = new byte[1024 * 1024];
+            byte[] largerThanSequentialBuffer = new byte[1024 * 1024 + 1];
+            new Random(18).NextBytes(exactSequentialBuffer);
+            new Random(19).NextBytes(largerThanSequentialBuffer);
+            long exactStart = DecodePointer(storage.Table_WriteToTheEnd(exactSequentialBuffer));
+            long largerStart = DecodePointer(storage.Table_WriteToTheEnd(largerThanSequentialBuffer));
+            Assert(largerStart == exactStart + exactSequentialBuffer.Length,
+                "Sequential buffer boundary changed append offsets.");
+            Assert(storage.Table_Read(true, exactStart, 1).Length == 0,
+                "Committed view exposed an append around the sequential-buffer boundary.");
+            AssertBytes(exactSequentialBuffer, storage.Table_Read(false, exactStart, exactSequentialBuffer.Length),
+                "Writer view lost the exact-size sequential-buffer append.");
+            AssertBytes(largerThanSequentialBuffer,
+                storage.Table_Read(false, largerStart, largerThanSequentialBuffer.Length),
+                "Writer view lost the append larger than the sequential buffer.");
+            storage.Commit();
+            AssertBytes(exactSequentialBuffer, storage.Table_Read(true, exactStart, exactSequentialBuffer.Length),
+                "Commit changed the exact-size sequential-buffer append.");
+            AssertBytes(largerThanSequentialBuffer,
+                storage.Table_Read(true, largerStart, largerThanSequentialBuffer.Length),
+                "Commit changed the append larger than the sequential buffer.");
+
             byte[] first = { 11, 12, 13 };
             storage.Table_WriteByOffset(start, first);
             AssertBytes(first, storage.Table_Read(false, start, first.Length), "Writer view missed a buffered update.");
@@ -467,6 +650,28 @@ internal static class StorageRegressionTests
     private static void SetProperty(object target, string property, object value) =>
         target.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .SetValue(target, value);
+
+    private static byte[] BuildOpenProtocol(string tableName) =>
+        BuildOpenProtocol(System.Text.Encoding.UTF8.GetBytes(tableName));
+
+    private static byte[] BuildOpenProtocol(byte[] tableName)
+    {
+        byte[] protocol = new byte[6 + tableName.Length];
+        protocol[0] = 1;
+        protocol[1] = 1;
+        Buffer.BlockCopy(BitConverter.GetBytes(tableName.Length), 0, protocol, 2, 4);
+        Buffer.BlockCopy(tableName, 0, protocol, 6, tableName.Length);
+        return protocol;
+    }
+
+    private static byte[] BuildTableCommand(byte command, ulong tableId)
+    {
+        byte[] protocol = new byte[10];
+        protocol[0] = 1;
+        protocol[1] = command;
+        Buffer.BlockCopy(BitConverter.GetBytes(tableId), 0, protocol, 2, 8);
+        return protocol;
+    }
 
     private static byte[] BuildBackupWriteRecord(ulong fileNumber, byte type, long offset, byte[] payload)
     {
@@ -568,6 +773,85 @@ internal static class StorageRegressionTests
         public LoopbackCommunicator(RemoteTablesHandler handler) => Handler = handler;
 
         public virtual byte[] Send(byte[] data) => Handler.ParseProtocol(data);
+    }
+
+    private sealed class LimitingCommunicator : LoopbackCommunicator
+    {
+        private readonly int _maxRequestPayload;
+        private readonly int _maxResponsePayload;
+
+        public readonly List<long> DataWritePositions = new();
+        public readonly List<int> DataWritePayloads = new();
+        public readonly List<bool> DataWriteFlushes = new();
+        public readonly List<long> DataReadPositions = new();
+        public readonly List<int> DataReadReturns = new();
+        public int DataFlushCommands { get; private set; }
+        public int MaxProtocolArrayLength { get; private set; }
+        public int MaxReadRequest { get; private set; }
+
+        public LimitingCommunicator(RemoteTablesHandler handler, int maxRequestPayload, int maxResponsePayload)
+            : base(handler)
+        {
+            _maxRequestPayload = maxRequestPayload;
+            _maxResponsePayload = maxResponsePayload;
+        }
+
+        public void Reset()
+        {
+            DataWritePositions.Clear();
+            DataWritePayloads.Clear();
+            DataWriteFlushes.Clear();
+            DataReadPositions.Clear();
+            DataReadReturns.Clear();
+            DataFlushCommands = 0;
+            MaxProtocolArrayLength = 0;
+            MaxReadRequest = 0;
+        }
+
+        public override byte[] Send(byte[] data)
+        {
+            MaxProtocolArrayLength = Math.Max(MaxProtocolArrayLength, data.Length);
+            byte command = data.Length > 1 ? data[1] : (byte)0;
+            if (command >= 4 && command <= 6)
+            {
+                int payloadLength = data.Length - 19;
+                if (payloadLength > _maxRequestPayload)
+                    return new byte[] { 255 };
+                if (command == 4)
+                {
+                    DataWritePositions.Add(BitConverter.ToInt64(data, 10));
+                    DataWritePayloads.Add(payloadLength);
+                    DataWriteFlushes.Add(data[18] == 1);
+                }
+            }
+            else if (command >= 7 && command <= 9)
+            {
+                int count = BitConverter.ToInt32(data, 18);
+                if (count > _maxRequestPayload)
+                    return new byte[] { 255 };
+                MaxReadRequest = Math.Max(MaxReadRequest, count);
+                if (command == 7)
+                    DataReadPositions.Add(BitConverter.ToInt64(data, 10));
+            }
+            else if (command == 10)
+            {
+                DataFlushCommands++;
+            }
+
+            byte[] response = base.Send(data);
+            if (command < 7 || command > 9 || response.Length <= _maxResponsePayload + 1)
+            {
+                if (command == 7)
+                    DataReadReturns.Add(response.Length - 1);
+                return response;
+            }
+
+            byte[] fragment = new byte[_maxResponsePayload + 1];
+            Buffer.BlockCopy(response, 0, fragment, 0, fragment.Length);
+            if (command == 7)
+                DataReadReturns.Add(_maxResponsePayload);
+            return fragment;
+        }
     }
 
     private sealed class FragmentingCommunicator : LoopbackCommunicator

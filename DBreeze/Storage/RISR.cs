@@ -18,8 +18,10 @@ namespace DBreeze.Storage
     /// Not for common usage.
     /// </summary>
     internal class RISR : IStorage
-    {        
+    {
         //!!try catches can be taken away from reads and writes, when procs are fully balanced
+
+        private const int RemoteIoChunkSize = 1024 * 1024;
         
         #region "Variables"
 
@@ -223,7 +225,7 @@ namespace DBreeze.Storage
                     //Writing initial root data
 
                     RIC.DataFilePosition = 0;
-                    RIC.DataFileWrite(new byte[this._trieSettings.ROOT_SIZE], 0, this._trieSettings.ROOT_SIZE, false);
+                    DataWriteExactly(new byte[this._trieSettings.ROOT_SIZE], 0, this._trieSettings.ROOT_SIZE, false);
                     //_fsData.Position = 0;
                     //_fsData.Write(new byte[this._trieSettings.ROOT_SIZE], 0, this._trieSettings.ROOT_SIZE);
 
@@ -322,7 +324,7 @@ namespace DBreeze.Storage
             eofRollback = 0;
 
             RIC.RollbackHelperFilePosition = 0;
-            RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+            RollbackHelperWriteExactly(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
             //_fsRollbackHelper.Position = 0;
             //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
             //NET_Flush(_fsRollbackHelper);
@@ -375,7 +377,7 @@ namespace DBreeze.Storage
                 {
                     int chunk = remaining > copyBuffer.Length ? copyBuffer.Length : (int)remaining;
                     RollbackReadExactly(copyBuffer, 0, chunk);
-                    RIC.DataFileWrite(copyBuffer, 0, chunk, false);
+                    DataWriteExactly(copyBuffer, 0, chunk, false);
                     remaining -= chunk;
                 }
 
@@ -389,7 +391,8 @@ namespace DBreeze.Storage
         {
             while (count > 0)
             {
-                int read = RIC.DataFileRead(buffer, offset, count);
+                int chunk = count > RemoteIoChunkSize ? RemoteIoChunkSize : count;
+                int read = RIC.DataFileRead(buffer, offset, chunk);
                 if (read == 0)
                     throw new EndOfStreamException("Unexpected end of remote data stream.");
                 offset += read;
@@ -401,7 +404,8 @@ namespace DBreeze.Storage
         {
             while (count > 0)
             {
-                int read = RIC.RollbackFileRead(buffer, offset, count);
+                int chunk = count > RemoteIoChunkSize ? RemoteIoChunkSize : count;
+                int read = RIC.RollbackFileRead(buffer, offset, chunk);
                 if (read == 0)
                     throw new EndOfStreamException("Unexpected end of remote rollback stream.");
                 offset += read;
@@ -413,11 +417,63 @@ namespace DBreeze.Storage
         {
             while (count > 0)
             {
-                int read = RIC.RollbackHelperFileRead(buffer, offset, count);
+                int chunk = count > RemoteIoChunkSize ? RemoteIoChunkSize : count;
+                int read = RIC.RollbackHelperFileRead(buffer, offset, chunk);
                 if (read == 0)
                     throw new EndOfStreamException("Unexpected end of remote rollback helper stream.");
                 offset += read;
                 count -= read;
+            }
+        }
+
+        private void DataWriteExactly(byte[] buffer, int offset, int count, bool withFlush)
+        {
+            if (count == 0)
+            {
+                RIC.DataFileWrite(buffer, offset, 0, withFlush);
+                return;
+            }
+
+            while (count > 0)
+            {
+                int chunk = count > RemoteIoChunkSize ? RemoteIoChunkSize : count;
+                RIC.DataFileWrite(buffer, offset, chunk, withFlush && chunk == count);
+                offset += chunk;
+                count -= chunk;
+            }
+        }
+
+        private void RollbackWriteExactly(byte[] buffer, int offset, int count, bool withFlush)
+        {
+            if (count == 0)
+            {
+                RIC.RollbackFileWrite(buffer, offset, 0, withFlush);
+                return;
+            }
+
+            while (count > 0)
+            {
+                int chunk = count > RemoteIoChunkSize ? RemoteIoChunkSize : count;
+                RIC.RollbackFileWrite(buffer, offset, chunk, withFlush && chunk == count);
+                offset += chunk;
+                count -= chunk;
+            }
+        }
+
+        private void RollbackHelperWriteExactly(byte[] buffer, int offset, int count, bool withFlush)
+        {
+            if (count == 0)
+            {
+                RIC.RollbackHelperFileWrite(buffer, offset, 0, withFlush);
+                return;
+            }
+
+            while (count > 0)
+            {
+                int chunk = count > RemoteIoChunkSize ? RemoteIoChunkSize : count;
+                RIC.RollbackHelperFileWrite(buffer, offset, chunk, withFlush && chunk == count);
+                offset += chunk;
+                count -= chunk;
             }
         }
         #endregion
@@ -567,7 +623,7 @@ namespace DBreeze.Storage
 
             long pos = RIC.DataFileLength;
             RIC.DataFilePosition = pos;
-            RIC.DataFileWrite(_seqBuf.RawBuffer, 0, _seqBuf.EOF,false);
+            DataWriteExactly(_seqBuf.RawBuffer, 0, _seqBuf.EOF, false);
 
             //long pos = _fsData.Length;
             //_fsData.Position = pos;
@@ -618,7 +674,7 @@ namespace DBreeze.Storage
                     if (position > Int64.MaxValue - data.Length)
                         throw new InvalidOperationException("Storage length overflow.");
                     encodedPosition = EncodePointer(position);
-                    RIC.DataFileWrite(data, 0, data.Length, false);
+                    DataWriteExactly(data, 0, data.Length, false);
 
                     if (_backupIsActive)
                     {
@@ -807,7 +863,7 @@ namespace DBreeze.Storage
                 //Writing into helper
                 byte[] marker = eofRollback.To_8_bytes_array_BigEndian();
                 RIC.RollbackHelperFilePosition = 0;
-                RIC.RollbackHelperFileWrite(marker, 0, marker.Length, true);
+                RollbackHelperWriteExactly(marker, 0, marker.Length, true);
                 //_fsRollbackHelper.Position = 0;
                 //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
                 ////Flushing rollback helper
@@ -826,7 +882,7 @@ namespace DBreeze.Storage
             {
                 byte[] value = _randBuf[key];
                 RIC.DataFilePosition = key;
-                RIC.DataFileWrite(value, 0, value.Length,false);
+                DataWriteExactly(value, 0, value.Length, false);
                 //_fsData.Position = de.Key;
                 //_fsData.Write(de.Value, 0, de.Value.Length);
 
@@ -903,7 +959,7 @@ namespace DBreeze.Storage
 
             long recordOffset = eofRollback;
             RIC.RollbackFilePosition = recordOffset;
-            RIC.RollbackFileWrite(record, 0, record.Length, false);
+            RollbackWriteExactly(record, 0, record.Length, false);
             if (_backupIsActive)
                 _configuration.Backup.WriteBackupElement(ulFileName, 1, recordOffset, record);
 
@@ -1294,7 +1350,7 @@ namespace DBreeze.Storage
 
                     eofRollback = 0;
                     RIC.RollbackHelperFilePosition = 0;
-                    RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+                    RollbackHelperWriteExactly(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
                     //_fsRollbackHelper.Position = 0;
                     //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
                     //NET_Flush(_fsRollbackHelper);
@@ -1355,7 +1411,7 @@ namespace DBreeze.Storage
                     eofRollback = 0;
 
                     RIC.RollbackHelperFilePosition = 0;
-                    RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+                    RollbackHelperWriteExactly(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
 
                     //_fsRollbackHelper.Position = 0;
                     //_fsRollbackHelper.Write(eofRollback.To_8_bytes_array_BigEndian(), 0, 8);
@@ -1438,7 +1494,7 @@ namespace DBreeze.Storage
                 RollbackReadExactly(rollbackData, 0, rollbackData.Length);
 
                 RIC.DataFilePosition = rollback.Key;
-                RIC.DataFileWrite(rollbackData, 0, rollbackData.Length, false);
+                DataWriteExactly(rollbackData, 0, rollbackData.Length, false);
 
                 if (_backupIsActive)
                     _configuration.Backup.WriteBackupElement(ulFileName, 0, rollback.Key, rollbackData);
@@ -1450,7 +1506,7 @@ namespace DBreeze.Storage
 
             eofRollback = 0;
             RIC.RollbackHelperFilePosition = 0;
-            RIC.RollbackHelperFileWrite(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
+            RollbackHelperWriteExactly(eofRollback.To_8_bytes_array_BigEndian(), 0, 8, true);
 
             if (_backupIsActive)
             {

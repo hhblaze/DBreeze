@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using DBreeze;
 using DBreeze.Storage;
+using DBreeze.Storage.RemoteInstance;
 
 namespace DBreeze.Net8.Benchmarks;
 
@@ -23,6 +24,11 @@ public class StorageBenchmarks
     private long[] _localReadOffsets;
     private string _backupFolder;
     private string _restoreFolder;
+    private string _remoteFolder;
+    private StorageLayer _remoteStorage;
+    private DBreezeConfiguration _remoteConfiguration;
+    private RemoteTablesHandler _remoteHandler;
+    private byte[] _remoteValue;
 
     [GlobalSetup]
     public void Setup()
@@ -58,6 +64,8 @@ public class StorageBenchmarks
 
         _appendValue = new byte[64 * 1024];
         new Random(102).NextBytes(_appendValue);
+        _remoteValue = new byte[4 * 1024 * 1024 + 137];
+        new Random(104).NextBytes(_remoteValue);
 
         _backupFolder = Path.Combine(_root, "backup");
         string backupSource = Path.Combine(_root, "backup-source");
@@ -76,6 +84,7 @@ public class StorageBenchmarks
     public void Cleanup()
     {
         CleanupAppendIteration();
+        CleanupRemoteIteration();
         _readStorage?.Table_Dispose();
         _updateStorage?.Table_Dispose();
         _readConfiguration?.Dispose();
@@ -125,6 +134,34 @@ public class StorageBenchmarks
         if (!string.IsNullOrEmpty(_restoreFolder) && Directory.Exists(_restoreFolder))
             Directory.Delete(_restoreFolder, true);
         _restoreFolder = null;
+    }
+
+    [IterationSetup(Target = nameof(LargeRemoteRoundTrip))]
+    public void SetupRemoteIteration()
+    {
+        CleanupRemoteIteration();
+        _remoteFolder = Path.Combine(_root, "remote", Guid.NewGuid().ToString("N"));
+        _remoteHandler = new RemoteTablesHandler(_remoteFolder);
+        _remoteConfiguration = new DBreezeConfiguration
+        {
+            Storage = DBreezeConfiguration.eStorage.RemoteInstance,
+            RICommunicator = new BenchmarkCommunicator(_remoteHandler),
+        };
+        _remoteStorage = new StorageLayer(Path.Combine("nested", "5"), new TrieSettings(), _remoteConfiguration);
+    }
+
+    [IterationCleanup(Target = nameof(LargeRemoteRoundTrip))]
+    public void CleanupRemoteIteration()
+    {
+        _remoteStorage?.Table_Dispose();
+        _remoteStorage = null;
+        _remoteConfiguration?.Dispose();
+        _remoteConfiguration = null;
+        _remoteHandler?.Dispose();
+        _remoteHandler = null;
+        if (!string.IsNullOrEmpty(_remoteFolder) && Directory.Exists(_remoteFolder))
+            Directory.Delete(_remoteFolder, true);
+        _remoteFolder = null;
     }
 
     [Benchmark(OperationsPerInvoke = 1_000)]
@@ -189,24 +226,44 @@ public class StorageBenchmarks
         _updateStorage.Commit();
     }
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = 128)]
     public void SequentialAppendAndCommit()
     {
-        _appendStorage.Table_WriteToTheEnd(_appendValue);
-        _appendStorage.Commit();
+        for (int i = 0; i < 128; i++)
+        {
+            _appendStorage.Table_WriteToTheEnd(_appendValue);
+            _appendStorage.Commit();
+        }
     }
 
-    [Benchmark]
+    [Benchmark(OperationsPerInvoke = 64)]
     public void IncrementalBackupRestore()
     {
-        var restorer = new BackupRestorer
+        for (int i = 0; i < 64; i++)
         {
-            BackupFolder = _backupFolder,
-            DataBaseFolder = _restoreFolder,
-        };
-        // Older DBreeze releases invoke this event without a null check.
-        restorer.OnRestore += delegate { };
-        restorer.StartRestoration();
+            var restorer = new BackupRestorer
+            {
+                BackupFolder = _backupFolder,
+                DataBaseFolder = Path.Combine(_restoreFolder, i.ToString("D2")),
+            };
+            // Older DBreeze releases invoke this event without a null check.
+            restorer.OnRestore += delegate { };
+            restorer.StartRestoration();
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = 16)]
+    public int LargeRemoteRoundTrip()
+    {
+        int checksum = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            long position = DecodePointer(_remoteStorage.Table_WriteToTheEnd(_remoteValue));
+            _remoteStorage.Commit();
+            byte[] result = _remoteStorage.Table_Read(true, position, _remoteValue.Length);
+            checksum += result[0] + result[result.Length - 1];
+        }
+        return checksum;
     }
 
     private static long DecodePointer(byte[] pointer)
@@ -215,5 +272,14 @@ public class StorageBenchmarks
         foreach (byte item in pointer)
             value = (value << 8) | item;
         return checked((long)value);
+    }
+
+    private sealed class BenchmarkCommunicator : IRemoteInstanceCommunicator
+    {
+        private readonly RemoteTablesHandler _handler;
+
+        public BenchmarkCommunicator(RemoteTablesHandler handler) => _handler = handler;
+
+        public byte[] Send(byte[] data) => _handler.ParseProtocol(data);
     }
 }

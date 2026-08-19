@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>DBreeze — архитектурный аудит Storage</title>
+  <style>
+    :root {
+      --bg: #f2f5f7;
+      --surface: #ffffff;
+      --surface-2: #edf2f4;
+      --surface-3: #e4ecef;
+      --text: #17242b;
+      --muted: #5c6c74;
+      --line: #d4dee2;
+      --accent: #006d77;
+      --accent-2: #0a9396;
+      --good: #18794e;
+      --warn: #a15c00;
+      --danger: #b42318;
+      --info: #175cd3;
+      --violet: #6941c6;
+      --shadow: 0 12px 32px rgba(24, 36, 43, .08);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101719;
+        --surface: #172125;
+        --surface-2: #202d32;
+        --surface-3: #29383e;
+        --text: #e9f1f3;
+        --muted: #a5b4ba;
+        --line: #34464d;
+        --accent: #64cdd1;
+        --accent-2: #8de0e2;
+        --good: #65d6a2;
+        --warn: #ffbd66;
+        --danger: #ff8f87;
+        --info: #84adff;
+        --violet: #c7a7ff;
+        --shadow: 0 12px 32px rgba(0, 0, 0, .28);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font: 16px/1.56 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { color: var(--accent-2); }
+    code, .mono { font-family: var(--mono); font-size: .92em; }
+    code {
+      padding: .08rem .3rem;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-2);
+      overflow-wrap: anywhere;
+    }
+    h1, h2, h3, h4 { line-height: 1.18; letter-spacing: -.02em; }
+    h2 { margin-top: 0; font-size: clamp(1.5rem, 2vw, 2.15rem); }
+    h3 { margin: 1.45rem 0 .6rem; }
+    h4 { margin: 1rem 0 .45rem; }
+    p { margin: .58rem 0 1rem; }
+    ul, ol { padding-left: 1.4rem; }
+    li + li { margin-top: .38rem; }
+
+    .hero {
+      color: #f5ffff;
+      background:
+        radial-gradient(circle at 83% 8%, rgba(142, 202, 230, .32), transparent 42rem),
+        linear-gradient(135deg, #073b4c, #006d77 60%, #0a9396);
+      padding: 4rem max(1.5rem, calc((100vw - 2360px) / 2));
+    }
+    .hero .eyebrow { opacity: .83; text-transform: uppercase; letter-spacing: .14em; font-size: .8rem; }
+    .hero h1 { margin: .55rem 0 1rem; max-width: 1740px; font-size: clamp(2.2rem, 4vw, 4.7rem); }
+    .hero p { max-width: 1680px; font-size: 1.12rem; opacity: .96; }
+    .hero code { color: inherit; background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.25); }
+    .meta { display: flex; flex-wrap: wrap; gap: .58rem; margin-top: 1.4rem; }
+    .meta span { padding: .34rem .68rem; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; font-size: .87rem; }
+
+    .layout {
+      width: min(2440px, 100%);
+      margin: 0 auto;
+      padding: 1.55rem;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 1.55rem;
+    }
+    nav {
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    nav strong { display: block; margin-bottom: .65rem; }
+    nav a { display: block; padding: .34rem .48rem; border-radius: 7px; text-decoration: none; font-size: .9rem; }
+    nav a:hover { background: var(--surface-2); }
+    nav .sub { padding-left: 1rem; color: var(--muted); font-size: .84rem; }
+    main { min-width: 0; }
+    section {
+      margin-bottom: 1.55rem;
+      padding: clamp(1.1rem, 1.55vw, 1.9rem);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .lead { font-size: 1.1rem; }
+    .muted { color: var(--muted); }
+    .small { font-size: .86rem; }
+    .callout { margin: 1rem 0; padding: .92rem 1.05rem; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; }
+    .callout.warning { border-left-color: var(--warn); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout.good { border-left-color: var(--good); }
+    .callout.info { border-left-color: var(--info); }
+
+    .stats { display: grid; grid-template-columns: repeat(6, minmax(142px, 1fr)); gap: .78rem; margin: 1.1rem 0; }
+    .stat { padding: .9rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+    .stat b { display: block; font-size: 1.72rem; line-height: 1; margin-bottom: .38rem; }
+    .stat span { color: var(--muted); font-size: .82rem; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+    .card { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+    .card h3, .card h4 { margin-top: 0; }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+
+    .flow { display: grid; grid-template-columns: repeat(6, minmax(175px, 1fr)); gap: 1.35rem; margin: 1.2rem 0; }
+    .flow-step { position: relative; padding: .96rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -1.08rem; top: 42%; color: var(--accent); font-size: 1.35rem; font-weight: 750; }
+    .flow-step b { display: block; color: var(--accent); margin-bottom: .35rem; }
+    .flow-step small { color: var(--muted); }
+
+    .badge { display: inline-flex; align-items: center; gap: .25rem; padding: .17rem .52rem; border: 1px solid currentColor; border-radius: 999px; font-size: .75rem; white-space: nowrap; }
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .danger { color: var(--danger); }
+    .info { color: var(--info); }
+    .violet { color: var(--violet); }
+    .risk-p0 { color: var(--danger); font-weight: 720; }
+    .risk-p1 { color: var(--warn); font-weight: 650; }
+    .risk-p2 { color: var(--info); }
+    .risk-p3 { color: var(--muted); }
+    .nowrap { white-space: nowrap; }
+
+    .filters { display: flex; flex-wrap: wrap; gap: .62rem; align-items: end; margin: 1rem 0; padding: .82rem; background: var(--surface-2); border-radius: 12px; }
+    .filters label { display: grid; gap: .2rem; color: var(--muted); font-size: .78rem; }
+    .filters input, .filters select, .filters button {
+      min-height: 39px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: .43rem .6rem;
+      font: inherit;
+    }
+    .filters input { width: min(560px, 70vw); }
+    .filters button { cursor: pointer; color: var(--accent); font-weight: 680; }
+    #visible-count { margin-left: auto; align-self: center; color: var(--muted); font-size: .87rem; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; min-width: 1780px; border-collapse: collapse; font-size: .88rem; }
+    th, td { padding: .72rem .68rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .045em; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
+    .audit-table td:nth-child(1) { width: 5.2rem; font-family: var(--mono); color: var(--muted); }
+    .audit-table td:nth-child(2) { min-width: 170px; }
+    .audit-table td:nth-child(3), .audit-table td:nth-child(4) { min-width: 320px; }
+    .audit-table td:nth-child(5) { min-width: 330px; }
+    .audit-table td:nth-child(6) { min-width: 230px; }
+    .audit-table td:nth-child(7) { min-width: 260px; }
+    .compact { min-width: 1040px; }
+    .compact td:nth-child(n) { min-width: 0; }
+    .compact td:first-child { min-width: 185px; }
+    .medium-table { min-width: 1360px; }
+    .hidden { display: none !important; }
+
+    .priority { display: grid; grid-template-columns: auto 1fr; gap: .8rem 1rem; align-items: start; }
+    .priority .p { min-width: 3rem; text-align: center; padding: .24rem .48rem; border-radius: 7px; color: white; font-weight: 780; }
+    .p0 { background: var(--danger); }
+    .p1 { background: var(--warn); }
+    .p2 { background: var(--info); }
+    .p3 { background: #667085; }
+    details { border-top: 1px solid var(--line); padding: .68rem 0; }
+    details:first-of-type { border-top: 0; }
+    summary { cursor: pointer; font-weight: 690; }
+    footer { width: min(2440px, 100%); margin: 0 auto; padding: 0 1.55rem 2rem; color: var(--muted); font-size: .84rem; }
+
+    @media (min-width: 2100px) {
+      body { font-size: 17px; }
+      .layout { grid-template-columns: 350px minmax(0, 1fr); }
+      .audit-table { font-size: .9rem; }
+    }
+    @media (max-width: 1650px) {
+      .stats { grid-template-columns: repeat(3, minmax(135px, 1fr)); }
+      .flow { grid-template-columns: repeat(3, minmax(170px, 1fr)); }
+      .flow-step:nth-child(3)::after { content: ""; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: static; max-height: none; columns: 2; }
+      nav strong { column-span: all; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; gap: .75rem; }
+      .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -1.2rem; }
+    }
+    @media (max-width: 620px) {
+      nav { columns: 1; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      #visible-count { width: 100%; margin-left: 0; }
+    }
+    @media print {
+      :root { --bg: #fff; --surface: #fff; --surface-2: #f3f3f3; --text: #111; --muted: #444; --line: #bbb; }
+      body { font-size: 9.5pt; }
+      .hero { color: #111; background: none; padding: 1rem 0; }
+      .hero code { background: #eee; border-color: #bbb; }
+      .layout { display: block; width: auto; padding: 0; }
+      nav, .filters { display: none; }
+      section { box-shadow: none; break-inside: avoid; margin: 0 0 .7rem; padding: .7rem; }
+      .table-wrap { overflow: visible; }
+      table { min-width: 0; font-size: 6.5pt; }
+      th { position: static; }
+      tr { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+      footer { padding: .5rem 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">DBreeze / Storage / architectural compatibility review</div>
+    <h1>Архитектурный аудит Storage: текущая версия против эталона</h1>
+    <p>
+      Аудит рассматривает не только diff строк, а реальные runtime-реализации по target-проектам: буферы,
+      кэши, границы flush, rollback/crash recovery, файловую долговечность, backup, remote protocol и
+      удерживаемую память. Главный критерий — валидные legacy-сценарии должны сохранять поведение,
+      формат на диске и не ухудшать устойчиво latency/allocations/working set.
+    </p>
+    <div class="meta">
+      <span>Дата среза: 19.08.2026</span>
+      <span>Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code></span>
+      <span>Текущая: <code>D:\VS\DBreezeRealm\DBreeze</code></span>
+      <span>Фокус: <code>Storage</code></span>
+      <span>Основной modern target: .NET 8</span>
+      <span>Ширина отчёта: до 2440 px</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="Оглавление">
+      <strong>Оглавление</strong>
+      <a href="#verdict">1. Итоговый вердикт</a>
+      <a href="#method">2. Метод и scope</a>
+      <a href="#binding">3. Реальные project bindings</a>
+      <a href="#invariants">4. Сохранённые инварианты</a>
+      <a href="#critical">5. Критические находки</a>
+      <a href="#catalog">6. Полный каталог решений</a>
+      <a class="sub" href="#fsr">6.1 FSR / DISK</a>
+      <a class="sub" href="#msr">6.2 MSR / MEMORY</a>
+      <a class="sub" href="#backup">6.3 Backup</a>
+      <a class="sub" href="#remote">6.4 Remote</a>
+      <a href="#memory">7. Память</a>
+      <a href="#performance">8. Производительность</a>
+      <a href="#compatibility">9. API и disk compatibility</a>
+      <a href="#evidence">10. Проверки и пробелы</a>
+      <a href="#priorities">11. Приоритеты доводки</a>
+      <a href="#conclusion">12. Заключение</a>
+    </nav>
+
+    <main>
+      <section id="verdict">
+        <h2>1. Итоговый вердикт</h2>
+        <p class="lead">
+          Основной дисковый контракт сохранён, а .NET 8 Storage стал заметно лучше по параллельным чтениям,
+          allocations, bounded recovery и remote large I/O. Однако до полной архитектурной эквивалентности
+          с эталоном остаются <strong>две подтверждённые потери legacy-поведения</strong> и
+          <strong>одно подтверждённое ухудшение steady-state memory</strong>.
+        </p>
+
+        <div class="stats">
+          <div class="stat"><b class="good">PASS</b><span>binary API diff net8/net472</span></div>
+          <div class="stat"><b class="good">PASS</b><span>cross-version read/extend/restore + SHA-256</span></div>
+          <div class="stat"><b class="danger">2</b><span>подтверждённых legacy contract breaks</span></div>
+          <div class="stat"><b class="warn">1.08 MiB</b><span>возможное удержание seq-buffer на hot table</span></div>
+          <div class="stat"><b class="warn">+14.31%</b><span>cold Random64ByteRead, median time</span></div>
+          <div class="stat"><b class="good">−26…−82%</b><span>ускорение ключевых read/backup/remote сценариев</span></div>
+        </div>
+
+        <div class="grid-3">
+          <article class="card">
+            <h3 class="good">Что можно сохранять</h3>
+            <ul>
+              <li>.NET 8 <code>ReaderWriterLockSlim</code> + positioned <code>RandomAccess</code>.</li>
+              <li>32 KiB committed-page cache с version invalidation.</li>
+              <li>Streaming rollback/backup parser и 64 KiB copy buffers.</li>
+              <li>1 MiB remote chunking и server response cap 64 MiB.</li>
+              <li>Overlap-aware rollback coverage и failure-safer table replace.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3 class="danger">Что нарушает legacy</h3>
+            <ul>
+              <li>Portable <code>BackupRestorer</code> теперь игнорирует backup-файлы без <code>.ibp</code>.</li>
+              <li>MEMORY <code>RestoreTableFromTheOtherTable</code>: исторический no-op заменён на <code>NotSupportedException</code>.</li>
+              <li>Тест на MEMORY сейчас закрепляет новое поведение, а не защищает эталонный контракт.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3 class="warn">Что требует owner decision</h3>
+            <ul>
+              <li><code>Clear(true)</code> → <code>Clear(false)</code> ускоряет append, но удерживает до 1,127,424 байт на таблицу.</li>
+              <li>Raw remote v1 теперь возвращает actual short read и отвергает read &gt;64 MiB.</li>
+              <li>Backup restore больше не вызывает managed <code>Flush()</code> после каждой записи.</li>
+              <li>Cold random 64-byte read пересёк performance gate +5%.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout danger">
+          <strong>Release gate.</strong> До исправления Portable backup selector и осознанного решения по MEMORY no-op
+          нельзя утверждать, что все валидные сценарии эталона сохранены. До решения политики seq-buffer нельзя
+          утверждать, что ожидания по удерживаемой памяти не ухудшились.
+        </div>
+      </section>
+
+      <section id="method">
+        <h2>2. Метод и границы аудита</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Сравнивалось</h3>
+            <ul>
+              <li>Текущие и эталонные исходники <code>Storage</code>, включая target-specific копии.</li>
+              <li>Фактические <code>Compile Include/Remove/Link</code> в каждом <code>.csproj</code>.</li>
+              <li>Public surface, runtime behavior, wire/file encoding, durability ordering.</li>
+              <li>Буферные пороги, lifecycle, кэширование, locks и allocation topology.</li>
+              <li>Regression tests, compatibility probe и 3-run benchmark comparison.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Не считалось доказательством</h3>
+            <ul>
+              <li>Простое совпадение имён файлов: .NET 8 реально собирает смесь local и linked sources.</li>
+              <li>Один успешный build без поведенческого сценария.</li>
+              <li>Побайтовое совпадение двух независимо созданных DB: resource-table недетерминирована.</li>
+              <li>Тест, если он закрепляет новое поведение, противоречащее эталону.</li>
+              <li>Снижение <code>Allocated/op</code> как замена измерению retained heap/working set.</li>
+            </ul>
+          </article>
+        </div>
+        <p class="muted small">
+          Отчёт — point-in-time review рабочего дерева. Существующие незакоммиченные изменения пользователя не
+          изменялись; создан только этот HTML-файл.
+        </p>
+      </section>
+
+      <section id="binding">
+        <h2>3. Реальные project bindings</h2>
+        <p>
+          Самое важное глобальное изменение — topology исходников. В эталонном .NET 8 FSR приходил из
+          <code>DBreeze.NetStandard</code>, а Backup/Remote были локальными копиями. Сейчас .NET 8 имеет собственные
+          FSR/MSR/MemoryStorage, но Backup/RISR/Remote/StorageLayer получает из общей папки.
+        </p>
+        <div class="table-wrap">
+          <table class="medium-table">
+            <thead><tr><th>Target</th><th>FSR</th><th>MSR / MemoryStorage</th><th>RISR</th><th>Backup / Remote</th><th>Архитектурное следствие</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>.NET Framework 4.7.2</td>
+                <td><code>DBreeze/Storage/FSR.cs</code></td>
+                <td>common</td><td>common</td><td>common</td>
+                <td>Coarse monitor и FileStream-position I/O сохраняются; correctness fixes общие.</td>
+              </tr>
+              <tr>
+                <td>netstandard2.1 / netcoreapp3.1 / net6.0</td>
+                <td>linked common FSR</td><td>linked common</td><td>linked common</td><td>linked common</td>
+                <td>Единый blast radius: backup/remote fix сразу попадает во все эти targets.</td>
+              </tr>
+              <tr>
+                <td><strong>net8.0</strong></td>
+                <td><strong>local optimized</strong></td>
+                <td><strong>local optimized</strong></td>
+                <td>linked common</td><td>linked common</td>
+                <td>Modern I/O/locking изолированы от старых TFMs; wire/backup логика централизована.</td>
+              </tr>
+              <tr>
+                <td>Portable Profile111</td>
+                <td><strong>own Portable FSR</strong></td>
+                <td>linked common</td><td>linked common</td><td><strong>own Portable Backup/Remote</strong></td>
+                <td class="risk-p0">Смешанная архитектура: common fixes не гарантированно доходят до Portable.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warning">
+          <code>DBreeze/Storage/_FSR.cs</code> остаётся в дереве, но не входит в активный <code>DBreeze.csproj</code>.
+          Использовать его как доказательство runtime-поведения нельзя. Отдельные Portable-файлы, напротив, активны.
+        </div>
+      </section>
+
+      <section id="invariants">
+        <h2>4. Сохранённые инварианты и форматы</h2>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Инвариант</th><th>Эталон</th><th>Текущая версия</th><th>Вывод</th></tr></thead>
+            <tbody>
+              <tr><td>Файлы DISK</td><td>data + <code>.rol</code> + <code>.rhp</code></td><td>То же</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>Pointer encoding</td><td>big-endian, последние <code>POINTER_LENGTH</code> байт</td><td>Тот же byte order; overflow теперь fail-fast</td><td><span class="badge good">совместимо</span></td></tr>
+              <tr><td>Rollback record</td><td><code>[type:1][offset:pointer][length:u32 BE][payload]</code></td><td>Layout тот же; overlapping range может быть разбит на несколько записей</td><td><span class="badge good">reader-compatible</span></td></tr>
+              <tr><td>Rollback marker</td><td><code>.rhp</code>, signed Int64 legacy BE encoding</td><td>То же encoding и marker=0 при finalize</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>Backup record</td><td><code>[size:u32 BE][file:u64 BE][type][offset:i64 legacy BE][payload]</code></td><td>Те же байты, header записывается без Concat</td><td><span class="badge good">SHA/round-trip PASS</span></td></tr>
+              <tr><td>Backup rotation</td><td>1440 мин default, minimum 5 мин, append в существующий interval-file</td><td>То же</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>Remote protocol</td><td>version byte <code>1</code>, commands 1…12, BitConverter fields</td><td>Wire layout не изменён</td><td><span class="badge good">layout сохранён</span></td></tr>
+              <tr><td>Writer/reader views</td><td><code>useCache=false</code> видит pending, <code>true</code> — committed/rollback view</td><td>Смысл сохранён, реализация переписана</td><td><span class="badge good">regression-tested</span></td></tr>
+              <tr><td>Public surface</td><td>Storage public types/members</td><td>Binary API diff net8/net472 без удалений/добавлений</td><td><span class="badge good">PASS</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout info">
+          <strong>Важно:</strong> физическое содержимое <code>.rol</code> во время незавершённой транзакции может быть
+          сегментировано иначе, но encoding записей не изменён. Primary table, pointer и backup formats не менялись.
+        </div>
+      </section>
+
+      <section id="critical">
+        <h2>5. Критические находки</h2>
+        <div class="grid-2">
+          <article class="card">
+            <span class="badge danger">P0 · confirmed regression</span>
+            <h3>Portable потерял backup-файлы без <code>.ibp</code></h3>
+            <p>
+              Эталонный Portable выбирал все имена с префиксом <code>dbreeze_ibp_</code>. Текущий
+              <a href="file:///D:/VS/DBreezeRealm/DBreeze/NETPortable/Storage/Backup/BackupRestorer.cs">Portable BackupRestorer</a>
+              дополнительно требует <code>EndsWith(".ibp")</code>. Общий restorer уже исправлен, но Portable его не компилирует.
+            </p>
+            <p class="risk-p0">Результат: валидный исторический backup молча не восстанавливается на Portable.</p>
+          </article>
+          <article class="card">
+            <span class="badge danger">P0 · public behavior</span>
+            <h3>MEMORY restore: no-op стал исключением</h3>
+            <p>
+              В обоих эталонных MSR метод <code>RestoreTableFromTheOtherTable</code> ничего не делал. Сейчас common и
+              .NET 8 MSR бросают <code>NotSupportedException</code>. Путь доступен пользователю через
+              <code>Transaction.RestoreTableFromTheOtherFile</code> и public <code>StorageLayer</code>.
+            </p>
+            <p class="risk-p0">Это не binary API break, но observable semantic break для валидного вызова.</p>
+          </article>
+          <article class="card">
+            <span class="badge warn">P1 · retained memory</span>
+            <h3>Sequential buffer больше не уменьшается после flush</h3>
+            <p>
+              Эталон делал <code>_seqBuf.Clear(true)</code>; текущие FSR/RISR делают <code>Clear(false)</code>.
+              При точном append 1 MiB fixed-growth buffer достигает 1,127,424 байт и остаётся у каждой открытой hot table.
+            </p>
+            <p class="risk-p1">Это ускоряет append и резко снижает allocations, но ухудшает steady-state working set.</p>
+          </article>
+          <article class="card">
+            <span class="badge warn">P1 · performance gate</span>
+            <h3>Cold random 64-byte read: +14.31%</h3>
+            <p>
+              Из девяти Storage benchmarks только <code>Random64ByteRead</code> устойчиво превысил gate +5% по median time.
+              Allocated снизился с 168 до 88 B/op, остальные read-сценарии ускорились.
+            </p>
+            <p class="risk-p1">Это узкий regression, но формально release gate сейчас красный.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="catalog">
+        <h2>6. Полный каталог архитектурных решений</h2>
+        <p>Таблица фильтруется по компоненту, риску и тексту. «Baseline» означает эффективный исходник target-а, а не файл с похожим именем.</p>
+        <div class="filters">
+          <label>Поиск
+            <input id="audit-search" type="search" placeholder="Например: flush, cache, Portable, rollback">
+          </label>
+          <label>Компонент
+            <select id="component-filter">
+              <option value="all">Все</option>
+              <option value="binding">Binding</option>
+              <option value="fsr">FSR</option>
+              <option value="msr">MSR / Memory</option>
+              <option value="backup">Backup</option>
+              <option value="remote">Remote</option>
+              <option value="contract">Contract</option>
+            </select>
+          </label>
+          <label>Риск
+            <select id="risk-filter">
+              <option value="all">Все</option>
+              <option value="p0">P0</option>
+              <option value="p1">P1</option>
+              <option value="p2">P2</option>
+              <option value="p3">P3 / OK</option>
+            </select>
+          </label>
+          <button id="reset-filter" type="button">Сбросить</button>
+          <span id="visible-count"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="audit-table" id="audit-table">
+            <thead>
+              <tr><th>ID</th><th>Компонент</th><th>Эталонная архитектура</th><th>Текущая архитектура</th><th>Эффект / контракт</th><th>Вердикт</th><th>Evidence / примечание</th></tr>
+            </thead>
+            <tbody>
+              <tr data-component="binding" data-risk="p2"><td>B-01</td><td>Project binding</td><td>.NET 8 FSR linked из NetStandard; Backup/Remote локальны.</td><td>.NET 8 FSR/MSR/Memory локальны; Backup/RISR/Remote linked из common.</td><td>Modern specialization изолирована, общие wire fixes централизованы. Ошибка common теперь затрагивает больше targets.</td><td><span class="risk-p2">P2 · осознанная замена</span></td><td><code>DBreeze.Net8.csproj</code> Compile Remove/Include.</td></tr>
+              <tr data-component="binding" data-risk="p0"><td>B-02</td><td>Portable split</td><td>Portable имел собственные FSR/Backup/Remote и common MSR/RISR.</td><td>Смешанная схема сохранена, но common и Portable реализации разошлись.</td><td>Common legacy-backup и containment fixes не покрывают Portable.</td><td><span class="risk-p0">P0 · target drift</span></td><td>Активные строки 90–106 и 186–193 Portable csproj.</td></tr>
+              <tr data-component="contract" data-risk="p3"><td>C-01</td><td>IStorage / TrieSettings</td><td>Public members и настройки.</td><td>Исходники byte-identical относительно эталона.</td><td>Surface и базовая модель не потеряны.</td><td><span class="risk-p3">OK</span></td><td>Binary API diff net8/net472 PASS.</td></tr>
+              <tr data-component="contract" data-risk="p2"><td>C-02</td><td>StorageLayer validation</td><td>Invalid enum/pointer мог оставить <code>_tableStorage=null</code> или создать файлы до incidental fail.</td><td>Null, pointer 1…8 и storage enum проверяются до I/O.</td><td>Ранее fail-fast только для invalid arguments; валидные сценарии не меняются.</td><td><span class="risk-p2">P2 · correctness</span></td><td><code>StorageLayer.cs:22–70</code>.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-01</td><td>Random buffer thresholds</td><td>3,000,000 bytes; 500 elements; flush при <code>Count &gt; 500</code>.</td><td>Те же thresholds; то есть фактический count-trigger — 501-й distinct offset.</td><td>Исторический batching сохранён.</td><td><span class="risk-p3">OK</span></td><td><code>FSR.cs:61–62, 821</code>; RISR аналогично.</td></tr>
+              <tr data-component="fsr" data-risk="p2"><td>F-02</td><td>Random size accounting</td><td>Замена value по тому же offset не корректировала <code>usedBufferSize</code>.</td><td>Добавляется <code>newLength-oldLength</code>.</td><td>3 MB auto-flush теперь соответствует реальному набору ссылок.</td><td><span class="risk-p2">P2 · bug fix</span></td><td><code>FSR.cs:809</code>, MSR/RISR аналогично.</td></tr>
+              <tr data-component="fsr" data-risk="p1"><td>F-03</td><td>Sequential buffer lifecycle</td><td>1 MiB limit; после flush <code>Clear(true)</code> возвращал capacity к 1 KiB.</td><td>Limit тот же; <code>Clear(false)</code> сохраняет high watermark.</td><td>Меньше allocations/copies, но до 1,127,424 retained bytes на hot table.</td><td><span class="risk-p1">P1 · memory tradeoff</span></td><td>Текущий .NET 8 FSR <code>649–664</code>; эталон <code>Clear(true)</code>.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-04</td><td>Large append</td><td><code>data.Length &gt; 1 MiB</code> шёл напрямую; backup record мог быть пропущен.</td><td>Direct path сохраняется и всегда пишет backup record.</td><td>Disk layout тот же; backup completeness исправлена.</td><td><span class="risk-p3">OK · correctness</span></td><td>Round-trip payload 1 MiB+137 PASS.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-05</td><td>.NET 8 locking</td><td>Один monitor сериализовал read/write/commit.</td><td><code>ReaderWriterLockSlim</code>: несколько committed reads, exclusive mutations.</td><td>Сильное ускорение параллельных reads; state transitions остаются atomic.</td><td><span class="risk-p3">OK · modern</span></td><td>8-thread committed read −82.43% median.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-06</td><td>.NET 8 file I/O</td><td>3 FileStream с buffer 8192, mutable <code>Position</code>, WriteThrough.</td><td>BufferSize=1, WriteThrough|RandomAccess, positioned <code>RandomAccess.Read/Write</code>, explicit physical length.</td><td>Исключена гонка Position; fewer per-table buffers; exact partial-read loop.</td><td><span class="risk-p3">OK · modern</span></td><td><code>FSR.cs:431–483</code>.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-07</td><td>Hard flush</td><td>Эффективный modern build использовал <code>FileStream.Flush(true)</code> через <code>NET40</code> define.</td><td>.NET 8: managed Flush + <code>RandomAccess.FlushToDisk</code>.</td><td>Durability intent сохранён; primitive modernized.</td><td><span class="risk-p3">OK</span></td><td><code>FSR.cs:425–429</code>.</td></tr>
+              <tr data-component="fsr" data-risk="p2"><td>F-08</td><td>Committed page cache</td><td>Отдельного Storage cache не было; полагались на FileStream/OS cache.</td><td>Один 32 KiB <code>[ThreadStatic]</code> page на worker thread, shared между FSR instances; second-access admission.</td><td>Локальные/parallel reads быстрее; +32 KiB на читающий thread и thrash при чередовании таблиц.</td><td><span class="risk-p2">P2 · tradeoff</span></td><td>OwnerId + mutationVersion не удерживают FSR reference.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-09</td><td>Rollback coverage</td><td>Cache keyed только exact start; overlap с другим start мог сохранить уже изменённые байты.</td><td>Сохраняются только ещё не покрытые интервалы оригинала.</td><td>Rollback исправлен; wire record layout прежний, segmentation может отличаться.</td><td><span class="risk-p3">OK · bug fix</span></td><td>Auto-flush + grown overlap + crash recovery PASS.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-10</td><td>Startup recovery</td><td>Concat/Substring + recursive parser; потенциально O(n²) allocations и полный record в памяти.</td><td>Iterative header parser + 64 KiB copy; marker/range/truncation validation.</td><td>Bounded memory, earlier fail on corrupted rollback, same encoding.</td><td><span class="risk-p3">OK · modern</span></td><td>Fragmented remote recovery и malformed local rollback tests PASS.</td></tr>
+              <tr data-component="fsr" data-risk="p3"><td>F-11</td><td>Table replacement</td><td>Destination удалялся до проверки/успешного move source.</td><td>Source validate; destination trio staging; best-effort reverse move при failure.</td><td>Success semantics (source consumed) сохранены, failure больше не уничтожает destination.</td><td><span class="risk-p3">OK · safety</span></td><td>Missing source leaves destination intact.</td></tr>
+              <tr data-component="fsr" data-risk="p2"><td>F-12</td><td>Post-dispose state</td><td><code>Length</code> сохранял старое <code>eofData</code>; большинство операций падало incidental.</td><td>.NET 8 FSR очищает eof/physical lengths и buffers.</td><td>После dispose <code>Length==0</code>; допустимый fail-fast domain, но observable divergence.</td><td><span class="risk-p2">P2 · low contract risk</span></td><td>Не влияет на валидный pre-dispose use.</td></tr>
+              <tr data-component="msr" data-risk="p3"><td>M-01</td><td>.NET 8 MSR locking</td><td>Один monitor + внутренние locks MemoryStorage.</td><td>Outer RW lock; local internal MemoryStorage без nested monitor.</td><td>Concurrent reads и меньше lock overhead; ownership централизован в MSR/FSR.</td><td><span class="risk-p3">OK · modern</span></td><td>Все local MemoryStorage call sites находятся под outer lock.</td></tr>
+              <tr data-component="msr" data-risk="p3"><td>M-02</td><td>Common MemoryStorage</td><td>Public class с lock, fixed/multiply growth.</td><td>Public и synchronized остаётся; overflow/dispose checks стали явными.</td><td>Legacy thread-safety не снята для net472/netstandard/Portable.</td><td><span class="risk-p3">OK</span></td><td>Growth formulas математически сохранены.</td></tr>
+              <tr data-component="msr" data-risk="p0"><td>M-03</td><td>MEMORY table replace</td><td><code>RestoreTableFromTheOtherTable</code> — no-op.</td><td>Бросает <code>NotSupportedException</code>.</td><td>Публичный вызов, ранее успешно завершавшийся, теперь падает.</td><td><span class="risk-p0">P0 · semantic break</span></td><td>Текущий test line 520 закрепляет новую, не эталонную семантику.</td></tr>
+              <tr data-component="msr" data-risk="p3"><td>M-04</td><td>MSR rollback storage</td><td>In-memory data/rollback/helper, rollback high watermark reused.</td><td>Модель сохранена; overlap coverage и read overlays исправлены.</td><td>Primary MEMORY semantics не меняют disk format.</td><td><span class="risk-p3">OK</span></td><td><code>MaxRollbackFileSize=1 MiB</code> остаётся неиспользуемым legacy field.</td></tr>
+              <tr data-component="backup" data-risk="p3"><td>BK-01</td><td>Backup writer</td><td>ConcatMany/Substring создавали полный temporary record.</td><td>Reusable 21-byte header + slice write payload.</td><td>Те же record bytes, резко меньше allocations.</td><td><span class="risk-p3">OK · modern</span></td><td>Append alloc 104,565→845 B/op.</td></tr>
+              <tr data-component="backup" data-risk="p3"><td>BK-02</td><td>Backup synchronization</td><td><code>wasWritten</code> проверялся вне lock; folder change не закрывал active stream.</td><td>Flush/folder/dispose state transitions находятся под одним lock.</td><td>Убраны races; новая folder начинает действовать немедленно.</td><td><span class="risk-p3">OK · correctness</span></td><td>Public surface тот же.</td></tr>
+              <tr data-component="backup" data-risk="p3"><td>BK-03</td><td>Common restore parser</td><td>100 KB reads + growing Concat buffer + Substring records.</td><td>Exact header reads + 64 KiB streaming copy; foreign files excluded from progress.</td><td>Peak memory bounded независимо от record size.</td><td><span class="risk-p3">OK · modern</span></td><td>Restore alloc 9,913,163→79,798 B/op.</td></tr>
+              <tr data-component="backup" data-risk="p1"><td>BK-04</td><td>Restore flush cadence</td><td>Target <code>FileStream.Flush()</code> после каждого type 0/1/2 record.</td><td>Flush target handles только при close/recreate/delete/completion.</td><td>Successful return durable на уровне close, но crash посреди restore может потерять больший buffered tail.</td><td><span class="risk-p1">P1 · durability tradeoff</span></td><td>Restore и раньше не был transactional; hard flush per record не было.</td></tr>
+              <tr data-component="backup" data-risk="p3"><td>BK-05</td><td>Common legacy selector</td><td>Любой prefix <code>dbreeze_ibp_</code>, default sort.</td><td>Любой prefix, ordinal sort; unrelated files не влияют на progress.</td><td>Legacy behavior восстановлено и детерминировано.</td><td><span class="risk-p3">OK</span></td><td>Без extension + custom extension + order test PASS.</td></tr>
+              <tr data-component="backup" data-risk="p0"><td>BK-06</td><td>Portable legacy selector</td><td>Любой prefix <code>dbreeze_ibp_</code>.</td><td>Требует prefix и suffix <code>.ibp</code>.</td><td>Молча теряет валидные historical files.</td><td><span class="risk-p0">P0 · confirmed regression</span></td><td><code>NETPortable/.../BackupRestorer.cs:56</code>.</td></tr>
+              <tr data-component="remote" data-risk="p3"><td>R-01</td><td>Large remote I/O</td><td>Один protocol byte[] на весь request/response; несколько полных payload copies.</td><td>RISR режет read/write на 1 MiB; flush только в последнем write chunk.</td><td>Peak protocol memory O(1 MiB), large remote round-trip быстрее.</td><td><span class="risk-p3">OK · modern</span></td><td>2 MiB+137, partial reads, offsets и final flush tests PASS.</td></tr>
+              <tr data-component="remote" data-risk="p3"><td>R-02</td><td>Commander positions</td><td>Read/write не продвигали positions; read игнорировал destination offset и возвращал array length.</td><td>Advance по actual read/requested write; Buffer.BlockCopy в caller offset; exact response validation.</td><td>Chunking становится корректным, EOF short-read observable.</td><td><span class="risk-p3">OK · bug fix</span></td><td>Caller-offset + EOF-limited read PASS.</td></tr>
+              <tr data-component="remote" data-risk="p2"><td>R-03</td><td>Server table cache/lifetime</td><td>Path→RemoteTable map оставался после Close; shared Close закрывал streams других clients; unique paths росли до Dispose.</td><td>Open ref-count; последний Close удаляет object/map; повторный open получает новый id.</td><td>Исправлен shared-client bug и unbounded metadata cache; reopen чаще alloc/open.</td><td><span class="risk-p2">P2 · intentional replacement</span></td><td>Two-client close test PASS.</td></tr>
+              <tr data-component="remote" data-risk="p2"><td>R-04</td><td>Handler concurrency</td><td>Global read lock только для lookup, затем I/O без lifetime lease.</td><td>Read lock удерживается на один protocol command; Open/Close/Delete берут write lock.</td><td>Нет dispose/delete race, разные tables I/O параллельны; opens сериализованы и lifecycle ждёт active I/O.</td><td><span class="risk-p2">P2 · high-load tradeoff</span></td><td>1 MiB chunk ограничивает длительность одного command.</td></tr>
+              <tr data-component="remote" data-risk="p3"><td>R-05</td><td>Common path containment</td><td><code>Path.Combine(root, name)</code> разрешал rooted/<code>..</code> escape.</td><td>Canonical root + trailing separator, rooted reject, strict UTF-8, stable <code>{255}</code>.</td><td>Nested paths работают; lexical traversal/sibling-prefix закрыты.</td><td><span class="risk-p3">OK · security</span></td><td>Traversal/absolute/sibling/invalid UTF-8 tests PASS.</td></tr>
+              <tr data-component="remote" data-risk="p1"><td>R-06</td><td>Portable containment</td><td>FSFactory handler просто Path.Combine.</td><td>Так же: canonical containment не перенесён.</td><td>Не новая регрессия, но target-specific security gap остаётся.</td><td><span class="risk-p1">P1 · unresolved</span></td><td><code>NETPortable/.../RemoteTablesHandler.cs:136–138</code>.</td></tr>
+              <tr data-component="remote" data-risk="p2"><td>R-07</td><td>Raw protocol v1 behavior</td><td>Read beyond EOF возвращал requested-size zero-padded payload; очень большие reads принимались.</td><td>Actual payload length; response cap 64 MiB; malformed packet → <code>{255}</code>.</td><td>Wire layout тот же, но custom raw-client semantics ужесточены.</td><td><span class="risk-p2">P2 · intentional contract tightening</span></td><td>Штатный current client cap не достигает из-за 1 MiB chunks.</td></tr>
+              <tr data-component="remote" data-risk="p3"><td>R-08</td><td>RemoteTable allocations</td><td>Write делал payload Substring; read создавал payload и затем Concat response.</td><td>Write принимает protocol slice; read сразу создаёт exact response.</td><td>На сервере устранена одна полная payload copy в каждую сторону.</td><td><span class="risk-p3">OK · modern</span></td><td>Remote allocated 29,366,121→12,587,432 B/op.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="fsr">
+        <h2>6.1 FSR / DISK: новая внутренняя модель</h2>
+        <div class="flow" aria-label="Commit flow">
+          <div class="flow-step"><b>Append ≤1 MiB</b><small>Ссылка/байты попадают в sequential MemoryStorage.</small></div>
+          <div class="flow-step"><b>Random update</b><small>До 3,000,000 bytes или 501 distinct offsets.</small></div>
+          <div class="flow-step"><b>Rollback originals</b><small>Только ещё не покрытые интервалы, layout type=1.</small></div>
+          <div class="flow-step"><b>Durable marker</b><small>Flush .rol → marker .rhp → hard flush.</small></div>
+          <div class="flow-step"><b>Data writes</b><small>Positioned RandomAccess; cache generation invalidated.</small></div>
+          <div class="flow-step"><b>Commit/finalize</b><small>Hard flush data → marker=0 → committed eof.</small></div>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Что принципиально сохранено</h3>
+            <ul>
+              <li>Sequential boundary ровно 1 MiB и direct path только при <code>Length &gt; 1 MiB</code>.</li>
+              <li>Random auto-flush: bytes ≥3,000,000 либо <code>Count &gt; 500</code>.</li>
+              <li>До перезаписи data originals и marker физически сбрасываются.</li>
+              <li>Committed view до <code>TransactionalCommitIsFinished</code> собирается из data + rollback.</li>
+              <li><code>eofData</code> остаётся logical committed visibility boundary.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Что изменило performance envelope</h3>
+            <ul>
+              <li>Read concurrency вместо полной сериализации.</li>
+              <li>Positioned I/O вместо общей mutable <code>FileStream.Position</code>.</li>
+              <li>32 KiB per-thread page cache с admission на втором обращении.</li>
+              <li>FileStream managed buffer фактически отключён (<code>BufferSize=1</code>).</li>
+              <li>Sequential allocation amortized ценой retained capacity.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout warning">
+          <strong>Не закрытая legacy assumption:</strong> random buffer хранит overlapping updates по разным start offsets,
+          но flush сортирует их по offset, а не по времени вызова. Для обратного порядка перекрытий «last call wins» не
+          гарантирован и writer view до commit может отличиться от результата после commit. Комментарий эталона говорит,
+          что такие overlaps «should be not possible», но public <code>StorageLayer</code> это не валидирует.
+        </div>
+      </section>
+
+      <section id="msr">
+        <h2>6.2 MSR / MEMORY</h2>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Lock ownership</h3>
+            <p>
+              В .NET 8 MemoryStorage стал <code>internal</code> lock-free helper, а MSR — единственным владельцем RW lock.
+              Это устраняет nested monitors. Common public MemoryStorage сохраняет собственный monitor для старых targets.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Growth model</h3>
+            <p>
+              Data начинается с 16 KiB и растёт шагом 500 KiB; rollback — 16 KiB/128 KiB; helper — 8/10 bytes.
+              Формулы не менялись, но overflow теперь детектируется до wrap-around.
+            </p>
+          </article>
+          <article class="card">
+            <h3 class="danger">Contract drift</h3>
+            <p>
+              No-op table replacement стал exception. Это нельзя списать на corrupted data, invalid argument или
+              post-dispose: метод вызывается с валидными аргументами через пользовательский Transaction API.
+            </p>
+          </article>
+        </div>
+        <div class="callout info">
+          <code>MaxRollbackFileSize = 1 MiB</code> присутствует и в эталоне, и сейчас, но MSR его нигде не читает.
+          Реальная модель — reuse high-watermark rollback MemoryStorage, а не автоматическое shrink/recreate на 1 MiB.
+        </div>
+      </section>
+
+      <section id="backup">
+        <h2>6.3 Backup: encoding сохранён, pipeline заменён</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Writer</h3>
+            <ul>
+              <li>Один reusable header 21 byte под lock.</li>
+              <li>Payload пишется slice-ом без промежуточного full record.</li>
+              <li>Дата interval-file вычисляется arithmetic, без culture-sensitive <code>ToString</code>.</li>
+              <li><code>Flush</code>, <code>Dispose</code> и смена folder синхронизированы.</li>
+              <li>Legacy record bytes подтверждены round-trip/encoding test.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Restorer</h3>
+            <ul>
+              <li>Ordinal file order, только historical prefix; extension не часть общего контракта.</li>
+              <li>Record не может пересекать границу backup-файла; truncated file сразу rejected.</li>
+              <li>64 KiB streaming payload, bounded memory.</li>
+              <li>Handles гарантированно закрываются даже после ошибки/event exception.</li>
+              <li>Restore остаётся non-transactional: уже применённые records не откатываются при corruption.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout danger">
+          Общая реализация соответствует historical selector, Portable — нет. Build Portable этого не обнаруживает;
+          нужен отдельный behavioral test через <code>FSFactory</code> с файлами без extension и <code>.custom</code>.
+        </div>
+      </section>
+
+      <section id="remote">
+        <h2>6.4 Remote: lifecycle, chunking и containment</h2>
+        <div class="flow" aria-label="Remote flow">
+          <div class="flow-step"><b>RISR lock</b><small>Один storage instance остаётся serialized из-за stateful positions.</small></div>
+          <div class="flow-step"><b>1 MiB chunk</b><small>Position продвигается на actual bytes.</small></div>
+          <div class="flow-step"><b>Protocol v1</b><small>Wire command/field layout не изменён.</small></div>
+          <div class="flow-step"><b>Handler lease</b><small>Read-lock удерживает table lifetime на один command.</small></div>
+          <div class="flow-step"><b>Per-table lock</b><small>Один FileStream Position owner, разные tables параллельны.</small></div>
+          <div class="flow-step"><b>Final flush</b><small>Только последний write chunk или explicit flush command.</small></div>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Устранённые архитектурные дефекты</h3>
+            <ul>
+              <li>Закрытие одного из двух клиентов больше не закрывает shared table второму.</li>
+              <li>Closed table metadata не накапливается бесконечно в handler.</li>
+              <li>Caller buffer offset и EOF-limited read теперь соблюдаются.</li>
+              <li>Malformed packet всегда даёт стабильный <code>{255}</code>.</li>
+              <li>Server не копирует write payload через <code>Substring</code>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Оставшиеся границы</h3>
+            <ul>
+              <li>Common containment лексический: junction/symlink внутри root может указывать наружу.</li>
+              <li>Portable handler containment вообще не реализует.</li>
+              <li>Open разных tables сериализован global write lock и выполняет file open под ним.</li>
+              <li>Raw custom client, ожидающий zero padding или read &gt;64 MiB, увидит иное поведение v1.</li>
+              <li>Old-client/current-server и current-client/old-server wire matrix отдельно не зафиксирована.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="memory">
+        <h2>7. Память: allocations против retained working set</h2>
+        <div class="table-wrap">
+          <table class="medium-table">
+            <thead><tr><th>Источник памяти</th><th>Эталон</th><th>Текущая версия</th><th>Оценка</th></tr></thead>
+            <tbody>
+              <tr><td>FSR FileStream buffers</td><td>До 3 × 8192 bytes на table (managed buffering; allocation может быть lazy).</td><td>.NET 8 BufferSize=1 и positioned I/O.</td><td class="good">Меньше per-table buffering.</td></tr>
+              <tr><td>Sequential buffer</td><td>После каждого flush возвращался к 1024 bytes.</td><td>После high watermark удерживает до 1,127,424 bytes/table.</td><td class="danger">Подтверждённое ухудшение retained heap.</td></tr>
+              <tr><td>Committed page cache</td><td>Отдельного Storage cache не было.</td><td>32,768 bytes на OS thread после первого eligible committed read.</td><td class="warn">Bounded by reader threads, не table count.</td></tr>
+              <tr><td>Random update buffer</td><td>До ~3 MB или 501 references; caller arrays borrowed.</td><td>Те же limits; size replacement accounting исправлен.</td><td class="good">Envelope сохранён точнее.</td></tr>
+              <tr><td>Rollback startup</td><td>Growing concatenations/full record materialization.</td><td>64 KiB reusable copy + small headers.</td><td class="good">Peak теперь bounded.</td></tr>
+              <tr><td>Backup restore</td><td>100 KB chunk + growing pack + record copies.</td><td>64 KiB reusable copy, record payload не materialize.</td><td class="good">Сильное снижение peak/alloc.</td></tr>
+              <tr><td>Remote write/read</td><td>Payload-size protocol + Substring/Concat copies.</td><td>Около 1 MiB per in-flight chunk + response.</td><td class="good">Peak не зависит от total operation size.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warning">
+          <strong>Практический пример.</strong> 1,000 открытых таблиц, каждая хотя бы один раз накопила ровно 1 MiB
+          sequential append: новая политика может удерживать примерно 1.05 GiB только в <code>_seqBuf</code>.
+          Эталон после flush удерживал около 1 MiB суммарно. Обычный allocation benchmark этого не показывает.
+        </div>
+      </section>
+
+      <section id="performance">
+        <h2>8. Производительность: 3-run comparison</h2>
+        <p>
+          Ниже — устойчивое изменение median time текущей DLL против эталонной минимум по трём запускам и
+          <code>Allocated</code> baseline→current. Gate: median time не хуже более чем на 5%, без систематического роста allocations.
+        </p>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Benchmark</th><th>Median time delta</th><th>Allocated B/op</th><th>Gate</th></tr></thead>
+            <tbody>
+              <tr><td>CommittedRead</td><td class="good">−25.67%</td><td>4,200 → 4,120</td><td class="good">PASS</td></tr>
+              <tr><td>EightThreadCommittedRead</td><td class="good">−82.43%</td><td>4,514 → 4,442</td><td class="good">PASS</td></tr>
+              <tr><td>Random64ByteRead</td><td class="danger">+14.31%</td><td>168 → 88</td><td class="danger">FAIL time</td></tr>
+              <tr><td>Local64ByteRead</td><td class="good">−18.95%</td><td>168 → 88</td><td class="good">PASS</td></tr>
+              <tr><td>EightThread64ByteRead</td><td class="good">−33.84%</td><td>171 → 91</td><td class="good">PASS</td></tr>
+              <tr><td>RandomUpdateAndCommit</td><td>+3.74%</td><td>591 → 209</td><td class="good">PASS (&lt;5%)</td></tr>
+              <tr><td>SequentialAppendAndCommit</td><td class="good">−9.55%</td><td>104,565 → 845</td><td class="good">PASS</td></tr>
+              <tr><td>IncrementalBackupRestore</td><td class="good">−39.47%</td><td>9,913,163 → 79,798</td><td class="good">PASS</td></tr>
+              <tr><td>LargeRemoteRoundTrip</td><td class="good">−26.51%</td><td>29,366,121 → 12,587,432</td><td class="good">PASS</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted small">
+          Результаты подтверждают пользу новых I/O и streaming paths, но не отменяют отдельный retained-memory gate.
+          Для remote всё ещё возвращаются public <code>byte[]</code>, поэтому 12.6 MB/op на large round-trip не является нулевой целью.
+        </p>
+      </section>
+
+      <section id="compatibility">
+        <h2>9. Пользовательский API и disk compatibility</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3 class="good">Подтверждено инструментально</h3>
+            <ul>
+              <li>Binary API surface: current vs baseline для net8 и net472 — совпадает.</li>
+              <li>Builds: netstandard2.1, netcoreapp3.1, net6, net8, net472 и Portable — проходят.</li>
+              <li>Old create → current read/extend и current create → old read/extend — проходят.</li>
+              <li>Cross-version reopen/restore одной цепочки данных — file inventory и SHA-256 совпадают.</li>
+              <li>Backup offset encoding и primary disk files читаются обеими версиями.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3 class="warn">Требует отдельного контракта/теста</h3>
+            <ul>
+              <li>Behavioral MEMORY no-op нельзя увидеть binary API diff-ом.</li>
+              <li>Portable historical backup selector не покрыт net8 regression suite.</li>
+              <li>Старый raw remote commander ↔ новый handler в обе стороны не проверен отдельной DLL matrix.</li>
+              <li>Old DLL opening current crash-left segmented rollback не выделен в самостоятельный probe.</li>
+              <li>Независимо созданные DB не обязаны быть byte-identical из-за resource table.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="evidence">
+        <h2>10. Regression evidence и оставшиеся пробелы</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3 class="good">Есть проверка</h3>
+            <ul>
+              <li>DISK/MEMORY: exact 1 MiB и &gt;1 MiB append, writer/committed views.</li>
+              <li>501 distinct updates, replacement growth, transactional rollback/finish.</li>
+              <li>Page cache: lifecycle, cross-page, restore/recreate и concurrent commits.</li>
+              <li>Disk crash recovery с overlapping updates; remote fragmented exact reads.</li>
+              <li>Common backup: no extension/custom extension/order/foreign progress/truncation/delete.</li>
+              <li>Remote: shared opens, caller offsets, partial reads, 1 MiB chunks, single final flush.</li>
+              <li>Containment: <code>..</code>, absolute, sibling-prefix, invalid UTF-8, valid nested.</li>
+              <li>Missing restore source не уничтожает destination; invalid settings fail before files.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3 class="danger">Нет достаточной проверки</h3>
+            <ul>
+              <li>Portable backup files без <code>.ibp</code> — текущая версия ожидаемо провалит тест.</li>
+              <li>Retained heap при 100/1,000 hot tables и thread-pool churn.</li>
+              <li>Reverse-order overlapping pending updates в одном random buffer.</li>
+              <li>Process/power loss посреди backup restoration после удаления per-record Flush.</li>
+              <li>Remote reparse-point/junction escape и TOCTOU внутри root.</li>
+              <li>Remote open/close storm под continuous I/O и latency global write lock.</li>
+              <li>Raw protocol cross-version pair matrix и explicit semantics short-read/cap.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="callout warning">
+          <strong>Execution note.</strong> Финальный полный Release-прогон прошёл целиком. Непосредственно перед ним один
+          прогон остановился на 30-секундном timeout <code>ParallelMultiTableCommitsRemainDurable</code> после первого PASS;
+          повтор без изменений прошёл. Это не Storage-specific functional failure, но timing-flake стоит учитывать в CI.
+        </div>
+      </section>
+
+      <section id="priorities">
+        <h2>11. Приоритеты доводки</h2>
+        <div class="priority">
+          <div class="p p0">P0</div>
+          <div>
+            <strong>Вернуть Portable historical backup selector.</strong>
+            Выбирать все файлы с ordinal prefix <code>dbreeze_ibp_</code> независимо от extension, сортировать ordinal,
+            progress считать только по выбранным. Добавить Portable/FSFactory regression с no-extension, custom-extension и foreign file.
+          </div>
+          <div class="p p0">P0</div>
+          <div>
+            <strong>Восстановить MEMORY no-op либо явно принять breaking change.</strong>
+            При заявленной политике «валидный legacy behavior не меняется» безопасный вариант — вернуть no-op и изменить текущий
+            test. Если exception действительно желателен, это versioned public behavior change, а не refactoring.
+          </div>
+          <div class="p p1">P1</div>
+          <div>
+            <strong>Определить bounded retention policy sequential buffer.</strong>
+            Минимум — вернуть <code>Clear(true)</code>. Компромисс — retain до измеренного порога (например 128/256 KiB),
+            а buffers крупнее порога shrink после commit/rollback/recreate. Gate — working set при большом числе открытых tables.
+          </div>
+          <div class="p p1">P1</div>
+          <div>
+            <strong>Закрыть Random64ByteRead gate.</strong>
+            Разделить cold random pages, повторные reads в одной page и mixed-table worker. Не ухудшать page-cache wins;
+            оценить admission metadata без немедленной аренды 32 KiB либо специализированный small-read path.
+          </div>
+          <div class="p p1">P1</div>
+          <div>
+            <strong>Определить Portable remote security parity.</strong>
+            Для FSFactory нужен root-aware resolver/validation, запрещающий rooted и <code>..</code> segments. Если физическую
+            canonicalization API дать нельзя, containment guarantee должна быть явно ограничена, а не подразумеваться общей документацией.
+          </div>
+          <div class="p p2">P2</div>
+          <div>
+            <strong>Зафиксировать raw protocol v1 semantics.</strong>
+            Добавить old/current client-server matrix, EOF short-read и 64 MiB rejection. Layout остаётся v1; поведенческое tightening
+            должно быть документировано для implementers <code>IRemoteInstanceCommunicator</code>.
+          </div>
+          <div class="p p2">P2</div>
+          <div>
+            <strong>Проверить overlapping pending updates.</strong>
+            Либо обеспечить chronological last-write-wins независимо от offset sort, либо доказать и задокументировать invariant,
+            что higher layers никогда не создают такие overlaps; public StorageLayer test должен отражать выбранный контракт.
+          </div>
+          <div class="p p2">P2</div>
+          <div>
+            <strong>Измерить remote lifecycle contention и restore durability.</strong>
+            Добавить open/close-storm benchmark, а для BackupRestorer решить: successful completion only или recoverable progress после crash.
+          </div>
+        </div>
+      </section>
+
+      <section id="conclusion">
+        <h2>12. Заключение</h2>
+        <p class="lead">
+          Refactoring в целом движется в правильную сторону: .NET 8 получил настоящее параллельное чтение и modern positioned I/O,
+          а allocation-heavy recovery/backup/remote paths стали bounded. Формат БД, pointer encoding, backup records и remote v1 layout
+          сохранены и подтверждены compatibility probes.
+        </p>
+        <p>
+          Главный глобальный урок — проверять не папки, а <strong>граф компиляции target-ов</strong>. Именно отдельная Portable ветка
+          сохранила незакрытый path gap и повторно внесла legacy backup regression, тогда как common implementation уже правильная.
+          Второй урок — <code>Allocated/op</code> и latency не заменяют working-set контракт: <code>Clear(false)</code> дал сильный выигрыш,
+          но изменил память с «почти 1 KiB после flush» на «до 1.08 MiB на каждую hot table».
+        </p>
+        <div class="callout good">
+          Рекомендация: не откатывать современные .NET 8 решения. Исправить два P0, ввести bounded shrink policy и закрыть один
+          performance gate; после этого архитектуру Storage можно считать совместимой с эталоном при существенно лучшем high-load профиле.
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    DBreeze Storage architecture audit · generated from local source comparison · baseline
+    <code>D:\VS\DBreezeRealm_copy\DBreeze</code> · current <code>D:\VS\DBreezeRealm\DBreeze</code>.
+  </footer>
+
+  <script>
+    (() => {
+      const search = document.getElementById('audit-search');
+      const component = document.getElementById('component-filter');
+      const risk = document.getElementById('risk-filter');
+      const reset = document.getElementById('reset-filter');
+      const count = document.getElementById('visible-count');
+      const rows = Array.from(document.querySelectorAll('#audit-table tbody tr'));
+
+      function apply() {
+        const query = search.value.trim().toLocaleLowerCase('ru');
+        let visible = 0;
+        rows.forEach(row => {
+          const matchesText = !query || row.textContent.toLocaleLowerCase('ru').includes(query);
+          const matchesComponent = component.value === 'all' || row.dataset.component === component.value;
+          const matchesRisk = risk.value === 'all' || row.dataset.risk === risk.value;
+          const show = matchesText && matchesComponent && matchesRisk;
+          row.classList.toggle('hidden', !show);
+          if (show) visible++;
+        });
+        count.textContent = `Показано ${visible} из ${rows.length}`;
+      }
+
+      search.addEventListener('input', apply);
+      component.addEventListener('change', apply);
+      risk.addEventListener('change', apply);
+      reset.addEventListener('click', () => {
+        search.value = '';
+        component.value = 'all';
+        risk.value = 'all';
+        apply();
+        search.focus();
+      });
+      apply();
+    })();
+  </script>
+</body>
+</html>

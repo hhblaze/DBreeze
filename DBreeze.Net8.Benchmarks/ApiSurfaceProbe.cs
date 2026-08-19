@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using DBreeze;
+using DBreeze.Storage;
 
 namespace DBreeze.Net8.Benchmarks;
 
@@ -13,6 +14,12 @@ internal static class ApiSurfaceProbe
         typeof(Scheme),
         typeof(DBreezeResources),
     };
+
+    private static IEnumerable<Type> SurfaceTypes => RootTypes.Concat(
+        typeof(StorageLayer).Assembly.GetExportedTypes().Where(static type =>
+            type.Namespace != null &&
+            (String.Equals(type.Namespace, "DBreeze.Storage", StringComparison.Ordinal) ||
+             type.Namespace.StartsWith("DBreeze.Storage.", StringComparison.Ordinal))));
 
     internal static int Run(string[] args)
     {
@@ -46,7 +53,7 @@ internal static class ApiSurfaceProbe
 
     private static void WriteSurface(string output)
     {
-        string[] lines = RootTypes
+        string[] lines = SurfaceTypes
             .SelectMany(EnumerateTypeTree)
             .Distinct(StringComparer.Ordinal)
             .OrderBy(static line => line, StringComparer.Ordinal)

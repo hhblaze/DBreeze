@@ -76,7 +76,7 @@ namespace DBreeze.Storage
         FileStream _fsData = null;
         FileStream _fsRollback = null;
         FileStream _fsRollbackHelper = null;
-        const int ReadPageSize = 8 * 1024;
+        const int ReadPageSize = 32 * 1024;
         static long _nextInstanceId;
         readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
         long _mutationVersion = 1;
@@ -1088,8 +1088,8 @@ namespace DBreeze.Storage
                 return null;
             }
 
-            // One exact read acts as admission: isolated random pages never turn a 64-byte read
-            // into an 8 KiB read, while the second local access amortizes later system calls.
+            // One exact read acts as admission: isolated random pages never turn a tiny read
+            // into a full-page read, while the second local access amortizes later system calls.
             if (!cache.IsPopulated)
             {
                 ReadExactlyAt(_fsData, cache.Buffer, 0, pageLength, pageOffset);

@@ -53,7 +53,7 @@ namespace DBreeze.Storage
             long totalLength = 0;
             foreach (IFileInfo file in allFiles)
             {
-                if (!file.Name.StartsWith("dbreeze_ibp_") || !file.Name.EndsWith(".ibp"))
+                if (!file.Name.StartsWith("dbreeze_ibp_", StringComparison.Ordinal))
                     continue;
                 backupFiles.Add(file);
                 totalLength = checked(totalLength + file.Length);

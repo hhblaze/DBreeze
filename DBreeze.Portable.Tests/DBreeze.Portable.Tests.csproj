@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PortableAssemblyPath)' == ''">
+    <ProjectReference Include="..\NETPortable\DBreeze.Portable.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PortableAssemblyPath)' != ''">
+    <Reference Include="DBreeze">
+      <HintPath>$(PortableAssemblyPath)</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\NETPortable\__Prereq\FSFactory.cs" Link="FSFactory.cs" />
+  </ItemGroup>
+
+</Project>

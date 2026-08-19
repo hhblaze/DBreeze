@@ -5,6 +5,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace DBreeze.Storage.RemoteInstance
@@ -22,8 +24,11 @@ namespace DBreeze.Storage.RemoteInstance
         readonly Dictionary<string, ulong> _tIds = new Dictionary<string, ulong>(
             System.IO.Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         readonly Dictionary<ulong, int> _openCounts = new Dictionary<ulong, int>();
+        static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
         ulong tableId = 0;
-        string databasePreFolderPath = String.Empty;
+        readonly string databasePreFolderPath;
+        readonly string databaseFolderPrefix;
+        readonly StringComparison pathComparison;
         bool _disposed = false;
         const int MaxReadResponseSize = 64 * 1024 * 1024;
 
@@ -33,7 +38,16 @@ namespace DBreeze.Storage.RemoteInstance
         /// <param name="databasePreFolderPath"></param>
         public RemoteTablesHandler(string databasePreFolderPath)
         {
-            this.databasePreFolderPath = databasePreFolderPath;
+            string root = String.IsNullOrEmpty(databasePreFolderPath)
+                ? Directory.GetCurrentDirectory()
+                : databasePreFolderPath;
+            this.databasePreFolderPath = Path.GetFullPath(root);
+            databaseFolderPrefix = this.databasePreFolderPath;
+            if (!databaseFolderPrefix.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                databaseFolderPrefix += Path.DirectorySeparatorChar;
+            pathComparison = Path.DirectorySeparatorChar == '\\'
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
         }
 
         /// <summary>
@@ -169,8 +183,10 @@ namespace DBreeze.Storage.RemoteInstance
             if (tableNameLength < 0 || tableNameLength != protocol.Length - 6)
                 return ErrorResponse();
 
-            string tableName = System.Text.Encoding.UTF8.GetString(protocol, 6, tableNameLength);
-            string fileName = System.IO.Path.GetFullPath(System.IO.Path.Combine(databasePreFolderPath, tableName));
+            string tableName = StrictUtf8.GetString(protocol, 6, tableNameLength);
+            string fileName;
+            if (!TryResolveTablePath(tableName, out fileName))
+                return ErrorResponse();
 
             _sync.EnterWriteLock();
             try
@@ -219,6 +235,20 @@ namespace DBreeze.Storage.RemoteInstance
             {
                 _sync.ExitWriteLock();
             }
+        }
+
+        private bool TryResolveTablePath(string tableName, out string fileName)
+        {
+            fileName = null;
+            if (String.IsNullOrEmpty(tableName) || Path.IsPathRooted(tableName))
+                return false;
+
+            string candidate = Path.GetFullPath(Path.Combine(databasePreFolderPath, tableName));
+            if (!candidate.StartsWith(databaseFolderPrefix, pathComparison))
+                return false;
+
+            fileName = candidate;
+            return true;
         }
 
         private byte[] CloseTable(ulong id)

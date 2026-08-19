@@ -84,7 +84,15 @@ namespace DBreeze.Storage
                 if (!diBP.Exists)
                     diBP.Create();
 
-                FileInfo[] backupFiles = diBP.GetFiles("dbreeze_ibp_*.ibp");
+                FileInfo[] allFiles = diBP.GetFiles();
+                List<FileInfo> selectedBackupFiles = new List<FileInfo>();
+                foreach (FileInfo file in allFiles)
+                {
+                    if (file.Name.StartsWith("dbreeze_ibp_", StringComparison.Ordinal))
+                        selectedBackupFiles.Add(file);
+                }
+
+                FileInfo[] backupFiles = selectedBackupFiles.ToArray();
                 Array.Sort(backupFiles, delegate(FileInfo x, FileInfo y)
                 {
                     return String.CompareOrdinal(x.Name, y.Name);
@@ -156,7 +164,7 @@ namespace DBreeze.Storage
                 foreach (KeyValuePair<string, FileStream> file in ds)
                 {
                     if (file.Value != null)
-                        FSR.NET_Flush(file.Value);
+                        file.Value.Flush();
                 }
             }
             finally
@@ -272,7 +280,7 @@ namespace DBreeze.Storage
             {
                 try
                 {
-                    FSR.NET_Flush(stream);
+                    stream.Flush();
                 }
                 finally
                 {

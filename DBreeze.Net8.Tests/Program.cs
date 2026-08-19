@@ -29,6 +29,8 @@ internal static class Program
             (nameof(StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits),
             (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
             (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),
+            (nameof(StorageRegressionTests.RemoteStorageChunksLargeIoAndFinalFlush), StorageRegressionTests.RemoteStorageChunksLargeIoAndFinalFlush),
+            (nameof(StorageRegressionTests.RemoteHandlerContainsTablePaths), StorageRegressionTests.RemoteHandlerContainsTablePaths),
             (nameof(StorageRegressionTests.RollbackRecoveryIsBoundedAndExact), StorageRegressionTests.RollbackRecoveryIsBoundedAndExact),
             (nameof(StorageRegressionTests.RestoreMissingSourceKeepsDestination), StorageRegressionTests.RestoreMissingSourceKeepsDestination),
             (nameof(StorageRegressionTests.InvalidStorageSettingsFailBeforeCreatingFiles), StorageRegressionTests.InvalidStorageSettingsFailBeforeCreatingFiles),
