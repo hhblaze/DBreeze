@@ -56,6 +56,8 @@ internal static class Program
             (nameof(SchemeRenameRejectsStorageRouteChanges), SchemeRenameRejectsStorageRouteChanges),
             (nameof(SchemeRenameWaitsForActiveTable), SchemeRenameWaitsForActiveTable),
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
+            (nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable), LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable),
+            (nameof(LianaTrieRegressionTests.TraversalContractMatchesReferenceModel), LianaTrieRegressionTests.TraversalContractMatchesReferenceModel),
             (nameof(InsertIfAbsentPreservesNestedTable), InsertIfAbsentPreservesNestedTable),
             (nameof(NestedStructuralKeyCacheSurvivesMutationAndRename), NestedStructuralKeyCacheSurvivesMutationAndRename),
             (nameof(PartialValueRangesAreOverflowSafe), PartialValueRangesAreOverflowSafe),

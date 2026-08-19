@@ -647,8 +647,7 @@ namespace DBreeze.LianaTrie
                 /*********** Support of the nested tables  *******/
                 if (withFileRecreation)
                 {
-
-                    this.NestedTablesCoordinator.Dispose();
+                    this.NestedTablesCoordinator.Reset();
 
                 }
                 else

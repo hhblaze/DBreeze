@@ -608,6 +608,34 @@ namespace DBreeze.LianaTrie
         }
 
 
+        private void Clear()
+        {
+            foreach (var nt in _nestedTables)
+            {
+                foreach (var dit in nt.Value)
+                {
+                    dit.Value.Dispose();
+                }
+            }
+
+            _nestedTables.Clear();
+            _nestedTblsViaKeys.Clear();
+            countNested = 0;
+        }
+
+        internal void Reset()
+        {
+            Sync_NestedTables.EnterWriteLock();
+            try
+            {
+                Clear();
+            }
+            finally
+            {
+                Sync_NestedTables.ExitWriteLock();
+            }
+        }
+
         public void Dispose()
         {
             if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -616,21 +644,7 @@ namespace DBreeze.LianaTrie
             Sync_NestedTables.EnterWriteLock();
             try
             {
-                foreach (var nt in _nestedTables)
-                {
-                    foreach (var dit in nt.Value)
-                    {
-                        dit.Value.Dispose();
-                    }
-                }
-
-                _nestedTables.Clear();
-                //_nestedTables = null;
-
-                _nestedTblsViaKeys.Clear();
-                //_nestedTblsViaKeys = null;
-
-                countNested = 0;
+                Clear();
             }
             finally
             {

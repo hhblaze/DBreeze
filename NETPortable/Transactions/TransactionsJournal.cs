@@ -82,13 +82,7 @@ namespace DBreeze.Transactions
 
         private void RecreateJournalStorage()
         {
-            // RemoveAll(true) disposes LTrie's NestedTablesCoordinator, so this LTrie
-            // instance must not be used for subsequent journal writes.
             LTrie.RemoveAll(true);
-            LTrie.Dispose();
-            Storage = new StorageLayer(Path.Combine(Engine.MainFolder, JournalFileName), LTrieSettings, Engine.Configuration);
-            LTrie = new LTrie(Storage);
-            LTrie.TableName = "DBreeze.TranJournal";
         }
 
         public void Dispose()
