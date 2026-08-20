@@ -1,4 +1,10 @@
-DBreeze ![Image of DBreeze](https://raw.githubusercontent.com/hhblaze/DBreeze/master/Documentation/Dbreeze.Logo.png) Database
+<div align="center">
+
+![Image of DBreeze](https://raw.githubusercontent.com/hhblaze/DBreeze/master/Documentation/DBreezeLogo2026_K.png)
+
+**DBreeze Database**
+
+</div>
 =====================
 ![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.138%20production-9933FF.svg) 
 [![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg)](https://github.com/hhblaze/DBreeze/blob/master/LICENSE)
@@ -63,5 +69,7 @@ Key features:
 - DBreeze is a foundation for complex data storage solutions (graph/neuro, object, document, text search etc. data layers). Please, study documentation to understand all abilities of DBreeze.
 
 All NuGet DLLs are digitally signed with anti-tampering protection.
+
+![Image of DBreeze](https://raw.githubusercontent.com/hhblaze/DBreeze/master/Documentation/Dbreeze.Logo.png)
 
 hhblaze@gmail.com
