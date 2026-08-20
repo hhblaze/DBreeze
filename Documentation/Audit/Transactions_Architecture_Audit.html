@@ -7,715 +7,697 @@
   <title>DBreeze — архитектурный аудит Transactions</title>
   <style>
     :root {
-      --bg: #f3f6f8;
-      --surface: #ffffff;
-      --surface-2: #edf2f5;
-      --text: #18242b;
-      --muted: #5b6b74;
-      --line: #d7e0e5;
-      --accent: #006d77;
-      --accent-2: #0a9396;
-      --good: #18794e;
-      --warn: #a15c00;
-      --danger: #b42318;
-      --info: #175cd3;
-      --removed: #6b4fa1;
-      --modern: #007c91;
-      --intentional: #8a4b08;
-      --shadow: 0 12px 32px rgba(24, 36, 43, .08);
-      --radius: 14px;
-      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --bg:#f2f5f7;--surface:#fff;--surface2:#edf2f4;--surface3:#e2eaed;--text:#17242b;
+      --muted:#5d6d75;--line:#d3dee2;--accent:#006d77;--accent2:#0a9396;--good:#18794e;
+      --warn:#a15c00;--danger:#b42318;--info:#175cd3;--violet:#6941c6;--shadow:0 12px 32px rgba(24,36,43,.08);
+      --radius:14px;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
     }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #101719;
-        --surface: #172125;
-        --surface-2: #202d32;
-        --text: #e8f0f2;
-        --muted: #a5b4ba;
-        --line: #34454c;
-        --accent: #5bc0c3;
-        --accent-2: #77d0d2;
-        --good: #65d6a2;
-        --warn: #ffbd66;
-        --danger: #ff8f87;
-        --info: #84adff;
-        --removed: #c2a7ef;
-        --modern: #61d7e8;
-        --intentional: #ffc078;
-        --shadow: 0 12px 32px rgba(0, 0, 0, .28);
-      }
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      color: var(--text);
-      background: var(--bg);
-      font: 16px/1.58 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
-    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-    a:hover { color: var(--accent-2); }
-    code, .mono { font-family: var(--mono); font-size: .92em; }
-    code {
-      padding: .08rem .3rem;
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      background: var(--surface-2);
-      overflow-wrap: anywhere;
-    }
-    h1, h2, h3, h4 { line-height: 1.18; letter-spacing: -.02em; }
-    h2 { margin-top: 0; font-size: clamp(1.45rem, 2.2vw, 2rem); }
-    h3 { margin: 1.5rem 0 .6rem; }
-    h4 { margin: 1rem 0 .45rem; }
-    p { margin: .6rem 0 1rem; }
-    ul, ol { padding-left: 1.35rem; }
-    li + li { margin-top: .38rem; }
-
-    .hero {
-      color: #f4ffff;
-      background:
-        radial-gradient(circle at 84% 10%, rgba(148, 210, 189, .29), transparent 38rem),
-        linear-gradient(135deg, #073b4c, #006d77 62%, #0a9396);
-      padding: 3.8rem max(1.5rem, calc((100vw - 1840px) / 2));
-    }
-    .hero .eyebrow { opacity: .82; text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; }
-    .hero h1 { margin: .55rem 0 1rem; max-width: 1320px; font-size: clamp(2rem, 4vw, 4.2rem); }
-    .hero p { max-width: 1320px; font-size: 1.1rem; opacity: .95; }
-    .hero code { color: inherit; background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.25); }
-    .meta { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.4rem; }
-    .meta span { padding: .32rem .65rem; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; font-size: .86rem; }
-
-    .layout {
-      width: min(1920px, 100%);
-      margin: 0 auto;
-      padding: 1.5rem;
-      display: grid;
-      grid-template-columns: 285px minmax(0, 1fr);
-      gap: 1.5rem;
-    }
-    nav {
-      position: sticky;
-      top: 1rem;
-      align-self: start;
-      max-height: calc(100vh - 2rem);
-      overflow-y: auto;
-      padding: 1rem;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-    }
-    nav strong { display: block; margin-bottom: .65rem; }
-    nav a { display: block; padding: .33rem .45rem; border-radius: 7px; text-decoration: none; font-size: .9rem; }
-    nav a:hover { background: var(--surface-2); }
-    main { min-width: 0; }
-    section {
-      margin-bottom: 1.5rem;
-      padding: clamp(1.1rem, 1.8vw, 1.8rem);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-    }
-    .lead { font-size: 1.09rem; }
-    .muted { color: var(--muted); }
-    .callout { margin: 1rem 0; padding: .9rem 1rem; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; }
-    .callout.warning { border-left-color: var(--warn); }
-    .callout.danger { border-left-color: var(--danger); }
-    .callout.good { border-left-color: var(--good); }
-
-    .stats { display: grid; grid-template-columns: repeat(7, minmax(118px, 1fr)); gap: .75rem; margin: 1.1rem 0; }
-    .stat { padding: .85rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-    .stat b { display: block; font-size: 1.65rem; line-height: 1; margin-bottom: .35rem; }
-    .stat span { color: var(--muted); font-size: .82rem; }
-
-    .flow { display: grid; grid-template-columns: repeat(7, minmax(150px, 1fr)); gap: 1.35rem; margin: 1.2rem 0; }
-    .flow-step { position: relative; padding: .95rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-    .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -1.05rem; top: 42%; color: var(--accent); font-size: 1.35rem; font-weight: 700; }
-    .flow-step b { display: block; color: var(--accent); margin-bottom: .35rem; }
-    .flow-step small { color: var(--muted); }
-
-    .legend, .filters { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
-    .badge { display: inline-flex; align-items: center; gap: .25rem; padding: .16rem .5rem; border: 1px solid currentColor; border-radius: 999px; font-size: .75rem; white-space: nowrap; }
-    .preserved { color: var(--good); }
-    .replaced { color: var(--info); }
-    .fixed { color: var(--warn); }
-    .removed { color: var(--removed); }
-    .modern { color: var(--modern); }
-    .intentional { color: var(--intentional); }
-    .regression { color: var(--danger); font-weight: 700; }
-    .risk-high { color: var(--danger); font-weight: 650; }
-    .risk-medium { color: var(--warn); }
-    .risk-low { color: var(--muted); }
-    .proof { color: var(--muted); border-style: dashed; margin: .12rem .14rem .12rem 0; }
-
-    .filters { margin: 1rem 0; padding: .8rem; background: var(--surface-2); border-radius: 12px; }
-    .filters label { display: grid; gap: .2rem; color: var(--muted); font-size: .78rem; }
-    .filters input, .filters select, .filters button {
-      min-height: 38px;
-      color: var(--text);
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: .42rem .58rem;
-      font: inherit;
-    }
-    .filters input { width: min(470px, 72vw); }
-    .filters button { cursor: pointer; color: var(--accent); font-weight: 650; }
-    #visible-count { margin-left: auto; color: var(--muted); font-size: .86rem; }
-
-    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
-    table { width: 100%; min-width: 1540px; border-collapse: collapse; font-size: .88rem; }
-    th, td { padding: .7rem .65rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
-    th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .045em; }
-    tbody tr:last-child td { border-bottom: 0; }
-    tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
-    td:first-child { width: 4.2rem; font-family: var(--mono); color: var(--muted); }
-    td:nth-child(2) { min-width: 145px; }
-    td:nth-child(3) { min-width: 220px; }
-    td:nth-child(4), td:nth-child(5) { min-width: 285px; }
-    td:nth-child(6) { min-width: 250px; }
-    td:nth-child(7) { min-width: 235px; }
-    .compact { min-width: 980px; }
-    .compact td:first-child { width: auto; font-family: inherit; color: inherit; }
-    .compact td:nth-child(n) { min-width: 0; }
-    .compact td:nth-child(1) { min-width: 180px; }
-    .compact td:nth-child(2), .compact td:nth-child(3) { min-width: 260px; }
-    .hidden { display: none !important; }
-
-    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-    .card { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-    .card h3, .card h4 { margin-top: 0; }
-    .priority { display: grid; grid-template-columns: auto 1fr; gap: .75rem 1rem; align-items: start; }
-    .priority .p { min-width: 2.7rem; text-align: center; padding: .22rem .45rem; border-radius: 7px; color: white; font-weight: 750; }
-    .p0 { background: var(--danger); }
-    .p1 { background: var(--warn); }
-    .p2 { background: var(--info); }
-    .p3 { background: #667085; }
-    details { border-top: 1px solid var(--line); padding: .65rem 0; }
-    details:first-of-type { border-top: 0; }
-    summary { cursor: pointer; font-weight: 680; }
-    footer { width: min(1920px, 100%); margin: 0 auto; padding: 0 1.5rem 2rem; color: var(--muted); font-size: .84rem; }
-
-    @media (max-width: 1500px) {
-      .stats { grid-template-columns: repeat(4, minmax(118px, 1fr)); }
-      .flow { grid-template-columns: repeat(4, minmax(150px, 1fr)); }
-      .flow-step:nth-child(4)::after { content: ""; }
-    }
-    @media (max-width: 1050px) {
-      .layout { grid-template-columns: 1fr; }
-      nav { position: static; max-height: none; columns: 2; }
-      nav strong { column-span: all; }
-      .stats { grid-template-columns: repeat(2, minmax(125px, 1fr)); }
-      .flow { grid-template-columns: 1fr; gap: .75rem; }
-      .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -1.18rem; }
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 560px) {
-      nav { columns: 1; }
-      .stats { grid-template-columns: 1fr 1fr; }
-      #visible-count { width: 100%; margin-left: 0; }
-    }
-
-    @media print {
-      :root { --bg: #fff; --surface: #fff; --surface-2: #f3f3f3; --text: #111; --muted: #444; --line: #bbb; }
-      body { font-size: 10pt; }
-      .hero { color: #111; background: none; padding: 1rem 0; }
-      .hero code { background: #eee; border-color: #bbb; }
-      .layout { display: block; width: auto; padding: 0; }
-      nav, .filters { display: none; }
-      section { box-shadow: none; break-inside: avoid; margin: 0 0 .7rem; padding: .7rem; }
-      .table-wrap { overflow: visible; }
-      table { min-width: 0; font-size: 6.8pt; }
-      th { position: static; }
-      tr { break-inside: avoid; }
-      a { color: inherit; text-decoration: none; }
-      .flow { grid-template-columns: repeat(7, 1fr); }
-      .flow-step::after { color: #333 !important; }
-      footer { padding: .5rem 0; }
-    }
+    html[data-theme="light"] { color-scheme:light; }
+    html[data-theme="dark"] { color-scheme:dark;--bg:#101719;--surface:#172125;--surface2:#202d32;--surface3:#29383e;
+      --text:#e9f1f3;--muted:#a5b4ba;--line:#34464d;--accent:#64cdd1;--accent2:#8de0e2;--good:#65d6a2;
+      --warn:#ffbd66;--danger:#ff8f87;--info:#84adff;--violet:#c7a7ff;--shadow:0 12px 32px rgba(0,0,0,.28); }
+    @media (prefers-color-scheme:dark) { html:not([data-theme="light"]) { color-scheme:dark;--bg:#101719;--surface:#172125;
+      --surface2:#202d32;--surface3:#29383e;--text:#e9f1f3;--muted:#a5b4ba;--line:#34464d;--accent:#64cdd1;
+      --accent2:#8de0e2;--good:#65d6a2;--warn:#ffbd66;--danger:#ff8f87;--info:#84adff;--violet:#c7a7ff;
+      --shadow:0 12px 32px rgba(0,0,0,.28); } }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0;color:var(--text);background:var(--bg);font:16px/1.56 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--accent);text-underline-offset:3px; }
+    a:hover { color:var(--accent2); }
+    code,.mono { font-family:var(--mono);font-size:.92em; }
+    code { padding:.08rem .3rem;border:1px solid var(--line);border-radius:5px;background:var(--surface2);overflow-wrap:anywhere; }
+    h1,h2,h3,h4 { line-height:1.18;letter-spacing:-.02em; }
+    h2 { margin-top:0;font-size:clamp(1.5rem,2vw,2.2rem); }
+    h3 { margin:1.45rem 0 .6rem; }
+    h4 { margin:1rem 0 .45rem; }
+    p { margin:.58rem 0 1rem; }
+    ul,ol { padding-left:1.42rem; }
+    li+li { margin-top:.38rem; }
+    .hero { color:#f5ffff;background:radial-gradient(circle at 84% 8%,rgba(142,202,230,.32),transparent 44rem),
+      linear-gradient(135deg,#073b4c,#006d77 60%,#0a9396);padding:4rem max(1.5rem,calc((100vw - 3120px)/2)); }
+    .hero .eyebrow { opacity:.83;text-transform:uppercase;letter-spacing:.14em;font-size:.8rem; }
+    .hero h1 { margin:.55rem 0 1rem;max-width:2200px;font-size:clamp(2.25rem,4vw,4.8rem); }
+    .hero p { max-width:2200px;font-size:1.14rem;opacity:.96; }
+    .hero code { color:inherit;background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.25); }
+    .meta { display:flex;flex-wrap:wrap;gap:.58rem;margin-top:1.4rem; }
+    .meta span { padding:.34rem .68rem;border:1px solid rgba(255,255,255,.3);border-radius:999px;font-size:.87rem; }
+    .layout { width:min(3200px,100%);margin:0 auto;padding:1.55rem;display:grid;grid-template-columns:360px minmax(0,1fr);gap:1.55rem; }
+    nav { position:sticky;top:1rem;align-self:start;max-height:calc(100vh - 2rem);overflow-y:auto;padding:1rem;border:1px solid var(--line);
+      border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow); }
+    nav strong { display:block;margin-bottom:.65rem; }
+    nav a { display:block;padding:.34rem .48rem;border-radius:7px;text-decoration:none;font-size:.9rem; }
+    nav a:hover { background:var(--surface2); }
+    nav .sub { padding-left:1rem;color:var(--muted);font-size:.84rem; }
+    #theme-toggle { width:100%;margin-top:.8rem;padding:.45rem;border:1px solid var(--line);border-radius:8px;color:var(--accent);
+      background:var(--surface2);font:inherit;cursor:pointer; }
+    main { min-width:0; }
+    section { margin-bottom:1.55rem;padding:clamp(1.1rem,1.55vw,2rem);border:1px solid var(--line);border-radius:var(--radius);
+      background:var(--surface);box-shadow:var(--shadow);scroll-margin-top:1rem; }
+    .lead { font-size:1.1rem; }
+    .muted { color:var(--muted); }
+    .small { font-size:.86rem; }
+    .callout { margin:1rem 0;padding:.92rem 1.05rem;border-left:4px solid var(--accent);background:var(--surface2);border-radius:0 10px 10px 0; }
+    .callout.warning { border-left-color:var(--warn); }
+    .callout.danger { border-left-color:var(--danger); }
+    .callout.good { border-left-color:var(--good); }
+    .callout.info { border-left-color:var(--info); }
+    .stats { display:grid;grid-template-columns:repeat(6,minmax(145px,1fr));gap:.78rem;margin:1.1rem 0; }
+    .stat { padding:.9rem;border:1px solid var(--line);border-radius:12px;background:var(--surface2); }
+    .stat b { display:block;font-size:1.72rem;line-height:1;margin-bottom:.38rem; }
+    .stat span { color:var(--muted);font-size:.82rem; }
+    .grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem; }
+    .grid3 { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem; }
+    .grid4 { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem; }
+    .card { padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--surface2); }
+    .card h3,.card h4 { margin-top:0; }
+    .card p:last-child,.card ul:last-child { margin-bottom:0; }
+    .flow { display:grid;grid-template-columns:repeat(6,minmax(185px,1fr));gap:1.35rem;margin:1.2rem 0; }
+    .flow-step { position:relative;padding:.96rem;border:1px solid var(--line);border-radius:12px;background:var(--surface2); }
+    .flow-step:not(:last-child)::after { content:"→";position:absolute;right:-1.08rem;top:42%;color:var(--accent);font-size:1.35rem;font-weight:750; }
+    .flow-step b { display:block;color:var(--accent);margin-bottom:.35rem; }
+    .flow-step small { color:var(--muted); }
+    .badge { display:inline-flex;align-items:center;padding:.17rem .52rem;border:1px solid currentColor;border-radius:999px;font-size:.75rem;white-space:nowrap; }
+    .good { color:var(--good); }.warn { color:var(--warn); }.danger { color:var(--danger); }.info { color:var(--info); }.violet { color:var(--violet); }
+    .p0 { color:var(--danger);font-weight:720; }.p1 { color:var(--warn);font-weight:680; }.p2 { color:var(--info); }.p3 { color:var(--muted); }
+    .filters { display:flex;flex-wrap:wrap;gap:.62rem;align-items:end;margin:1rem 0;padding:.82rem;background:var(--surface2);border-radius:12px; }
+    .filters label { display:grid;gap:.2rem;color:var(--muted);font-size:.78rem; }
+    .filters input,.filters select,.filters button { min-height:39px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.43rem .6rem;font:inherit; }
+    .filters input { width:min(620px,70vw); }.filters button { cursor:pointer;color:var(--accent);font-weight:680; }
+    #visible-count { margin-left:auto;align-self:center;color:var(--muted);font-size:.87rem; }
+    .table-wrap { overflow:auto;border:1px solid var(--line);border-radius:12px; }
+    table { width:100%;min-width:1280px;border-collapse:collapse;font-size:.88rem; }
+    table.audit { min-width:2520px; }
+    th,td { padding:.72rem .68rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--line); }
+    th { position:sticky;top:0;z-index:1;background:var(--surface2);color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.045em; }
+    tbody tr:last-child td { border-bottom:0; }
+    tbody tr:hover { background:color-mix(in srgb,var(--surface2) 58%,transparent); }
+    td:first-child { font-family:var(--mono);white-space:nowrap; }
+    .audit th:nth-child(1){width:64px}.audit th:nth-child(2){width:170px}.audit th:nth-child(3){width:360px}.audit th:nth-child(4){width:190px}
+    .audit th:nth-child(5){width:310px}.audit th:nth-child(6){width:130px}.audit th:nth-child(7){width:150px}.audit th:nth-child(8){width:220px}
+    .audit th:nth-child(9){width:220px}.audit th:nth-child(10){width:260px}.audit th:nth-child(11){width:95px}
+    details { margin:.8rem 0;border:1px solid var(--line);border-radius:10px;background:var(--surface2); }
+    summary { padding:.72rem .85rem;cursor:pointer;font-weight:680; }
+    details>div,details>pre { margin:0;padding:.85rem;border-top:1px solid var(--line); }
+    pre { max-height:640px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:13px/1.48 var(--mono);background:var(--surface2); }
+    textarea.manifest { width:100%;height:52rem;resize:vertical;padding:.85rem;color:var(--text);background:var(--surface2);border:0;
+      border-top:1px solid var(--line);font:13px/1.48 var(--mono);white-space:pre;overflow:auto; }
+    .metric-up { color:var(--danger);font-weight:700; }.metric-down { color:var(--good);font-weight:700; }
+    footer { width:min(3200px,100%);margin:0 auto;padding:0 1.55rem 2.2rem;color:var(--muted);font-size:.85rem; }
+    @media(max-width:1300px){.layout{grid-template-columns:1fr}nav{position:relative;top:0;max-height:none}.stats{grid-template-columns:repeat(3,1fr)}.grid3,.grid4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:760px){.hero{padding:2.6rem 1rem}.layout{padding:.75rem}.stats,.grid2,.grid3,.grid4,.flow{grid-template-columns:1fr}.flow-step:not(:last-child)::after{display:none}.filters input{width:82vw}}
+    @media print { :root{--bg:#fff;--surface:#fff;--surface2:#f5f5f5;--text:#111;--muted:#444;--line:#bbb;--shadow:none}nav,.filters,#theme-toggle{display:none!important}.layout{display:block;width:100%;padding:0}.hero{color:#111;background:#fff;padding:1cm 0}.hero code{border-color:#bbb}.hero .meta span{border-color:#777}section{break-inside:avoid;box-shadow:none}.table-wrap{overflow:visible}table,table.audit{min-width:0;font-size:7.5pt}th{position:static}details>div,details>pre{display:block!important}footer{width:100%;padding:0}}
   </style>
 </head>
 <body>
   <header class="hero">
-    <div class="eyebrow">DBreeze / Architecture audit / Transactions</div>
-    <h1>Transactions: какие архитектурные решения действительно изменились</h1>
-    <p>Аудит сравнивает эффективную сборочную композицию эталона с текущим working tree. Цель — не дать будущему рефакторингу или LLM случайно «вернуть» отключённый auto-flush, продублировать существующий cache, ослабить recovery protocol или потерять семантику ожидания и rollback.</p>
+    <div class="eyebrow">DBreeze · Transactions · compatibility-first audit</div>
+    <h1>Что архитектурно изменилось относительно <code>a83424e</code></h1>
+    <p>Сопоставление effective source graph, контрактов, формата диска, времени жизни объектов, блокировок и производительности. Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code>; текущая версия: <code>D:\VS\DBreezeRealm\DBreeze</code>.</p>
     <div class="meta">
-      <span>Эталон: <code>a83424e2</code></span>
-      <span>Текущий HEAD: <code>5dfdd7e1</code> + working tree</span>
-      <span>Дата проверки: 2026-08-19</span>
-      <span>Фокус: common / NetStandard / Net8</span>
-      <span>Disk format: без изменений</span>
+      <span>baseline a83424e2fa742ec05a8e4a359562d3f3a5e008c8</span>
+      <span>current d2e32dccc90df6476011aca056a5ba7f24330f2b</span>
+      <span>аудит 20 августа 2026</span>
+      <span>Net8 runtime focus</span>
+      <span>без изменений исходного кода</span>
     </div>
   </header>
 
   <div class="layout">
-    <nav aria-label="Оглавление">
+    <nav aria-label="Навигация по аудиту">
       <strong>Содержание</strong>
-      <a href="#verdict">Главный вывод</a>
-      <a href="#baseline">База сравнения</a>
-      <a href="#composition">Effective-композиция</a>
-      <a href="#lifecycle">Lifecycle транзакции</a>
-      <a href="#matrix">Матрица решений</a>
-      <a href="#rks">RandomKeySorter</a>
-      <a href="#transaction">Transaction и caches</a>
-      <a href="#coordination">Coordinator / Locker / Unit</a>
-      <a href="#journal">Journal и recovery</a>
-      <a href="#preserved">Что не было потеряно</a>
-      <a href="#contracts">Контракты и format</a>
-      <a href="#risks">Риски</a>
-      <a href="#platforms">Матрица платформ</a>
-      <a href="#evidence">Доказательства</a>
-      <a href="#llm-rules">Правила для LLM</a>
-      <a href="#recommendations">Рекомендации</a>
+      <a href="#verdict">1. Итог</a>
+      <a href="#method">2. Объём и метод</a>
+      <a class="sub" href="#source-graph">Effective source graph</a>
+      <a href="#matrix">3. Матрица решений</a>
+      <a href="#rks">4. RandomKeySorter</a>
+      <a href="#transaction">5. Transaction</a>
+      <a href="#coordinator">6. Coordinator / Locker / Unit</a>
+      <a href="#journal">7. Journal</a>
+      <a href="#api">8. API metadata</a>
+      <a href="#disk">9. Disk compatibility</a>
+      <a href="#verification">10. Сборки и тесты</a>
+      <a href="#performance">11. Память и скорость</a>
+      <a href="#platforms">12. Платформы</a>
+      <a href="#risks">13. Риски P0–P3</a>
+      <a href="#guardrails">14. Guardrails для LLM</a>
+      <a href="#evidence">15. Команды и доказательства</a>
+      <button id="theme-toggle" type="button">Тема: системная</button>
     </nav>
 
     <main>
       <section id="verdict">
-        <h2>Главный вывод</h2>
-        <p class="lead"><strong>Кэши, batching, reservation и crash-recovery не были бездумно удалены.</strong> Основная архитектура сохранена, но границы ответственности стали строже: Net8 получил собственные hot paths, ожидание записи стало per-waiter и графовым, а journal разделил in-memory bookkeeping, durable marker I/O и table-finalization.</p>
-        <div class="stats" aria-label="Сводка классификации">
-          <div class="stat"><b id="count-all">—</b><span>решений в матрице</span></div>
-          <div class="stat"><b id="count-preserved">—</b><span>сохранено</span></div>
-          <div class="stat"><b id="count-replaced">—</b><span>реализовано иначе</span></div>
-          <div class="stat"><b id="count-fixed">—</b><span>correctness fixes</span></div>
-          <div class="stat"><b id="count-modern">—</b><span>Net8 оптимизации</span></div>
-          <div class="stat"><b id="count-intentional">—</b><span>изменено намеренно</span></div>
-          <div class="stat"><b id="count-regression">—</b><span>подтверждённая регрессия</span></div>
+        <h2>Итог аудита</h2>
+        <p class="lead"><strong>Бинарный API и проверенный формат данных сохранены.</strong> Текущий Net8 — не механический порт эталонных common-файлов, а самостоятельная реализация с бинарным RKS, per-waiter coordinator и вынесенным из state-lock journal I/O. Изменения в основном исправляют correctness/liveness или снижают retained state.</p>
+        <div class="stats">
+          <div class="stat"><b class="good">0</b><span>удалённых/изменённых API records</span></div>
+          <div class="stat"><b class="good">0</b><span>disk manifest различий</span></div>
+          <div class="stat"><b class="good">80/80</b><span>Net8 regression tests PASS</span></div>
+          <div class="stat"><b class="good">12/12</b><span>двунаправленных disk probe PASS</span></div>
+          <div class="stat"><b>14</b><span>benchmark-сценариев × 3 пары</span></div>
+          <div class="stat"><b class="warn">1</b><span>формальный allocation gate</span></div>
         </div>
-        <div class="callout warning"><strong>Ключевое недопонимание №1:</strong> `AutomaticFlushLimitQuantityPerTable` уже в эталоне не управлял flush — вызовы были закомментированы, а XML-комментарий говорил `NOT USED ANYMORE`. Восстанавливать flush после N операций нельзя: он ломает быстрый смысл `TryGetValueByKey` и object identity batching.</div>
-        <div class="callout warning"><strong>Ключевое недопонимание №2:</strong> удаление `RandomKeySorter.tbls` в Net8 не удалило cache write-таблиц. Реальный transaction-level cache `transactionWriteTables` сохранён; RKS cache лишь дублировал его.</div>
-        <div class="callout danger"><strong>Подтверждённая публичная регрессия:</strong> эффективный эталонный `DBreeze.Transactions.RandomKeySorter` был наследуемым, текущий Net8 тип стал `sealed`. Reflection diff с проверкой type flags нашёл 1 отличие среди 6 публично видимых Transactions-типов.</div>
+        <div class="callout warning"><strong>Единственный подтверждённый gate-сигнал:</strong> <code>CoordinatorContention</code> дал медиану <code>7843 → 7993 B</code> (+150 B, +1,91%) и рост в двух из трёх основных пар. Третий прогон и отдельный retry дали обратный знак, поэтому классификация — <strong>memory regression по формальному правилу, confidence medium</strong>. Timing этого сценария inconclusive.</div>
+        <div class="grid3">
+          <article class="card"><h3>Контракт</h3><p>148 canonical API records совпали byte-for-byte. Ранее замеченное изменение <code>RandomKeySorter</code> в <code>sealed</code> в текущем HEAD уже устранено.</p></article>
+          <article class="card"><h3>Диск</h3><p>Обе цепочки create → verify/extend → reverse verify совпали по logical checksum и strict physical inventory/length/SHA-256.</p></article>
+          <article class="card"><h3>Семантика</h3><p>Есть наблюдаемые намеренные изменения: thread ownership, last-operation-wins в RKS и заимствование массива value до flush/commit. Их нельзя «упрощать» без owner decision.</p></article>
+        </div>
+        <p class="muted small">Вердикт ограничен папкой Transactions и её effective bindings. Он не доказывает совместимость произвольных storage/schema изменений вне исследованного графа.</p>
       </section>
 
-      <section id="baseline">
-        <h2>База и метод сравнения</h2>
-        <div class="grid-2">
-          <div class="card">
-            <h3>Официальный эталон</h3>
-            <ul>
-              <li>Исходники до рефакторинга: <span class="mono">D:\VS\DBreezeRealm_copy\DBreeze</span>.</li>
-              <li>Commit: <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code>.</li>
-              <li>Эталон read-only; никакие файлы в нём не изменялись.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Текущее состояние</h3>
-            <ul>
-              <li>Workspace: <span class="mono">D:\VS\DBreezeRealm\DBreeze</span>.</li>
-              <li>HEAD: <code>5dfdd7e142072d39932dbad537b435e2714ecc75</code> плюс незакоммиченные refactoring changes.</li>
-              <li>Аудит не меняет исходники и не оценивает несвязанные Deployment-артефакты.</li>
-            </ul>
-          </div>
+      <section id="method">
+        <h2>Объём, baseline и метод</h2>
+        <div class="grid2">
+          <div class="card"><h3>Эталон</h3><p><code>D:\VS\DBreezeRealm_copy\DBreeze</code><br><code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code><br>11 июля 2026, чистые Transactions sources.</p></div>
+          <div class="card"><h3>Текущая версия</h3><p><code>D:\VS\DBreezeRealm\DBreeze</code><br><code>d2e32dccc90df6476011aca056a5ba7f24330f2b</code><br>20 августа 2026.</p></div>
         </div>
-        <h3>Почему directory diff недостаточен</h3>
-        <p>В эталоне папка <span class="mono">DBreeze.Net8/Transactions</span> содержала только часть реализаций. Остальные исходники подключались через linked <code>Compile Include</code> из common и NetStandard. В текущем Net8 SDK-style проекте локальные <code>.cs</code> компилируются автоматически. Поэтому сравнение «папка с папкой» ошибочно объявило бы несколько классов новыми или отсутствующими.</p>
-        <div class="callout good"><strong>Метод:</strong> сначала восстановлена effective-композиция каждого target, затем сравнивались lifecycle, data structures, lock ownership, error paths, public metadata, disk protocol и тесты.</div>
-      </section>
+        <p>Анализ сочетает direct diff физических папок, раскрытие <code>Compile Include/Link</code> в project files, чтение lock/lifecycle ветвей, reflection-manifest публичной и protected metadata, runtime regression tests, двунаправленный disk probe и одинаковый Release BenchmarkDotNet harness против двух DLL.</p>
+        <div class="callout info"><strong>Почему простой diff папки неверен:</strong> эталонный Net8 связывал common и NetStandard sources; текущий Net8 автоматически компилирует локальные файлы <code>DBreeze.Net8/Transactions</code>. Поэтому ключевое сравнение — effective Net8 source-to-source, а не одноимённые каталоги.</div>
 
-      <section id="composition">
-        <h2>Effective-композиция .NET 8</h2>
+        <h3 id="source-graph">Effective source graph</h3>
         <div class="table-wrap">
-          <table class="compact">
-            <thead><tr><th>Компонент</th><th>Эталонный Net8</th><th>Текущий Net8</th><th>Архитектурный смысл</th></tr></thead>
+          <table>
+            <thead><tr><th>Target</th><th>Effective Transactions в baseline</th><th>Effective Transactions сейчас</th><th>Результат</th></tr></thead>
             <tbody>
-              <tr><td><code>Transaction</code></td><td>Linked из <span class="mono">DBreeze/Transactions/Transaction.cs</span>.</td><td>Локальные <a href="../../DBreeze.Net8/Transactions/Transaction.cs">Transaction.cs</a> и <a href="../../DBreeze.Net8/Transactions/Transaction.Net8.cs">Transaction.Net8.cs</a>.</td><td>Public API остаётся в partial class; Net8 merge hot path вынесен отдельно.</td></tr>
-              <tr><td><code>RandomKeySorter</code></td><td>Linked common hex-based реализация.</td><td>Локальная <a href="../../DBreeze.Net8/Transactions/RandomKeySorter.cs">binary-key реализация</a>.</td><td>Главное target-specific изменение allocation profile и coalescing.</td></tr>
-              <tr><td><code>Transaction.Vector</code></td><td>Linked common файл.</td><td>Локальный <a href="../../DBreeze.Net8/Transactions/Transaction.Vector.cs">Net8 файл</a>.</td><td>Lazy synchronization и exception-safe iterator flush.</td></tr>
-              <tr><td><code>TransactionsCoordinator</code></td><td>Linked из NetStandard.</td><td>Локальный <a href="../../DBreeze.Net8/Transactions/TransactionsCoordinator.cs">Net8 файл</a>.</td><td>Coordinator invariants продублированы и синхронизированы по target-реализациям.</td></tr>
-              <tr><td>Journal / Locker / Unit / interface</td><td>Локальные Net8 файлы.</td><td>Локальные Net8 файлы.</td><td>Путь файла тот же, но внутренняя concurrency-модель изменена.</td></tr>
-              <tr><td><code>Transaction.Vector_kmeans.cs</code></td><td>Не включался в effective Net8 build.</td><td>Не добавлен в Net8.</td><td>Это не потеря Net8 functionality.</td></tr>
+              <tr><td>net472</td><td>Физические <a href="../../DBreeze/Transactions/Transaction.cs">common Transactions</a></td><td>Та же binding-модель, изменённые common sources</td><td><span class="badge info">эволюция common</span></td></tr>
+              <tr><td>netstandard2.1</td><td>Локальные support-файлы + linked common Transaction/RKS/Vector</td><td>Та же binding-модель</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>net6.0</td><td>Linked common Transaction/RKS/Vector + NetStandard coordinator</td><td>Та же binding-модель</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>netcoreapp3.1</td><td>Linked common Transaction/RKS/Vector + NetStandard coordinator</td><td>Та же binding-модель</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>Portable Profile111</td><td>Linked common + NetStandard coordinator</td><td>Та же binding-модель</td><td><span class="badge good">сохранено</span></td></tr>
+              <tr><td>net8.0</td><td>Common Transaction/RKS/Vector, NetStandard coordinator, локальные Journal/Locker/Unit</td><td>Полная локальная специализация <a href="../../DBreeze.Net8/Transactions/Transaction.cs">DBreeze.Net8/Transactions</a>, включая <a href="../../DBreeze.Net8/Transactions/Transaction.Net8.cs">Transaction.Net8.cs</a></td><td><span class="badge violet">реализовано иначе</span></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="muted">Источник композиции: эталонный и текущий <a href="../../DBreeze.Net8/DBreeze.Net8.csproj">DBreeze.Net8.csproj</a>, плюс default compile items SDK-style проекта.</p>
-      </section>
-
-      <section id="lifecycle">
-        <h2>Lifecycle транзакции после рефакторинга</h2>
-        <div class="flow" role="img" aria-label="Lifecycle DBreeze transaction">
-          <div class="flow-step"><b>1. Create</b><small>Coordinator удаляет stale transaction того же thread id до создания locked session.</small></div>
-          <div class="flow-step"><b>2. Reserve</b><small>Per-waiter gate, fair queue и wait-for graph резервируют write patterns.</small></div>
-          <div class="flow-step"><b>3. Mutate</b><small>Transaction caches LTrie; RKS coalesces final operations; owner thread проверяется.</small></div>
-          <div class="flow-step"><b>4. Flush</b><small>RKS сортирует keys; removes выполняются перед inserts. Commit вызывает Flush автоматически.</small></div>
-          <div class="flow-step"><b>5. Prepare</b><small>Single-table идёт коротким путём; multi-table получает transaction number и rollback files.</small></div>
-          <div class="flow-step"><b>6. Journal</b><small>Durable XML marker → ITRCommitFinished tables → durable marker removal.</small></div>
-          <div class="flow-step"><b>7. Cleanup</b><small>Unregister/rollback и gate wakeups выполняются без slow I/O под coordinator global locks.</small></div>
-        </div>
-        <p>Ключевая durability-последовательность multi-table commit не изменилась: recovery marker становится durable до финализации таблиц и удаляется только после успешной финализации всех таблиц. Изменилось то, какие lock-и удерживаются вокруг этапов.</p>
+        <p class="small muted">Файл <code>Transaction.Vector_kmeans.cs</code> существует в common, но не входил в effective Net8 compile graph baseline и не входит в текущую локальную Net8 специализацию; это не новое удаление Net8 API.</p>
       </section>
 
       <section id="matrix">
-        <h2>Матрица архитектурных решений</h2>
-        <div class="legend" aria-label="Легенда">
-          <span class="badge preserved">сохранено</span>
-          <span class="badge replaced">реализовано иначе</span>
-          <span class="badge removed">удалено как избыточное</span>
-          <span class="badge intentional">намеренная смена semantics</span>
-          <span class="badge fixed">correctness fix</span>
-          <span class="badge modern">Net8 optimization</span>
-          <span class="badge regression">регрессия</span>
-        </div>
-        <div class="filters" aria-label="Фильтры матрицы">
-          <label>Поиск<input id="decision-search" type="search" placeholder="cache, flush, journal, deadlock…"></label>
-          <label>Статус<select id="status-filter"><option value="all">Все</option><option value="preserved">Сохранено</option><option value="replaced">Иначе</option><option value="removed">Удалено</option><option value="intentional">Намеренно</option><option value="fixed">Исправлено</option><option value="modern">Net8</option><option value="regression">Регрессия</option></select></label>
-          <label>Риск<select id="risk-filter"><option value="all">Все</option><option value="high">Высокий</option><option value="medium">Средний</option><option value="low">Низкий</option></select></label>
-          <button id="reset-filter" type="button">Сбросить</button>
-          <span id="visible-count"></span>
+        <h2>Полная матрица архитектурных решений</h2>
+        <p>Статус описывает смысл изменения, а не только текстовый diff. «Owner decision» означает пользовательски наблюдаемое поведение, которое нельзя молча переопределять.</p>
+        <div class="filters">
+          <label>Поиск<input id="search" type="search" placeholder="RKS, journal, ownership, cache…"></label>
+          <label>Статус<select id="status-filter"><option value="">Все</option><option value="preserved">Сохранено</option><option value="alternative">Реализовано иначе</option><option value="removed">Удалено как избыточное</option><option value="intentional">Намеренно изменено</option><option value="correctness">Correctness fix</option><option value="optimization">Оптимизация</option><option value="regression">Регрессия</option><option value="owner">Owner decision</option></select></label>
+          <label>Приоритет<select id="risk-filter"><option value="">Все</option><option>P0</option><option>P1</option><option>P2</option><option>P3</option></select></label>
+          <button id="reset-filters" type="button">Сбросить</button><span id="visible-count"></span>
         </div>
         <div class="table-wrap">
-          <table id="decision-table">
-            <thead>
-              <tr><th>#</th><th>Слой</th><th>Решение</th><th>Эталон</th><th>Текущая реализация</th><th>Классификация и влияние</th><th>Доказательство</th></tr>
-            </thead>
+          <table class="audit" id="decision-table">
+            <thead><tr><th>ID</th><th>Область</th><th>Baseline → current</th><th>Статус</th><th>Наблюдаемость</th><th>API</th><th>Disk</th><th>Память</th><th>Скорость</th><th>Доказательство / confidence</th><th>Риск</th></tr></thead>
             <tbody>
-              <tr data-status="replaced" data-risk="medium"><td>01</td><td>Composition</td><td>Источник Net8 Transactions</td><td>Часть классов linked из common/NetStandard.</td><td>Net8 имеет локальные специализации всех основных Transactions-компонентов.</td><td><span class="badge replaced">реализовано иначе</span> Позволяет использовать modern BCL без ухудшения legacy targets.</td><td><span class="badge proof">csproj</span> effective compile inventory</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>02</td><td>RKS</td><td>Auto-flush threshold</td><td>Поле равно 1 000 000, но вызовы flush по счётчику закомментированы; комментарий `NOT USED ANYMORE`.</td><td>Поле сохранено для API compatibility и явно не управляет flush.</td><td><span class="badge preserved">сохранено</span> Возвращать threshold-driven flush нельзя.</td><td><span class="badge proof">code</span><span class="badge proof">test</span> RandomKeySorterUsesValueConversionAndNeverAutoFlushes</td></tr>
-              <tr data-status="modern" data-risk="medium"><td>03</td><td>RKS / Net8</td><td>Key identity</td><td>Serialized key расширялся в hex string через <code>ToBytesString()</code>.</td><td><code>ByteKey</code> хранит binary key, FNV-1a hash и span equality.</td><td><span class="badge modern">Net8 optimization</span> Нет 2× char expansion и string allocations.</td><td><span class="badge proof">code</span><span class="badge proof">benchmark</span></td></tr>
-              <tr data-status="replaced" data-risk="high"><td>04</td><td>RKS / Net8</td><td>Insert/remove state</td><td>Два словаря: <code>_dInsert</code> и <code>_dRemove</code>, плюс <code>_cnt</code> и <code>isUsed</code>.</td><td>Один <code>PendingOperation</code> на serialized key в <code>TableBatch.Operations</code>.</td><td><span class="badge replaced">реализовано иначе</span> Состояние — финальная операция, а не две независимые очереди.</td><td><span class="badge proof">code</span> RandomKeySorterKeepsFinalOperation</td></tr>
-              <tr data-status="intentional" data-risk="high"><td>05</td><td>RKS</td><td>Coalescing semantics</td><td>Insert→remove мог превратиться в no-op в зависимости от <code>WasAutomaticallyFlushed</code>; поведение зависело от истории flush.</td><td>Строгий last-operation-wins, одинаковый до и после explicit Flush.</td><td><span class="badge intentional">намеренно</span> Убрана исторически случайная state-dependent semantics.</td><td><span class="badge proof">tests</span> permutations, rollback, repeated commits</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>06</td><td>RKS</td><td>Value conversion</td><td><code>Insert</code> ошибочно использовал <code>ConvertKey&lt;TValue&gt;</code>.</td><td>Используется <code>ConvertValue</code>.</td><td><span class="badge fixed">correctness fix</span> Восстановлена корректная сериализация value.</td><td><span class="badge proof">test</span> boolean values</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>07</td><td>RKS</td><td>Key ownership</td><td>Serialized key сохранялся в pending dictionaries и не должен был меняться снаружи.</td><td>Net8 явно clone-ит key при первом добавлении; lookup key не clone-ится.</td><td><span class="badge preserved">контракт усилен</span> Mutable caller key не разрушает hash identity.</td><td><span class="badge proof">test</span> mutable key</td></tr>
-              <tr data-status="intentional" data-risk="medium"><td>08</td><td>RKS</td><td>Value ownership</td><td>Serialized value фактически мог быть caller-owned; контракт не был сформулирован.</td><td>Value не clone-ится и заимствуется до <code>Flush/Commit</code>; контракт задокументирован.</td><td><span class="badge intentional">намеренно</span> Меньше allocation; caller не меняет buffer до flush.</td><td><span class="badge proof">test</span> RandomKeySorterBorrowsValuesUntilFlush</td></tr>
-              <tr data-status="removed" data-risk="low"><td>09</td><td>RKS / Net8</td><td>Локальный cache <code>tbls</code></td><td>RKS держал отдельный dictionary table name → LTrie.</td><td>RKS получает таблицу через <code>GetWriteTableFromBuffer</code> на flush.</td><td><span class="badge removed">избыточный cache удалён</span> O(1) transaction cache остаётся ниже.</td><td><span class="badge proof">code</span> <code>transactionWriteTables</code></td></tr>
-              <tr data-status="modern" data-risk="medium"><td>10</td><td>RKS / Net8</td><td>Sort buffer</td><td>LINQ <code>OrderBy</code> над hex dictionaries.</td><td><code>ArrayPool&lt;PendingOperation&gt;</code> + <code>Array.Sort</code> по binary spans.</td><td><span class="badge modern">Net8 optimization</span> Снижены временные allocations; pooled array очищается.</td><td><span class="badge proof">benchmark</span> allocations не выросли</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>11</td><td>RKS</td><td>Flush order</td><td>Tables/keys сортируются; removals применяются перед inserts.</td><td>Net8 сортирует table names ordinal и binary keys lexicographically; removes всё ещё перед inserts.</td><td><span class="badge preserved">сохранено</span> Детерминированность и locality сохранены.</td><td><span class="badge proof">code</span><span class="badge proof">tests</span></td></tr>
-              <tr data-status="fixed" data-risk="high"><td>12</td><td>RKS / Transaction</td><td>Rollback pending batch</td><td>Rollback не очищал RKS state явно.</td><td><code>RandomKeySorter.Reset()</code> вызывается в rollback <code>finally</code> и dispose.</td><td><span class="badge fixed">correctness fix</span> Pending operations не протекают в следующий commit.</td><td><span class="badge proof">test</span> RandomKeySorterRollbackDropsPendingOperations</td></tr>
-              <tr data-status="regression" data-risk="high"><td>13</td><td>Public API / Net8</td><td>Наследование RKS</td><td><code>public class RandomKeySorter</code>, <code>IsSealed=false</code>.</td><td><code>public sealed class RandomKeySorter</code>, <code>IsSealed=true</code>.</td><td><span class="badge regression">P0 regression</span> Source compatibility нарушена для наследников.</td><td><span class="badge proof">reflection</span> 1/6 visible type metadata diff</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>14</td><td>Transaction</td><td>Write-table cache</td><td><code>transactionWriteTables</code> ускорял bulk writes.</td><td>Dictionary сохранён и остаётся точкой cache для RKS и обычных mutations.</td><td><span class="badge preserved">сохранено</span> Cache не потерян.</td><td><span class="badge proof">code</span> GetWriteTableFromBuffer</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>15</td><td>Transaction</td><td>Read-root cache</td><td><code>transactionReadTables</code>/<code>Rtbe</code> держал LTrie, version token и read root.</td><td>Механизм сохранён; root обновляется при изменении <code>DtTableFixed</code>.</td><td><span class="badge preserved">сохранено</span> Snapshot visibility остаётся transaction-scoped.</td><td><span class="badge proof">tests</span> rapid commits, committed node images</td></tr>
-              <tr data-status="preserved" data-risk="medium"><td>16</td><td>Transaction</td><td>Open-table accounting</td><td><code>_openTable</code> считал открытия для корректного CloseTables.</td><td>Dictionary и <code>sync_openTable</code> сохранены; dispose гарантированно очищает state.</td><td><span class="badge preserved">сохранено</span> Не удалять как «лишний counter».</td><td><span class="badge proof">code</span> AddOpenTable / CloseTables</td></tr>
-              <tr data-status="intentional" data-risk="high"><td>17</td><td>Transaction</td><td>Thread ownership</td><td>Проверка была рассеяна по table access и обходилась cache hits.</td><td><code>EnsureTransactionOwner()</code> вызывается всеми state-changing APIs; parallel read path явно opt-out.</td><td><span class="badge intentional">контракт усилен</span> Cross-thread mutation теперь стабильно отклоняется.</td><td><span class="badge proof">test</span> MutationsAreRejectedOnAnotherThread</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>18</td><td>Transaction</td><td>Dispose lifecycle</td><td>Cleanup был менее устойчив к повторному/cross-thread dispose locked transaction.</td><td>Dispose idempotent, собирает first exception, очищает caches и вызывает <code>RemoveSession(ManagedThreadId)</code>.</td><td><span class="badge fixed">correctness fix</span> finally на другом thread освобождает session.</td><td><span class="badge proof">test</span> LockedTransactionCanBeDisposedOnAnotherThread</td></tr>
-              <tr data-status="modern" data-risk="medium"><td>19</td><td>Multi-select / Net8</td><td>N-way merge</td><td>Несколько dictionaries и линейный поиск следующего row: O(rows × tables).</td><td><code>PriorityQueue</code>: O(rows × log tables), cursor per enumerator.</td><td><span class="badge modern">Net8 optimization</span> Лучше масштабируется по числу таблиц.</td><td><span class="badge proof">test</span> stable tie order</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>20</td><td>Multi-select</td><td>Serialized key length</td><td>Длина проверялась только у первой строки каждого enumerator.</td><td>Проверяется после каждого <code>MoveNext</code>.</td><td><span class="badge fixed">correctness fix</span> Сохраняется <code>KEYS_IN_TABLES_HAVE_DIFFERENT_SIZE</code>.</td><td><span class="badge proof">test</span> forward/backward variable keys</td></tr>
-              <tr data-status="fixed" data-risk="medium"><td>21</td><td>Multi-select</td><td>Enumerator cleanup</td><td>Iterator exit/exception не имел единого очевидного dispose boundary.</td><td>Все cursors dispose-ятся в <code>finally</code>.</td><td><span class="badge fixed">correctness fix</span> Нет удержания read resources после раннего выхода.</td><td><span class="badge proof">code</span> MergeRows finally</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>22</td><td>Collections</td><td>DB key equality</td><td>Custom comparer входного Dictionary/HashSet мог определять missing keys.</td><td>Удаление отсутствующих DB keys использует <code>EqualityComparer&lt;T&gt;.Default</code>.</td><td><span class="badge fixed">correctness fix</span> Binary-distinct keys не остаются случайно.</td><td><span class="badge proof">test</span> all replacement variants</td></tr>
-              <tr data-status="modern" data-risk="low"><td>23</td><td>Vector / Net8</td><td>Synchronization object</td><td>Каждая Transaction eagerly создавала <code>ReaderWriterLockSlim</code>.</td><td>Monitor object создаётся lazy через <code>Volatile.Read</code>/<code>CompareExchange</code>.</td><td><span class="badge modern">Net8 optimization</span> Ниже memory footprint обычной transaction без vectors.</td><td><span class="badge proof">code</span></td></tr>
-              <tr data-status="fixed" data-risk="medium"><td>24</td><td>Vector / Net8</td><td>Search iterator flush</td><td><code>graph.Flush()</code> стоял после yield loop и мог не выполниться при раннем прекращении enumeration.</td><td>Flush находится в iterator <code>finally</code>.</td><td><span class="badge fixed">correctness fix</span> Cleanup гарантирован.</td><td><span class="badge proof">code</span></td></tr>
-              <tr data-status="replaced" data-risk="high"><td>25</td><td>Coordinator</td><td>Wait primitive</td><td>Один глобальный <code>ThreadsGator</code> будил всех ожидающих writers.</td><td>Один <code>DbThreadsGator</code> на <code>WriteReservationWaiter</code>.</td><td><span class="badge replaced">реализовано иначе</span> Меньше herd wakeups, явное ownership waiter state.</td><td><span class="badge proof">tests</span> wakeups, parallel commits</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>26</td><td>Coordinator</td><td>Writer fairness</td><td>Новый request мог обойти ранее ожидающий конфликтующий request.</td><td>Later conflicting waiter зависит от earlier conflicting waiter; unrelated requests могут пройти.</td><td><span class="badge fixed">correctness fix</span> Нет starvation без глобальной сериализации.</td><td><span class="badge proof">test</span> LockedTransactionsRespectExclusiveWaiter</td></tr>
-              <tr data-status="replaced" data-risk="high"><td>27</td><td>Coordinator</td><td>Deadlock detection</td><td>Проверялся непосредственный двухсторонний цикл через awaiting tables.</td><td>Итеративный wait-for graph traversal через <code>Stack&lt;int&gt;</code>/<code>HashSet&lt;int&gt;</code>.</td><td><span class="badge replaced">расширено</span> Обнаруживаются N-way cycles.</td><td><span class="badge proof">test</span> CoordinatorDetectsThreeWayDeadlock</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>28</td><td>Coordinator</td><td>Unexpected registration failure</td><td>Error path мог оставить waiter/reservation и зависимый writer.</td><td>Waiter удаляется под coordinator lock; gate dispose и unregister/rollback — вне него.</td><td><span class="badge fixed">correctness fix</span> Сохраняется <code>TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED</code>.</td><td><span class="badge proof">test</span> CoordinatorCleansUpNotifyAheadFailure</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>29</td><td>Coordinator</td><td>Slow cleanup под global lock</td><td><code>TransactionUnit.Dispose</code>/rollback мог выполняться под <code>_sync_transactions</code> write lock.</td><td>Unit извлекается из dictionary под lock, затем dispose/I/O выполняется снаружи.</td><td><span class="badge fixed">correctness/perf</span> Unrelated transactions не блокируются slow table I/O.</td><td><span class="badge proof">code</span><span class="badge proof">stress</span></td></tr>
-              <tr data-status="fixed" data-risk="medium"><td>30</td><td>Coordinator</td><td>Повторная transaction того же thread</td><td>Locked TransactionUnit мог создаться до удаления stale unit и ждать собственную session.</td><td>Сначала stale transaction unregister, затем создаётся новый locked unit.</td><td><span class="badge fixed">correctness fix</span> Убран self-wait.</td><td><span class="badge proof">code</span> GetTransaction order</td></tr>
-              <tr data-status="fixed" data-risk="high"><td>31</td><td>Table locker</td><td>Exclusive waiter fairness</td><td>Earlier waiters проверялись только если текущая session уже конфликтовала с accepted session.</td><td>Каждая новая session всегда проверяет earlier conflicting waiters.</td><td><span class="badge fixed">correctness fix</span> Поток shared sessions не вытесняет exclusive waiter.</td><td><span class="badge proof">test</span> exclusive waiter</td></tr>
-              <tr data-status="modern" data-risk="low"><td>32</td><td>Table locker</td><td>Table intersection allocations</td><td><code>tables.ToList()</code> создавался внутри scans.</td><td>Prepared <code>List&lt;string&gt;</code> хранится в session.</td><td><span class="badge modern">optimization</span> Меньше allocations на contention path.</td><td><span class="badge proof">code</span></td></tr>
-              <tr data-status="fixed" data-risk="medium"><td>33</td><td>Table locker</td><td>Gate disposal</td><td>Engine dispose мог dispose-ить gate, пока waiter находится в <code>Wait()</code>.</td><td>Dispose открывает gates и очищает coordinator state; waiter сам видит disposed lifecycle.</td><td><span class="badge fixed">correctness fix</span> Без unsafe concurrent gate disposal.</td><td><span class="badge proof">test</span> EngineLifecycleIsSafe</td></tr>
-              <tr data-status="modern" data-risk="low"><td>34</td><td>TransactionUnit</td><td>Reservation collections</td><td>Write tables и awaiting list eagerly создавались на каждую transaction.</td><td>Создаются lazy при первом использовании.</td><td><span class="badge modern">allocation optimization</span> Read-only transaction дешевле.</td><td><span class="badge proof">code</span></td></tr>
-              <tr data-status="fixed" data-risk="medium"><td>35</td><td>TransactionUnit</td><td>Awaiting-list ownership</td><td>Getter возвращал внутренний mutable list после освобождения lock.</td><td>Возвращается snapshot copy.</td><td><span class="badge fixed">correctness fix</span> Deadlock graph не читает одновременно изменяемую коллекцию.</td><td><span class="badge proof">code</span></td></tr>
-              <tr data-status="replaced" data-risk="high"><td>36</td><td>Journal</td><td>Lock granularity</td><td>Полный <code>FinishTransaction</code>, включая table I/O, шёл под journal state write lock.</td><td>Сначала snapshot table dictionary; journal I/O сериализован отдельным <code>_sync_journalIo</code>; table finalization вне state lock.</td><td><span class="badge replaced">concurrency model</span> Параллельные commits не держат глобальный bookkeeping lock на slow I/O.</td><td><span class="badge proof">test</span> ParallelMultiTableCommitsRemainDurable</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>37</td><td>Journal</td><td>Recovery marker protocol</td><td>Add marker + commit → finalize tables → remove marker + commit.</td><td>Тот же порядок; marker намеренно остаётся durable при ошибке table finalization.</td><td><span class="badge preserved">сохранено</span> Crash recovery semantics не менялась.</td><td><span class="badge proof">test</span> JournalPayloadAndCrashRecoveryRemainCompatible</td></tr>
-              <tr data-status="preserved" data-risk="high"><td>38</td><td>Journal / disk</td><td>On-disk payload</td><td><code>_DBreezeTranJrnl</code>, 8-byte big-endian transaction key, UTF-8 XML list table names.</td><td>Имя, key, XML serializer и enumeration order сохранены.</td><td><span class="badge preserved">disk compatible</span> Нового format version нет.</td><td><span class="badge proof">payload probe</span><span class="badge proof">bidirectional disk probe</span></td></tr>
-              <tr data-status="preserved" data-risk="medium"><td>39</td><td>Journal</td><td>10 MB compaction</td><td>При пустом journal и длине &gt;10 MB: <code>RecreateFiles</code>, dispose и reopen.</td><td>Порог и полный reopen сохранены; добавлена повторная проверка пустоты под journal I/O lock.</td><td><span class="badge preserved">сохранено безопаснее</span> Не путать с startup <code>RemoveAll(true)</code>.</td><td><span class="badge proof">code</span> MaxlengthOfTransactionFile</td></tr>
-              <tr data-status="replaced" data-risk="medium"><td>40</td><td>Journal startup</td><td>Empty/recovered journal reset</td><td><code>LTrie.RemoveAll(true)</code> вызывался напрямую.</td><td><code>RecreateJournalStorage()</code> вызывает тот же <code>RemoveAll(true)</code> без reopen текущего LTrie.</td><td><span class="badge replaced">явная boundary</span> Новая LianaTrie остаётся reusable после RemoveAll.</td><td><span class="badge proof">code</span><span class="badge proof">LianaTrie audit</span></td></tr>
-              <tr data-status="fixed" data-risk="high"><td>41</td><td>Journal recovery</td><td>Открытие таблиц для rollback recovery</td><td>Journal сам строил default <code>TrieSettings</code>/<code>StorageLayer</code> по physical path.</td><td>Recovery делегирован Schema через <code>OpenTableForRollbackRecovery</code>.</td><td><span class="badge fixed">correctness/architecture</span> Учитываются actual storage route и alternative disk storage.</td><td><span class="badge proof">tests</span> crash recovery, alternative storage</td></tr>
-              <tr data-status="fixed" data-risk="low"><td>42</td><td>Exceptions</td><td>Stack preservation</td><td>Много мест использовали <code>throw ex</code>.</td><td>Заменено на <code>throw</code>; cleanup errors сохраняются как inner context.</td><td><span class="badge fixed">diagnostics fix</span> Не меняет disk/API, улучшает original stack.</td><td><span class="badge proof">code</span></td></tr>
-              <tr data-status="preserved" data-risk="low"><td>43</td><td>Vector build</td><td>K-means source file</td><td><code>Transaction.Vector_kmeans.cs</code> физически существовал, но не входил в effective Net8 compile.</td><td>Не скопирован в Net8.</td><td><span class="badge preserved">не было functionality</span> Не считать удалением.</td><td><span class="badge proof">csproj</span></td></tr>
+              <tr data-status="alternative" data-risk="P1"><td>RKS-01</td><td>Ключи pending state</td><td>Hex-string key → бинарный <code>ByteKey</code> в Net8</td><td><span class="badge violet">реализовано иначе</span></td><td>Логическая сортировка та же; внутреннее представление и lifetime иные</td><td>нет</td><td>нет</td><td>убрана 2× hex-строка</td><td>меньше conversion work</td><td><a href="../../DBreeze.Net8/Transactions/RandomKeySorter.cs">Net8 RKS</a>, tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="alternative" data-risk="P1"><td>RKS-02</td><td>Coalescing</td><td>Отдельные insert/remove maps → одна final operation на ключ</td><td><span class="badge violet">реализовано иначе</span></td><td>Последняя операция до flush/commit побеждает</td><td>нет</td><td>нет</td><td>≤1 entry/key</td><td>меньше лишних writes</td><td>RKS final-operation tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="preserved" data-risk="P1"><td>RKS-03</td><td>Auto-flush</td><td>Порог <code>AutomaticFlushLimitQuantityPerTable</code> не действовал в baseline и не действует сейчас</td><td><span class="badge good">сохранено</span></td><td>Большой batch удерживается до explicit flush/commit</td><td>поле сохранено</td><td>нет</td><td>нет автоматической границы</td><td>нет скрытого I/O</td><td>baseline calls закомментированы + тест no-auto-flush; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="correctness" data-risk="P1"><td>RKS-04</td><td>Value conversion</td><td><code>ConvertKey&lt;TValue&gt;</code> → <code>ConvertValue&lt;TValue&gt;</code></td><td><span class="badge good">correctness fix</span></td><td>Корректная value-сериализация для отличающихся типов</td><td>нет</td><td>исправляет запись</td><td>нейтрально</td><td>нейтрально</td><td><a href="../../DBreeze/Transactions/RandomKeySorter.cs">common RKS</a>; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="intentional" data-risk="P1"><td>RKS-05</td><td>Ownership key</td><td>Текущий Net8 клонирует key при первом помещении в map</td><td><span class="badge warn">намеренно</span></td><td>Мутация caller key после Insert не меняет identity</td><td>нет</td><td>нет</td><td>1 owned key</td><td>цена одного clone</td><td>object-identity tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="owner" data-risk="P1"><td>RKS-06</td><td>Ownership value</td><td>Net8 хранит преобразованный <code>byte[] value</code> по ссылке до flush/commit</td><td><span class="badge warn">owner decision</span></td><td>Caller не должен менять массив до flush/commit</td><td>сигнатура та же</td><td>может изменить записанный value при нарушении</td><td>нет value clone</td><td>меньше copy</td><td>borrowed-value regression test; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="removed" data-risk="P2"><td>RKS-07</td><td>Table cache</td><td>Отдельный RKS cache удалён в Net8; остаётся transaction write-table cache</td><td><span class="badge violet">удалено как избыточное</span></td><td>Нет при сохранной транзакции</td><td>нет</td><td>нет</td><td>меньше duplicate refs</td><td>меньше lookup layers</td><td>source graph; высокая</td><td class="p2">P2</td></tr>
+              <tr data-status="optimization" data-risk="P2"><td>RKS-08</td><td>Sort buffer</td><td>Dictionary enumeration → <code>ArrayPool&lt;PendingOperation&gt;</code> + binary sort</td><td><span class="badge info">оптимизация</span></td><td>Порядок ключей идентичен byte lexicographic</td><td>нет</td><td>нет</td><td>pooled transient buffer</td><td>batch sort без permanent array</td><td>source + RKS benchmark; высокая</td><td class="p2">P2</td></tr>
+              <tr data-status="preserved" data-risk="P1"><td>RKS-09</td><td>Reset/rollback</td><td>Pending state очищается после flush/rollback/dispose</td><td><span class="badge good">сохранено</span></td><td>Повторные commit/rollback не воспроизводят старые операции</td><td>нет</td><td>нет</td><td>retained state released</td><td>нейтрально</td><td>rollback/repeated commit tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="preserved" data-risk="P0"><td>RKS-10</td><td>Тип</td><td><code>RandomKeySorter</code> public, non-sealed в обеих DLL</td><td><span class="badge good">сохранено</span></td><td>Наследование сохранено</td><td>exact</td><td>нет</td><td>нет</td><td>нет</td><td>API manifests SHA-256 equal; высокая</td><td class="p0">P0</td></tr>
+
+              <tr data-status="intentional" data-risk="P1"><td>TR-01</td><td>Thread ownership</td><td>Мутации проверяют creator thread; explicit parallel reads разрешают read opt-out</td><td><span class="badge warn">намеренно</span></td><td>Cross-thread mutation теперь отвергается сразу</td><td>сигнатуры те же</td><td>нет</td><td>нейтрально</td><td>ранний fail вместо гонки</td><td><a href="../../DBreeze.Net8/Transactions/Transaction.cs">EnsureTransactionOwner</a> + test; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="correctness" data-risk="P1"><td>TR-02</td><td>Dispose lifecycle</td><td>Идемпотентный cleanup, first-exception capture, release по сохранённому owner id</td><td><span class="badge good">correctness fix</span></td><td>Dispose допустим с другого thread и не оставляет session/locks</td><td>нет</td><td>нет</td><td>очищает caches/RKS</td><td>снижает hang/leak риск</td><td>lifecycle/cross-thread tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="correctness" data-risk="P1"><td>TR-03</td><td>Rollback</td><td><code>RKS.Reset()</code> выполняется в <code>finally</code></td><td><span class="badge good">correctness fix</span></td><td>Ошибка rollback не оставляет pending batch</td><td>нет</td><td>защищает следующий commit</td><td>освобождает state</td><td>нейтрально</td><td>rollback tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="preserved" data-risk="P1"><td>TR-04</td><td>Read/write caches</td><td>Write-table identity cache и snapshot/read roots сохранены</td><td><span class="badge good">сохранено</span></td><td>Видимость внутри/между transactions соответствует контракту</td><td>нет</td><td>нет</td><td>bounded transaction lifetime</td><td>hot access сохранён</td><td>read root/visibility/cache tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="correctness" data-risk="P2"><td>TR-05</td><td>SelectDirect</td><td>Проверка отсутствующей таблицы выполняется до чтения pointer size</td><td><span class="badge good">correctness fix</span></td><td>Missing table возвращает корректный empty result вместо NRE</td><td>нет</td><td>нет</td><td>нет</td><td>быстрый exit</td><td>SelectDirect missing-table test; высокая</td><td class="p2">P2</td></tr>
+              <tr data-status="correctness" data-risk="P1"><td>TR-06</td><td>Overwrite flag</td><td><code>OverWriteIsAllowed</code> восстанавливается в <code>finally</code></td><td><span class="badge good">correctness fix</span></td><td>Exception не загрязняет последующие операции</td><td>нет</td><td>защита semantics</td><td>нет</td><td>нет</td><td>source branch; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="alternative" data-risk="P1"><td>TR-07</td><td>Collection replacement</td><td>Ключи для удаления сначала materialize, затем таблица мутируется</td><td><span class="badge violet">реализовано иначе</span></td><td>Нет mutation-during-iteration; replacement атомарнее на уровне transaction</td><td>нет</td><td>сохранён</td><td>временный key set</td><td>доп. проход ради correctness</td><td>dictionary/hash-set replacement tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="owner" data-risk="P1"><td>TR-08</td><td>Collection equality</td><td>DB equality остаётся serialized/default, custom caller comparer не меняет identity на диске</td><td><span class="badge warn">owner decision</span></td><td>Case-insensitive/custom comparer не удаляет «соседний» DB key</td><td>нет</td><td>сохранён historical identity</td><td>fallback default set</td><td>цена только custom comparer path</td><td>collection equality tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="optimization" data-risk="P1"><td>TR-09</td><td>MultiSelect</td><td>Merge нескольких tables через <code>PriorityQueue</code>, tie-break по table order</td><td><span class="badge info">оптимизация</span></td><td>Стабильный порядок равных keys</td><td>нет</td><td>нет</td><td>queue O(tables)</td><td>O(rows log tables)</td><td><a href="../../DBreeze.Net8/Transactions/Transaction.Net8.cs">Net8 merge</a> + tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="correctness" data-risk="P1"><td>TR-10</td><td>MultiSelect validation</td><td>Serialized key length проверяется при каждом <code>MoveNext</code></td><td><span class="badge good">correctness fix</span></td><td>Повреждённая поздняя row не проходит незамеченной</td><td>нет</td><td>read-only validation</td><td>нет</td><td>малый check/row</td><td>mixed key-length test; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="alternative" data-risk="P2"><td>TR-11</td><td>Vector paths</td><td>Lazy synchronized handler/flush и exception-safe iterator в Net8</td><td><span class="badge violet">реализовано иначе</span></td><td>Публичные inserts остаются synchronous; deferred hook — intentional no-op</td><td>нет</td><td>нет</td><td>lazy state</td><td>меньше eager work</td><td><a href="../../DBreeze.Net8/Transactions/Transaction.Vector.cs">Vector source</a>; средняя</td><td class="p2">P2</td></tr>
+
+              <tr data-status="alternative" data-risk="P0"><td>CO-01</td><td>Wait primitive</td><td>Один broadcast <code>DbThreadsGator</code> → отдельный gate на waiter</td><td><span class="badge violet">реализовано иначе</span></td><td>Targeted wakeups вместо thundering herd</td><td>нет</td><td>нет</td><td>объект/gate на waiter</td><td>лучше под contention</td><td><a href="../../DBreeze.Net8/Transactions/TransactionsCoordinator.cs">Coordinator</a> + stress; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="alternative" data-risk="P0"><td>CO-02</td><td>Fairness</td><td>Поздний конфликтующий waiter не обходит раннего; независимые tables проходят</td><td><span class="badge violet">реализовано иначе</span></td><td>FIFO только в конфликтующем подграфе</td><td>нет</td><td>нет</td><td>queue metadata</td><td>меньше starvation</td><td>reservation ordering tests; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="correctness" data-risk="P0"><td>CO-03</td><td>Deadlock graph</td><td>Pairwise check → transitive wait-for graph/cycle detection</td><td><span class="badge good">correctness fix</span></td><td>Обнаруживается цикл из 3+ transactions</td><td>exception contract сохранён</td><td>rollback route сохранён</td><td>blocker lists</td><td>предотвращает вечный wait</td><td>three-way deadlock test; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="correctness" data-risk="P0"><td>CO-04</td><td>Wakeup/cleanup</td><td>Waiter удаляется и gate dispose во всех failure/deadlock ветвях</td><td><span class="badge good">correctness fix</span></td><td>Нет lost wakeup/stale queue после исключения</td><td>коды исключений сохранены</td><td>нет</td><td>state освобождается</td><td>устраняет hang</td><td>no-lost-wakeup/notify failure tests; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="optimization" data-risk="P1"><td>CO-05</td><td>Lock boundaries</td><td>TransactionUnit dispose вынесен из coordinator lock; signal адресный</td><td><span class="badge info">оптимизация</span></td><td>Меньше длинных critical sections</td><td>нет</td><td>нет</td><td>нейтрально</td><td>лучше concurrency</td><td>source + contention tests; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="regression" data-risk="P1"><td>CO-06</td><td>Allocations</td><td>Per-waiter topology показывает +150 B в primary median</td><td><span class="badge danger">memory regression</span></td><td>Только managed allocation под contention</td><td>нет</td><td>нет</td><td>+1,91%, 2/3 runs</td><td>timing inconclusive</td><td>BDN raw CSV; средняя (retry reversed)</td><td class="p1">P1</td></tr>
+              <tr data-status="optimization" data-risk="P2"><td>LK-01</td><td>Locker</td><td>Кэшируется table list; wait order и release-by-owner сохранены/усилены</td><td><span class="badge info">оптимизация</span></td><td>Dispose раскрывает ожидающие gates безопасно</td><td>нет</td><td>нет</td><td>меньше ToList churn</td><td>меньше lock work</td><td><a href="../../DBreeze.Net8/Transactions/TransactionTablesLocker.cs">Locker</a> + tests; высокая</td><td class="p2">P2</td></tr>
+              <tr data-status="correctness" data-risk="P2"><td>UN-01</td><td>TransactionUnit</td><td>Awaiting tables lazy; getter возвращает defensive copy</td><td><span class="badge good">correctness fix</span></td><td>Внешний consumer не мутирует coordinator state</td><td>internal</td><td>нет</td><td>lazy list</td><td>нейтрально</td><td><a href="../../DBreeze.Net8/Transactions/TransactionUnit.cs">Unit</a>; высокая</td><td class="p2">P2</td></tr>
+
+              <tr data-status="preserved" data-risk="P0"><td>JR-01</td><td>Marker format</td><td>8-byte big-endian transaction key + historical UTF-8 XML string fragments</td><td><span class="badge good">сохранено</span></td><td>Старый journal marker читается</td><td>constructor exact</td><td>byte-compatible</td><td>нет</td><td>нет</td><td>payload assertion + recovery test; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="preserved" data-risk="P0"><td>JR-02</td><td>Commit protocol</td><td>Durable marker до finalization; marker удаляется после всех table success</td><td><span class="badge good">сохранено</span></td><td>Crash recovery semantics сохранена</td><td>нет</td><td>сохранён</td><td>нет</td><td>durability first</td><td>journal source/test; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="correctness" data-risk="P0"><td>JR-03</td><td>Recovery route</td><td>Прямой StorageLayer → <code>DBreezeSchema.OpenTableForRollbackRecovery</code></td><td><span class="badge good">correctness fix</span></td><td>Alternative table location участвует в recovery</td><td>нет</td><td>формат прежний</td><td>нет</td><td>корректный route lookup</td><td><a href="../../DBreeze.Net8/Transactions/TransactionsJournal.cs">Journal</a> + alternative recovery test; высокая</td><td class="p0">P0</td></tr>
+              <tr data-status="alternative" data-risk="P1"><td>JR-04</td><td>Lock boundaries</td><td>Durable I/O сериализован отдельно от journal state lock</td><td><span class="badge violet">реализовано иначе</span></td><td>Медленный disk I/O не держит coordinator/state critical section</td><td>нет</td><td>protocol прежний</td><td>monitor state</td><td>лучше parallel commits</td><td>parallel durable commit test; высокая</td><td class="p1">P1</td></tr>
+              <tr data-status="removed" data-risk="P2"><td>JR-05</td><td>Startup cleanup</td><td>Dispose/new StorageLayer → <code>LTrie.RemoveAll(true)</code> reuse</td><td><span class="badge violet">удалено как избыточное</span></td><td>После recovery journal пуст и пригоден повторно</td><td>нет</td><td>storage identity прежняя</td><td>меньше object churn</td><td>меньше reopen work</td><td>engine lifecycle tests; высокая</td><td class="p2">P2</td></tr>
+              <tr data-status="preserved" data-risk="P1"><td>JR-06</td><td>Runtime compaction</td><td>Порог около 10 MB и <code>Storage.RecreateFiles()</code>/reopen сохранены</td><td><span class="badge good">сохранено</span></td><td>Journal files не растут бесконечно</td><td>нет</td><td>сохранён</td><td>reopen objects</td><td>редкий compaction pause</td><td>journal source; высокая</td><td class="p1">P1</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section id="rks">
-        <h2>RandomKeySorter: что изменилось архитектурно</h2>
-        <div class="grid-3">
-          <div class="card">
-            <h3>Эталонная модель</h3>
-            <ul>
-              <li>Hex string как dictionary identity serialized key.</li>
-              <li>Раздельные insert/remove dictionaries.</li>
-              <li><code>_cnt</code>, <code>isUsed</code>, <code>WasAutomaticallyFlushed</code>.</li>
-              <li>Собственный cache LTrie tables.</li>
-              <li>LINQ sorting при Flush.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Net8 модель</h3>
-            <ul>
-              <li>Одна финальная операция на binary key.</li>
-              <li>Key clone + cached FNV-1a hash.</li>
-              <li>Value borrowed до flush/commit.</li>
-              <li>Pooled sortable operation array.</li>
-              <li>Transaction cache выдаёт LTrie.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Legacy targets</h3>
-            <ul>
-              <li>Сохраняют hex-based data structure.</li>
-              <li>Получили owner checks и last-operation-wins.</li>
-              <li>Исправлен <code>ConvertValue</code>.</li>
-              <li>Добавлен <code>Reset</code> для rollback.</li>
-              <li>Не используют недоступные modern APIs.</li>
-            </ul>
-          </div>
+        <h2>RandomKeySorter: полный lifecycle</h2>
+        <div class="flow">
+          <div class="flow-step"><b>1. Convert</b><small>Key/value сериализуются теми же DB converters.</small></div>
+          <div class="flow-step"><b>2. Own key</b><small>Первый key clone становится identity map.</small></div>
+          <div class="flow-step"><b>3. Coalesce</b><small>Одна final insert/remove operation на key.</small></div>
+          <div class="flow-step"><b>4. Rent</b><small>Pending operations копируются в pooled buffer.</small></div>
+          <div class="flow-step"><b>5. Sort/write</b><small>Binary lexicographic order, один table handle.</small></div>
+          <div class="flow-step"><b>6. Reset</b><small>Flush/commit/rollback/dispose освобождают state.</small></div>
         </div>
-        <h3>Auto-flush: исторический комментарий против реального кода</h3>
-        <p>Старое summary всё ещё упоминало flush после превышения default 10 000, но фактическое поле уже было 1 000 000, а оба threshold checks были закомментированы. Следовательно, рефакторинг не удалил работающий механизм; он сделал no-op контракт явным. Причина отключения остаётся архитектурно важной: после скрытого flush отсутствие key в RKS уже не означает отсутствие текущего value — пришлось бы читать LTrie/storage, и object-layer identity path потерял бы O(1) pending lookup.</p>
-        <h3>Last-operation-wins</h3>
-        <p>Новая модель определяет результат только последней операцией на serialized key. Это устраняет зависимость от <code>WasAutomaticallyFlushed</code>. При самом Flush исторический порядок «все remove, затем все insert» сохраняется для разных pending keys; для одного key остаётся только финальная операция.</p>
-        <div class="callout warning"><strong>Borrowed value — осознанный контракт:</strong> caller-owned mutable <code>byte[]</code> нельзя менять до explicit <code>Flush</code> или <code>Commit</code>. После flush RKS больше не держит pending reference. Key, напротив, должен быть owned и clone-ится при помещении в dictionary.</div>
+        <div class="grid2">
+          <article class="card"><h3>Что действительно удалено</h3><ul><li>Hex-string identity в локальном Net8.</li><li>Две конкурирующие коллекции insert/remove.</li><li>Отдельный RKS table cache поверх transaction cache.</li><li>Долгоживущий sort array: он заменён ArrayPool.</li></ul></article>
+          <article class="card"><h3>Что не было удалено</h3><ul><li>Auto-flush не был рабочим и в baseline: public поле историческое.</li><li>Сортировка по serialized key сохранена.</li><li>Explicit <code>Flush</code> и commit flush сохранены.</li><li>Табличный write cache существует на уровне Transaction.</li></ul></article>
+        </div>
+        <div class="callout warning"><strong>Lifetime contract:</strong> key защищён clone, а value сознательно borrowed. Это экономит память, но мутация исходного массива до <code>Flush/Commit</code> влияет на результат. Для будущего изменения здесь нужен явный выбор владельца: clone и дополнительные allocations либо документированный borrowed buffer.</div>
+        <p><strong>Retained state:</strong> теоретически текущий Net8 удерживает меньше метаданных на уникальный key: бинарный key вместо двухсимвольного hex, одна operation вместо двух maps, без дополнительного table cache. Измеренный <code>RandomKeySorterBatch</code> allocation одинаков: <code>363 B/op</code> у обеих DLL.</p>
       </section>
 
       <section id="transaction">
-        <h2>Transaction: caches, visibility и modern merge</h2>
-        <div class="grid-2">
-          <div class="card">
-            <h3>Сохранённые caches</h3>
-            <ul>
-              <li><code>transactionWriteTables</code>: table name → writable LTrie; основной bulk-write cache.</li>
-              <li><code>transactionReadTables</code>: LTrie + <code>DtTableFixed</code> + read root; transaction visibility cache.</li>
-              <li><code>_openTable</code>: счётчик открытий для симметричного schema cleanup.</li>
-              <li>Parallel read path по-прежнему может обходить owner check через явно вычисленный <code>ignoreThreadIdCheck</code>.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Новые lifecycle-инварианты</h3>
-            <ul>
-              <li>State-changing operation принадлежит creating thread.</li>
-              <li>Commit сначала flush-ит RKS, затем vector/text handlers, затем coordinator commit.</li>
-              <li>Rollback очищает pending RKS даже при ошибке coordinator rollback.</li>
-              <li>Dispose idempotent и освобождает locked session по сохранённому thread id.</li>
-            </ul>
-          </div>
+        <h2>Transaction: lifecycle, caches, collections, MultiSelect и vector</h2>
+        <div class="grid3">
+          <article class="card"><h3>Owner и dispose</h3><p>Все mutation/write-control paths вызывают <code>EnsureTransactionOwner</code>. Dispose при этом использует сохранённый owner id и может завершить locked session из другого thread; cleanup идемпотентен.</p></article>
+          <article class="card"><h3>Commit/rollback reuse</h3><p>RKS и transaction buffers очищаются после завершения. Repeated commit/rollback и открытые nested tables покрыты тестами; exception paths не переносят pending state.</p></article>
+          <article class="card"><h3>Snapshots/caches</h3><p>Write-table identity, committed read roots и visibility modifiers сохранены. Нет признака удаления hot read cache на уровне Transactions.</p></article>
+          <article class="card"><h3>Collections</h3><p>Replacement сначала материализует удаляемые DB keys. Equality определяется сериализованным/default контрактом DB, не произвольным comparer вызывающего Dictionary/HashSet.</p></article>
+          <article class="card"><h3>MultiSelect</h3><p>Net8 heap merge делает tie order детерминированным и проверяет размер каждого serialized key. API и результирующая последовательность тестами сохранены.</p></article>
+          <article class="card"><h3>Vector</h3><p>Handler создаётся лениво под синхронизацией; iterator освобождается при exception. Synchronous public insert path не превращён в скрытый deferred write.</p></article>
         </div>
-        <h3>Multi-select</h3>
-        <p>Эталон выполнял N-way merge через dictionaries enumerator/current row и повторный линейный выбор минимального или максимального key. Net8 хранит по одному cursor на таблицу в <code>PriorityQueue</code>. Priority включает binary key и стабильный ordinal table sequence, поэтому одинаковые keys сохраняют детерминированный tie order. После каждого <code>MoveNext</code> проверяется serialized key length; все enumerators закрываются в <code>finally</code>.</p>
-        <div class="callout"><strong>Не расширять контракт:</strong> все участвующие rows обязаны иметь keys одинаковой сериализованной длины. Это исторический контракт <code>Multi_Select*</code>, а не ограничение, которое следует «исправить» variable-length comparer-ом.</div>
+        <p class="muted small">Наблюдаемое ужесточение thread ownership — не просто implementation detail. Код, который раньше случайно мутировал одну Transaction из другого thread, теперь получает исключение вместо nondeterministic race. Это следует сохранять или менять только как публичное решение.</p>
       </section>
 
-      <section id="coordination">
-        <h2>Coordinator, TransactionTablesLocker и TransactionUnit</h2>
-        <h3>От broadcast gate к wait-for graph</h3>
-        <p>Старый единственный <code>ThreadsGator</code> не моделировал ownership конкретного ожидания: освобождение одной transaction будило всех. Текущий <code>WriteReservationWaiter</code> содержит transaction id, копию requested tables, собственный gate и текущий список blockers. Очередь допускает параллелизм несвязанных requests, но запрещает later conflicting request обходить earlier waiter.</p>
-        <div class="grid-2">
-          <div class="card">
-            <h3>Deadlock</h3>
-            <p>Эталон находил прямую взаимную зависимость по write/awaiting tables. Текущий iterative DFS идёт по blocker graph и обнаруживает цикл любой длины. Deadlock по-прежнему завершает исходную transaction исключением <code>TRANSACTION_IN_DEADLOCK</code>.</p>
-          </div>
-          <div class="card">
-            <h3>Failure cleanup</h3>
-            <p>Coordinator lock защищает только waiter graph. Gate disposal, unregister, rollback и table I/O выполняются после выхода из него. Неожиданная ошибка сохраняет внешний contract <code>TRANSACTION_TABLE_WRITE_REGISTRATION_FAILED</code>.</p>
-          </div>
-          <div class="card">
-            <h3>Table locker</h3>
-            <p>Accepted/waiting dictionaries и FIFO sequence сохранены. Исправлено только правило допуска: earlier conflicting exclusive waiter теперь нельзя обойти бесконечным потоком shared sessions.</p>
-          </div>
-          <div class="card">
-            <h3>TransactionUnit</h3>
-            <p>Коллекции write reservations создаются lazy. Методы возвращают snapshots, а не mutable внутренний list, что делает построение wait graph стабильным после освобождения unit lock.</p>
-          </div>
+      <section id="coordinator">
+        <h2>Coordinator / Locker / Unit</h2>
+        <p>Главное архитектурное изменение — от process-wide broadcast gate и локальной pairwise проверки к очереди конфликтующих waiters с явными blocker edges.</p>
+        <div class="flow">
+          <div class="flow-step"><b>Reserve request</b><small>Нормализованный список write tables.</small></div>
+          <div class="flow-step"><b>Find blockers</b><small>Active owners + более ранние конфликтующие waiters.</small></div>
+          <div class="flow-step"><b>Cycle check</b><small>Обход wait-for graph, включая 3+ nodes.</small></div>
+          <div class="flow-step"><b>Per-waiter wait</b><small>Собственный gate, без global wake storm.</small></div>
+          <div class="flow-step"><b>Targeted signal</b><small>Удалённый owner снимается из blocker lists.</small></div>
+          <div class="flow-step"><b>Cleanup</b><small>Queue/gate/unit очищаются и вне длинного lock.</small></div>
         </div>
-        <div class="callout danger"><strong>Запрещённая будущая оптимизация:</strong> не переносить dispose/rollback/I/O обратно под <code>_sync_transactions</code> или <code>_sync_dl</code>. Эти locks должны защищать только coordinator state, иначе unrelated transactions снова станут сериализоваться на диске.</div>
+        <div class="callout good"><strong>Liveness evidence:</strong> прошли no-lost-wakeup, fairness, cleanup-on-notify-failure и three-way deadlock tests. Новая схема исправляет класс зависаний, который pairwise алгоритм не мог доказательно исключить.</div>
+        <div class="callout warning"><strong>Цена:</strong> waiter object, gate и blocker collections добавляют краткоживущие allocations. BDN allocation gate сработал, хотя concurrent retry меняет знак. Нужен специальный deterministic allocation harness без scheduler noise перед оптимизацией; нельзя возвращать global broadcast только ради этих 150 B.</div>
       </section>
 
       <section id="journal">
-        <h2>TransactionsJournal: protocol сохранён, lock boundary изменена</h2>
-        <div class="flow" style="grid-template-columns:repeat(5,minmax(170px,1fr))" role="img" aria-label="Journal commit protocol">
-          <div class="flow-step"><b>1. Snapshot</b><small>Копия transaction tables под state read lock.</small></div>
-          <div class="flow-step"><b>2. Marker add</b><small>XML payload добавляется и commit-ится под journal I/O lock.</small></div>
-          <div class="flow-step"><b>3. Finalize</b><small><code>ITRCommitFinished</code> каждой таблицы без state/journal lock.</small></div>
-          <div class="flow-step"><b>4. Marker remove</b><small>Удаление marker и durable commit под journal I/O lock.</small></div>
-          <div class="flow-step"><b>5. Compact</b><small>При empty state и &gt;10 MB повторная проверка, RecreateFiles и reopen.</small></div>
+        <h2>Journal: protocol, recovery и compaction</h2>
+        <div class="grid4">
+          <article class="card"><h3>Storage identity</h3><p><code>_DBreezeTranJrnl</code>, таблица <code>DBreeze.TranJournal</code>.</p></article>
+          <article class="card"><h3>Marker key</h3><p>Transaction number, 8-byte big-endian encoding.</p></article>
+          <article class="card"><h3>Payload</h3><p>Исторические UTF-8 XML fragments: <code>&lt;string&gt;table&lt;/string&gt;</code> в исходном table order.</p></article>
+          <article class="card"><h3>Recovery</h3><p>Schema route открывает таблицу, включая <code>AlternativeTablesLocations</code>.</p></article>
         </div>
-        <h3>Что осталось byte-compatible</h3>
-        <ul>
-          <li>Имя storage: <code>_DBreezeTranJrnl</code>.</li>
-          <li>Journal table name: <code>DBreeze.TranJournal</code>.</li>
-          <li>Key: transaction number в 8-byte big-endian representation.</li>
-          <li>Value: UTF-8 результат исторического XML serializer списка table names.</li>
-          <li>Порядок table names: insertion/enumeration order исходного per-transaction dictionary.</li>
-          <li>Recovery marker durable до table finalization и удаляется только после успеха.</li>
-        </ul>
-        <h3>Два разных сценария очистки</h3>
-        <div class="grid-2">
-          <div class="card"><h4>Startup / recovery</h4><p><code>RecreateJournalStorage()</code> вызывает <code>LTrie.RemoveAll(true)</code> и продолжает использовать тот же экземпляр. Это опирается на исправленный reusable lifecycle LianaTrie.</p></div>
-          <div class="card"><h4>Runtime compaction &gt;10 MB</h4><p>Сохранился полный путь <code>Storage.RecreateFiles()</code> → dispose LTrie → новый StorageLayer/LTrie. Удалять reopen из этого path без отдельного аудита нельзя.</p></div>
+        <div class="flow">
+          <div class="flow-step"><b>Allocate tx id</b><small>Monotonic journal transaction number.</small></div>
+          <div class="flow-step"><b>Collect tables</b><small>Имена ITransactable в commit order.</small></div>
+          <div class="flow-step"><b>Persist marker</b><small>Durable journal запись до finish.</small></div>
+          <div class="flow-step"><b>Finalize tables</b><small>Каждая таблица завершает commit.</small></div>
+          <div class="flow-step"><b>Delete marker</b><small>Только после полного success.</small></div>
+          <div class="flow-step"><b>Recover/reuse</b><small>Startup recovery, затем RemoveAll(true).</small></div>
         </div>
-        <div class="callout good"><strong>Recovery ownership улучшен:</strong> journal больше не угадывает storage settings по physical path. <code>DBreezeSchema.OpenTableForRollbackRecovery</code> знает реальный storage route, включая alternative disk storage.</div>
+        <p>Startup cleanup и runtime compaction нельзя смешивать. После startup recovery текущий код переиспользует LTrie через <code>RemoveAll(true)</code>. При runtime росте journal примерно выше 10 MB по-прежнему выполняются <code>Storage.RecreateFiles()</code>, dispose и reopen. Disk bytes и marker ordering не изменены.</p>
+        <details><summary>Встроенный payload oracle из regression test</summary><pre>&lt;string&gt;journal-a&lt;/string&gt;
+&lt;string&gt;journal-b&lt;/string&gt;
+
+Проверено: marker остаётся после injected failure, новый engine восстанавливает обе таблицы (вторая в alternative route), затем marker count становится 0.</pre></details>
       </section>
 
-      <section id="preserved">
-        <h2>Что выглядит удалённым, но функционально сохранено</h2>
-        <div class="grid-3">
-          <div class="card"><h3>RKS table cache</h3><p>Локальный <code>tbls</code> удалён только в Net8. Writable LTrie всё ещё кешируется в <code>Transaction.transactionWriteTables</code>.</p></div>
-          <div class="card"><h3>Auto-flush</h3><p>Не потерян: он уже не работал в эталоне. Сохранено публичное поле как compatibility-only no-op.</p></div>
-          <div class="card"><h3>Sorted flush</h3><p>Hex ordering заменён binary span ordering; оба дают lexicographic byte order. Removes по-прежнему идут перед inserts.</p></div>
-          <div class="card"><h3>Read snapshots</h3><p><code>Rtbe</code>, read root и version refresh не удалены. Parallel reads остаются отдельным opt-out path.</p></div>
-          <div class="card"><h3>Write reservation</h3><p>Глобальный gate исчез, но сам механизм усилен: per-waiter gates, fair sequence и graph blockers.</p></div>
-          <div class="card"><h3>Journal compaction</h3><p>Порог 10 MB и runtime reopen сохранены. Без reopen работает только startup/recovery RemoveAll path.</p></div>
-          <div class="card"><h3>Journal serialization</h3><p>State write lock больше не охватывает всю операцию, но durable journal I/O строго сериализован отдельным monitor.</p></div>
-          <div class="card"><h3>Legacy targets</h3><p>Common/NetStandard не обязаны повторять Net8 data structures, но coordinator и lifecycle invariants синхронизированы без modern-only API.</p></div>
-          <div class="card"><h3>Vector k-means</h3><p>Физический common source не равен compiled feature: эталонный Net8 его тоже не включал.</p></div>
+      <section id="api">
+        <h2>Public/protected API metadata</h2>
+        <p><strong>Результат: exact match.</strong> Reflection probe канонизировал types, members, signatures, visibility, inheritance/base type, type flags и generic constraints для Transactions surface и непосредственно выставленных зависимых контрактов.</p>
+        <div class="stats">
+          <div class="stat"><b>148</b><span>baseline records</span></div><div class="stat"><b>148</b><span>current records</span></div>
+          <div class="stat"><b class="good">0</b><span>removed/changed</span></div><div class="stat"><b class="good">0</b><span>added records</span></div>
+          <div class="stat"><b>19 061</b><span>bytes each</span></div><div class="stat"><b class="good">equal</b><span>SHA-256</span></div>
+        </div>
+        <details><summary>Встроенный API manifest descriptor</summary><pre>Scope:
+  DBreeze.Transactions.*
+  DBreeze.TransactionTablesLocker
+  DBreeze.eTransactionTablesLockTypes
+Metadata:
+  public + protected types/members; constructors; fields; properties; methods;
+  signatures; visibility; static/abstract/sealed/interface/enum flags;
+  base types; generic arity and constraints.
+
+Reference records : 148
+Current records   : 148
+Only reference    : 0
+Only current      : 0
+Manifest bytes    : 19061 / 19061
+SHA-256 both      : A901930264699C41B160ECE5FF204B113B837186BFBE6180BC8AF66324C44DA8
+
+Representative records:
+B DBreeze.Transactions.RandomKeySorter:System.Object
+B DBreeze.Transactions.Transaction:System.Object
+B DBreeze.Transactions.TransactionsJournal:System.Object
+C public DBreeze.Transactions.RandomKeySorter()
+C public DBreeze.Transactions.TransactionsJournal(DBreeze.DBreezeEngine)
+F public DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable:System.Int32
+F public DBreeze.Transactions.Transaction.ManagedThreadId:System.Int32
+F public DBreeze.Transactions.Transaction.RandomKeySorter:DBreeze.Transactions.RandomKeySorter</pre></details>
+        <details><summary>Полный canonical API manifest (148 records; одинаков для baseline/current)</summary><textarea class="manifest" readonly spellcheck="false" aria-label="Полный API manifest">B DBreeze.Transactions.RandomKeySorter:System.Object
+B DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>:System.Enum
+B DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>:System.Object
+B DBreeze.Transactions.Transaction:System.Object
+B DBreeze.Transactions.TransactionsJournal:System.Object
+B DBreeze.eTransactionTablesLockTypes:System.Enum
+C public DBreeze.DataStructures.DataAsTree(System.String,DBreeze.Transactions.Transaction,System.Boolean=False)
+C public DBreeze.TextSearch.TextSearchTable(DBreeze.Transactions.Transaction,System.String)
+C public DBreeze.Transactions.RandomKeySorter()
+C public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>()
+C public DBreeze.Transactions.TransactionsJournal(DBreeze.DBreezeEngine)
+F protected DBreeze.DataStructures.DataAsTree.Transaction:DBreeze.Transactions.Transaction
+F public DBreeze.Transactions.RandomKeySorter.AutomaticFlushLimitQuantityPerTable:System.Int32
+F public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.BucketSize:System.Int32
+F public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.GetItem:System.Func<System.Int64,`TVector>
+F public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.NeighbourSelection:DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>
+F public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.QuantityOfLogicalProcessorToCompute:System.Int32
+F public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.TurboQuant:DBreeze.HNSW.TurboQuantParams
+F public DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.value__:System.Int32
+F public DBreeze.Transactions.Transaction.CreatedUdt:System.Int64
+F public DBreeze.Transactions.Transaction.ManagedThreadId:System.Int32
+F public DBreeze.Transactions.Transaction.RandomKeySorter:DBreeze.Transactions.RandomKeySorter
+F public DBreeze.Transactions.Transaction.ReadVisibilityScopeModifier_DirtyRead:System.Boolean
+F public DBreeze.Transactions.Transaction.ReadVisibilityScopeModifier_GenerateNewTableForRead:System.Boolean
+F public DBreeze.eTransactionTablesLockTypes.value__:System.Int32
+F public static const DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.NeighbourSelectSimple:DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=0
+F public static const DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>.NeighbourSelectionHeuristic:DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=1
+F public static const DBreeze.eTransactionTablesLockTypes.EXCLUSIVE:DBreeze.eTransactionTablesLockTypes=0
+F public static const DBreeze.eTransactionTablesLockTypes.SHARED:DBreeze.eTransactionTablesLockTypes=1
+I DBreeze.LianaTrie.LTrie:DBreeze.Transactions.ITransactable
+I DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>:System.IComparable
+I DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>:System.IConvertible
+I DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>:System.IFormattable
+I DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>:System.ISpanFormattable
+I DBreeze.Transactions.Transaction:System.IDisposable
+I DBreeze.Transactions.TransactionsJournal:System.IDisposable
+I DBreeze.eTransactionTablesLockTypes:System.IComparable
+I DBreeze.eTransactionTablesLockTypes:System.IConvertible
+I DBreeze.eTransactionTablesLockTypes:System.IFormattable
+I DBreeze.eTransactionTablesLockTypes:System.ISpanFormattable
+M public DBreeze.DBreezeEngine.GetTransaction():DBreeze.Transactions.Transaction
+M public DBreeze.DBreezeEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,params System.String[]):DBreeze.Transactions.Transaction
+M public DBreeze.DBreezeRemoteEngine.GetTransaction():DBreeze.Transactions.Transaction
+M public DBreeze.DBreezeRemoteEngine.GetTransaction(DBreeze.eTransactionTablesLockTypes,params System.String[]):DBreeze.Transactions.Transaction
+M public DBreeze.Transactions.ITransactable.ITRCommit():System.Void
+M public DBreeze.Transactions.ITransactable.ITRCommitFinished():System.Void
+M public DBreeze.Transactions.ITransactable.ITRRollBack():System.Void
+M public DBreeze.Transactions.ITransactable.ModificationThreadId(System.Int32):System.Void
+M public DBreeze.Transactions.ITransactable.SingleCommit():System.Void
+M public DBreeze.Transactions.ITransactable.SingleRollback():System.Void
+M public DBreeze.Transactions.ITransactable.TransactionIsFinished(System.Int32):System.Void
+M public DBreeze.Transactions.RandomKeySorter.Flush():System.Void
+M public DBreeze.Transactions.RandomKeySorter.Flush(System.String):System.Void
+M public DBreeze.Transactions.RandomKeySorter.Insert<TKey,TValue>(System.String,`TKey,`TValue):System.Void
+M public DBreeze.Transactions.RandomKeySorter.Remove<TKey>(System.String,`TKey):System.Void
+M public DBreeze.Transactions.Transaction.ChangeKey<TKey>(System.String,`TKey,`TKey):System.Void
+M public DBreeze.Transactions.Transaction.ChangeKey<TKey>(System.String,`TKey,`TKey,out System.Byte[]):System.Void
+M public DBreeze.Transactions.Transaction.ChangeKey<TKey>(System.String,`TKey,`TKey,out System.Byte[],out System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.Commit():System.Void
+M public DBreeze.Transactions.Transaction.Count(System.String):System.UInt64
+M public DBreeze.Transactions.Transaction.Dispose():System.Void
+M public DBreeze.Transactions.Transaction.Insert<TKey,TValue>(System.String,`TKey,`TValue):System.Void
+M public DBreeze.Transactions.Transaction.Insert<TKey,TValue>(System.String,`TKey,`TValue,out System.Byte[]):System.Void
+M public DBreeze.Transactions.Transaction.Insert<TKey,TValue>(System.String,`TKey,`TValue,out System.Byte[],out System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.Insert<TKey,TValue>(System.String,`TKey,`TValue,out System.Byte[],out System.Boolean,System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.InsertDataBlock(System.String,System.Byte[],System.Byte[]):System.Byte[]
+M public DBreeze.Transactions.Transaction.InsertDataBlockWithFixedAddress<TValue>(System.String,System.Byte[],`TValue):System.Byte[]
+M public DBreeze.Transactions.Transaction.InsertDictionary<TDictionaryKey,TDictionaryValue>(System.String,System.Collections.Generic.Dictionary<`TDictionaryKey,`TDictionaryValue>,System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.InsertDictionary<TTableKey,TDictionaryKey,TDictionaryValue>(System.String,`TTableKey,System.Collections.Generic.Dictionary<`TDictionaryKey,`TDictionaryValue>,System.UInt32,System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.InsertHashSet<THashSetKey>(System.String,System.Collections.Generic.HashSet<`THashSetKey>,System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.InsertHashSet<TTableKey,THashSetKey>(System.String,`TTableKey,System.Collections.Generic.HashSet<`THashSetKey>,System.UInt32,System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.InsertPart<TKey,TValue>(System.String,`TKey,`TValue,System.UInt32):System.Void
+M public DBreeze.Transactions.Transaction.InsertPart<TKey,TValue>(System.String,`TKey,`TValue,System.UInt32,out System.Byte[]):System.Void
+M public DBreeze.Transactions.Transaction.InsertPart<TKey,TValue>(System.String,`TKey,`TValue,System.UInt32,out System.Byte[],out System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.InsertRandomKeySorter<TKey,TValue>(System.String,`TKey,`TValue):System.Void
+M public DBreeze.Transactions.Transaction.InsertTable<TKey>(System.String,`TKey,System.UInt32):DBreeze.DataTypes.NestedTable
+M public DBreeze.Transactions.Transaction.Max<TKey,TValue>(System.String):DBreeze.DataTypes.Row<`TKey,`TValue>
+M public DBreeze.Transactions.Transaction.Min<TKey,TValue>(System.String):DBreeze.DataTypes.Row<`TKey,`TValue>
+M public DBreeze.Transactions.Transaction.Multi_SelectBackwardFromTo<TKey,TValue>(System.Collections.Generic.HashSet<System.String>,`TKey,System.Boolean,`TKey,System.Boolean,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.Multi_SelectForwardFromTo<TKey,TValue>(System.Collections.Generic.HashSet<System.String>,`TKey,System.Boolean,`TKey,System.Boolean,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.ObjectGetByFixedAddress<TVal>(System.String,System.Byte[]):DBreeze.Objects.DBreezeObject<`TVal>
+M public DBreeze.Transactions.Transaction.ObjectGetNewIdentity<TIdentity>(System.String,System.Byte[]=null,System.UInt32=1):`TIdentity
+M public DBreeze.Transactions.Transaction.ObjectInsert<TObject>(System.String,DBreeze.Objects.DBreezeObject<`TObject>,System.Boolean=False):DBreeze.Objects.DBreezeObjectInsertResult<`TObject>
+M public DBreeze.Transactions.Transaction.ObjectRemove(System.String,System.Byte[],System.Boolean=False):System.Void
+M public DBreeze.Transactions.Transaction.RemoveAllKeys(System.String,System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.RemoveKey<TKey>(System.String,`TKey):System.Void
+M public DBreeze.Transactions.Transaction.RemoveKey<TKey>(System.String,`TKey,out System.Boolean):System.Void
+M public DBreeze.Transactions.Transaction.RemoveKey<TKey>(System.String,`TKey,out System.Boolean,out System.Byte[]):System.Void
+M public DBreeze.Transactions.Transaction.RemoveRandomKeySorter<TKey>(System.String,`TKey):System.Void
+M public DBreeze.Transactions.Transaction.RestoreTableFromTheOtherFile(System.String,System.String,System.Boolean=False):System.Void
+M public DBreeze.Transactions.Transaction.Rollback():System.Void
+M public DBreeze.Transactions.Transaction.Select<TKey,TValue>(System.String,`TKey,System.Boolean=False):DBreeze.DataTypes.Row<`TKey,`TValue>
+M public DBreeze.Transactions.Transaction.SelectBackward<TKey,TValue>(System.String,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardFromTo<TKey,TValue>(System.String,`TKey,System.Boolean,`TKey,System.Boolean,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardFromTo<TKey,TValue>(System.String,`TKey,System.Boolean,`TKey,System.Boolean,System.Int32,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardSkip<TKey,TValue>(System.String,System.UInt64,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardSkipFrom<TKey,TValue>(System.String,`TKey,System.UInt64,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardStartFrom<TKey,TValue>(System.String,`TKey,System.Boolean,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardStartsWith<TKey,TValue>(System.String,`TKey,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectBackwardStartsWithClosestToPrefix<TKey,TValue>(System.String,`TKey,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectDataBlock(System.String,System.Byte[]):System.Byte[]
+M public DBreeze.Transactions.Transaction.SelectDataBlockWithFixedAddress<TValue>(System.String,System.Byte[]):`TValue
+M public DBreeze.Transactions.Transaction.SelectDictionary<TDictionaryKey,TDictionaryValue>(System.String):System.Collections.Generic.Dictionary<`TDictionaryKey,`TDictionaryValue>
+M public DBreeze.Transactions.Transaction.SelectDictionary<TTableKey,TDictionaryKey,TDictionaryValue>(System.String,`TTableKey,System.UInt32):System.Collections.Generic.Dictionary<`TDictionaryKey,`TDictionaryValue>
+M public DBreeze.Transactions.Transaction.SelectDirect<TKey,TValue>(System.String,System.Byte[]):DBreeze.DataTypes.Row<`TKey,`TValue>
+M public DBreeze.Transactions.Transaction.SelectForward<TKey,TValue>(System.String,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardFromTo<TKey,TValue>(System.String,`TKey,System.Boolean,`TKey,System.Boolean,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardFromTo<TKey,TValue>(System.String,`TKey,System.Boolean,`TKey,System.Boolean,System.Int32,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardSkip<TKey,TValue>(System.String,System.UInt64,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardSkipFrom<TKey,TValue>(System.String,`TKey,System.UInt64,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardStartFrom<TKey,TValue>(System.String,`TKey,System.Boolean,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardStartsWith<TKey,TValue>(System.String,`TKey,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectForwardStartsWithClosestToPrefix<TKey,TValue>(System.String,`TKey,System.Boolean=False):System.Collections.Generic.IEnumerable<DBreeze.DataTypes.Row<`TKey,`TValue>>
+M public DBreeze.Transactions.Transaction.SelectHashSet<THashSetKey>(System.String):System.Collections.Generic.HashSet<`THashSetKey>
+M public DBreeze.Transactions.Transaction.SelectHashSet<TTableKey,THashSetKey>(System.String,`TTableKey,System.UInt32):System.Collections.Generic.HashSet<`THashSetKey>
+M public DBreeze.Transactions.Transaction.SelectTable<TKey>(System.String,`TKey,System.UInt32):DBreeze.DataTypes.NestedTable
+M public DBreeze.Transactions.Transaction.Support_Migration_EncryptTextSearchTable(System.String,System.String):System.Void
+M public DBreeze.Transactions.Transaction.SynchronizeTables(System.Collections.Generic.IList<System.String>):System.Void
+M public DBreeze.Transactions.Transaction.SynchronizeTables(params System.String[]):System.Void
+M public DBreeze.Transactions.Transaction.Technical_SetTable_OverwriteIsNotAllowed(System.String):System.Void
+M public DBreeze.Transactions.Transaction.TextAppend(System.String,System.Byte[],System.String="",System.String="",System.Boolean=False,System.Int32=3,System.Boolean=False):System.Void
+M public DBreeze.Transactions.Transaction.TextGetDocumentsSearchables(System.String,System.Collections.Generic.HashSet<System.Byte[]>):System.Collections.Generic.Dictionary<System.Byte[],System.Collections.Generic.HashSet<System.String>>
+M public DBreeze.Transactions.Transaction.TextInsert(System.String,System.Byte[],System.String="",System.String="",System.Boolean=False,System.Int32=3):System.Void
+M public DBreeze.Transactions.Transaction.TextRemove(System.String,System.Byte[],System.String,System.Boolean=False,System.Int32=3):System.Void
+M public DBreeze.Transactions.Transaction.TextRemoveAll(System.String,System.Byte[],System.Boolean=False):System.Void
+M public DBreeze.Transactions.Transaction.TextSearch(System.String):DBreeze.TextSearch.TextSearchTable
+M public DBreeze.Transactions.Transaction.VectorsCount<TVector>(System.String,DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=null,System.Boolean=False):System.Int64
+M public DBreeze.Transactions.Transaction.VectorsGetAll<TVector>(System.String,DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=null,System.Boolean=True):System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int64,`TVector>>
+M public DBreeze.Transactions.Transaction.VectorsGetByExternalId<TVector>(System.String,System.Collections.Generic.List<System.Int64>,DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=null,System.Boolean=True):System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int64,`TVector>>
+M public DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList<System.ValueTuple<System.Int64,System.Double[]>>,DBreeze.Transactions.Transaction+VectorTableParameters<System.Double[]>=null):System.Void
+M public DBreeze.Transactions.Transaction.VectorsInsert(System.String,System.Collections.Generic.IList<System.ValueTuple<System.Int64,System.Single[]>>,DBreeze.Transactions.Transaction+VectorTableParameters<System.Single[]>=null):System.Void
+M public DBreeze.Transactions.Transaction.VectorsRemove<TVector>(System.String,System.Collections.Generic.List<System.Int64>,DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=null):System.Void
+M public DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Double[],System.Int32=10,DBreeze.Transactions.Transaction+VectorTableParameters<System.Double[]>=null,System.Boolean=True):System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int64,System.Double>>
+M public DBreeze.Transactions.Transaction.VectorsSearchSimilar(System.String,System.Single[],System.Int32=10,DBreeze.Transactions.Transaction+VectorTableParameters<System.Single[]>=null,System.Boolean=True):System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int64,System.Single>>
+M public DBreeze.Transactions.TransactionsJournal.AddTableForTransaction(System.UInt64,DBreeze.Transactions.ITransactable):System.Void
+M public DBreeze.Transactions.TransactionsJournal.Dispose():System.Void
+M public DBreeze.Transactions.TransactionsJournal.FinishTransaction(System.UInt64):System.Void
+M public DBreeze.Transactions.TransactionsJournal.GetTransactionNumber():System.UInt64
+M public DBreeze.Transactions.TransactionsJournal.RemoveTransactionFromDictionary(System.UInt64):System.Void
+P DBreeze.Transactions.ITransactable.TableName[]:System.String {public get,public set}
+P DBreeze.Transactions.Transaction.ValuesLazyLoadingIsOn[]:System.Boolean {public get,public set}
+T public class DBreeze.Transactions.RandomKeySorter
+T public class DBreeze.Transactions.Transaction
+T public class DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>
+T public class DBreeze.Transactions.TransactionsJournal
+T public enum DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>
+T public enum DBreeze.eTransactionTablesLockTypes
+T public interface DBreeze.Transactions.ITransactable</textarea></details>
+        <p class="small muted">Ограничение нотации probe: formatter обрезает имя nested enum после первого generic tick, поэтому строки nested <code>VectorTableParameters&lt;T&gt;.NeighbourSelection</code> визуально совпадают по owner-name с outer type. Type-kind, base/interfaces, constants и обе стороны сравнения всё равно присутствуют; отсутствие drift дополнительно подтверждено одинаковым source-level объявлением и успешной компиляцией. Для будущего универсального API gate formatter стоит сделать nested-aware.</p>
+        <div class="callout good">По правилу аудита любое удаление/изменение существующего record было бы регрессией P0. Таких records нет; добавлений также нет.</div>
+      </section>
+
+      <section id="disk">
+        <h2>Двунаправленная disk compatibility</h2>
+        <p>Каждое направление выполнило create → другой binary verify → другой binary extend → исходный binary verify. Logical manifest включает 3433/3513 rows и checksum; strict physical manifest сравнивает inventory, lengths и SHA-256 каждого DB-файла.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Направление / состояние</th><th>Rows</th><th>Logical checksum</th><th>Bytes L/R</th><th>Inventory</th><th>Lengths</th><th>Hashes</th><th>Diffs</th></tr></thead>
+          <tbody>
+            <tr><td>reference → current, base</td><td>3433</td><td>-4644249611576575219</td><td>224247 / 224247</td><td class="good">equal</td><td class="good">equal</td><td class="good">equal</td><td>0</td></tr>
+            <tr><td>reference → current, extended → reference</td><td>3513</td><td>7895893600424106360</td><td>374217 / 374217</td><td class="good">equal</td><td class="good">equal</td><td class="good">equal</td><td>0</td></tr>
+            <tr><td>current → reference, base</td><td>3433</td><td>-4644249611576575219</td><td>224247 / 224247</td><td class="good">equal</td><td class="good">equal</td><td class="good">equal</td><td>0</td></tr>
+            <tr><td>current → reference, extended → current</td><td>3513</td><td>7895893600424106360</td><td>374217 / 374217</td><td class="good">equal</td><td class="good">equal</td><td class="good">equal</td><td>0</td></tr>
+          </tbody>
+        </table></div>
+        <details><summary>Встроенный strict physical manifest schema и результат</summary><pre>PhysicalPolicy: strict
+Database payload:
+  tables with sequential/random keys, updates, removes, empty and binary keys,
+  nested/varied values, multi-table transaction state.
+Comparison:
+  FileInventoryEqual = true
+  FileLengthsEqual   = true
+  FileHashesEqual    = true
+  Differences        = []
+
+Base:
+  RowCount = 3433
+  Checksum = -4644249611576575219
+  TotalBytes = 224247
+Extended:
+  RowCount = 3513
+  Checksum = 7895893600424106360
+  TotalBytes = 374217</pre></details>
+        <p>Дополнительно текущий regression test непосредственно внедряет durable historical journal payload, симулирует failure, переоткрывает engine, восстанавливает default и alternative-routed table и проверяет удаление marker. Обычные disk reopen и alternative-table reopen также прошли.</p>
+        <p class="muted small">Ограничение: strict byte-for-byte manifests относятся к нормальным create/extend цепочкам двух DLL. Journal crash oracle запускается текущей DLL против исторического payload-format, а не как две отдельные crash-инъекции обеими DLL; формат и recovery route при этом проверены напрямую.</p>
+      </section>
+
+      <section id="verification">
+        <h2>Сборки и regression tests</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Target/project</th><th>Tool</th><th>Baseline</th><th>Current</th><th>Ограничение</th></tr></thead>
+          <tbody>
+            <tr><td>DBreeze.Net8 / net8.0</td><td>.NET SDK Release</td><td class="good">PASS 0.9 s</td><td class="good">PASS 1.0 s</td><td>полный runtime focus</td></tr>
+            <tr><td>DBreeze.Net5 / net6.0</td><td>.NET SDK Release</td><td class="good">PASS 0.9 s</td><td class="good">PASS 0.9 s</td><td>project name исторический</td></tr>
+            <tr><td>DBreeze.NetStandard / netstandard2.1</td><td>.NET SDK Release</td><td class="good">PASS 0.9 s</td><td class="good">PASS 0.9 s</td><td>compile-only</td></tr>
+            <tr><td>DBreeze.NetCoreApp / netcoreapp3.1</td><td>.NET SDK Release</td><td class="good">PASS 0.9 s</td><td class="good">PASS 0.9 s</td><td>EOL runtime, compile-only</td></tr>
+            <tr><td>DBreeze / .NET Framework 4.7.2</td><td>VS MSBuild Release</td><td class="good">PASS 0.3 s</td><td class="good">PASS 0.3 s</td><td>Windows reference assemblies available</td></tr>
+            <tr><td>NETPortable / Profile111</td><td>VS MSBuild Release</td><td class="good">PASS 1.8 s</td><td class="good">PASS 2.8 s</td><td>legacy compile-only</td></tr>
+          </tbody>
+        </table></div>
+        <h3>DBreeze.Net8.Tests: 80 PASS, 0 FAIL, 69.8 s</h3>
+        <div class="grid4">
+          <div class="card"><h4>RKS / rollback</h4><p>Final operation, borrowed value, no auto flush, object identity, repeated commits, rollback reset.</p></div>
+          <div class="card"><h4>Transaction</h4><p>Lifecycle, thread mutation rejection, snapshots, read roots, SelectDirect, collection equality.</p></div>
+          <div class="card"><h4>MultiSelect / vector</h4><p>Tie order, key-length validation, exception-safe enumeration and vector paths.</p></div>
+          <div class="card"><h4>Concurrency</h4><p>No lost wakeup, fairness, cleanup, locked waiter disposal, three-way deadlock.</p></div>
+          <div class="card"><h4>Journal</h4><p>Historical payload, injected crash, marker cleanup, parallel multi-table durability.</p></div>
+          <div class="card"><h4>Disk</h4><p>Reopen, alternative storage route, randomized reference model.</p></div>
+          <div class="card"><h4>Collections</h4><p>Dictionary/hash-set replacement и DB equality при custom comparer.</p></div>
+          <div class="card"><h4>Repeated state</h4><p>Engine lifecycle, nested tables и repeated commit/rollback cycles.</p></div>
         </div>
       </section>
 
-      <section id="contracts">
-        <h2>Публичные и дисковые контракты</h2>
-        <div class="table-wrap">
-          <table class="compact">
-            <thead><tr><th>Контракт</th><th>Статус</th><th>Точная формулировка</th><th>Что нельзя делать</th></tr></thead>
-            <tbody>
-              <tr><td>Public members</td><td><span class="badge preserved">members совпадают</span></td><td>Предыдущий reflection member surface: 124/124 entries, diff 0.</td><td>Считать member-only diff достаточным для source compatibility.</td></tr>
-              <tr><td>Public type flags</td><td><span class="badge regression">1 diff</span></td><td>Из 6 публично видимых Transactions types только RKS изменил <code>IsSealed=false → true</code>.</td><td>Оставлять <code>sealed</code> без явного решения владельца API.</td></tr>
-              <tr><td>RKS coalescing</td><td><span class="badge intentional">изменён</span></td><td>Последняя операция на serialized key определяет pending result.</td><td>Возвращать зависимость от истории automatic/explicit flush.</td></tr>
-              <tr><td>RKS value lifetime</td><td><span class="badge intentional">borrowed</span></td><td>Caller не меняет mutable value до Flush/Commit.</td><td>Clone-ить каждый value без нового performance decision или позволять caller mutation.</td></tr>
-              <tr><td>Transaction ownership</td><td><span class="badge intentional">усилен</span></td><td>Mutation выполняется creating thread; parallel read API opt-out явно.</td><td>Тихо разрешать cross-thread mutation через cache hit.</td></tr>
-              <tr><td>Multi-select keys</td><td><span class="badge preserved">сохранён</span></td><td>Все rows участвующих tables имеют одинаковую serialized key length.</td><td>Сравнивать variable-length keys и скрывать contract violation.</td></tr>
-              <tr><td>Disk DB format</td><td><span class="badge preserved">без изменений</span></td><td>Existing tables читаются old/new реализациями bidirectionally.</td><td>Добавлять version marker или менять serialization ради Transactions refactor.</td></tr>
-              <tr><td>Journal format</td><td><span class="badge preserved">без изменений</span></td><td>Имя, big-endian key, UTF-8 XML payload и table order сохранены.</td><td>Заменять XML на JSON/binary или сортировать names без migration.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <h3>Observable exception differences</h3>
-        <p>Некоторые invalid-argument paths Net8 теперь выбрасывают более точный <code>ArgumentNullException</code> вместо generic <code>Exception</code>; coordinator cleanup сохраняет исторические DBreeze exception codes, но inner exception и stack стали информативнее. Это не signature diff, однако это observable runtime behavior и его следует учитывать consumers, которые ошибочно завязались на конкретный CLR exception type.</p>
-      </section>
+      <section id="performance">
+        <h2>Память и скорость: 3 чередующихся пары + retry</h2>
+        <p>Одинаковый Release harness запускался в порядке reference/current, current/reference, reference/current; затем current/reference для нестабильных результатов. BDN 0.15.8, .NET 8.0.30, Intel i7-8700, Windows 11 25H2, workstation concurrent GC; 1 launch, 3 warmup, 5 measured iterations.</p>
+        <div class="callout info"><strong>Gate:</strong> stable median slowdown &gt;5% = regression; 0–5% = warning. Allocation growth в ≥2/3 primary runs = memory regression. При устойчивом spread/смене знака после retry timing = inconclusive.</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Scenario</th><th>Ref median</th><th>Current median</th><th>Δ time</th><th>Primary spread R/C</th><th>Retry R/C</th><th>Allocated R/C</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td>CoordinatorContention</td><td>14.45 µs</td><td>10.80 µs</td><td class="metric-down">−25.26%</td><td>29.6 / 52.8%</td><td>11.15 / 15.39 µs</td><td class="metric-up">7843 / 7993 B</td><td><span class="badge danger">memory gate</span> timing inconclusive</td></tr>
+            <tr><td>DictionaryReplacement</td><td>2.66 ms</td><td>2.72 ms</td><td class="warn">+2.19%</td><td>8.0 / 2.6%</td><td>3.11 / 2.86 ms</td><td>1815960 / 1815960 B</td><td><span class="badge warn">warning</span></td></tr>
+            <tr><td>HashSetReplacement</td><td>2.80 ms</td><td>2.69 ms</td><td>−3.76%</td><td>12.0 / 14.3%</td><td>2.61 / 2.98 ms</td><td>1751928 / 1751928 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>MultiSelectPriorityQueue</td><td>3.50 ms</td><td>3.30 ms</td><td>−5.67%</td><td>3.1 / 12.0%</td><td>3.69 / 3.58 ms</td><td>5178696 / 5178696 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>RandomKeySorterBatch</td><td>414.6 ns</td><td>389.1 ns</td><td class="metric-down">−6.15%</td><td>0.3 / 8.3%</td><td>425.3 / 428.7 ns</td><td>363 / 363 B</td><td><span class="badge good">stable OK</span></td></tr>
+            <tr><td>TransactionLifecycle</td><td>445.8 ns</td><td>429.0 ns</td><td>−3.77%</td><td>6.2 / 12.4%</td><td>466.2 / 454.1 ns</td><td>760 / 760 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>EightThreadRandomPointSelectHot</td><td>36.24 µs</td><td>30.23 µs</td><td>−16.60%</td><td>23.6 / 19.2%</td><td>31.38 / 33.57 µs</td><td>6942.72 / 6942.72 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>LocalPointSelectHot</td><td>2.27 µs</td><td>2.14 µs</td><td>−5.81%</td><td>13.7 / 66.3%</td><td>2.10 / 3.25 µs</td><td>1095.68 / 1095.68 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>RandomPointSelectAfterReopen</td><td>24.91 µs</td><td>23.52 µs</td><td>−5.62%</td><td>13.8 / 2.3%</td><td>22.23 / 22.29 µs</td><td>6819.84 / 6819.84 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>RandomPointSelectHot</td><td>21.50 µs</td><td>21.33 µs</td><td>−0.80%</td><td>23.4 / 13.7%</td><td>20.88 / 22.88 µs</td><td>6819.84 / 6819.84 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>InsertCommitEach</td><td>18.64 µs</td><td>19.40 µs</td><td class="warn">+4.04%</td><td>15.2 / 5.0%</td><td>19.52 / 18.56 µs</td><td>4116.48 / 4116.48 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>RandomInsertBatchAndCommit</td><td>17.41 µs</td><td>21.50 µs</td><td class="metric-up">+23.49%</td><td>33.4 / 26.1%</td><td>59.64 / 15.92 µs</td><td>9123.84 / 9123.84 B</td><td><span class="badge warn">inconclusive</span></td></tr>
+            <tr><td>RandomUpdateBatchAndCommit</td><td>224.34 µs</td><td>208.93 µs</td><td class="metric-down">−6.87%</td><td>9.2 / 6.9%</td><td>249.68 / 226.01 µs</td><td>11048.96 / 11048.96 B</td><td><span class="badge good">stable OK</span></td></tr>
+            <tr><td>SequentialInsertBatchAndCommit</td><td>12.98 µs</td><td>13.06 µs</td><td class="warn">+0.62%</td><td>3.4 / 1.5%</td><td>58.74 / 13.16 µs</td><td>1454.08 / 1454.08 B</td><td><span class="badge warn">warning</span></td></tr>
+          </tbody>
+        </table></div>
+        <p><strong>Сводка timing:</strong> 0 подтверждённых stable regressions &gt;5%; 2 stable warnings 0–5%; 2 stable OK; 10 inconclusive. Поэтому аудит не утверждает, что speed «доказанно не хуже» для шумных disk/concurrency сценариев — только что устойчивое ухудшение данным запуском не подтверждено.</p>
+        <details><summary>Coordinator allocations: все сырые пары</summary><pre>Run 1  reference 7961 B   current 7993 B   Δ +32 B
+Run 2  reference 7843 B   current 7998 B   Δ +155 B
+Run 3  reference 7808 B   current 7757 B   Δ −51 B
+Median reference 7843 B   current 7993 B   Δ +150 B (+1.91%)
+Retry  reference 7996 B   current 7833 B   Δ −163 B
 
-      <section id="risks">
-        <h2>Открытые риски и спорные решения</h2>
-        <div class="priority">
-          <span class="p p0">P0</span><div><strong>Убрать непреднамеренный <code>sealed</code> с Net8 RandomKeySorter либо формально принять breaking change.</strong> Сейчас это единственная подтверждённая разница public type metadata.</div>
-          <span class="p p1">P1</span><div><strong>Зафиксировать borrowed-value contract в общей документации API.</strong> XML docs в коде есть, но caller может не ожидать aliasing mutable <code>byte[]</code>.</div>
-          <span class="p p1">P1</span><div><strong>Не допустить semantic drift common и Net8 RKS.</strong> Data structures могут различаться, но last-operation-wins, reset и flush ordering должны тестироваться общей таблицей permutations.</div>
-          <span class="p p2">P2</span><div><strong>Добавить targeted race test Engine.Dispose против уже вошедшего <code>FinishTransaction</code>.</strong> Общий <code>EngineLifecycleIsSafe</code> проходит, но точное пересечение journal dispose/marker I/O не выделено отдельным deterministic barrier test.</div>
-          <span class="p p2">P2</span><div><strong>Контролировать duplicated target implementations.</strong> Coordinator invariants сейчас синхронны, но копирование файлов создаёт риск будущего расхождения fixes.</div>
-          <span class="p p3">P3</span><div><strong>Убрать вводящий в заблуждение исторический auto-flush summary в legacy docs.</strong> Поле остаётся ради API, но никакой threshold policy не существует.</div>
-        </div>
-        <div class="callout warning"><strong>Граница уверенности:</strong> journal dispose race обозначен как гипотеза для дополнительного deterministic test, а не как подтверждённый bug. Все остальные P0/P1 выводы выше подтверждены source/reflection/tests.</div>
+Формальный 2-of-3 gate сработал. Смена знака в Run 3/retry снижает confidence,
+но не даёт права скрыть primary median signal.</pre></details>
       </section>
 
       <section id="platforms">
-        <h2>Платформенная матрица</h2>
-        <div class="table-wrap">
-          <table class="compact">
-            <thead><tr><th>Target</th><th>Transaction / RKS / Vector</th><th>Coordinator / Journal / Locker / Unit</th><th>Modern specialization</th></tr></thead>
-            <tbody>
-              <tr><td>Common .NET Framework 4.7.2</td><td>Локальные common sources; RKS сохраняет hex dictionaries и LINQ ordering.</td><td>Локальные реализации с fair per-waiter coordinator и cleanup invariants.</td><td>Без <code>PriorityQueue</code>/<code>ArrayPool</code> hot path, совместимо со старыми API.</td></tr>
-              <tr><td>NetStandard 2.1</td><td>Linked common RKS/Transaction/Vector.</td><td>Локальные NetStandard Coordinator/Journal/Locker/Unit.</td><td>Coordinator algorithms синхронизированы с Net8 без target-specific BCL.</td></tr>
-              <tr><td>Net8.0</td><td>Полностью локальные sources, включая Transaction.Net8 merge и binary RKS.</td><td>Локальные реализации.</td><td><code>PriorityQueue</code>, spans, <code>ArrayPool</code>, binary comparer, lazy vector monitor.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="callout"><strong>Правильный parity criterion:</strong> одинаковы публичный contract, disk format и correctness-инварианты. Внутренние data structures и allocation strategy не обязаны совпадать между targets.</div>
+        <h2>Платформенная матрица выводов</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Target</th><th>Source family</th><th>Compile</th><th>Runtime evidence</th><th>Главный вывод</th><th>Confidence</th></tr></thead>
+          <tbody>
+            <tr><td>net8.0</td><td>полная локальная specialization</td><td class="good">PASS</td><td>80 tests, API, disk, BDN</td><td>Глубоко проверен; один allocation gate, timing mostly noisy</td><td>высокая/средняя perf</td></tr>
+            <tr><td>net6.0</td><td>common + NetStandard coordinator</td><td class="good">PASS</td><td>нет отдельного runtime suite</td><td>Compile/API source graph проверены, runtime inference</td><td>средняя</td></tr>
+            <tr><td>netstandard2.1</td><td>common Transaction/RKS/Vector</td><td class="good">PASS</td><td>library target</td><td>Binding подтверждён, consumer runtimes не прогнаны</td><td>средняя</td></tr>
+            <tr><td>netcoreapp3.1</td><td>common + NetStandard coordinator</td><td class="good">PASS</td><td>не запускался</td><td>Legacy compile compatibility только</td><td>средняя-низкая</td></tr>
+            <tr><td>net472</td><td>common</td><td class="good">PASS</td><td>не запускался</td><td>MSBuild/reference assemblies доступны; runtime tests отсутствуют</td><td>средняя-низкая</td></tr>
+            <tr><td>Portable Profile111</td><td>common + NetStandard coordinator</td><td class="good">PASS</td><td>не запускался</td><td>Legacy compile-only; современного runtime harness нет</td><td>низкая runtime</td></tr>
+          </tbody>
+        </table></div>
       </section>
 
-      <section id="evidence">
-        <h2>Доказательства и уровень уверенности</h2>
-        <h3>Regression suite</h3>
-        <p><strong>69/69 PASS</strong> в <a href="../../DBreeze.Net8.Tests/Program.cs">DBreeze.Net8.Tests</a>. Для Transactions напрямую релевантны:</p>
-        <div class="grid-3">
-          <div class="card"><h4>RKS</h4><p><code>RandomKeySorterKeepsFinalOperation</code>, rollback drops pending, value conversion/no auto-flush, borrowed value, explicit flush + repeated commits, object identity buffering.</p></div>
-          <div class="card"><h4>Coordination</h4><p>Lost wakeups, exclusive waiter fairness, cross-thread locked dispose, NotifyAhead cleanup и three-way deadlock.</p></div>
-          <div class="card"><h4>Merge/collections</h4><p>Stable multi-select tie order, variable-length rejection, dictionary/hash-set replacement и database equality.</p></div>
-          <div class="card"><h4>Journal</h4><p>XML payload/crash recovery, parallel multi-table durability, engine lifecycle.</p></div>
-          <div class="card"><h4>Visibility</h4><p>Rapid commit read-root refresh и committed node image visibility.</p></div>
-          <div class="card"><h4>Storage routes</h4><p>Disk reopen, alternative disk table reopen и bidirectional compatibility probe.</p></div>
+      <section id="risks">
+        <h2>Открытые риски и приоритеты</h2>
+        <div class="grid2">
+          <article class="card"><h3 class="p0">P0 — не ломать</h3><ul><li>148-record API manifest и non-sealed <code>RandomKeySorter</code>.</li><li>Journal marker bytes/order и marker-before-finalization protocol.</li><li>Transitive deadlock detection, conflict-aware FIFO и all-path waiter cleanup.</li><li>Strict disk reopen обеими версиями.</li></ul></article>
+          <article class="card"><h3 class="p1">P1 — измерить/зафиксировать</h3><ul><li>Coordinator allocation gate: сделать deterministic counter per wait/reservation и подтвердить механизм.</li><li>Явно документировать borrowed RKS value и thread-owner mutation rule.</li><li>Оставить auto-flush field для API, но не выдавать его за рабочую memory bound.</li><li>Повторить noisy disk timing на изолированном volume/длинном job.</li></ul></article>
+          <article class="card"><h3 class="p2">P2 — расширить доказательства</h3><ul><li>Runtime suite для net6/net472, если эти consumers production-critical.</li><li>Отдельная двоичная crash-инъекция baseline и current, хотя historical payload oracle уже проходит.</li><li>Peak retained bytes для RKS с длинными keys/values, не только B/op.</li></ul></article>
+          <article class="card"><h3 class="p3">P3 — hygiene</h3><ul><li>Объяснить историческое имя DBreeze.Net5 при target net6.0.</li><li>Синхронизировать comments про auto-flush/borrowed ownership.</li><li>Автоматически генерировать эту decision matrix из manifests там, где возможно.</li></ul></article>
         </div>
-        <h3>API metadata</h3>
-        <ul>
-          <li>Member surface: 124 entries в эталоне и текущей DLL, diff 0.</li>
-          <li>Расширенная проверка public/nested-public type flags: 6 типов против 6.</li>
-          <li>Единственный metadata diff: <code>RandomKeySorter.IsSealed</code>.</li>
-        </ul>
-        <h3>Disk compatibility</h3>
-        <p>Old→new и new→old create/read/extend/verify прошли со strict manifest. Journal crash recovery и alternative disk storage также прошли. Это доказывает compatibility на покрытых сценариях, но не заменяет запрет менять journal payload и DB serialization.</p>
-        <h3>Performance evidence</h3>
-        <ul>
-          <li>RKS Medium: текущий median 390.0 ns против 388.7 ns эталона, +0.33%.</li>
-          <li>RKS allocations: 363 B/op в обеих сравниваемых сборках; удаление value clone allocation не увеличило.</li>
-          <li>Disk benchmark worst confirmed median delta около +1.9%, ниже принятого порога 5%.</li>
-        </ul>
-        <h3>Source-only выводы</h3>
-        <p>Lazy allocation TransactionUnit и vector monitor, уменьшение herd wakeups и снижение contention от выноса I/O логически следуют из кода. Для них нет отдельного microbenchmark на каждый механизм, поэтому они не заявляются как измеренный процент ускорения.</p>
+        <div class="callout danger"><strong>Owner decision required:</strong> оптимизация allocations coordinator не должна ослаблять fairness/deadlock guarantees; clone value в RKS не должен вводиться «для безопасности» без оценки memory contract; cross-thread mutations не должны снова становиться silent races.</div>
       </section>
 
-      <section id="llm-rules">
-        <h2>Guardrails для будущего LLM-рефакторинга</h2>
+      <section id="guardrails">
+        <h2>Guardrails для последующих LLM-изменений</h2>
         <ol>
-          <li><strong>Всегда строить effective source graph из csproj.</strong> Не сравнивать только физические папки common/Net8.</li>
-          <li><strong>Не восстанавливать auto-flush по <code>AutomaticFlushLimitQuantityPerTable</code>.</strong> Это compatibility field, не policy.</li>
-          <li><strong>Не возвращать RKS-local LTrie cache в Net8.</strong> Сначала учитывать <code>transactionWriteTables</code>.</li>
-          <li><strong>Не clone-ить RKS value автоматически.</strong> Borrowed lifetime — согласованный performance contract; key должен оставаться owned.</li>
-          <li><strong>Не менять last-operation-wins.</strong> Результат не должен зависеть от того, был ли ранее explicit/automatic flush.</li>
-          <li><strong>Не выполнять rollback, dispose или table I/O под coordinator global locks.</strong></li>
-          <li><strong>Не упрощать wait-for graph до pairwise deadlock check.</strong> Three-way cycle является regression test.</li>
-          <li><strong>Не позволять later conflicting waiter обойти earlier waiter.</strong> Unrelated reservations при этом не надо глобально сериализовать.</li>
-          <li><strong>Не менять journal XML, key encoding, file name или marker order.</strong></li>
-          <li><strong>Различать startup RemoveAll и runtime 10 MB compaction.</strong> Только первый path переиспользует тот же LTrie без reopen.</li>
-          <li><strong>Не копировать Vector_kmeans в Net8 как «утерянный файл».</strong> Он не был compiled в эталоне.</li>
-          <li><strong>Public API diff обязан включать type attributes.</strong> Методы/свойства не обнаруживают <code>sealed</code>.</li>
+          <li><strong>Сначала раскрывать effective source graph.</strong> Не переносить вывод из common в Net8 или наоборот без проверки csproj bindings.</li>
+          <li><strong>API manifest — P0 gate.</strong> Сравнивать visibility, inheritance/type flags и constraints, а не только имена public methods.</li>
+          <li><strong>Никогда не менять converter/key encoding/XML journal payload.</strong> In-memory ByteKey допустим; on-disk bytes — нет.</li>
+          <li><strong>Сохранять final-operation-wins и reset boundaries RKS.</strong> Auto-flush field исторически no-op; не изобретать скрытые flush points.</li>
+          <li><strong>Фиксировать ownership.</strong> Key owned, value borrowed до flush/commit, Transaction mutations owned creator thread; любое изменение — документированный contract decision.</li>
+          <li><strong>Не держать coordinator/state locks во время dispose или disk I/O.</strong> Wakeups адресные, cleanup выполняется во всех exception paths.</li>
+          <li><strong>Deadlock detection должна быть transitive.</strong> Pairwise check недостаточен; тестировать цикл минимум из трёх writers.</li>
+          <li><strong>Collection identity задаёт DB serialization.</strong> Caller comparer не может менять, какие физические keys считаются равными.</li>
+          <li><strong>Проверять каждую row MultiSelect.</strong> Нельзя возвращать validation только на первый cursor element.</li>
+          <li><strong>Disk gate всегда двунаправленный.</strong> Create/read/extend/re-read двумя DLL плюс logical и strict physical manifest.</li>
+          <li><strong>Perf утверждения делать только по стабильным сценариям.</strong> Показать raw runs, spread, retry и allocations; не выбирать удобный прогон.</li>
+          <li><strong>Любая memory optimization должна считать retained lifetime.</strong> Отличать pooled transient buffer, borrowed caller buffer и transaction-long dictionary state.</li>
         </ol>
       </section>
 
-      <section id="recommendations">
-        <h2>Рекомендации</h2>
-        <div class="priority">
-          <span class="p p0">P0</span><div><strong>Вернуть наследуемость Net8 RandomKeySorter</strong>, если breaking change не был сознательно принят. Затем добавить <code>IsSealed</code> в постоянный API compatibility test.</div>
-          <span class="p p1">P1</span><div><strong>Сделать shared semantic contract tests для common и Net8 RKS</strong>: все insert/remove permutations, explicit Flush, rollback и repeated commits.</div>
-          <span class="p p1">P1</span><div><strong>Вынести этот аудит в LLM context index</strong> рядом с LianaTrie audit, чтобы future refactor сначала читал architecture guardrails.</div>
-          <span class="p p2">P2</span><div><strong>Добавить deterministic journal dispose/FinishTransaction race test</strong> с barriers до/после durable marker.</div>
-          <span class="p p2">P2</span><div><strong>Автоматизировать target parity</strong> для coordinator exception codes, deadlock graph и cleanup, не требуя идентичности private implementation.</div>
-          <span class="p p3">P3</span><div><strong>Обновить устаревшие XML comments auto-flush</strong>, оставив поле и binary API без изменений.</div>
-        </div>
+      <section id="evidence">
+        <h2>Воспроизводимость: команды и артефакты</h2>
+        <p>Все созданные audit databases/manifests/benchmark artifacts находятся под <code>D:\Temp\DbreezeDbTest\TransactionsAudit</code>. HTML самодостаточен и не загружает их.</p>
+        <details><summary>Representative build/test commands</summary><pre># Выполнялось отдельно из baseline и current roots
+dotnet build DBreeze.Net8/DBreeze.Net8.csproj -c Release
+dotnet build DBreeze.Net5/DBreeze.Net5.csproj -c Release
+dotnet build DBreeze.NetStandard/DBreeze.NetStandard.csproj -c Release
+dotnet build DBreeze.NetCoreApp/DBreeze.NetCoreApp.csproj -c Release
+msbuild DBreeze/DBreeze.csproj /t:Build /p:Configuration=Release
+msbuild NETPortable/NETPortable.csproj /t:Build /p:Configuration=Release
+
+dotnet run --project DBreeze.Net8.Tests/DBreeze.Net8.Tests.csproj -c Release
+
+# Harness compile against each exact DLL
+dotnet build DBreeze.Net8.Benchmarks/DBreeze.Net8.Benchmarks.csproj -c Release \
+  /p:DBreezeAssemblyReference=&lt;reference-or-current-DBreeze.dll&gt;
+
+# Probe modes
+dotnet run --project DBreeze.Net8.Benchmarks -c Release -- --api-surface &lt;manifest&gt;
+dotnet run --project DBreeze.Net8.Benchmarks -c Release -- --api-compare &lt;reference&gt; &lt;current&gt;
+dotnet run --project DBreeze.Net8.Benchmarks -c Release -- --disk-compat &lt;create|verify|extend|compare&gt; ...
+
+# BenchmarkDotNet: три чередующихся пары и один retry
+dotnet run --project DBreeze.Net8.Benchmarks -c Release -- --filter *Transaction*</pre></details>
+        <details><summary>Artifact manifest</summary><pre>D:\Temp\DbreezeDbTest\TransactionsAudit\
+  api\
+    reference-transactions.txt   19061 B  SHA-256 A9019302...C44DA8
+    current-transactions.txt     19061 B  SHA-256 A9019302...C44DA8
+  disk\run-20260820\
+    reference-to-current\        6 probe/compare outputs
+    current-to-reference\        6 probe/compare outputs
+  perf\
+    run1-reference\  run1-current\
+    run2-current\    run2-reference\
+    run3-reference\  run3-current\
+    run4-current\    run4-reference\   (stability retry)
+    transactions-summary-final.csv
+    transactions-summary-final.json</pre></details>
+        <h3>Локальные source links</h3>
+        <p><a href="../../DBreeze/Transactions/RandomKeySorter.cs">common RandomKeySorter</a> · <a href="../../DBreeze/Transactions/Transaction.cs">common Transaction</a> · <a href="../../DBreeze.Net8/Transactions/RandomKeySorter.cs">Net8 RandomKeySorter</a> · <a href="../../DBreeze.Net8/Transactions/Transaction.cs">Net8 Transaction</a> · <a href="../../DBreeze.Net8/Transactions/Transaction.Net8.cs">Net8 MultiSelect</a> · <a href="../../DBreeze.Net8/Transactions/TransactionsCoordinator.cs">Net8 Coordinator</a> · <a href="../../DBreeze.Net8/Transactions/TransactionsJournal.cs">Net8 Journal</a> · <a href="../../DBreeze.Net8.Tests/Program.cs">Net8 regression tests</a> · <a href="../../DBreeze.Net8.Benchmarks/TransactionBenchmarks.cs">benchmark scenarios</a></p>
+        <p class="small muted">Baseline source root для ручной проверки: <a href="../../../../DBreezeRealm_copy/DBreeze/DBreeze/Transactions/RandomKeySorter.cs">reference common RKS</a> и <a href="../../../../DBreezeRealm_copy/DBreeze/DBreeze.Net8/Transactions/TransactionsJournal.cs">reference Net8 Journal</a>.</p>
       </section>
     </main>
   </div>
 
-  <footer>
-    Архитектурный аудит DBreeze Transactions. Эталон: <span class="mono">D:\VS\DBreezeRealm_copy\DBreeze</span> @ <code>a83424e2</code>. Отчёт описывает текущий working tree на 2026-08-19 и не является изменением database format.
-  </footer>
-
+  <footer>DBreeze Transactions Architecture Audit · autonomous local HTML · baseline a83424e2 · current d2e32dcc · generated 2026-08-20</footer>
   <script>
     (() => {
-      const rows = [...document.querySelectorAll("#decision-table tbody tr")];
-      const search = document.getElementById("decision-search");
-      const status = document.getElementById("status-filter");
-      const risk = document.getElementById("risk-filter");
-      const reset = document.getElementById("reset-filter");
-      const visible = document.getElementById("visible-count");
-
-      const counts = rows.reduce((result, row) => {
-        const key = row.dataset.status;
-        result[key] = (result[key] || 0) + 1;
-        return result;
-      }, {});
-      document.getElementById("count-all").textContent = rows.length;
-      for (const key of ["preserved", "replaced", "fixed", "modern", "intentional", "regression"]) {
-        const node = document.getElementById(`count-${key}`);
-        if (node) node.textContent = counts[key] || 0;
-      }
-
-      function apply() {
-        const query = search.value.trim().toLocaleLowerCase("ru");
-        let shown = 0;
-        for (const row of rows) {
-          const matchesText = !query || row.textContent.toLocaleLowerCase("ru").includes(query);
-          const matchesStatus = status.value === "all" || row.dataset.status === status.value;
-          const matchesRisk = risk.value === "all" || row.dataset.risk === risk.value;
-          const show = matchesText && matchesStatus && matchesRisk;
-          row.classList.toggle("hidden", !show);
-          if (show) shown++;
-        }
-        visible.textContent = `Показано ${shown} из ${rows.length}`;
-      }
-
-      search.addEventListener("input", apply);
-      status.addEventListener("change", apply);
-      risk.addEventListener("change", apply);
-      reset.addEventListener("click", () => {
-        search.value = "";
-        status.value = "all";
-        risk.value = "all";
-        apply();
-        search.focus();
-      });
-      apply();
+      const root=document.documentElement,theme=document.getElementById('theme-toggle');
+      const applyTheme=value=>{ if(value==='system') root.removeAttribute('data-theme'); else root.dataset.theme=value; theme.textContent='Тема: '+({system:'системная',light:'светлая',dark:'тёмная'}[value]); };
+      let current='system';
+      theme.addEventListener('click',()=>{ current=current==='system'?'light':current==='light'?'dark':'system';applyTheme(current); });
+      const search=document.getElementById('search'),status=document.getElementById('status-filter'),risk=document.getElementById('risk-filter');
+      const rows=[...document.querySelectorAll('#decision-table tbody tr')],count=document.getElementById('visible-count');
+      const filter=()=>{ const q=search.value.trim().toLocaleLowerCase('ru-RU');let visible=0;rows.forEach(row=>{const show=(!q||row.textContent.toLocaleLowerCase('ru-RU').includes(q))&&(!status.value||row.dataset.status===status.value)&&(!risk.value||row.dataset.risk===risk.value);row.hidden=!show;if(show)visible++;});count.textContent=`Показано ${visible} из ${rows.length}`; };
+      search.addEventListener('input',filter);status.addEventListener('change',filter);risk.addEventListener('change',filter);
+      document.getElementById('reset-filters').addEventListener('click',()=>{search.value='';status.value='';risk.value='';filter();});
+      filter();
     })();
   </script>
 </body>

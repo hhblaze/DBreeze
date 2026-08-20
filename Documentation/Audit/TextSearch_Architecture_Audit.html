@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>DBreeze — архитектурный аудит TextSearch относительно a83424e</title>
+  <style>
+    :root {
+      --bg:#f2f5f7;--surface:#fff;--surface-2:#edf2f4;--surface-3:#e4ecef;--text:#17242b;
+      --muted:#5c6c74;--line:#d4dee2;--accent:#006d77;--accent-2:#0a9396;--good:#18794e;
+      --warn:#a15c00;--danger:#b42318;--info:#175cd3;--violet:#6941c6;
+      --shadow:0 12px 32px rgba(24,36,43,.08);--radius:14px;
+      --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+    }
+    @media (prefers-color-scheme:dark){:root{--bg:#101719;--surface:#172125;--surface-2:#202d32;
+      --surface-3:#29383e;--text:#e9f1f3;--muted:#a5b4ba;--line:#34464d;--accent:#64cdd1;
+      --accent-2:#8de0e2;--good:#65d6a2;--warn:#ffbd66;--danger:#ff8f87;--info:#84adff;
+      --violet:#c7a7ff;--shadow:0 12px 32px rgba(0,0,0,.28)}}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--text);background:var(--bg);
+      font:16px/1.56 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:var(--accent-2)}
+    code,.mono{font-family:var(--mono);font-size:.92em}code{padding:.08rem .3rem;border:1px solid var(--line);
+      border-radius:5px;background:var(--surface-2);overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.18;letter-spacing:-.02em}
+    h2{margin-top:0;font-size:clamp(1.5rem,2vw,2.15rem)}h3{margin:1.45rem 0 .6rem}h4{margin:1rem 0 .45rem}
+    p{margin:.58rem 0 1rem}ul,ol{padding-left:1.4rem}li+li{margin-top:.38rem}
+    .hero{color:#f5ffff;background:radial-gradient(circle at 83% 8%,rgba(142,202,230,.32),transparent 52rem),
+      linear-gradient(135deg,#073b4c,#006d77 60%,#0a9396);padding:4rem max(1.5rem,calc((100vw - 3120px)/2))}
+    .hero .eyebrow{opacity:.83;text-transform:uppercase;letter-spacing:.14em;font-size:.8rem}.hero h1{margin:.55rem 0 1rem;
+      max-width:2200px;font-size:clamp(2.2rem,4vw,4.7rem)}.hero p{max-width:2260px;font-size:1.12rem;opacity:.96}
+    .hero code{color:inherit;background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.25)}
+    .meta{display:flex;flex-wrap:wrap;gap:.58rem;margin-top:1.4rem}.meta span{padding:.34rem .68rem;
+      border:1px solid rgba(255,255,255,.3);border-radius:999px;font-size:.87rem}
+    .layout{width:min(3200px,100%);margin:0 auto;padding:1.55rem;display:grid;
+      grid-template-columns:350px minmax(0,1fr);gap:1.55rem}main{min-width:0}
+    nav{position:sticky;top:1rem;align-self:start;max-height:calc(100vh - 2rem);overflow-y:auto;padding:1rem;
+      border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+    nav strong{display:block;margin-bottom:.65rem}nav a{display:block;padding:.34rem .48rem;border-radius:7px;text-decoration:none;font-size:.9rem}
+    nav a:hover{background:var(--surface-2)}nav .sub{padding-left:1rem;color:var(--muted);font-size:.84rem}
+    section{margin-bottom:1.55rem;padding:clamp(1.1rem,1.55vw,1.9rem);border:1px solid var(--line);
+      border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+    .lead{font-size:1.1rem}.muted{color:var(--muted)}.small{font-size:.86rem}.nowrap{white-space:nowrap}
+    .callout{margin:1rem 0;padding:.92rem 1.05rem;border-left:4px solid var(--accent);background:var(--surface-2);border-radius:0 10px 10px 0}
+    .callout.warning{border-left-color:var(--warn)}.callout.danger{border-left-color:var(--danger)}
+    .callout.good{border-left-color:var(--good)}.callout.info{border-left-color:var(--info)}
+    .stats{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:.78rem;margin:1.1rem 0}
+    .stat{padding:.9rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+    .stat b{display:block;font-size:1.72rem;line-height:1;margin-bottom:.38rem}.stat span{color:var(--muted);font-size:.82rem}
+    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+    .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}.card{padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+    .card h3,.card h4{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}
+    .flow{display:grid;grid-template-columns:repeat(7,minmax(190px,1fr));gap:1.35rem;margin:1.2rem 0}
+    .flow-step{position:relative;padding:.96rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+    .flow-step:not(:last-child)::after{content:"→";position:absolute;right:-1.08rem;top:42%;color:var(--accent);font-size:1.35rem;font-weight:750}
+    .flow-step b{display:block;color:var(--accent);margin-bottom:.35rem}.flow-step small{color:var(--muted)}
+    .badge{display:inline-flex;align-items:center;gap:.25rem;padding:.17rem .52rem;border:1px solid currentColor;border-radius:999px;font-size:.75rem;white-space:nowrap}
+    .good{color:var(--good)}.warn{color:var(--warn)}.danger{color:var(--danger)}.info{color:var(--info)}.violet{color:var(--violet)}
+    .risk-p0{color:var(--danger);font-weight:720}.risk-p1{color:var(--warn);font-weight:650}.risk-p2{color:var(--info)}.risk-p3{color:var(--muted)}
+    .filters{display:flex;flex-wrap:wrap;gap:.62rem;align-items:end;margin:1rem 0;padding:.82rem;background:var(--surface-2);border-radius:12px}
+    .filters label{display:grid;gap:.2rem;color:var(--muted);font-size:.78rem}.filters input,.filters select,.filters button{min-height:39px;color:var(--text);
+      background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.43rem .6rem;font:inherit}.filters input{width:min(720px,70vw)}
+    .filters button{cursor:pointer;color:var(--accent);font-weight:680}#visible-count{margin-left:auto;align-self:center;color:var(--muted);font-size:.87rem}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;min-width:1880px;border-collapse:collapse;font-size:.88rem}
+    th,td{padding:.72rem .68rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{position:sticky;top:0;z-index:1;background:var(--surface-2);
+      color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.045em}tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--surface-2)}
+    .audit-table td:nth-child(1){width:5.4rem;font-family:var(--mono);color:var(--muted)}.audit-table td:nth-child(2){min-width:175px}
+    .audit-table td:nth-child(3),.audit-table td:nth-child(4){min-width:320px}.audit-table td:nth-child(5){min-width:330px}
+    .audit-table td:nth-child(6){min-width:230px}.audit-table td:nth-child(7){min-width:150px}.audit-table td:nth-child(8){min-width:280px}
+    .compact{min-width:1080px}.compact td:nth-child(n){min-width:0}.compact td:first-child{min-width:190px}.medium-table{min-width:1450px}.hidden{display:none!important}
+    .priority{display:grid;grid-template-columns:auto 1fr;gap:.8rem 1rem;align-items:start}.priority .p{min-width:3rem;text-align:center;padding:.24rem .48rem;border-radius:7px;color:#fff;font-weight:780}
+    .p0{background:var(--danger)}.p1{background:var(--warn)}.p2{background:var(--info)}.p3{background:#667085}
+    details{border-top:1px solid var(--line);padding:.68rem 0}details:first-of-type{border-top:0}summary{cursor:pointer;font-weight:690}
+    footer{width:min(3200px,100%);margin:0 auto;padding:0 1.55rem 2rem;color:var(--muted);font-size:.84rem}
+    @media(min-width:2400px){body{font-size:17px}.layout{grid-template-columns:390px minmax(0,1fr)}.audit-table{font-size:.9rem}}
+    @media(max-width:1900px){.stats{grid-template-columns:repeat(4,minmax(135px,1fr))}.flow{grid-template-columns:repeat(4,minmax(170px,1fr))}.flow-step:nth-child(4)::after{content:""}.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:1120px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none;columns:2}nav strong{column-span:all}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.flow{grid-template-columns:1fr;gap:.75rem}.flow-step:not(:last-child)::after{content:"↓";right:50%;top:auto;bottom:-1.2rem}}
+    @media(max-width:620px){nav{columns:1}.stats{grid-template-columns:1fr 1fr}#visible-count{width:100%;margin-left:0}}
+    @media print{:root{--bg:#fff;--surface:#fff;--surface-2:#f3f3f3;--text:#111;--muted:#444;--line:#bbb}body{font-size:9.5pt}.hero{color:#111;background:none;padding:1rem 0}.hero code{background:#eee;border-color:#bbb}.layout{display:block;width:auto;padding:0}nav,.filters{display:none}section{box-shadow:none;break-inside:avoid;margin:0 0 .7rem;padding:.7rem}.table-wrap{overflow:visible}table{min-width:0;font-size:6.4pt}th{position:static}tr{break-inside:avoid}a{color:inherit;text-decoration:none}footer{padding:.5rem 0}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">DBreeze / TextSearch / architectural compatibility review</div>
+    <h1>Архитектурный аудит TextSearch: текущая версия против <span class="mono">a83424e</span></h1>
+    <p>Сравнение сделано на уровне effective builds, пользовательских контрактов, дискового wire/layout, lifecycle deferred worker,
+      памяти и измеренной скорости. Совместимость не выводится только из похожего кода: plain/encrypted базы открывались и изменялись обеими реализациями.</p>
+    <div class="meta">
+      <span>Дата: 20.08.2026</span><span>Reference: <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code></span>
+      <span>Current: <code>d2e32dccc90df6476011aca056a5ba7f24330f2b</code></span><span>Фокус: <code>DBreeze/TextSearch</code></span>
+      <span>4K content width: <code>3200px</code></span><span>Audit run: <code>20260820-a83424e-vs-d2e32dc</code></span>
+      <span>P0 closure: <code>20260820-p0-mergeor-medium-final-r2</code></span>
+    </div>
+  </header>
+  <div class="layout">
+    <nav aria-label="Навигация">
+      <strong>Содержание</strong>
+      <a href="#verdict">1. Вердикт</a><a href="#scope">2. Scope и доказательства</a><a href="#builds">3. Effective builds</a>
+      <a href="#architecture">4. Архитектурный поток</a><a href="#api">5. Public/protected API</a><a href="#disk">6. Формат диска</a>
+      <a class="sub" href="#compat">6.1 Cross-version compatibility</a><a href="#indexing">7. Parser и indexing</a>
+      <a href="#wabi">8. WABI и composition</a><a href="#crypto">9. Crypto и migration</a><a href="#deferred">10. Deferred queue</a>
+      <a href="#performance">11. Производительность</a><a href="#memory">12. Память</a><a href="#catalog">13. Каталог решений</a>
+      <a href="#priorities">14. Приоритеты</a><a href="#gaps">15. Evidence gaps</a><a href="#reproduce">16. Воспроизводимость</a>
+    </nav>
+    <main>
+      <section id="verdict">
+        <h2>1. Краткий вердикт</h2>
+        <p class="lead"><strong>API, логический формат TextSearch и проверенный performance gate совместимы:</strong>
+          исправленный apples-to-apples MediumRun показал, что двухоперандный WABI OR в current быстрее эталона на <strong>96,497%</strong>.
+          Поэтому итог — <span class="badge good">PASS / 0 открытых P0</span>; найденный ранее P0 закрыт как ошибка benchmark provenance.</p>
+        <div class="stats">
+          <div class="stat"><b class="good">0</b><span>открытых P0</span></div>
+          <div class="stat"><b class="warn">11</b><span>P1 catalog entries, включая preserved contracts</span></div>
+          <div class="stat"><b class="good">62=62</b><span>API manifest lines, same SHA</span></div>
+          <div class="stat"><b class="good">6/6</b><span>current Release targets built</span></div>
+          <div class="stat"><b class="good">2×2</b><span>plain + encrypted cross flows</span></div>
+          <div class="stat"><b class="good">100 005</b><span>large-batch unique words PASS</span></div>
+          <div class="stat"><b class="warn">4</b><span>NOT PROVEN catalog rows</span></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3 class="good">Сохранено</h3><ul><li>Public/protected API, defaults и visibility.</li><li>Nested-key schema, WABI framing, AES-CTR output и queue payload.</li><li>Flush при <code>Count &gt; 100000</code>, то есть на 100&nbsp;001-й ссылке.</li><li>Двустороннее чтение, update и reopen plain/encrypted индексов.</li></ul></div>
+          <div class="card"><h3 class="info">Изменено намеренно</h3><ul><li>Bulk WABI mutation, trailing-zero trimming и удаление пустых entries.</li><li>Устойчивый deferred worker с coalescing, parking и reopen.</li><li>One-sided ranges, single-pass query inputs, непортящийся cache.</li><li>Fail-fast invalid configuration и строгая migration.</li></ul></div>
+          <div class="card"><h3 class="warn">Открытые действия</h3><ul><li><strong>P0:</strong> нет; <code>MergeOr2</code> закрыт после корректного MediumRun.</li><li><strong>P1:</strong> подтвердить, что tightening invalid-input/migration — утверждённый контракт.</li><li><strong>P2:</strong> измерить retained heap / peak working set / deferred high-water.</li><li><strong>P2:</strong> реальный legacy queue row → current worker остаётся не доказан end-to-end.</li></ul></div>
+        </div>
+        <div class="callout warning"><strong>Физические байты ≠ совместимость.</strong> После большого cross-version remove первый reopen обнулил только
+          rollback-файл <code>10000001.rol</code>; data-файл не изменился. Второй steady-state read-only reopen был byte-stable. Это engine recovery housekeeping,
+          а не изменение TextSearch encoding, но observable SHA-результат показан как есть.</div>
+      </section>
+
+      <section id="scope">
+        <h2>2. Scope, эталон и уровни доказательств</h2>
+        <div class="grid-2">
+          <div class="card"><h3>Снимки</h3><p>Запрошенный путь <code>D:\VS\DBreezeRealm\_copy\DBreeze</code> отсутствует.
+            Фактическая копия находится в <code>D:\VS\DBreezeRealm_copy\DBreeze</code>; её <code>HEAD</code> равен полному Git-объекту
+            <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code>. Tracked TextSearch/engine/project-файлы не отличаются от объекта.
+            Untracked benchmark/test harness в reference-копии не считался эталонным production-кодом.</p></div>
+          <div class="card"><h3>Diff scope</h3><p>Из семи common-файлов изменены шесть: <code>SBlock.cs</code>, <code>TextDeferredIndexer.cs</code>,
+            <code>TextSearchHandler.cs</code>, <code>TextSearchTable.cs</code>, <code>WABI.cs</code>, <code>WabiStreamCrypto.cs</code>.
+            <code>TextSearchOptions.cs</code> побайтно не менялся, но ни один из проверенных project-файлов его не компилирует: объявленный там
+            <code>TextSearchStorageOptions</code> не входит в effective assembly surface ни reference, ни current. Проверены lifecycle engine и все effective project bindings.</p></div>
+        </div>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Метка</th><th>Что означает</th><th>Что не означает</th></tr></thead><tbody>
+          <tr><td><span class="badge good">PASS</span></td><td>Заявленный критерий измерен или доказан на обоих снимках и выполнен.</td><td>Наличие теста без запуска не считается PASS.</td></tr>
+          <tr><td><span class="badge danger">FAIL</span></td><td>Воспроизводимый критерий нарушен; для speed — сигнал &gt;5% подтверждён MediumRun.</td><td>Intentional correction не скрывает observable отличие.</td></tr>
+          <tr><td><span class="badge warn">NOT PROVEN</span></td><td>Нет нужного toolchain/probe либо тест покрывает лишь часть контракта.</td><td>Это не автоматически defect и не автоматически PASS.</td></tr>
+          <tr><td>Static evidence</td><td>Обе реализации и effective bindings прочитаны непосредственно.</td><td>Статика не заменяет runtime compatibility/perf.</td></tr>
+          <tr><td>New measurement</td><td>Артефакты текущего run сохранены в уникальном D:\Temp-каталоге.</td><td>Не смешивается с результатами 18.08.2026.</td></tr>
+          <tr><td>Prior evidence</td><td>Существующий MediumRun показан отдельно и используется только как дополнительный контекст.</td><td>Не выдаётся за новый прогон.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="builds">
+        <h2>3. Карта effective builds</h2>
+        <p>Ключевой архитектурный сдвиг: reference net8 линковал все effective common TextSearch-файлы; current net8 линковывает только
+          <code>SBlock</code> и <code>TextSearchTable</code>, а worker/handler/WABI/crypto имеет target-local. Поэтому audit common-кода без binding map был бы неполон.</p>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Target / проект</th><th>Effective current implementation</th><th>Reference</th><th>Release build</th><th>Комментарий</th></tr></thead><tbody>
+          <tr><td>.NET Framework 4.7.2<br><code>DBreeze/DBreeze.csproj</code></td><td>Все common</td><td>Все common</td><td><span class="badge good">PASS</span> 0 errors, 717 warnings</td><td>Warnings сохранены как наблюдение, не маскируются.</td></tr>
+          <tr><td>netcoreapp3.1<br><code>DBreeze.NetCoreApp</code></td><td>Все common</td><td>Все common</td><td><span class="badge good">PASS</span></td><td>Общая scalar/runtime-compatible ветвь.</td></tr>
+          <tr><td>netstandard2.1<br><code>DBreeze.NetStandard</code></td><td>Все common</td><td>Все common</td><td><span class="badge good">PASS</span></td><td>Public surface берётся из common.</td></tr>
+          <tr><td>net6.0<br><code>DBreeze.Net5</code></td><td>Все common</td><td>Все common</td><td><span class="badge good">PASS</span></td><td>12/12 + large-batch runtime PASS.</td></tr>
+          <tr><td>net8.0<br><code>DBreeze.Net8</code></td><td>Common: SBlock/Table; local: Deferred/Handler/WABI/Crypto</td><td>Все common</td><td><span class="badge good">PASS</span></td><td>Task worker, Span/AES/SIMD specialization.</td></tr>
+          <tr><td>Portable Profile111<br><code>NETPortable</code></td><td>Common кроме target-local crypto adapter</td><td>Та же модель</td><td><span class="badge good">PASS</span> VS MSBuild</td><td>Не приписывать ему net8 AES implementation.</td></tr>
+        </tbody></table></div>
+        <div class="callout info">Reference net8 отдельно собран: 0 warnings / 0 errors; reference net472: 708 warnings / 0 errors.
+          Полная reference-матрица остальных targets в этом run не пересобиралась; соответствие их source bindings проверено статически.
+          Формулировка «все common» в таблице не включает не привязанный ни к одному проекту <code>TextSearchOptions.cs</code>.</div>
+      </section>
+
+      <section id="architecture">
+        <h2>4. Архитектурный поток и границы состояния</h2>
+        <div class="flow">
+          <div class="flow-step"><b>Transaction API</b><small>Insert / append / remove / search; public signatures unchanged.</small></div>
+          <div class="flow-step"><b>Parser</b><small>Lowercase, chunk, suffix, exact; now deterministic dedup and fail-fast.</small></div>
+          <div class="flow-step"><b>Pending rows</b><small>5-byte searchable key: uint document id + marker.</small></div>
+          <div class="flow-step"><b>Word changes</b><small>Sorted application; new refs flush at 100&nbsp;001.</small></div>
+          <div class="flow-step"><b>WABI</b><small>Bulk bitmap mutation, trim, SIMD on net8.</small></div>
+          <div class="flow-step"><b>Blocks</b><small>4-byte payload length + GZip/Biser + reserve padding.</small></div>
+          <div class="flow-step"><b>Query</b><small>Prefix/exact composition, cache, external ID bounds.</small></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Синхронный путь</h3><p>Commit вызывает indexing немедленно; logical result видим вместе с commit. Новая реализация группирует изменения слова и выполняет один bulk WABI mutation.</p></div>
+          <div class="card"><h3>Deferred путь</h3><p>Commit сохраняет durable task в <code>_DBreezeTextIndexer</code>; один worker объединяет wake-ups, обрабатывает batch и удаляет task только после успешной транзакции.</p></div>
+          <div class="card"><h3>Дисковая граница</h3><p>Схема nested tables и payload framing сохранена. Trimming/padding/page placement могут менять физические bytes без потери cross-readability.</p></div>
+        </div>
+      </section>
+
+      <section id="api">
+        <h2>5. Пользовательский public/protected API</h2>
+        <p class="lead"><span class="badge good">PASS</span> Reflection manifests current/reference для net8 и net472 имеют по 62 нормализованные строки и одинаковый
+          SHA-256 <code>E7F4FEF1960CF43FE238C6BCB5679916E58A2A4268B02279B7524163E9A0B981</code>.</p>
+        <div class="grid-4">
+          <div class="card"><h3>Добавлено</h3><p><strong>0</strong> public/protected members.</p></div>
+          <div class="card"><h3>Удалено</h3><p><strong>0</strong> members/types.</p></div>
+          <div class="card"><h3>Defaults</h3><p><strong>0</strong> изменений optional defaults.</p></div>
+          <div class="card"><h3>Visibility</h3><p><strong>0</strong> изменений public/protected access.</p></div>
+        </div>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Surface</th><th>Сохранённый контракт</th><th>Observable semantic change без signature change</th></tr></thead><tbody>
+          <tr><td><code>Transaction.TextInsert</code></td><td><code>(tableName, documentId, containsWords="", fullMatchWords="", deferredIndexing=false, containsMinimalLength=3)</code></td><td>Invalid parser configuration теперь fail-fast.</td></tr>
+          <tr><td><code>TextAppend / TextRemove / TextRemoveAll</code></td><td>Аргументы и defaults совпадают; legacy <code>encryptedTable=false</code> у Append сохранён.</td><td>Пустые bitmap/word/block entries физически удаляются.</td></tr>
+          <tr><td><code>Transaction.TextSearch</code></td><td>Возвращает <code>TextSearchTable</code>; Block/And/Or/Xor/Exclude/GetDocumentIDs прежние.</td><td>One-sided ranges поддержаны; invalid cross-table composition отклоняется.</td></tr>
+          <tr><td><code>Support_Migration_EncryptTextSearchTable</code></td><td>Имя и два string-параметра прежние.</td><td>Encrypted source/non-empty target теперь отклоняются; pending rows индексируются сразу.</td></tr>
+          <tr><td><code>TextSearchConfiguration</code></td><td>Поля <code>MaximalWordSize</code>, <code>MinimalBlockReservInBytes</code>, <code>QuantityOfWordsInBlock</code>, <code>TextEncryptor</code>, <code>UseTextEncryptor</code>.</td><td>Невалидные положительные ограничения проверяются строже.</td></tr>
+          <tr><td><code>TextSearchStorageOptions</code></td><td>Исходник <code>TextSearchOptions.cs</code> одинаков.</td><td>Тип отсутствует в effective net8/net472 assemblies обеих версий, поскольку файл не включён project bindings; это не runtime API drift между снимками.</td></tr>
+          <tr><td><code>WabiStreamCrypto / ITextStreamCrypto</code></td><td>Конструкторы, encrypt/decrypt helper surface совпадают.</td><td>Key/IV клонируются; неверные размеры и null падают раньше.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="disk">
+        <h2>6. Формат на диске</h2>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Слой</th><th>Ключ / framing</th><th>Значение</th><th>Статус</th></tr></thead><tbody>
+          <tr><td>External → internal</td><td>Nested table key <code>1</code>; arbitrary external <code>byte[]</code></td><td>Sortable 4-byte internal document id</td><td><span class="badge good">сохранено</span></td></tr>
+          <tr><td>Internal → external</td><td>Nested key <code>2</code>; sortable 4-byte id</td><td>External <code>byte[]</code></td><td><span class="badge good">сохранено</span></td></tr>
+          <tr><td>Searchable document</td><td>Nested key <code>3</code>; 5 bytes = 4-byte id + marker <code>0/1</code></td><td><code>GZip(UTF-8)</code> либо <code>GZip(AES-CTR bytes)</code></td><td><span class="badge good">сохранено</span></td></tr>
+          <tr><td>Metadata</td><td>Top keys <code>4</code>, <code>11</code>, <code>12</code>, <code>14</code></td><td>last-index ticks; current block; number in block; encryption mode</td><td><span class="badge good">сохранено</span></td></tr>
+          <tr><td>Blocks</td><td>Nested key <code>10</code>; sortable block id</td><td>4-byte sortable payload length + GZip(Biser dictionary uint→WABI) + padding</td><td><span class="badge good">wire preserved</span></td></tr>
+          <tr><td>Words</td><td>Nested key <code>20</code>; string либо deterministic encrypted bytes</td><td>8 bytes = 4-byte block id + 4-byte word number</td><td><span class="badge good">сохранено</span></td></tr>
+          <tr><td>WABI</td><td>Byte 0 protocol; byte 1 compression flag</td><td>Raw bitmap bytes; current trims only trailing zero bytes</td><td><span class="badge good">cross-readable</span></td></tr>
+          <tr><td>Deferred</td><td><code>_DBreezeTextIndexer</code>; text key 8 bytes, vector key <code>00 00</code> + 8 bytes</td><td>Biser <code>Dictionary&lt;string, HashSet&lt;uint&gt;&gt;</code></td><td><span class="badge good">encoding preserved</span></td></tr>
+        </tbody></table></div>
+        <h3 id="compat">6.1 Новая двусторонняя проверка</h3>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Поток</th><th>Сценарии</th><th>Логический итог</th><th>SHA read-only</th><th>Вердикт</th></tr></thead><tbody>
+          <tr><td>Reference create → current read/update → reference reopen</td><td>Plain; base/extend; prefix/exact; insert/update/remove</td><td>Manifests/row checksum совпали</td><td>0 file diffs до/после обоих read-only проходов</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Current create → reference read/update → current reopen</td><td>Plain; тот же source-only harness</td><td>Manifests/row checksum совпали</td><td>0 file diffs</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Reference encrypted create → current remove/re-add/append → reference reopen</td><td>300 docs; prefix/exact/composed/range; shrink; reopen</td><td>Base <code>300,300,60,43,26</code>; updated <code>52,50,10,1,1,7,25</code></td><td>Первый post-write reopen: только <code>.rol</code> → 0; steady reopen: 0 diffs</td><td><span class="badge good">PASS logical</span></td></tr>
+          <tr><td>Current encrypted create → reference update → current reopen</td><td>Симметричный поток</td><td>Те же counts</td><td>Та же recovery housekeeping; затем byte-stable</td><td><span class="badge good">PASS logical</span></td></tr>
+          <tr><td>100&nbsp;005 unique words</td><td>Current net6 + net8 create/reopen</td><td>Индекс доступен после flush boundary</td><td>Не cross-version workload</td><td><span class="badge good">PASS</span></td></tr>
+        </tbody></table></div>
+        <p class="small muted">Compatibility доказывает читаемость wire/layout и одинаковый logical result, но не обещает одинаковое расположение страниц,
+          padding или размер blocks. Trimming и новая reserve policy специально могут менять физические bytes.</p>
+      </section>
+
+      <section id="indexing">
+        <h2>7. Parser, batching и block policy</h2>
+        <div class="grid-3">
+          <div class="card"><h3>Parser/tokenization</h3><p>Reference строил <code>SortedDictionary&lt;string,WordDefinition&gt;</code>, промежуточные StringBuilder/List и проглатывал исключения.
+            Current deduplicate-ит напрямую (<code>SortedDictionary&lt;string,byte&gt;</code>; net8 — spans/SortedSet), сохраняет lowercase/chunk/suffix/exact semantics и минимальную searchable длину 3.
+            <code>MaximalWordSize &lt; 1</code> теперь бросает исключение.</p></div>
+          <div class="card"><h3>Word changes</h3><p>Reference накапливал document sets и mutировал WABI по одному id. Current хранит <code>WordChange.RemoveFrom/AddTo</code>, сортирует слова ordinal и выполняет bulk mutation.
+            Полный change-set по-прежнему ограничен размером транзакции; новый refs buffer ограничен flush.</p></div>
+          <div class="card"><h3>Flush invariant</h3><p><code>NewWordReferenceFlushThreshold = 100000</code> и условие строго <code>Count &gt; threshold</code>. Следовательно, flush происходит при добавлении 100&nbsp;001-й записи — как в reference <code>tmpWrds.Count &gt; 100000</code>. Финальный flush сохранён.</p></div>
+        </div>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Решение</th><th>Reference</th><th>Current</th><th>Эффект</th><th>Класс</th></tr></thead><tbody>
+          <tr><td>Порядок новых words</td><td><code>SortedDictionary</code>, lexical insert</td><td>Изменения сортируются ordinal перед application</td><td>Prefix locality сохранена; regression test PASS</td><td>Сохранённый инвариант</td></tr>
+          <tr><td>Block growth</td><td>Minimum reserve; при росте примерно <code>payload×2</code></td><td><code>max(min, required, 2×existing)</code></td><td>Меньше realloc/write churn; иногда больше slack на диске</td><td>Disk/perf tradeoff</td></tr>
+          <tr><td>Block shrink</td><td>В обычном случае мог сжимать до exact <code>payload+4</code></td><td>Сохраняет capacity, пока required &gt; ¼ capacity; затем <code>max(min,2×required)</code></td><td>Стабильнее update latency, выше retained disk padding</td><td>Disk/perf tradeoff</td></tr>
+          <tr><td>Пустой word/bitmap/block</td><td>Zero/empty entries могли оставаться</td><td>Удаляются word reference и пустой block</td><td>Меньше disk/scan residue; raw nested-table inventory отличается</td><td>Intentional correction</td></tr>
+          <tr><td>Malformed block</td><td>Ошибка возникала косвенно</td><td>Header/payload length проверяются явно</td><td>Fail-fast вместо неопределённой ошибки</td><td>Invalid-input tightening</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="wabi">
+        <h2>8. WABI, composition и query cache</h2>
+        <div class="grid-3">
+          <div class="card"><h3>Bitmap mutation</h3><p>Добавлены bulk <code>Add(IEnumerable&lt;int&gt;, bool)</code> и <code>IsEmpty</code>. Clearing отсутствующего high id — no-op; trailing zero bytes обрезаются.
+            Формат не меняется: старый reader принимает короткий bitmap.</p></div>
+          <div class="card"><h3>Merge</h3><p>AND/OR/XOR/EXCLUDE обрабатывают null/empty безопасно и возвращают trimmed result. Net8 использует <code>Vector&lt;byte&gt;</code>/Span для hot loops.
+            Логика проверена randomized set-model test.</p></div>
+          <div class="card"><h3>Composition/cache</h3><p>Cache публикуется только после успешного полного вычисления; reference мог пометить блок computed до exception.
+            Повторное использование child block больше не мутирует его cached result. Missing terms и OR/XOR/Exclude согласованы.</p></div>
+        </div>
+        <div class="callout good"><strong>P0 закрыт — прежний FAIL был недостоверен:</strong> при out-of-process запуске BenchmarkDotNet
+          сгенерированный child project восстановил <code>ProjectReference</code> на текущий checkout, поэтому опубликованные как reference числа
+          <code>18,90/19,82 μs</code> не измеряли baseline a834 и отброшены. Исправленный одинаково фильтрованный MediumRun использовал один source
+          (<code>SHA-256 08F78EB3…07A</code>), две фиксированные DLL и <code>InProcessEmitToolchain</code>: baseline <code>546,715 μs</code>,
+          current <code>19,150 μs</code>, delta <strong>−96,497%</strong>. Allocations: <code>128,08 → 128,04 KB/op</code> (−0,031%).
+          Logical/randomized WABI и composition tests — PASS.</div>
+        <p class="small muted">Статическое отличие hot path: reference <code>WABI.cs:230-254</code> после поиска max длины выполняет один nested scalar loop;
+          current net8 <code>WABI.cs:333-373, 500-541</code> сначала сканирует non-empty operands/indices, затем вызывает Span/<code>Vector&lt;byte&gt;</code>
+          <code>OrInto</code> и в конце <code>TrimResult</code>. Исправленное измерение согласуется с ускорением этого hot path; production fix не требуется.</p>
+        <div class="callout good"><strong>Остальные WABI gates:</strong> Medium <code>MergeAnd2</code> current <code>20,66 μs</code> vs reference <code>21,70 μs</code> (−4,79%, PASS).
+          Short median-of-medians: sparse enumeration +0,26%; dense −0,01%; MergeAnd16 −1,21%; MergeOr16 +1,21%.</div>
+        <h3>Ranges и reusable blocks</h3>
+        <p>Reference применял external bounds только если заданы обе границы и мог вернуть неверный full set при non-overlap. Current конвертирует каждую заданную границу к ближайшему существующему external id,
+          поддерживает one-sided bounds, обнуляет converted bounds между enumerations и возвращает empty для inverted/non-intersecting ranges. Это полезная correction, но observable semantic change валидного вызова с одной границей,
+          поэтому классифицировано как contract drift + intentional correction, а не как «эквивалентность».</p>
+      </section>
+
+      <section id="crypto">
+        <h2>9. AES-CTR и migration</h2>
+        <div class="grid-2">
+          <div class="card"><h3>AES-CTR</h3><ul><li>Key sizes 16/24/32 и IV 16 теперь валидируются в constructor; caller arrays клонируются.</li>
+            <li>Counter construction, fixed IV и ciphertext vectors сохранены; net8 выполняет in-place XOR и <code>EncryptEcb</code> со stack buffers.</li>
+            <li>Prefix invariant подтверждён ASCII, block boundary и Unicode vectors.</li><li>Security characteristic не изменён: deterministic fixed-IV CTR раскрывает равенство prefix и не аутентифицирует ciphertext.</li></ul></div>
+          <div class="card"><h3>Migration plain → encrypted</h3><ul><li>Public method прежний.</li><li>Current отклоняет уже encrypted source и non-empty destination.</li>
+            <li>Проверяет searchable keys и 8-byte word refs.</li><li>Копирует metadata/blocks/words, re-encrypts text/word keys и сразу индексирует pending marker=1 rows в target.</li>
+            <li>Reference мог смешать destination или повторно encrypt source; tightening observable для ранее допускавшегося, но документированно нецелевого вызова.</li></ul></div>
+        </div>
+        <div class="callout warning">Клонирование key/IV меняет один edge-contract: мутация caller arrays после constructor больше не меняет будущий ciphertext. Это безопасное исправление,
+          но вызывающий код, намеренно полагавшийся на mutability, увидит отличие.</div>
+      </section>
+
+      <section id="deferred">
+        <h2>10. Deferred queue и lifecycle</h2>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Аспект</th><th>Reference</th><th>Current</th><th>Итог</th></tr></thead><tbody>
+          <tr><td>Worker ownership</td><td>CAS-флаг <code>inDeferredIndexer</code>; constructor мог стартовать worker</td><td>Single worker state machine, explicit start после engine Resources init</td><td>Убирает initialization race</td></tr>
+          <tr><td>Wake-up</td><td>Параллельные start отбрасывались при busy</td><td><code>_restartRequested</code> coalesces wake-ups</td><td>Закрывает lost wake-up между empty-check и exit</td></tr>
+          <tr><td>Failure</td><td>Exception мог оставить CAS=1 и worker навсегда «busy»</td><td>Failure notification; durable batch не удаляется; worker паркуется до explicit retry/reopen</td><td>Предсказуемое восстановление без retry loop</td></tr>
+          <tr><td>Shutdown/reopen</td><td>Нет полной stop/join модели; older targets thread foreground</td><td>Dispose ждёт safe boundary; common thread background, net8 Task; pending rows сохраняются</td><td>Lifecycle correction</td></tr>
+          <tr><td>Text batch</td><td>До 10 queue rows/round</td><td>То же ограничение, reused <code>WorkBatch</code></td><td>Throughput выше; high-water collections живут до завершения worker</td></tr>
+          <tr><td>Vector batch</td><td>Priority branch; limit 500 table entries</td><td>Priority/encoding сохранены; break после <code>&gt;500</code></td><td>Фактический upper edge может превысить 500 на последней task</td></tr>
+          <tr><td>Sequence</td><td><code>DateTime.Now.Ticks</code> + increment; collision/time rollback risk</td><td>Сканирует максимальный persisted counter и монотонно продолжает</td><td>Key format прежний, uniqueness сильнее</td></tr>
+          <tr><td>Removal</td><td>Task удалялся после работы</td><td>Удаляется только после успешной DB transaction</td><td>At-least-durable retry semantics</td></tr>
+        </tbody></table></div>
+        <h3>Новый трёхпарный enqueue → visible probe, 200 docs</h3>
+        <div class="table-wrap"><table class="compact"><thead><tr><th>Метрика (median 3 runs)</th><th>Reference</th><th>Current</th><th>Delta</th><th>Статус</th></tr></thead><tbody>
+          <tr><td>Deferred commit</td><td>180,010 ms</td><td>161,599 ms</td><td>−10,23%</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Commit start → 200 visible</td><td>336,062 ms</td><td>292,515 ms</td><td>−12,96%</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Post-commit visibility wait</td><td>156,053 ms</td><td>131,689 ms</td><td>−15,61%</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>End-to-visible throughput</td><td>595,1 docs/s</td><td>683,7 docs/s</td><td>+14,89%</td><td><span class="badge good">PASS</span></td></tr>
+        </tbody></table></div>
+        <p class="small muted">Это coarse wall-clock probe в отдельных PowerShell processes, не BenchmarkDotNet. Каждый run проверил reopen=200.
+          Он пригоден для обнаружения крупной регрессии, но не доказывает peak working set или high-water capacity.</p>
+        <div class="callout warning"><strong>Deferred format coverage:</strong> current test подтвердил 8/10-byte keys, <code>00 00</code> vector prefix,
+          Biser payload и продолжение sequence выше persisted max. Реальная успешно обработанная current worker-ом legacy valid row и decode current record reference worker-ом
+          не были выполнены end-to-end: <span class="badge warn">NOT PROVEN</span>. Статически обе схемы совпадают.</div>
+      </section>
+
+      <section id="performance">
+        <h2>11. Скорость: новые измерения и prior evidence</h2>
+        <h3>11.1 Новый TextSearch ShortRun, median-of-three process medians</h3>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Workload</th><th>Reference</th><th>Current</th><th>Delta</th><th>Allocated/op ref=current</th><th>Gate</th></tr></thead><tbody>
+          <tr><td>Synchronous indexing</td><td>564,9 μs</td><td>563,3 μs</td><td>−0,28%</td><td>642,4 KB</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Sparse AND</td><td>709,3 μs</td><td>707,0 μs</td><td>−0,32%</td><td>655,74 KB</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Dense AND</td><td>7 010,2 μs</td><td>7 042,3 μs</td><td>+0,46%</td><td>24 147,06 KB</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Prefix OR</td><td>12 136,8 μs</td><td>12 139,2 μs</td><td>+0,02%</td><td>47 505,79 KB</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Encrypted search</td><td>12 425,5 μs</td><td>12 467,8 μs</td><td>+0,34%</td><td>47 486,01 KB</td><td><span class="badge good">PASS</span></td></tr>
+        </tbody></table></div>
+        <p class="small muted">Один reference synchronous run был выбросом 1 021 μs; median-of-three остался 564,9 μs. Ни один основной search workload не дал &gt;5% signal.</p>
+        <h3>11.2 High-cardinality signal и подтверждающий MediumRun</h3>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Workload</th><th>3× Short ref → current</th><th>Short signal</th><th>Medium ref → current</th><th>Medium delta</th><th>Allocated ref → current</th><th>Итог</th></tr></thead><tbody>
+          <tr><td>Plain 16 384 unique words</td><td>174,0 → 203,1 ms</td><td>+16,72%</td><td>141,7 → 143,6 ms</td><td>+1,34%</td><td>102,4 → 102,4 MB</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Encrypted 16 384 unique words</td><td>232,824 → 246,076 ms</td><td>+5,69%</td><td>419,3 → 218,3 ms</td><td>−47,94%</td><td>126,78 → 126,79 MB</td><td><span class="badge good">PASS</span></td></tr>
+        </tbody></table></div>
+        <h3>11.3 WABI</h3>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Workload</th><th>Short ref</th><th>Short current</th><th>Short delta</th><th>Medium confirmation</th><th>Статус</th></tr></thead><tbody>
+          <tr><td>Sparse enumeration</td><td>378,39 μs</td><td>379,36 μs</td><td>+0,26%</td><td>Не нужен</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Dense enumeration</td><td>1 938,16 μs</td><td>1 938,03 μs</td><td>−0,01%</td><td>Не нужен</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Merge AND 2</td><td>23,25 μs</td><td>24,66 μs</td><td>+6,06%</td><td>21,70 → 20,66 μs (−4,79%)</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Merge AND 16</td><td>103,26 μs</td><td>102,01 μs</td><td>−1,21%</td><td>Не нужен</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Merge OR 2</td><td>Отброшено</td><td>Отброшено</td><td>Rebinding</td><td>546,715 → 19,150 μs (−96,497%)</td><td><span class="badge good">PASS / P0 closed</span></td></tr>
+          <tr><td>Merge OR 16</td><td>82,81 μs</td><td>83,81 μs</td><td>+1,21%</td><td>Не нужен</td><td><span class="badge good">PASS</span></td></tr>
+        </tbody></table></div>
+        <h3>11.4 Ранее существовавшие результаты — не новый run</h3>
+        <p>Отчёт <code>DBreeze.Net8.Benchmarks/TextSearchOldVsNewComparison.md</code>, run 18.08.2026, сравнивал тот же reference с current commit
+          <code>3c47ad0… + working tree</code>. Его TextSearch MediumRun: sync −45,41%, sparse −0,51%, dense −0,79%, prefix +0,20%, encrypted +0,24%; allocations без существенного роста.
+          Follow-up после lexical batching: sync Medium −1,76%, plain high-card Short −4,38%, encrypted −0,44%. Эти строки в проходе закрытия P0 не пересчитывались;
+          решение по <code>MergeOr2</code> опирается только на новый изолированный MediumRun.</p>
+      </section>
+
+      <section id="memory">
+        <h2>12. Память</h2>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Метрика</th><th>Что измерено</th><th>Результат</th><th>Статус</th></tr></thead><tbody>
+          <tr><td>BDN allocations/op — TextSearch</td><td>5 workloads, 3 process runs на реализацию</td><td>Равны до отображаемой точности: 642,4 KB … 47 505,79 KB</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>High-card allocations</td><td>MediumRun, 16 384 words</td><td>Plain 102,4 MB одинаково; encrypted +0,01 MB, намного меньше 1 MiB gate</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>WABI allocations</td><td>Enumeration и merges</td><td>Enumeration 56 B/op; исправленный MergeOr2 128,08 → 128,04 KB/op (−0,031%)</td><td><span class="badge good">PASS</span></td></tr>
+          <tr><td>Managed heap после forced GC</td><td>Нет изолированного одинакового probe</td><td>Нельзя вывести из BDN allocated</td><td><span class="badge warn">NOT PROVEN</span></td></tr>
+          <tr><td>Peak / retained working set</td><td>Не снимался надёжно по child process</td><td>PowerShell host и JIT сделали бы сравнение несопоставимым</td><td><span class="badge warn">NOT PROVEN</span></td></tr>
+          <tr><td>Deferred high-water</td><td>Статически <code>WorkBatch</code> reused до конца worker</td><td>Меньше transient allocations, но capacity может удержать самый большой batch</td><td><span class="badge warn">NOT PROVEN</span></td></tr>
+        </tbody></table></div>
+        <div class="callout info">Memory regression gate: &gt;5% и одновременно ≥1 MiB. Из измеренных allocations ни один workload gate не нарушил.
+          Нельзя переносить этот PASS на retained heap/working set.</div>
+      </section>
+
+      <section id="catalog">
+        <h2>13. Полный каталог «reference → current → эффект → риск»</h2>
+        <div class="filters">
+          <label>Поиск<input id="finding-search" type="search" placeholder="parser, flush, cache, encrypted, deferred, P0…"></label>
+          <label>Риск<select id="risk-filter"><option value="all">Все</option><option>P0</option><option>P1</option><option>P2</option><option>P3</option></select></label>
+          <label>Класс<select id="class-filter"><option value="all">Все</option><option value="invariant">Инвариант</option><option value="optimization">Оптимизация</option><option value="correction">Correction</option><option value="drift">Contract drift</option><option value="tradeoff">Tradeoff</option><option value="gap">Gap</option></select></label>
+          <label>Итог<select id="status-filter"><option value="all">Все</option><option>PASS</option><option>FAIL</option><option>NOT PROVEN</option></select></label>
+          <button id="reset-filters" type="button">Сбросить</button><span id="visible-count"></span>
+        </div>
+        <div class="table-wrap"><table class="audit-table"><thead><tr><th>ID</th><th>Область</th><th>Reference</th><th>Current</th><th>Эффект / контракт</th><th>Класс</th><th>Риск / статус</th><th>Доказательство</th></tr></thead><tbody id="finding-body">
+          <tr data-risk="P2" data-class="tradeoff" data-status="PASS"><td>TS-001</td><td>Effective build</td><td>net8 линковал все common.</td><td>net8 local Deferred/Handler/WABI/Crypto; common SBlock/Table.</td><td>Оптимизации target-specific; audit common-only неверен.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / PASS</td><td><code>DBreeze.Net8.csproj:89-93</code>; local files присутствуют.</td></tr>
+          <tr data-risk="P3" data-class="invariant" data-status="PASS"><td>TS-002</td><td>Options</td><td><code>TextSearchOptions.cs</code> не привязан к effective projects.</td><td>Исходник без изменений и по-прежнему не привязан.</td><td>Runtime API drift отсутствует; файл фактически dormant.</td><td>Инвариант</td><td><span class="risk-p3">P3</span> / PASS</td><td>Git blob/hash + все csproj bindings.</td></tr>
+          <tr data-risk="P2" data-class="optimization" data-status="PASS"><td>TS-003</td><td>Parser</td><td>SortedDictionary WordDefinition + StringBuilder/List.</td><td>Прямая dedup map; net8 Span/SortedSet.</td><td>Меньше промежуточных объектов, тот же lexical set.</td><td>Оптимизация</td><td><span class="risk-p2">P2</span> / PASS</td><td>Randomized/query/lexical tests; handler parser.</td></tr>
+          <tr data-risk="P1" data-class="drift" data-status="PASS"><td>TS-004</td><td>Parser errors</td><td>Широкий catch проглатывал parser exception.</td><td>Exception выходит вызывающему коду.</td><td>Observable tightening для invalid/problem input.</td><td>Contract drift</td><td><span class="risk-p1">P1</span> / PASS*</td><td>Ref Handler:848+; current common:820; net8:818.</td></tr>
+          <tr data-risk="P1" data-class="correction" data-status="PASS"><td>TS-005</td><td>Configuration</td><td>Max word/block quantity не валидировались явно.</td><td><code>MaximalWordSize &gt; 0</code>, <code>QuantityOfWordsInBlock &gt; 0</code>.</td><td>Невалидная конфигурация падает раньше.</td><td>Correction</td><td><span class="risk-p1">P1</span> / PASS*</td><td>Current Handler:480/820; regression PASS.</td></tr>
+          <tr data-risk="P3" data-class="invariant" data-status="PASS"><td>TS-006</td><td>Token length</td><td>Searchable suffix минимум 3.</td><td>Минимум 3 сохранён; short query tokens игнорируются.</td><td>Нет валидных ранее индексируемых 2-char suffix.</td><td>Инвариант</td><td><span class="risk-p3">P3</span> / PASS</td><td>Parser/source + tests.</td></tr>
+          <tr data-risk="P1" data-class="invariant" data-status="PASS"><td>TS-007</td><td>Word-ref flush</td><td><code>tmpWrds.Count &gt; 100000</code>.</td><td>Тот же строгий threshold.</td><td>Flush на 100&nbsp;001-й, final flush сохранён.</td><td>Инвариант</td><td><span class="risk-p1">P1</span> / PASS</td><td>Ref Handler:529; current:415/flush call; 100&nbsp;005 test.</td></tr>
+          <tr data-risk="P2" data-class="tradeoff" data-status="NOT PROVEN"><td>TS-008</td><td>Change memory</td><td>Unbounded transaction document-change dictionary.</td><td>Unbounded <code>Dictionary&lt;string,WordChange&gt;</code>; only new refs flush.</td><td>Peak зависит от transaction cardinality; retained heap не измерен.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / NOT PROVEN</td><td>Current Handler:482-580; static.</td></tr>
+          <tr data-risk="P2" data-class="invariant" data-status="PASS"><td>TS-009</td><td>Lexical order</td><td>SortedDictionary insertion.</td><td>Ordinal sort before apply.</td><td>Trie prefix locality сохранена.</td><td>Инвариант</td><td><span class="risk-p2">P2</span> / PASS</td><td>Handler:579; lexical regression PASS.</td></tr>
+          <tr data-risk="P2" data-class="optimization" data-status="PASS"><td>TS-010</td><td>WABI mutation</td><td>По одному document id с возможными resize.</td><td>Bulk add/remove, capacity рассчитывается заранее.</td><td>Меньше копирований; logical bitmap тот же.</td><td>Оптимизация</td><td><span class="risk-p2">P2</span> / PASS</td><td>WABI: Add enumerable; randomized set model.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-011</td><td>Empty cleanup</td><td>Zero bitmap/word/block мог оставаться.</td><td>Удаляется при <code>bitmap.IsEmpty</code>.</td><td>Raw nested inventory меняется; query result тот же.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>Handler:617-622; mutation test.</td></tr>
+          <tr data-risk="P2" data-class="tradeoff" data-status="PASS"><td>TS-012</td><td>WABI trim</td><td>Trailing zero bytes могли сохраняться.</td><td>Trim после clear/merge.</td><td>Меньше disk/memory; wire reader совместим.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / PASS</td><td>WABI Resize/trim; cross-version disks.</td></tr>
+          <tr data-risk="P1" data-class="invariant" data-status="PASS"><td>TS-013</td><td>Block framing</td><td>4-byte length + compressed payload + padding.</td><td>Без изменения framing.</td><td>Обе версии читают blocks.</td><td>Инвариант</td><td><span class="risk-p1">P1</span> / PASS</td><td>Plain/encrypted cross reopen.</td></tr>
+          <tr data-risk="P2" data-class="tradeoff" data-status="PASS"><td>TS-014</td><td>Block growth</td><td>Min reserve / payload×2 growth.</td><td>max(min, required, existing×2).</td><td>Меньше grow churn; возможен больший slack.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / PASS</td><td>Ref Handler:637/713; current block writer.</td></tr>
+          <tr data-risk="P2" data-class="tradeoff" data-status="PASS"><td>TS-015</td><td>Block shrink</td><td>Часто exact payload+4.</td><td>Shrink только при ≤¼ capacity, target ≈2×required.</td><td>Меньше rewrite; больше retained disk padding.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / PASS</td><td>Encrypted remove 250 docs + cross-read.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-016</td><td>Cache publish</td><td>Computed flag до завершения logical work.</td><td>Cache публикуется после успешного calculation.</td><td>Exception больше не poisoning cache.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>SBlock diff; reusable composition test.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-017</td><td>Reusable blocks</td><td>Composition могла мутировать child cached result.</td><td>Child cache не изменяется.</td><td>Повторное использование безопасно.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>CompositionHandlesMissing… PASS.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-018</td><td>Missing terms</td><td>OR/XOR/Exclude edge behavior непоследовательно.</td><td>Null/empty bitmaps нормализованы.</td><td>Set algebra соответствует модели.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>RandomizedComposition… PASS.</td></tr>
+          <tr data-risk="P1" data-class="drift" data-status="PASS"><td>TS-019</td><td>Table ownership</td><td>Cross-table block misuse не guard-ился.</td><td>Бросает <code>ArgumentException</code>.</td><td>Invalid use больше не даёт silent wrong result.</td><td>Contract drift</td><td><span class="risk-p1">P1</span> / PASS*</td><td>QueryParameters… PASS.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-020</td><td>IEnumerable query</td><td><code>Count()</code>, затем повторная enumeration.</td><td>Consume once, null skip, dedup.</td><td>One-shot enumerable работает.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>QueryParameters… PASS.</td></tr>
+          <tr data-risk="P1" data-class="drift" data-status="PASS"><td>TS-021</td><td>One-sided range</td><td>Bound игнорировался без второй стороны.</td><td>Start-only/stop-only поддержаны.</td><td>Observable новый результат валидного public call.</td><td>Contract drift</td><td><span class="risk-p1">P1</span> / PASS*</td><td>Ref SBlock:357/379; current Table:68-93; tests.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-022</td><td>Range gaps</td><td>Non-overlap мог вернуть full set.</td><td>Nearest bounds; inverted/gap → empty.</td><td>Исправляет неправильный range result.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>ExternalRanges… PASS.</td></tr>
+          <tr data-risk="P1" data-class="invariant" data-status="PASS"><td>TS-023</td><td>AES output</td><td>Deterministic AES-CTR fixed IV.</td><td>Тот же counter/ciphertext/prefix.</td><td>Encrypted words/documents cross-readable.</td><td>Инвариант</td><td><span class="risk-p1">P1</span> / PASS</td><td>Known vectors + encrypted cross DB.</td></tr>
+          <tr data-risk="P1" data-class="correction" data-status="PASS"><td>TS-024</td><td>Key ownership</td><td>Caller arrays удерживались.</td><td>Key/IV клонируются.</td><td>Caller mutation больше не rekeys object.</td><td>Correction</td><td><span class="risk-p1">P1</span> / PASS*</td><td>Crypto test stable after Array.Clear.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-025</td><td>Crypto validation</td><td>Bad lengths падали позднее.</td><td>16/24/32 key, 16 IV, null explicit.</td><td>Fail-fast invalid input.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>Crypto regression PASS.</td></tr>
+          <tr data-risk="P2" data-class="optimization" data-status="PASS"><td>TS-026</td><td>net8 crypto</td><td>Array copy/block allocations.</td><td>Span, stack buffers, in-place transform, EncryptEcb.</td><td>Encrypted high-card Medium −47,94%.</td><td>Оптимизация</td><td><span class="risk-p2">P2</span> / PASS</td><td>Net8 Crypto:113; BDN Medium.</td></tr>
+          <tr data-risk="P1" data-class="drift" data-status="PASS"><td>TS-027</td><td>Migration preconditions</td><td>Encrypted source/non-empty target могли пройти.</td><td>Отклоняются.</td><td>Документированный plain→empty path сохранён; invalid use tightened.</td><td>Contract drift</td><td><span class="risk-p1">P1</span> / PASS*</td><td>MigrationValidates… PASS.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-028</td><td>Migration pending</td><td>Target мог зависеть от source deferred queue.</td><td>Pending rows индексируются немедленно в target.</td><td>Target self-consistent после migration.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>Migration regression PASS.</td></tr>
+          <tr data-risk="P1" data-class="invariant" data-status="PASS"><td>TS-029</td><td>Deferred wire</td><td>8-byte text / 00 00+8 vector; Biser dict.</td><td>То же encoding.</td><td>Static queue format совместим.</td><td>Инвариант</td><td><span class="risk-p1">P1</span> / PASS</td><td>Format lifecycle test; Deferred:471-474.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-030</td><td>Deferred sequence</td><td>Wall-clock ticks, rollback/collision edge.</td><td>Persisted max + monotonic continuation.</td><td>Key format тот же, uniqueness сильнее.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>SequenceAndDiskFormat… PASS.</td></tr>
+          <tr data-risk="P2" data-class="invariant" data-status="PASS"><td>TS-031</td><td>Deferred batches</td><td>10 text rows, vector threshold 500.</td><td>Лимиты сохранены; break после &gt;500.</td><td>Batch policy не удалена.</td><td>Инвариант</td><td><span class="risk-p2">P2</span> / PASS</td><td>Deferred:26-27/304-322; net8 equivalents.</td></tr>
+          <tr data-risk="P3" data-class="invariant" data-status="PASS"><td>TS-032</td><td>Vector priority</td><td>Vector branch приоритетен.</td><td>Сохранён.</td><td>Совместимость queue scheduling; indexing branch пока no-op.</td><td>Инвариант</td><td><span class="risk-p3">P3</span> / PASS</td><td>Worker loop/source.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-033</td><td>Wake coalescing</td><td>Busy start терялся.</td><td><code>_restartRequested</code>.</td><td>Нет lost wake-up.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>Deferred:187-260; lifecycle test.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-034</td><td>Failure parking</td><td>Exception могла оставить CAS busy.</td><td>Notify, preserve row, park, explicit retry.</td><td>Durable и diagnosable failure.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>FailureParksDurableBatch PASS.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-035</td><td>Shutdown/reopen</td><td>Нет stop/join guarantee.</td><td>Safe stop, pending preserved, reopen resumes.</td><td>Предсказуемый engine lifecycle.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>ShutdownPreservesPendingRows PASS.</td></tr>
+          <tr data-risk="P2" data-class="tradeoff" data-status="NOT PROVEN"><td>TS-036</td><td>Batch reuse</td><td>Collections создавались чаще.</td><td>Один <code>WorkBatch</code> на worker lifetime.</td><td>Меньше alloc, но capacity удерживает high-water.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / NOT PROVEN</td><td>Deferred:270/543; retained probe отсутствует.</td></tr>
+          <tr data-risk="P2" data-class="correction" data-status="PASS"><td>TS-037</td><td>Engine start order</td><td>Worker мог стартовать из constructor.</td><td>Engine стартует после Resources init.</td><td>Убрана initialization race.</td><td>Correction</td><td><span class="risk-p2">P2</span> / PASS</td><td>DBreezeEngine.cs:180.</td></tr>
+          <tr data-risk="P0" data-class="optimization" data-status="PASS"><td>TS-038</td><td>WABI MergeOr2 perf</td><td>546,715 μs Medium median.</td><td>19,150 μs.</td><td>−96,497%; allocations −0,031%.</td><td>Optimization</td><td><span class="risk-p0">P0</span> / PASS (closed)</td><td>Изолированный InProcess MediumRun + SHA manifest; прежний FAIL отброшен из-за rebinding.</td></tr>
+          <tr data-risk="P1" data-class="invariant" data-status="PASS"><td>TS-039</td><td>API manifest</td><td>62 normalized lines.</td><td>62, тот же SHA.</td><td>Нет member/default/visibility drift.</td><td>Инвариант</td><td><span class="risk-p1">P1</span> / PASS</td><td>api-reference/current-net8.txt.</td></tr>
+          <tr data-risk="P2" data-class="tradeoff" data-status="PASS"><td>TS-040</td><td>Read-only SHA</td><td>Открывает cross-written DB.</td><td>Первый recovery reopen обнуляет .rol; следующий stable.</td><td>Data bytes стабильны; journal housekeeping observable.</td><td>Tradeoff</td><td><span class="risk-p2">P2</span> / PASS logical</td><td>Before/after inventories.</td></tr>
+          <tr data-risk="P2" data-class="gap" data-status="NOT PROVEN"><td>TS-041</td><td>Legacy queue E2E</td><td>Legacy valid worker row.</td><td>Schema и decode path совпадают.</td><td>Нет успешного cross-worker execution probe.</td><td>Gap</td><td><span class="risk-p2">P2</span> / NOT PROVEN</td><td>Static + format test only.</td></tr>
+          <tr data-risk="P2" data-class="gap" data-status="NOT PROVEN"><td>TS-042</td><td>Retained memory</td><td>Baseline не снят.</td><td>Peak/forced-GC/high-water не сняты.</td><td>Allocations PASS нельзя экстраполировать.</td><td>Gap</td><td><span class="risk-p2">P2</span> / NOT PROVEN</td><td>Нет изолированного process probe.</td></tr>
+        </tbody></table></div>
+        <p class="small muted">Звёздочка у PASS означает: реализация работает согласно новой проверяемой семантике, но product owner должен подтвердить intentional contract tightening.</p>
+      </section>
+
+      <section id="priorities">
+        <h2>14. Приоритеты исправлений / решений</h2>
+        <div class="priority">
+          <div class="p p0">P0 ✓</div><div><strong>Закрыт: performance <code>WABI.MergeByOrLogic</code> для двух operands соответствует gate.</strong>
+            Исправленный filtered MediumRun: baseline <code>546,715 μs</code>, current <code>19,150 μs</code> (−96,497%); logical/randomized tests PASS,
+            allocations <code>128,08 → 128,04 KB/op</code>. Production-код не менялся.</div>
+          <div class="p p1">P1</div><div><strong>Зафиксировать owner-approved observable corrections.</strong> One-sided ranges, cross-table guard,
+            fail-fast MaximalWordSize/QuantityOfWordsInBlock, migration preconditions и cloned key/IV нужно документировать как сознательную версионную семантику.</div>
+          <div class="p p2">P2</div><div><strong>Закрыть memory gates.</strong> Добавить out-of-process probe для forced-GC managed heap,
+            peak/retained working set и deferred <code>WorkBatch</code> capacity high-water на одинаковом workload.</div>
+          <div class="p p2">P2</div><div><strong>Закрыть queue cross-worker E2E.</strong> Reference должен оставить валидный pending row,
+            current — обработать; затем current record должен быть decoded/recognized reference schema без запуска опасного auto-worker race.</div>
+          <div class="p p3">P3</div><div><strong>Отдельно решить судьбу vector no-op.</strong> Формат/priority сохранены, но это не доказательство фактической vector indexing functionality.</div>
+        </div>
+      </section>
+
+      <section id="gaps">
+        <h2>15. Evidence gaps и ограничения</h2>
+        <details open><summary>Полный net8 regression harness — NOT PROVEN как единый run</summary><p>Запуск остановился до TextSearch на постороннем
+          <code>ParallelMultiTableCommitsRemainDurable</code> timeout. После этого focused reflection runner выполнил 12 TextSearch + 4 deferred lifecycle/format tests: все PASS;
+          large-batch net8 PASS. Нельзя переименовывать это в «full harness PASS».</p></details>
+        <details><summary>Memory retention — NOT PROVEN</summary><p>BDN allocations измерены. Forced-GC heap, peak/retained working set и deferred high-water — нет.
+          Статический риск batch reuse указан, но численного verdict нет.</p></details>
+        <details><summary>Reference build matrix — частично runtime</summary><p>Reference net8 и net472 собраны и использованы для API/runtime evidence. Binding map других targets проверен по source;
+          current Release matrix собрана полностью. Нельзя утверждать новый runtime PASS reference net6/netstandard/netcoreapp/Portable на основании current build.</p></details>
+        <details><summary>Физическая byte identity</summary><p>Plain steady read-only полностью byte-stable. Encrypted post-update первый reopen применил recovery cleanup
+          к <code>.rol</code>, data-файл не изменился; второй read-only reopen byte-stable. Это честно не маркируется как «все файлы всегда неизменны».</p></details>
+        <details><summary>Benchmark provenance и variability</summary><p>Первоначальный P0 MergeOr2 возник не из performance regression, а из out-of-process rebinding:
+          generated benchmark child ссылался на current project вместо baseline DLL. Эти числа отброшены. Новый filtered MediumRun выполнен через
+          <code>InProcessEmitToolchain</code> с фиксированными DLL и подтвердил PASS. Остальные performance workloads в этом проходе не пересчитывались.</p></details>
+      </section>
+
+      <section id="reproduce">
+        <h2>16. Воспроизводимость и артефакты</h2>
+        <p>Основные базы, логи, manifests и BDN reports исходного аудита находятся в:</p>
+        <p><code>D:\Temp\DbreezeDbTest\TextSearchAudit\20260820-a83424e-vs-d2e32dc</code></p>
+        <p>Исправленный P0 remeasure сохранён отдельно, без перезаписи исходных артефактов:</p>
+        <p><code>D:\Temp\DbreezeDbTest\TextSearchAudit\20260820-p0-mergeor-medium-final-r2</code></p>
+        <div class="table-wrap"><table class="medium-table"><thead><tr><th>Артефакт</th><th>Назначение</th><th>SHA-256</th></tr></thead><tbody>
+          <tr><td><code>aggregate-textsearch-short.csv</code></td><td>3× alternating Short median-of-medians</td><td><code>295C77FFA490DF3BAC868EA1947E6AC7DC552470DF35D3959DC8D826C88109B3</code></td></tr>
+          <tr><td><code>aggregate-wabi.csv</code></td><td>WABI Short + Medium gate</td><td><code>3559CFB0DE3F748E9B8BB5CC06E57D32A4DBF868611D469503C3D800D9D7BD50</code></td></tr>
+          <tr><td><code>aggregate-lexical.csv</code></td><td>High-card Short + Medium</td><td><code>02596FA31766AF95762A22EDFFD122971DE4C1B764355FE95232FAEE319F919E</code></td></tr>
+          <tr><td><code>aggregate-deferred.csv</code></td><td>3× alternating enqueue→visible probe</td><td><code>00ECCF0CD78C20FBF259C8C9E20A811EC4E49905D765BDB0BBC32003C126C1A5</code></td></tr>
+          <tr><td><code>api-*-net8.txt</code>, <code>api-*-net472.txt</code></td><td>Reflection surface manifests</td><td><code>E7F4FEF…A0B981</code> у всех четырёх</td></tr>
+          <tr><td><code>source-and-binary-manifest.tsv</code></td><td>Workload/source и net8/net472 implementation DLL hashes</td><td><code>97D008783D13B4B59A23BD23D74BFD8EAE9D44FC6887696023D9A158D09DEA8B</code></td></tr>
+          <tr><td><code>artifact-inventory.tsv</code></td><td>3 241 артефакт (сам inventory исключён), полный relative path / length / SHA-256</td><td><code>F12EDF8AC91DC04CB684E6929434146ACD6B758C39705A15B8BB8B0F77D8E78D</code></td></tr>
+          <tr><td><code>build-*.log</code></td><td>6 current targets</td><td>В полном artifact inventory</td></tr>
+          <tr><td><code>disk-*.json</code>, <code>enc-*.txt/log</code></td><td>Cross-version logical/SHA evidence</td><td>В полном artifact inventory</td></tr>
+          <tr><td><code>perf/*-artifacts/results</code></td><td>Raw BDN csv/md/html</td><td>В полном artifact inventory</td></tr>
+          <tr><td><a href="file:///D:/Temp/DbreezeDbTest/TextSearchAudit/20260820-p0-mergeor-medium-final-r2/result-summary.txt"><code>P0 result-summary.txt</code></a></td><td>Итог gate, medians, allocations и logical tests</td><td><code>93FD43D00CB33F05FDEBC92A572C88E40275F8F5A781B5AE5AF62D1C5D7399D4</code></td></tr>
+          <tr><td><a href="file:///D:/Temp/DbreezeDbTest/TextSearchAudit/20260820-p0-mergeor-medium-final-r2/manifest.txt"><code>P0 manifest.txt</code></a></td><td>Git, source, harness и implementation DLL provenance</td><td><code>1B91609773D10AB187EB2A73926110B17E877580D6F76FE5612E1A8D34535E11</code></td></tr>
+          <tr><td><a href="file:///D:/Temp/DbreezeDbTest/TextSearchAudit/20260820-p0-mergeor-medium-final-r2/logical-tests.txt"><code>P0 logical-tests.txt</code></a></td><td>Randomized WABI merge и composition PASS</td><td><code>E5F8A1AED3C43CBF746527F14962051A8331800926D477F29651944FEA717137</code></td></tr>
+          <tr><td><a href="file:///D:/Temp/DbreezeDbTest/TextSearchAudit/20260820-p0-mergeor-medium-final-r2/medium-baseline/results/DBreeze.Net8.Benchmarks.WabiBenchmarks-report.html"><code>P0 baseline Medium HTML</code></a><br><code>CSV SHA: 8741FFA5…D156F92</code></td><td>a834 filtered MediumRun, median 546,715 μs</td><td><code>9FEA6C3D4EC9276F74947883F6C045160E715CF34930106DE7955BD6AA15CBB2</code></td></tr>
+          <tr><td><a href="file:///D:/Temp/DbreezeDbTest/TextSearchAudit/20260820-p0-mergeor-medium-final-r2/medium-current/results/DBreeze.Net8.Benchmarks.WabiBenchmarks-report.html"><code>P0 current Medium HTML</code></a><br><code>CSV SHA: D1CF3E07…AEFEB769</code></td><td>Current filtered MediumRun, median 19,150 μs</td><td><code>71890DC3039B45AA33FF57EBBC3B8B6562E7EAD8C6392DE6BB9EB9BF58019C6C</code></td></tr>
+        </tbody></table></div>
+        <h3>Source-only harness isolation</h3>
+        <p>Один current audit-harness source был собран дважды: против current DLL и против reference DLL. Core workload sources
+          <code>TextSearchBenchmarks.cs</code>, <code>TextSearchLexicalBatchBenchmarks.cs</code>, <code>WabiBenchmarks.cs</code> и comparison code
+          имеют совпадающие reference/current hashes; implementation DLL hashes различаются. Для исправленного P0 запуска source SHA равен
+          <code>08F78EB3BFB80F67259BDC7B9A0CFCFB1AA58F3FB0A43D7411474B21FCC7A07A</code>, baseline/current DLL SHA различаются,
+          а <code>InProcessEmitToolchain</code> исключает повторную сборку child через ошибочный project binding. Database roots уникальны для каждого process/run.</p>
+        <h3>Ключевые code anchors</h3>
+        <ul>
+          <li>Current common: <code>DBreeze/TextSearch/TextSearchHandler.cs:408-621, 820, 1013+</code>; net8: <code>DBreeze.Net8/TextSearch/TextSearchHandler.cs:409-622, 818, 1017+</code>.</li>
+          <li>Reference: <code>D:\VS\DBreezeRealm_copy\DBreeze\DBreeze\TextSearch\TextSearchHandler.cs:454-715, 848+</code>.</li>
+          <li>Ranges: current <code>TextSearchTable.cs:68-93</code>; reference <code>SBlock.cs:357-405</code>.</li>
+          <li>Deferred: current common <code>TextDeferredIndexer.cs:25-543</code>, net8 <code>:24-494</code>; reference <code>:28-241</code>; engine start <code>DBreezeEngine.cs:180</code>.</li>
+          <li>SIMD/AES: net8 <code>WABI.cs:449+</code>, <code>WabiStreamCrypto.cs:37-113</code>.</li>
+        </ul>
+        <div class="callout good">До создания этого отчёта worktree уже содержал изменения
+          <code>Transactions_Architecture_Audit.html</code> и untracked <code>Transactions_Architecture_Audit_old.html</code>. Они не открывались для записи и не изменялись этим аудитом.</div>
+      </section>
+    </main>
+  </div>
+  <footer>DBreeze TextSearch Architecture Audit · self-contained HTML · external scripts/styles отсутствуют · generated 20.08.2026</footer>
+  <script>
+    (()=>{
+      const body=document.getElementById('finding-body');
+      const rows=[...body.querySelectorAll('tr')];
+      const search=document.getElementById('finding-search');
+      const risk=document.getElementById('risk-filter');
+      const cls=document.getElementById('class-filter');
+      const status=document.getElementById('status-filter');
+      const count=document.getElementById('visible-count');
+      function apply(){
+        const q=search.value.trim().toLocaleLowerCase('ru');let visible=0;
+        for(const row of rows){
+          const okText=!q||row.textContent.toLocaleLowerCase('ru').includes(q);
+          const okRisk=risk.value==='all'||row.dataset.risk===risk.value;
+          const okClass=cls.value==='all'||row.dataset.class===cls.value;
+          const okStatus=status.value==='all'||row.dataset.status===status.value;
+          const show=okText&&okRisk&&okClass&&okStatus;row.classList.toggle('hidden',!show);if(show)visible++;
+        }
+        count.textContent=`Показано: ${visible} / ${rows.length}`;
+      }
+      [search,risk,cls,status].forEach(el=>el.addEventListener(el===search?'input':'change',apply));
+      document.getElementById('reset-filters').addEventListener('click',()=>{search.value='';risk.value=cls.value=status.value='all';apply();search.focus()});
+      apply();
+    })();
+  </script>
+</body>
+</html>
