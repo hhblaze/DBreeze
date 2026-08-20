@@ -1,5 +1,6 @@
 using DBreeze;
 using DBreeze.DataTypes;
+using DBreeze.Transactions;
 
 internal static class LianaTrieRegressionTests
 {
@@ -139,6 +140,446 @@ internal static class LianaTrieRegressionTests
             AssertRow(forward[0], transaction.Min<byte[], byte[]>(ContractTable), $"Min, lazy={lazyLoading}");
             AssertRow(backward[0], transaction.Max<byte[], byte[]>(ContractTable), $"Max, lazy={lazyLoading}");
         }
+    }
+
+    internal static void AlternativeTraversalsAreIterativeAndIsolated()
+    {
+        const int depth = 8_192;
+        byte[] prefix = Enumerable.Repeat((byte)0x42, depth).ToArray();
+        byte[][] keys = CreateDeepTraversalKeys(prefix);
+        byte[][] forward = keys.OrderBy(static key => key, ByteComparer).ToArray();
+        byte[][] backward = forward.Reverse().ToArray();
+
+        using var engine = CreateMemoryEngine();
+        using (var transaction = engine.GetTransaction())
+        {
+            foreach (byte[] key in keys)
+                transaction.Insert(ContractTable, key, CompactValueFor(key));
+            transaction.Commit();
+        }
+
+        foreach (bool lazyLoading in new[] { true, false })
+        {
+            using var transaction = engine.GetTransaction();
+            transaction.ValuesLazyLoadingIsOn = lazyLoading;
+            AssertDeepTraversalMatrix(transaction, ContractTable, prefix, forward, backward, lazyLoading);
+        }
+
+        AssertEmptyAlternativeTraversalContract();
+        AssertReadVisibilityForAlternativeTraversals(engine, prefix);
+        AssertEagerRowsSurviveRecreation();
+    }
+
+    internal static void RecursiveNestedTraversalsAreIterative()
+    {
+        foreach (bool storageOnDisk in new[] { false, true })
+        {
+            byte[] prefix = Enumerable.Repeat((byte)0x63, 8_192).ToArray();
+            byte[][] keys = CreateDeepTraversalKeys(prefix);
+            byte[][] forward = keys.OrderBy(static key => key, ByteComparer).ToArray();
+            byte[][] backward = forward.Reverse().ToArray();
+            byte[] rootKey = { 0x10 };
+            byte[] secondKey = { 0x20 };
+            byte[] thirdKey = { 0x30 };
+            byte[] fourthKey = { 0x40 };
+
+            RunStorageScenario(
+                $"deep-nested-traversal-{storageOnDisk}",
+                storageOnDisk,
+                engine =>
+                {
+                    using var transaction = engine.GetTransaction();
+                    transaction.Insert(ContractTable, rootKey, new byte[] { 1 });
+
+                    NestedTable level1 = null;
+                    NestedTable level2 = null;
+                    NestedTable level3 = null;
+                    NestedTable level4 = null;
+                    try
+                    {
+                        level1 = transaction.InsertTable(ContractTable, rootKey, 0);
+                        level1.Insert(secondKey, new byte[] { 2 });
+                        level2 = level1.GetTable(secondKey, 1);
+                        level2.Insert(thirdKey, new byte[] { 3 });
+                        level3 = level2.GetTable(thirdKey, 2);
+                        level3.Insert(fourthKey, new byte[] { 4 });
+                        level4 = level3.GetTable(fourthKey, 3);
+                        foreach (byte[] key in keys)
+                            level4.Insert(key, CompactValueFor(key));
+
+                        // All nested owners deliberately remain open until the master transaction commits.
+                        transaction.Commit();
+                    }
+                    finally
+                    {
+                        level4?.Dispose();
+                        level3?.Dispose();
+                        level2?.Dispose();
+                        level1?.Dispose();
+                    }
+                },
+                engine =>
+                {
+                    foreach (bool lazyLoading in new[] { true, false })
+                    {
+                        using var transaction = engine.GetTransaction();
+                        using NestedTable level1 = transaction.SelectTable(ContractTable, rootKey, 0);
+                        using NestedTable level2 = level1.GetTable(secondKey, 1);
+                        using NestedTable level3 = level2.GetTable(thirdKey, 2);
+                        using NestedTable level4 = level3.GetTable(fourthKey, 3);
+                        level4.ValuesLazyLoadingIsOn = lazyLoading;
+                        AssertDeepNestedTraversalMatrix(level4, prefix, forward, backward, lazyLoading);
+                    }
+                });
+        }
+    }
+
+    private static void AssertDeepTraversalMatrix(
+        Transaction transaction,
+        string table,
+        byte[] prefix,
+        byte[][] forward,
+        byte[][] backward,
+        bool lazyLoading)
+    {
+        byte[] existingPivot = Append(prefix, 0x00);
+        byte[] missingPivot = Append(prefix, 0x00, 0x80);
+        byte[] rangeStop = Append(prefix, 0x01);
+        byte[] closestCandidate = Append(prefix, 0x02, 0x77);
+
+        foreach (byte[] pivot in new[] { existingPivot, missingPivot, new byte[] { 0x40 }, new byte[] { 0x44 } })
+        {
+            foreach (bool include in new[] { false, true })
+            {
+                AssertCompactRows(
+                    forward.Where(key => Compare(key, pivot) > 0 || include && Compare(key, pivot) == 0),
+                    transaction.SelectForwardStartFrom<byte[], byte[]>(table, pivot, include),
+                    $"Deep ForwardStartFrom {Format(pivot)}/{include}, lazy={lazyLoading}.");
+                AssertCompactRows(
+                    backward.Where(key => Compare(key, pivot) < 0 || include && Compare(key, pivot) == 0),
+                    transaction.SelectBackwardStartFrom<byte[], byte[]>(table, pivot, include),
+                    $"Deep BackwardStartFrom {Format(pivot)}/{include}, lazy={lazyLoading}.");
+            }
+        }
+
+        foreach (bool includeStart in new[] { false, true })
+        {
+            foreach (bool includeStop in new[] { false, true })
+            {
+                AssertCompactRows(
+                    forward.Where(key => InForwardRange(key, existingPivot, includeStart, rangeStop, includeStop)),
+                    transaction.SelectForwardFromTo<byte[], byte[]>(
+                        table, existingPivot, includeStart, rangeStop, includeStop),
+                    $"Deep ForwardFromTo {includeStart}/{includeStop}, lazy={lazyLoading}.");
+                AssertCompactRows(
+                    backward.Where(key => InBackwardRange(key, rangeStop, includeStop, existingPivot, includeStart)),
+                    transaction.SelectBackwardFromTo<byte[], byte[]>(
+                        table, rangeStop, includeStop, existingPivot, includeStart),
+                    $"Deep BackwardFromTo {includeStop}/{includeStart}, lazy={lazyLoading}.");
+            }
+        }
+
+        foreach (ulong skip in new[] { 0UL, 1UL, 3UL, (ulong)forward.Length, ulong.MaxValue })
+        {
+            byte[][] forwardCandidates = forward.Where(key => Compare(key, missingPivot) > 0).ToArray();
+            byte[][] backwardCandidates = backward.Where(key => Compare(key, missingPivot) < 0).ToArray();
+            int forwardSkip = skip >= (ulong)forwardCandidates.Length ? forwardCandidates.Length : (int)skip;
+            int backwardSkip = skip >= (ulong)backwardCandidates.Length ? backwardCandidates.Length : (int)skip;
+            AssertCompactRows(forwardCandidates.Skip(forwardSkip),
+                transaction.SelectForwardSkipFrom<byte[], byte[]>(table, missingPivot, skip),
+                $"Deep ForwardSkipFrom {skip}, lazy={lazyLoading}.");
+            AssertCompactRows(backwardCandidates.Skip(backwardSkip),
+                transaction.SelectBackwardSkipFrom<byte[], byte[]>(table, missingPivot, skip),
+                $"Deep BackwardSkipFrom {skip}, lazy={lazyLoading}.");
+        }
+
+        byte[][] prefixForward = forward.Where(key => StartsWith(key, prefix)).ToArray();
+        AssertCompactRows(prefixForward,
+            transaction.SelectForwardStartsWith<byte[], byte[]>(table, prefix),
+            $"Deep ForwardStartsWith, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward.Reverse(),
+            transaction.SelectBackwardStartsWith<byte[], byte[]>(table, prefix),
+            $"Deep BackwardStartsWith, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward,
+            transaction.SelectForwardStartsWithClosestToPrefix<byte[], byte[]>(table, closestCandidate),
+            $"Deep ForwardClosestPrefix, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward.Reverse(),
+            transaction.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(table, closestCandidate),
+            $"Deep BackwardClosestPrefix, lazy={lazyLoading}.");
+
+        AssertCompactRow(forward[0], transaction.Min<byte[], byte[]>(table), $"Deep Min, lazy={lazyLoading}.");
+        AssertCompactRow(backward[0], transaction.Max<byte[], byte[]>(table), $"Deep Max, lazy={lazyLoading}.");
+
+        int leadingCount = 2;
+        byte[][] leadingForward = forward.Where(key => Compare(key, existingPivot) < 0).ToArray();
+        leadingForward = leadingForward.Skip(Math.Max(0, leadingForward.Length - leadingCount)).ToArray();
+        byte[][] forwardRange = forward
+            .Where(key => InForwardRange(key, existingPivot, true, rangeStop, true)).ToArray();
+        AssertCompactRows(leadingForward.Concat(forwardRange),
+            transaction.SelectForwardFromTo<byte[], byte[]>(
+                table, existingPivot, true, rangeStop, true, leadingCount),
+            $"Deep ForwardFromTo leading, lazy={lazyLoading}.");
+
+        byte[][] leadingBackward = forward.Where(key => Compare(key, rangeStop) > 0).Take(leadingCount).Reverse().ToArray();
+        byte[][] backwardRange = backward
+            .Where(key => InBackwardRange(key, rangeStop, true, existingPivot, true)).ToArray();
+        AssertCompactRows(leadingBackward.Concat(backwardRange),
+            transaction.SelectBackwardFromTo<byte[], byte[]>(
+                table, rangeStop, true, existingPivot, true, leadingCount),
+            $"Deep BackwardFromTo leading, lazy={lazyLoading}.");
+
+        IEnumerable<Row<byte[], byte[]>> repeatable =
+            transaction.SelectForwardStartFrom<byte[], byte[]>(table, missingPivot, true);
+        byte[][] repeatableExpected = forward.Where(key => Compare(key, missingPivot) >= 0).ToArray();
+        AssertCompactRows(repeatableExpected, repeatable, $"Deep repeatable first pass, lazy={lazyLoading}.");
+        AssertCompactRows(repeatableExpected, repeatable, $"Deep repeatable second pass, lazy={lazyLoading}.");
+
+        AssertEarlyDispose(transaction.SelectForwardStartFrom<byte[], byte[]>(table, existingPivot, true),
+            $"Deep ForwardStartFrom early dispose, lazy={lazyLoading}.");
+        AssertEarlyDispose(transaction.SelectBackwardSkipFrom<byte[], byte[]>(table, rangeStop, 0),
+            $"Deep BackwardSkipFrom early dispose, lazy={lazyLoading}.");
+        AssertEarlyDispose(transaction.SelectForwardStartsWith<byte[], byte[]>(table, prefix),
+            $"Deep StartsWith early dispose, lazy={lazyLoading}.");
+        AssertEarlyDispose(
+            transaction.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(table, closestCandidate),
+            $"Deep ClosestPrefix early dispose, lazy={lazyLoading}.");
+    }
+
+    private static void AssertDeepNestedTraversalMatrix(
+        NestedTable table,
+        byte[] prefix,
+        byte[][] forward,
+        byte[][] backward,
+        bool lazyLoading)
+    {
+        byte[] existingPivot = Append(prefix, 0x00);
+        byte[] missingPivot = Append(prefix, 0x00, 0x80);
+        byte[] rangeStop = Append(prefix, 0x01);
+        byte[] closestCandidate = Append(prefix, 0x02, 0x77);
+
+        AssertCompactRows(forward.Where(key => Compare(key, existingPivot) >= 0),
+            table.SelectForwardStartFrom<byte[], byte[]>(existingPivot, true),
+            $"Nested ForwardStartFrom, lazy={lazyLoading}.");
+        AssertCompactRows(backward.Where(key => Compare(key, rangeStop) <= 0),
+            table.SelectBackwardStartFrom<byte[], byte[]>(rangeStop, true),
+            $"Nested BackwardStartFrom, lazy={lazyLoading}.");
+        AssertCompactRows(forward.Where(key => InForwardRange(key, existingPivot, true, rangeStop, false)),
+            table.SelectForwardFromTo<byte[], byte[]>(existingPivot, true, rangeStop, false),
+            $"Nested ForwardFromTo, lazy={lazyLoading}.");
+        AssertCompactRows(backward.Where(key => InBackwardRange(key, rangeStop, true, existingPivot, false)),
+            table.SelectBackwardFromTo<byte[], byte[]>(rangeStop, true, existingPivot, false),
+            $"Nested BackwardFromTo, lazy={lazyLoading}.");
+
+        byte[][] forwardCandidates = forward.Where(key => Compare(key, missingPivot) > 0).ToArray();
+        byte[][] backwardCandidates = backward.Where(key => Compare(key, missingPivot) < 0).ToArray();
+        foreach (ulong skip in new[] { 0UL, 1UL, ulong.MaxValue })
+        {
+            int forwardSkip = skip >= (ulong)forwardCandidates.Length ? forwardCandidates.Length : (int)skip;
+            int backwardSkip = skip >= (ulong)backwardCandidates.Length ? backwardCandidates.Length : (int)skip;
+            AssertCompactRows(forwardCandidates.Skip(forwardSkip),
+                table.SelectForwardSkipFrom<byte[], byte[]>(missingPivot, skip),
+                $"Nested ForwardSkipFrom {skip}, lazy={lazyLoading}.");
+            AssertCompactRows(backwardCandidates.Skip(backwardSkip),
+                table.SelectBackwardSkipFrom<byte[], byte[]>(missingPivot, skip),
+                $"Nested BackwardSkipFrom {skip}, lazy={lazyLoading}.");
+        }
+
+        byte[][] prefixForward = forward.Where(key => StartsWith(key, prefix)).ToArray();
+        AssertCompactRows(prefixForward, table.SelectForwardStartsWith<byte[], byte[]>(prefix),
+            $"Nested ForwardStartsWith, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward.Reverse(), table.SelectBackwardStartsWith<byte[], byte[]>(prefix),
+            $"Nested BackwardStartsWith, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward,
+            table.SelectForwardStartsWithClosestToPrefix<byte[], byte[]>(closestCandidate),
+            $"Nested ForwardClosestPrefix, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward.Reverse(),
+            table.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(closestCandidate),
+            $"Nested BackwardClosestPrefix, lazy={lazyLoading}.");
+        AssertCompactRow(forward[0], table.Min<byte[], byte[]>(), $"Nested Min, lazy={lazyLoading}.");
+        AssertCompactRow(backward[0], table.Max<byte[], byte[]>(), $"Nested Max, lazy={lazyLoading}.");
+
+        IEnumerable<Row<byte[], byte[]>> repeatable = table.SelectForwardStartsWith<byte[], byte[]>(prefix);
+        AssertCompactRows(prefixForward, repeatable, $"Nested repeatable first pass, lazy={lazyLoading}.");
+        AssertCompactRows(prefixForward, repeatable, $"Nested repeatable second pass, lazy={lazyLoading}.");
+        AssertEarlyDispose(table.SelectForwardStartFrom<byte[], byte[]>(existingPivot, true),
+            $"Nested StartFrom early dispose, lazy={lazyLoading}.");
+        AssertEarlyDispose(table.SelectBackwardStartsWith<byte[], byte[]>(prefix),
+            $"Nested StartsWith early dispose, lazy={lazyLoading}.");
+    }
+
+    private static void AssertEmptyAlternativeTraversalContract()
+    {
+        const string table = "liana-empty-key-contract";
+        using var engine = CreateMemoryEngine();
+        using (var transaction = engine.GetTransaction())
+        {
+            transaction.Insert(table, Array.Empty<byte>(), new byte[] { 0xEE });
+            transaction.Insert(table, new byte[] { 1 }, new byte[] { 1 });
+            transaction.Commit();
+        }
+
+        foreach (bool lazyLoading in new[] { true, false })
+        {
+            using var transaction = engine.GetTransaction();
+            transaction.ValuesLazyLoadingIsOn = lazyLoading;
+            AssertThrows<IndexOutOfRangeException>(() =>
+                transaction.SelectForwardStartFrom<byte[], byte[]>(table, Array.Empty<byte>(), true).ToArray());
+            AssertThrows<IndexOutOfRangeException>(() =>
+                transaction.SelectBackwardStartFrom<byte[], byte[]>(table, Array.Empty<byte>(), true).ToArray());
+            AssertThrows<IndexOutOfRangeException>(() =>
+                transaction.SelectForwardSkipFrom<byte[], byte[]>(table, Array.Empty<byte>(), 0).ToArray());
+            AssertThrows<IndexOutOfRangeException>(() =>
+                transaction.SelectBackwardSkipFrom<byte[], byte[]>(table, Array.Empty<byte>(), 0).ToArray());
+            AssertEqual(0,
+                transaction.SelectForwardStartsWith<byte[], byte[]>(table, Array.Empty<byte>()).Count(),
+                "ForwardStartsWith(empty) must remain empty.");
+            AssertEqual(0,
+                transaction.SelectBackwardStartsWith<byte[], byte[]>(table, Array.Empty<byte>()).Count(),
+                "BackwardStartsWith(empty) must remain empty.");
+            AssertEqual(0,
+                transaction.SelectForwardStartsWithClosestToPrefix<byte[], byte[]>(table, Array.Empty<byte>()).Count(),
+                "ForwardClosestPrefix(empty) must remain empty.");
+            AssertEqual(0,
+                transaction.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(table, Array.Empty<byte>()).Count(),
+                "BackwardClosestPrefix(empty) must remain empty.");
+        }
+    }
+
+    private static void AssertReadVisibilityForAlternativeTraversals(DBreezeEngine engine, byte[] prefix)
+    {
+        byte[] newKey = Append(prefix, 0x00, 0x80);
+        using var transaction = engine.GetTransaction();
+        transaction.Insert(ContractTable, newKey, CompactValueFor(newKey));
+
+        Assert(transaction.SelectForwardStartFrom<byte[], byte[]>(ContractTable, newKey, true)
+                .Any(row => row.Key.AsSpan().SequenceEqual(newKey)),
+            "Write-root StartFrom did not see the uncommitted row.");
+        Assert(!transaction.SelectForwardStartFrom<byte[], byte[]>(ContractTable, newKey, true, true)
+                .Any(row => row.Key.AsSpan().SequenceEqual(newKey)),
+            "Read-visibility StartFrom saw the uncommitted row.");
+        Assert(transaction.SelectBackwardStartsWith<byte[], byte[]>(ContractTable, newKey)
+                .Any(row => row.Key.AsSpan().SequenceEqual(newKey)),
+            "Write-root StartsWith did not see the uncommitted row.");
+        Assert(!transaction.SelectBackwardStartsWith<byte[], byte[]>(ContractTable, newKey, true)
+                .Any(row => row.Key.AsSpan().SequenceEqual(newKey)),
+            "Read-visibility StartsWith saw the uncommitted row.");
+        transaction.Rollback();
+    }
+
+    private static void AssertEagerRowsSurviveRecreation()
+    {
+        const string table = "liana-eager-recreate";
+        byte[][] keys =
+        {
+            new byte[] { 1, 0 }, new byte[] { 1, 1 }, new byte[] { 1, 2 }, new byte[] { 2 },
+        };
+
+        using var engine = CreateMemoryEngine();
+        using (var transaction = engine.GetTransaction())
+        {
+            foreach (byte[] key in keys)
+                transaction.Insert(table, key, CompactValueFor(key));
+            transaction.Commit();
+        }
+
+        using var eager = engine.GetTransaction();
+        eager.ValuesLazyLoadingIsOn = false;
+        var retained = new List<(Row<byte[], byte[]> Row, byte[] Expected)>();
+        AddRetained(retained, eager.SelectForwardStartFrom<byte[], byte[]>(table, new byte[] { 1, 0 }, true).First());
+        AddRetained(retained, eager.SelectBackwardStartFrom<byte[], byte[]>(table, new byte[] { 1, 2 }, true).First());
+        AddRetained(retained, eager.SelectForwardSkipFrom<byte[], byte[]>(table, new byte[] { 1, 0 }, 0).First());
+        AddRetained(retained, eager.SelectBackwardSkipFrom<byte[], byte[]>(table, new byte[] { 2 }, 0).First());
+        AddRetained(retained, eager.SelectForwardStartsWith<byte[], byte[]>(table, new byte[] { 1 }).First());
+        AddRetained(retained, eager.SelectBackwardStartsWith<byte[], byte[]>(table, new byte[] { 1 }).First());
+        AddRetained(retained,
+            eager.SelectForwardStartsWithClosestToPrefix<byte[], byte[]>(table, new byte[] { 1, 9 }).First());
+        AddRetained(retained,
+            eager.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(table, new byte[] { 1, 9 }).First());
+        AddRetained(retained, eager.Min<byte[], byte[]>(table));
+        AddRetained(retained, eager.Max<byte[], byte[]>(table));
+
+        IEnumerable<Row<byte[], byte[]>> repeatable =
+            eager.SelectForwardStartFrom<byte[], byte[]>(table, new byte[] { 1 }, true);
+        AssertCompactRows(keys.OrderBy(static key => key, ByteComparer), repeatable, "Eager repeatable first pass.");
+        AssertCompactRows(keys.OrderBy(static key => key, ByteComparer), repeatable, "Eager repeatable second pass.");
+
+        eager.RemoveAllKeys(table, true);
+        foreach ((Row<byte[], byte[]> row, byte[] expected) in retained)
+            AssertSequenceEqual(expected, row.Value, "Eager traversal row was not materialized before recreation.");
+    }
+
+    private static void AddRetained(
+        ICollection<(Row<byte[], byte[]> Row, byte[] Expected)> retained,
+        Row<byte[], byte[]> row)
+    {
+        retained.Add((row, CompactValueFor(row.Key)));
+    }
+
+    private static void AssertEarlyDispose(IEnumerable<Row<byte[], byte[]>> rows, string message)
+    {
+        using IEnumerator<Row<byte[], byte[]>> iterator = rows.GetEnumerator();
+        Assert(iterator.MoveNext(), message + " No first row.");
+        Assert(iterator.Current.Exists, message + " First row does not exist.");
+    }
+
+    private static byte[][] CreateDeepTraversalKeys(byte[] prefix)
+    {
+        return new[]
+        {
+            new byte[] { 0x41, 0xFF },
+            prefix,
+            Append(prefix, 0x00),
+            Append(prefix, 0x00, 0x00),
+            Append(prefix, 0x00, 0xFF),
+            Append(prefix, 0x01),
+            Append(prefix, 0x01, 0x00),
+            Append(prefix, 0xFF),
+            new byte[] { 0x43 },
+            new byte[] { 0xFF },
+            new byte[] { 0xFF, 0x00 },
+            new byte[] { 0xFF, 0xFF },
+        };
+    }
+
+    private static byte[] Append(byte[] prefix, params byte[] suffix)
+    {
+        byte[] result = new byte[prefix.Length + suffix.Length];
+        Buffer.BlockCopy(prefix, 0, result, 0, prefix.Length);
+        Buffer.BlockCopy(suffix, 0, result, prefix.Length, suffix.Length);
+        return result;
+    }
+
+    private static byte[] CompactValueFor(byte[] key)
+    {
+        return new[]
+        {
+            (byte)(key.Length >> 8),
+            (byte)key.Length,
+            key.Length == 0 ? (byte)0 : key[0],
+            key.Length == 0 ? (byte)0 : key[key.Length - 1],
+        };
+    }
+
+    private static void AssertCompactRows(
+        IEnumerable<byte[]> expectedKeys,
+        IEnumerable<Row<byte[], byte[]>> actualRows,
+        string message)
+    {
+        byte[][] expected = expectedKeys.ToArray();
+        Row<byte[], byte[]>[] actual = actualRows.ToArray();
+        AssertEqual(expected.Length, actual.Length, message + " count.");
+        for (int i = 0; i < expected.Length; i++)
+        {
+            AssertSequenceEqual(expected[i], actual[i].Key, $"{message} key {i}.");
+            AssertSequenceEqual(CompactValueFor(expected[i]), actual[i].Value, $"{message} value {i}.");
+        }
+    }
+
+    private static void AssertCompactRow(byte[] expectedKey, Row<byte[], byte[]> actual, string message)
+    {
+        Assert(actual.Exists, message + " row does not exist.");
+        AssertSequenceEqual(expectedKey, actual.Key, message + " key.");
+        AssertSequenceEqual(CompactValueFor(expectedKey), actual.Value, message + " value.");
     }
 
     internal static void ChangeKeyPreservesDirtySiblingBranches()
@@ -750,6 +1191,21 @@ internal static class LianaTrieRegressionTests
     {
         if (!condition)
             throw new InvalidOperationException(message);
+    }
+
+    private static void AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException($"Expected {typeof(TException).Name}.");
     }
 
     private static void AssertEqual<T>(T expected, T actual, string message)

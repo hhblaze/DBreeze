@@ -65,6 +65,8 @@ internal static class Program
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
             (nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable), LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable),
             (nameof(LianaTrieRegressionTests.TraversalContractMatchesReferenceModel), LianaTrieRegressionTests.TraversalContractMatchesReferenceModel),
+            (nameof(LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated), LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated),
+            (nameof(LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative), LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative),
             (nameof(LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches), LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches),
             (nameof(LianaTrieRegressionTests.MixedWriteEpochPreservesAllMutations), LianaTrieRegressionTests.MixedWriteEpochPreservesAllMutations),
             (nameof(InsertIfAbsentPreservesNestedTable), InsertIfAbsentPreservesNestedTable),

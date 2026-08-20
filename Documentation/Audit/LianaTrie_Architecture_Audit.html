@@ -330,7 +330,7 @@
     <div class="eyebrow">DBreeze · refactoring review · 20 августа 2026</div>
     <h1>Архитектурный аудит LianaTrie: текущая версия против эталона</h1>
     <p>Аудит отвечает не только на вопрос «какие строки изменились», а на вопрос «какие инженерные решения исчезли, сохранились или были заменены эквивалентом». Главные границы: пользовательский контракт, old↔new disk compatibility, retained memory и performance envelope.</p>
-    <p>Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code> (<code>a83424e2</code>). Текущий код: shared <code>DBreeze/LianaTrie</code> и .NET 8 specialization <code>DBreeze.Net8/LianaTrie</code>, HEAD <code>7fba0276c</code> плюс проверенный working tree.</p>
+    <p>Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code> (<code>a83424e2</code>). Текущий код: shared <code>DBreeze/LianaTrie</code> и .NET 8 specialization <code>DBreeze.Net8/LianaTrie</code>, HEAD <code>1584af315</code> плюс проверенный working tree.</p>
     <div class="hero-meta">
       <span>Отчёт автономный: без CDN и внешнего JavaScript</span>
       <span>Максимальная ширина: 2440 px</span>
@@ -369,7 +369,7 @@
           <div class="stat"><strong>0</strong><span>удалённых baseline API-контрактов</span></div>
           <div class="stat"><strong>24 / 24</strong><span>raw-файлов идентичны в каждом checkpoint</span></div>
           <div class="stat"><strong>2.247×</strong><span>geomean current speedup, 72 сценария</span></div>
-          <div class="stat"><strong>0 / 72</strong><span>сценариев с ростом allocations</span></div>
+          <div class="stat"><strong>0 / 72</strong><span>роста allocations в исходном architecture suite</span></div>
         </div>
         <div class="callout good">
           <strong>Ни один активный архитектурный механизм LianaTrie не исчез без замены.</strong>
@@ -378,11 +378,11 @@
         <div class="grid-3">
           <div class="card">
             <h3 class="good">Сохранять</h3>
-            <p>Pointer-keyed committed-node cache, explicit DFS для full/range/skip, exact-size .NET 8 serialization, structural nested-key cache, monotonic table version.</p>
+            <p>Pointer-keyed committed-node cache, explicit DFS для всех traversal families, exact-size .NET 8 serialization, structural nested-key cache, monotonic table version.</p>
           </div>
           <div class="card">
             <h3 class="warn">Не переоценивать</h3>
-            <p><code>SaveGenerationMap</code> не равен durable flush. Explicit stack пока покрывает не все traversal families. Pointer cache корректен только внутри строго очищаемого epoch.</p>
+            <p><code>SaveGenerationMap</code> не равен durable flush. Explicit stack устраняет call-stack risk, но удерживает O(depth) enumerators. Pointer cache корректен только внутри строго очищаемого epoch.</p>
           </div>
           <div class="card">
             <h3 class="danger">Унаследованный lifecycle-риск</h3>
@@ -534,8 +534,8 @@
               <tr data-status="removed" data-risk="low">
                 <td>LT-04</td><td><span class="badge removed">удалено</span><br><strong>Logical-path cache pipeline</strong></td>
                 <td>Save/read helpers строили и передавали полный path для cache lookup.</td>
-                <td>Основные write/full/range/skip paths path больше не строят; cache lookup идёт по pointer.</td>
-                <td>Удалена только дорогая identity strategy, не snapshot functionality. В recursive legacy helpers path пока остаётся как algorithm state.</td>
+                <td>Write и все active traversal paths больше не строят path; cache lookup идёт по pointer.</td>
+                <td>Удалена только дорогая identity strategy, не snapshot functionality. Legacy parameter сохранён для внутренней совместимости, но traversal передаёт <code>null</code>.</td>
                 <td><span class="risk-low">Низкий</span><br><span class="badge proof">code diff</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieRootNode.cs">baseline map path</a> · <a href="../../DBreeze/LianaTrie/LTrieRootNode.cs">current pointer path</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
@@ -594,12 +594,12 @@
                 <td>Семантика «skip N в traversal order» сохранена; раннее завершение остаётся lazy.</td>
                 <td><span class="risk-medium">Средний</span><br><span class="badge proof">oracle</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Forward.cs">baseline skip</a> · <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">current skip</a></span></td>
               </tr>
-              <tr data-status="open" data-risk="medium">
-                <td>LT-13</td><td><span class="badge open-risk">открытый риск</span><br><strong>Remaining recursion</strong></td>
+              <tr data-status="fixed" data-risk="high">
+                <td>LT-13</td><td><span class="badge fixed">исправлено</span><br><strong>Iterative traversal completion</strong></td>
                 <td>StartFrom, SkipFrom, min/max и prefix families были recursive.</td>
-                <td>Эти families в основном всё ещё recursive и копируют <code>generationMapLine</code>.</td>
-                <td>Утверждение «весь traversal iterative» неверно. Для них остаются stack-depth и O(depth²) path-copy concerns.</td>
-                <td><span class="risk-medium">Средний</span><br><span class="badge proof">code</span><br>Вынесено в modernization backlog.<br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Forward.cs">baseline recursive</a> · <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">current recursive</a></span></td>
+                <td>Direction-specific bounded DFS использует явные frames; prefix interval, closest-prefix и extrema также итеративны. Path concatenations удалены.</td>
+                <td>Stack-depth и O(depth²) path-copy риски закрыты. Terminal <code>ValueKid</code> трактуется как конец ключа, не как служебный байт 256; все оставшиеся enumerators освобождаются в <code>finally</code>.</td>
+                <td><span class="risk-high">Contract-critical, закрыт</span><br><span class="badge proof">code</span><span class="badge proof">78/78 regression</span><span class="badge proof">disk probe</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Forward.cs">baseline recursive</a> · <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">current iterative</a> · <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">deep/nested tests</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
                 <td>LT-14</td><td><span class="badge replaced">заменено</span><br><strong>Kids enumeration</strong></td>
@@ -768,13 +768,13 @@
           <p>При первом overwrite существующего node cache запоминает <code>KidsBeforeModification</code>. Повторные writes в том же epoch не заменяют образ. Он нужен read-root для topology visibility и не кеширует произвольные values.</p>
         </details>
         <details>
-          <summary>Почему остаточный cachedGenerationMapLine всё ещё виден</summary>
-          <p>Некоторые старые recursive helpers продолжают строить path как traversal state, а <code>GenerationNodeRead</code> сохраняет совместимый параметр. Pointer cache его уже не использует. Это modernization tail и источник лишних allocations, но не потеря cache semantics.</p>
+          <summary>Почему параметр cachedGenerationMapLine всё ещё виден</summary>
+          <p>Traversal helpers больше не строят path и вызывают <code>ReadSelf</code> с <code>null</code>, однако <code>GenerationNodeRead</code> сохраняет legacy-параметр во внутренней сигнатуре. Pointer cache его не использует. Удалять параметр следует только отдельным call-site/API review; активных path allocations он больше не создаёт.</p>
         </details>
       </section>
 
       <section id="traversal">
-        <h2>9. Итераторы: что стало iterative, а что нет</h2>
+        <h2>9. Итераторы: завершённая iterative-модель</h2>
         <div class="table-wrap">
           <table class="compact">
             <thead><tr><th>Family</th><th>Baseline</th><th>Current</th><th>Семантика / риск</th></tr></thead>
@@ -782,13 +782,13 @@
               <tr><td>Full forward/backward</td><td>Recursive DFS.</td><td>Explicit stack of kid enumerators.</td><td>Lazy yield, order и early disposal сохранены; stack overflow устранён.</td></tr>
               <tr><td>FromTo range</td><td>Recursive bound state.</td><td>Explicit frame с relation к start/stop.</td><td>Branch pruning сохранён; prefix/0/255 edges проверены oracle.</td></tr>
               <tr><td>Skip</td><td>Recursive counter.</td><td>Explicit DFS + remaining count.</td><td>Не создаёт промежуточную коллекцию.</td></tr>
-              <tr><td>StartFrom / SkipFrom</td><td>Recursive, path copy.</td><td>В основном осталось так же.</td><td>Контракт сохранён; deep stack и O(depth²) allocations остаются backlog.</td></tr>
-              <tr><td>StartsWith / closest prefix</td><td>Recursive depth/path state.</td><td>Осталось recursive.</td><td>Не включать в утверждение о полной stack safety.</td></tr>
-              <tr><td>Min / Max</td><td>Recursive descent.</td><td>Осталось recursive.</td><td>Короткий типовой путь, но теоретический deep-key риск сохраняется.</td></tr>
+              <tr><td>StartFrom / SkipFrom</td><td>Recursive, path copy.</td><td>Bounded DFS: optional one-sided bound, relation-state, optimized first kid и <code>ulong</code> skip.</td><td>Пустой start по-прежнему бросает delayed <code>IndexOutOfRangeException</code>; skipped rows не materialize-ятся.</td></tr>
+              <tr><td>StartsWith / closest prefix</td><td>Recursive depth/path state.</td><td><code>[prefix, successor)</code> поверх bounded DFS; closest — одиночный iterative matching descent.</td><td>All-<code>0xFF</code> prefix не имеет верхней границы; compressed/prefix-ending leaf semantics сохранена.</td></tr>
+              <tr><td>Min / Max</td><td>Recursive descent.</td><td>Один iterative extreme descent.</td><td>После первого leaf все enumerators немедленно освобождаются.</td></tr>
             </tbody>
           </table>
         </div>
-        <p>Full/range/skip stack удерживает O(depth) enumerators/frames, а не O(row count). Раннее завершение enumeration освобождает stack через iterator <code>finally</code> и <code>Dispose</code> вложенных enumerators.</p>
+        <p>Все traversal families удерживают O(depth) enumerators/frames, а не O(row count), и больше не копируют path на каждом уровне. Раннее завершение enumeration освобождает stack через iterator <code>finally</code> и <code>Dispose</code> вложенных enumerators.</p>
       </section>
 
       <section id="nested">
@@ -833,7 +833,7 @@
         <div class="grid-3">
           <div class="card"><h3 class="good">Снижено</h3><ul><li>Base64/path allocations node cache.</li><li>Base64 lookup nested cache.</li><li>Temporary endian arrays и concatenations.</li><li>256-slot serialization buffer там, где reservation меньше.</li><li>Новые backing arrays в <code>RemoveAllKids</code>.</li></ul></div>
           <div class="card"><h3 class="good">Retention исправлен</h3><ul><li>Generation map очищает отрезанные references.</li><li>Cached path invalidates при shrink.</li><li>Terminal Dispose освобождает locks.</li><li>Cache dictionary заменяется на lifecycle boundary.</li></ul></div>
-          <div class="card"><h3 class="warn">Осознанно удерживается</h3><ul><li>Один clone каждого открытого nested key.</li><li>Один committed kids image на изменённый physical node в epoch.</li><li>O(depth) frames полного/range/skip traversal.</li><li>Path copies в оставшихся recursive families.</li></ul></div>
+          <div class="card"><h3 class="warn">Осознанно удерживается</h3><ul><li>Один clone каждого открытого nested key.</li><li>Один committed kids image на изменённый physical node в epoch.</li><li>O(depth) frames активного traversal.</li><li>Один key buffer только при точном сравнении compressed boundary leaf.</li></ul></div>
         </div>
         <div class="callout">
           Benchmark allocation gate: рост не обнаружен ни в одном из 72 сценариев. На ключевых workloads: random insert −76.20%, update −95.39%, partial read −79.92%, nested scan −87.63%.
@@ -868,6 +868,10 @@
         </div>
         <p class="muted">Ограничения: OS file cache был прогрет и явно не очищался; old/current запускались последовательно, не interleaved. Поэтому небольшие различия интерпретируются по изолированным повторам, а не по одному median.</p>
         <p>Сохранённые отчёты: <code>D:\Temp\DBreezeLianaAudit-20260819-implementation\full-scale-5\comparison-final-5pct\comparison.md</code> и <code>...\final-gates\scan-isolated-10\comparison-5pct\comparison.md</code>.</p>
+        <div class="callout good">
+          <strong>Traversal-only A/B/B/A 2026-08-20.</strong> Точная current-версия до LT-13 сравнивалась с финальной DLL в отдельных процессах: 68 сценариев × memory/disk × lazy/eager, три прогрева и по 10 измерений в каждом порядке. Geomean current/pre-change = <code>0.6652</code> (current быстрее в <code>1.503×</code>), для целевых families = <code>0.5607</code> (<code>1.784×</code>). Checksums совпали; DB-size delta и retained growth равны нулю. Превышения 5% у неизменённых control paths не повторились в обоих порядках запуска. Единственное повторяемое target-отличие — первая eager boundary-row: current выполняет обязательную материализацию, которой baseline/pre-change не делал; поэтому её дополнительную работу нельзя считать performance regression одинакового контракта.
+        </div>
+        <p>Traversal reports: <code>D:\Temp\DbreezeDbTest\comparison\20260820-TraversalIterative-v1\perf\*-v12.json</code>. Дополнительный historical baseline/current run дал общий speedup <code>2.161×</code>, но его shallow disk differences включают уже принятые до LT-13 cache/storage изменения и не использовались как isolation gate этого change set.</p>
       </section>
 
       <section id="compatibility">
@@ -885,7 +889,7 @@
           <div class="card">
             <h3 class="good">Old↔new deterministic fixture</h3>
             <ul>
-              <li>Old создаёт base 286 rows → current читает/дописывает → old читает 318.</li>
+              <li>Old создаёт base 293 rows → current читает/дописывает → old читает 325.</li>
               <li>Current создаёт base → old читает/дописывает → current читает extended.</li>
               <li>В каждом base/extended checkpoint совпали 24/24 файлов по relative path, length и SHA-256.</li>
               <li>Общие операции, counts и checksums совпали.</li>
@@ -896,8 +900,8 @@
         <div class="grid-2">
           <div class="card">
             <h3>Regression coverage</h3>
-            <p><strong>Свежий Release gate 2026-08-20: 76/76 PASS.</strong> Сценарии покрывают storage/transactions/text/LianaTrie. Liana-specific coverage включает traversal oracle, early enumeration, null/empty partial truth table, committed node images, rapid commits, nested mutation/rename, remove/recreate и randomized operations.</p>
-            <p class="muted">Новые тесты намеренно не выполняют Select/Count/traversal до <code>ChangeKey</code>: проверены memory/disk, commit/rollback/reopen, existing/no-op source, один/два colliding leaf, несколько branch changes, recursive nested parent rename и все шесть порядков batch/change/nested.</p>
+            <p><strong>Свежий Release gate 2026-08-20: 78/78 PASS.</strong> Сценарии покрывают storage/transactions/text/LianaTrie. Liana-specific coverage включает traversal oracle, early enumeration, null/empty partial truth table, committed node images, rapid commits, nested mutation/rename, remove/recreate и randomized operations.</p>
+            <p class="muted">Новые traversal tests используют общий prefix 8192 bytes, повторное enumeration, manual dispose, prefix-ending/empty/0x00/0xFF keys, <code>ulong.MaxValue</code>, eager row после recreation и четыре уровня recursive nested tables. ChangeKey gate по-прежнему не выполняет Select/Count/traversal до mutation.</p>
           </div>
           <div class="card">
             <h3>Build matrix</h3>
@@ -913,8 +917,7 @@
           <span class="p">P0</span><div><strong>Не нарушать cache epoch.</strong> Любой новый path, способный переиспользовать physical offsets, должен очистить pointer-keyed <code>_nodes</code> до committed read.</div>
           <span class="p">P0</span><div><strong>Сохранить recreate gate.</strong> <code>RemoveAll(true) → insert/nested → commit → reopen</code>, повторная recreation и idempotent terminal dispose обязательны.</div>
           <span class="p p1">P1</span><div><strong>Отдельно решить early nested dispose.</strong> Не менять поведение без owner decision и двусторонней disk/journal fixture.</div>
-          <span class="p p1">P1</span><div><strong>Завершить iterative traversal.</strong> StartFrom, SkipFrom, prefix и min/max перевести на frames только в отдельном change set с deep-key differential tests.</div>
-          <span class="p p2">P2</span><div><strong>Убрать архитектурный хвост path parameter.</strong> После завершения recursion migration удалить неиспользуемый <code>cachedGenerationMapLine</code> и устаревшие комментарии.</div>
+          <span class="p p2">P2</span><div><strong>Проверить архитектурный хвост path parameter.</strong> Traversal больше не передаёт path, но внутренние <code>ReadSelf</code>/<code>GenerationNodeRead</code> сохраняют legacy-параметр; менять его только отдельным API/cache review.</div>
         </div>
         <p>Подробный отделённый backlog: <a href="../LianaTrie_Modernization_Backlog.md">LianaTrie_Modernization_Backlog.md</a>.</p>
       </section>
@@ -923,13 +926,13 @@
         <h2>16. Заключение</h2>
         <p>Рефакторинг не демонтировал скрытую cache/flush архитектуру LianaTrie. Он заменил дорогую logical-path identity на pointer identity, рекурсивные hot-path обходы — на explicit frames, а временные serialization buffers — на exact modern primitives. Старые boundaries между trie, transaction и storage сохранены.</p>
         <p>Наблюдаемые пользовательские изменения ограничены исправлением ошибочных side effects и формализацией partial-read edge cases. Формат файлов доказан не только чтением в обе стороны, но и raw byte identity. Memory и performance envelope улучшены по измеренным сценариям.</p>
-        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code> исправлена и закрыта regression/disk/performance gates; оставшуюся recursion и early nested dispose вести отдельными change sets.</div>
+        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code> и активная traversal recursion исправлены и закрыты regression/API/disk/performance gates; early nested dispose остаётся отдельным change set.</div>
       </section>
     </main>
   </div>
 
   <footer>
-    DBreeze LianaTrie Architecture Audit · baseline <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code> · current HEAD <code>7fba0276cad9937a9dbc4f1f42af7903e000793b</code> + audited working tree · generated 2026-08-20.
+    DBreeze LianaTrie Architecture Audit · baseline <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code> · current HEAD <code>1584af315aedc3800e88a946a216ec97846821fe</code> + audited working tree · updated 2026-08-20.
   </footer>
 
   <script>

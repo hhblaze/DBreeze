@@ -213,6 +213,7 @@ internal static class LianaTrieCompatibilityProbe
             using var transaction = engine.GetTransaction();
             transaction.ValuesLazyLoadingIsOn = lazyLoading;
             ValidateTraversal(transaction, expected, lazyLoading);
+            ValidateDeepTraversal(transaction, expected, lazyLoading);
 
             if (lazyLoading)
             {
@@ -386,6 +387,102 @@ internal static class LianaTrieCompatibilityProbe
         }
     }
 
+    private static void ValidateDeepTraversal(
+        DBreeze.Transactions.Transaction transaction,
+        SortedDictionary<byte[], byte[]> expected,
+        bool lazyLoading)
+    {
+        byte[] prefix = Enumerable.Repeat((byte)0x62, 512).ToArray();
+        byte[][] forward = expected.Keys.ToArray();
+        byte[][] backward = forward.Reverse().ToArray();
+        byte[] existingPivot = Append(prefix, 0x00);
+        byte[] missingPivot = Append(prefix, 0x00, 0x80);
+        byte[] rangeStop = Append(prefix, 0x01);
+        byte[] closest = Append(prefix, 0x02, 0x77);
+        string mode = lazyLoading ? "lazy" : "eager";
+
+        foreach (bool include in new[] { false, true })
+        {
+            AssertRows(expected,
+                forward.Where(key => Compare(key, missingPivot) > 0 || include && Compare(key, missingPivot) == 0),
+                transaction.SelectForwardStartFrom<byte[], byte[]>(MainTable, missingPivot, include),
+                $"DeepForwardStart/{mode}/{include}");
+            AssertRows(expected,
+                backward.Where(key => Compare(key, missingPivot) < 0 || include && Compare(key, missingPivot) == 0),
+                transaction.SelectBackwardStartFrom<byte[], byte[]>(MainTable, missingPivot, include),
+                $"DeepBackwardStart/{mode}/{include}");
+        }
+
+        foreach (bool includeStart in new[] { false, true })
+        foreach (bool includeStop in new[] { false, true })
+        {
+            AssertRows(expected,
+                forward.Where(key => InForwardRange(key, existingPivot, includeStart, rangeStop, includeStop)),
+                transaction.SelectForwardFromTo<byte[], byte[]>(
+                    MainTable, existingPivot, includeStart, rangeStop, includeStop),
+                $"DeepForwardRange/{mode}/{includeStart}/{includeStop}");
+            AssertRows(expected,
+                backward.Where(key => InBackwardRange(key, rangeStop, includeStop, existingPivot, includeStart)),
+                transaction.SelectBackwardFromTo<byte[], byte[]>(
+                    MainTable, rangeStop, includeStop, existingPivot, includeStart),
+                $"DeepBackwardRange/{mode}/{includeStart}/{includeStop}");
+        }
+
+        foreach (ulong skip in new[] { 0UL, 1UL, ulong.MaxValue })
+        {
+            byte[][] forwardCandidates = forward.Where(key => Compare(key, missingPivot) > 0).ToArray();
+            byte[][] backwardCandidates = backward.Where(key => Compare(key, missingPivot) < 0).ToArray();
+            AssertRows(expected,
+                forwardCandidates.Skip(skip >= (ulong)forwardCandidates.Length ? forwardCandidates.Length : (int)skip),
+                transaction.SelectForwardSkipFrom<byte[], byte[]>(MainTable, missingPivot, skip),
+                $"DeepForwardSkipFrom/{mode}/{skip}");
+            AssertRows(expected,
+                backwardCandidates.Skip(skip >= (ulong)backwardCandidates.Length ? backwardCandidates.Length : (int)skip),
+                transaction.SelectBackwardSkipFrom<byte[], byte[]>(MainTable, missingPivot, skip),
+                $"DeepBackwardSkipFrom/{mode}/{skip}");
+        }
+
+        byte[][] prefixed = forward.Where(key => StartsWith(key, prefix)).ToArray();
+        AssertRows(expected, prefixed,
+            transaction.SelectForwardStartsWith<byte[], byte[]>(MainTable, prefix), $"DeepForwardPrefix/{mode}");
+        AssertRows(expected, prefixed.Reverse(),
+            transaction.SelectBackwardStartsWith<byte[], byte[]>(MainTable, prefix), $"DeepBackwardPrefix/{mode}");
+        AssertRows(expected, prefixed,
+            transaction.SelectForwardStartsWithClosestToPrefix<byte[], byte[]>(MainTable, closest),
+            $"DeepForwardClosest/{mode}");
+        AssertRows(expected, prefixed.Reverse(),
+            transaction.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(MainTable, closest),
+            $"DeepBackwardClosest/{mode}");
+
+        foreach (byte[] edgePrefix in new[] { new byte[] { 0xFF }, new byte[] { 0xFF, 0xFF } })
+        {
+            byte[][] edgeRows = forward.Where(key => StartsWith(key, edgePrefix)).ToArray();
+            AssertRows(expected, edgeRows,
+                transaction.SelectForwardStartsWith<byte[], byte[]>(MainTable, edgePrefix),
+                $"EdgeForwardPrefix/{mode}/{Convert.ToHexString(edgePrefix)}");
+            AssertRows(expected, edgeRows.Reverse(),
+                transaction.SelectBackwardStartsWith<byte[], byte[]>(MainTable, edgePrefix),
+                $"EdgeBackwardPrefix/{mode}/{Convert.ToHexString(edgePrefix)}");
+        }
+
+        IEnumerable<Row<byte[], byte[]>> repeatable =
+            transaction.SelectForwardStartFrom<byte[], byte[]>(MainTable, missingPivot, true);
+        byte[][] repeatableExpected = forward.Where(key => Compare(key, missingPivot) >= 0).ToArray();
+        AssertRows(expected, repeatableExpected, repeatable, $"DeepRepeatable1/{mode}");
+        AssertRows(expected, repeatableExpected, repeatable, $"DeepRepeatable2/{mode}");
+        Ensure(transaction.SelectForwardStartsWith<byte[], byte[]>(MainTable, prefix).Take(1).Count() == 1,
+            $"Deep early disposal/{mode} returned the wrong count.");
+
+        AssertIndexOutOfRange(() =>
+            transaction.SelectForwardStartFrom<byte[], byte[]>(MainTable, Array.Empty<byte>(), true).ToArray());
+        AssertIndexOutOfRange(() =>
+            transaction.SelectBackwardSkipFrom<byte[], byte[]>(MainTable, Array.Empty<byte>(), 0).ToArray());
+        Ensure(!transaction.SelectForwardStartsWith<byte[], byte[]>(MainTable, Array.Empty<byte>()).Any(),
+            $"StartsWith(empty)/{mode} must remain empty.");
+        Ensure(!transaction.SelectBackwardStartsWithClosestToPrefix<byte[], byte[]>(MainTable, Array.Empty<byte>()).Any(),
+            $"ClosestPrefix(empty)/{mode} must remain empty.");
+    }
+
     private static SortedDictionary<byte[], byte[]> BuildModel(bool extended)
     {
         var model = new SortedDictionary<byte[], byte[]>(Comparer);
@@ -398,6 +495,8 @@ internal static class LianaTrieCompatibilityProbe
             Enumerable.Repeat((byte)42, 4_096).ToArray(), ParentA, ParentB,
         };
         foreach (byte[] key in fixedKeys)
+            model[key] = ValueFor(key);
+        foreach (byte[] key in CreateDeepKeys())
             model[key] = ValueFor(key);
         for (int i = 0; i < 256; i++)
             model[GeneratedKey(i)] = ValueFor(GeneratedKey(i));
@@ -439,6 +538,26 @@ internal static class LianaTrieCompatibilityProbe
 
     private static byte[] UpdatedValue(int value) =>
         new[] { (byte)0xCC, (byte)(value >> 8), (byte)value, (byte)(value * 31) };
+
+    private static IEnumerable<byte[]> CreateDeepKeys()
+    {
+        byte[] prefix = Enumerable.Repeat((byte)0x62, 512).ToArray();
+        yield return prefix;
+        yield return Append(prefix, 0x00);
+        yield return Append(prefix, 0x00, 0x00);
+        yield return Append(prefix, 0x00, 0xFF);
+        yield return Append(prefix, 0x01);
+        yield return Append(prefix, 0x01, 0x00);
+        yield return Append(prefix, 0xFF);
+    }
+
+    private static byte[] Append(byte[] prefix, params byte[] suffix)
+    {
+        byte[] result = new byte[prefix.Length + suffix.Length];
+        Buffer.BlockCopy(prefix, 0, result, 0, prefix.Length);
+        Buffer.BlockCopy(suffix, 0, result, prefix.Length, suffix.Length);
+        return result;
+    }
 
     private static void AssertRows(
         SortedDictionary<byte[], byte[]> expected,
@@ -551,6 +670,20 @@ internal static class LianaTrieCompatibilityProbe
     {
         if (!condition)
             throw new InvalidDataException(message);
+    }
+
+    private static void AssertIndexOutOfRange(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return;
+        }
+
+        throw new InvalidDataException("Expected IndexOutOfRangeException.");
     }
 
     private sealed class Options

@@ -15,6 +15,9 @@ if (args.Any(static arg => string.Equals(arg, "--disk-compat", StringComparison.
 if (args.Any(static arg => string.Equals(arg, "--liana-compat", StringComparison.OrdinalIgnoreCase)))
     return LianaTrieCompatibilityProbe.Run(args);
 
+if (args.Any(static arg => string.Equals(arg, "--liana-traversal-perf", StringComparison.OrdinalIgnoreCase)))
+    return LianaTrieTraversalPerformanceProbe.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--historical-compare", StringComparison.OrdinalIgnoreCase)))
     return HistoricalBenchmarkComparison.Run(args);
 
