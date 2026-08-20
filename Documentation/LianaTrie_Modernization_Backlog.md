@@ -21,11 +21,19 @@
 - Закрытие изменённой `NestedTable` до master `Commit` может не сохранить её изменения. Поведение
   воспроизводится и в baseline, и в current; в этом change set оно не меняется. Нужны отдельная
   минимальная fixture и решение о документированном lifecycle-контракте.
-- Исследовательская fixture с `Insert`/`Remove`, `ChangeKey` и nested-table mutation в одном write
-  epoch обнаружила потерю части только что вставленных бинарных ключей. Это также воспроизводится
-  в baseline и current; compatibility fixture разделяет классы операций границами `Commit`.
-  Исправление возможно только отдельным change set после минимизации воспроизведения и проверки
-  совместимости rollback/journal.
+
+## Исправленные унаследованные дефекты
+
+- Потеря dirty generation-map при `ChangeKey` была минимизирована до переключения sibling-ветки:
+  внутренний `LTrieRootNode.GetKey` удалял divergent suffix без предварительного сохранения dirty
+  generation nodes. Теперь `Save_GM_nodes_Starting_From(i)` выполняется до pruning, а descending
+  save использует индексный цикл без iterator allocation. Исправление действует в shared и во всех
+  linked targets, включая .NET 8; public API, journal и wire format не менялись.
+- Regression gate покрывает существующий и отсутствующий source key, один и два colliding leaf,
+  несколько `ChangeKey` разных ветвей, commit/rollback/reopen, все шесть перестановок обычных
+  mutations, `ChangeKey` и nested mutation, а также rename parent key обычной и рекурсивной nested
+  table. Mixed old↔current fixture читается baseline после записи current; deterministic split
+  fixture по-прежнему совпадает в 24/24 файлах на каждом checkpoint.
 
 ## Gate следующего этапа
 

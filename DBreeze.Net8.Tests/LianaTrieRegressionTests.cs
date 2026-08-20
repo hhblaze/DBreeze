@@ -141,6 +141,409 @@ internal static class LianaTrieRegressionTests
         }
     }
 
+    internal static void ChangeKeyPreservesDirtySiblingBranches()
+    {
+        foreach (bool storageOnDisk in new[] { false, true })
+        {
+            RunDirtySiblingChangeKey(storageOnDisk, insertedLeafCount: 1, sourceExists: true);
+            RunDirtySiblingChangeKey(storageOnDisk, insertedLeafCount: 2, sourceExists: true);
+            RunDirtySiblingChangeKey(storageOnDisk, insertedLeafCount: 2, sourceExists: false);
+            RunMultipleBranchChangeKeys(storageOnDisk);
+            RunDirtySiblingRollback(storageOnDisk);
+            RunNestedParentRenameWithDirtySibling(storageOnDisk);
+        }
+    }
+
+    internal static void MixedWriteEpochPreservesAllMutations()
+    {
+        string[] operationOrders = { "BCN", "BNC", "CBN", "CNB", "NBC", "NCB" };
+        foreach (bool storageOnDisk in new[] { false, true })
+        {
+            foreach (string operationOrder in operationOrders)
+                RunMixedWriteEpoch(storageOnDisk, operationOrder);
+        }
+    }
+
+    private static void RunDirtySiblingChangeKey(bool storageOnDisk, int insertedLeafCount, bool sourceExists)
+    {
+        RunStorageScenario(
+            $"dirty-sibling-{insertedLeafCount}-{sourceExists}",
+            storageOnDisk,
+            engine =>
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(0), GeneratedValue(0));
+                    transaction.Insert(ContractTable, GeneratedKey(1), GeneratedValue(1));
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(256), GeneratedValue(256));
+                    if (insertedLeafCount == 2)
+                        transaction.Insert(ContractTable, GeneratedKey(257), GeneratedValue(257));
+
+                    byte[] sourceKey = GeneratedKey(sourceExists ? 1 : 100);
+                    byte[] renamedKey = { 0x41, 0xFE, 0xED };
+                    transaction.ChangeKey(ContractTable, sourceKey, renamedKey,
+                        out byte[] pointer, out bool wasChanged);
+
+                    AssertEqual(sourceExists, wasChanged, "ChangeKey result for a dirty sibling branch.");
+                    Assert(sourceExists ? pointer is { Length: 8 } : pointer == null,
+                        "ChangeKey returned an invalid value pointer.");
+                    transaction.Commit();
+                }
+            },
+            engine =>
+            {
+                byte[] renamedKey = { 0x41, 0xFE, 0xED };
+                using var transaction = engine.GetTransaction();
+                AssertSequenceEqual(GeneratedValue(256),
+                    transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(256)).Value,
+                    "First newly inserted sibling after ChangeKey.");
+                if (insertedLeafCount == 2)
+                {
+                    AssertSequenceEqual(GeneratedValue(257),
+                        transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(257)).Value,
+                        "Second newly inserted sibling after ChangeKey.");
+                }
+
+                if (sourceExists)
+                {
+                    Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(1)).Exists,
+                        "Old key remained after ChangeKey.");
+                    AssertSequenceEqual(GeneratedValue(1),
+                        transaction.Select<byte[], byte[]>(ContractTable, renamedKey).Value,
+                        "Renamed value after dirty-sibling ChangeKey.");
+                }
+                else
+                {
+                    AssertSequenceEqual(GeneratedValue(1),
+                        transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(1)).Value,
+                        "No-op ChangeKey changed an existing row.");
+                    Assert(!transaction.Select<byte[], byte[]>(ContractTable, renamedKey).Exists,
+                        "No-op ChangeKey created its destination key.");
+                }
+
+                AssertEqual((ulong)(2 + insertedLeafCount), transaction.Count(ContractTable),
+                    "Row count after dirty-sibling ChangeKey.");
+            });
+    }
+
+    private static void RunMultipleBranchChangeKeys(bool storageOnDisk)
+    {
+        byte[] firstRenamedKey = { 0x51, 0x01 };
+        byte[] secondRenamedKey = { 0x61, 0x01 };
+        RunStorageScenario(
+            "multiple-branch-change-keys",
+            storageOnDisk,
+            engine =>
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(0), GeneratedValue(0));
+                    transaction.Insert(ContractTable, GeneratedKey(1), GeneratedValue(1));
+                    transaction.Insert(ContractTable, GeneratedKey(256), GeneratedValue(256));
+                    transaction.Insert(ContractTable, GeneratedKey(257), GeneratedValue(257));
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(512), GeneratedValue(512));
+                    transaction.Insert(ContractTable, GeneratedKey(513), GeneratedValue(513));
+                    transaction.ChangeKey(ContractTable, GeneratedKey(1), firstRenamedKey);
+                    transaction.ChangeKey(ContractTable, GeneratedKey(257), secondRenamedKey);
+                    transaction.Commit();
+                }
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                AssertSequenceEqual(GeneratedValue(512),
+                    transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(512)).Value,
+                    "First dirty leaf after multiple branch ChangeKey calls.");
+                AssertSequenceEqual(GeneratedValue(513),
+                    transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(513)).Value,
+                    "Second dirty leaf after multiple branch ChangeKey calls.");
+                Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(1)).Exists,
+                    "First old key remained after multiple branch ChangeKey calls.");
+                Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(257)).Exists,
+                    "Second old key remained after multiple branch ChangeKey calls.");
+                AssertSequenceEqual(GeneratedValue(1),
+                    transaction.Select<byte[], byte[]>(ContractTable, firstRenamedKey).Value,
+                    "First renamed value after multiple branch ChangeKey calls.");
+                AssertSequenceEqual(GeneratedValue(257),
+                    transaction.Select<byte[], byte[]>(ContractTable, secondRenamedKey).Value,
+                    "Second renamed value after multiple branch ChangeKey calls.");
+                AssertEqual(6UL, transaction.Count(ContractTable),
+                    "Row count after multiple branch ChangeKey calls.");
+            });
+    }
+
+    private static void RunDirtySiblingRollback(bool storageOnDisk)
+    {
+        RunStorageScenario(
+            "dirty-sibling-rollback",
+            storageOnDisk,
+            engine =>
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(0), GeneratedValue(0));
+                    transaction.Insert(ContractTable, GeneratedKey(1), GeneratedValue(1));
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(256), GeneratedValue(256));
+                    transaction.Insert(ContractTable, GeneratedKey(257), GeneratedValue(257));
+                    transaction.ChangeKey(ContractTable, GeneratedKey(1), new byte[] { 0x41, 1 });
+                    transaction.Rollback();
+                }
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                AssertSequenceEqual(GeneratedValue(0),
+                    transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(0)).Value,
+                    "First base row after rollback.");
+                AssertSequenceEqual(GeneratedValue(1),
+                    transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(1)).Value,
+                    "Changed row after rollback.");
+                Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(256)).Exists,
+                    "Rollback retained the first dirty sibling.");
+                Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(257)).Exists,
+                    "Rollback retained the second dirty sibling.");
+                Assert(!transaction.Select<byte[], byte[]>(ContractTable, new byte[] { 0x41, 1 }).Exists,
+                    "Rollback retained the renamed key.");
+                AssertEqual(2UL, transaction.Count(ContractTable), "Row count after dirty-sibling rollback.");
+            });
+    }
+
+    private static void RunNestedParentRenameWithDirtySibling(bool storageOnDisk)
+    {
+        byte[] parentKey = GeneratedKey(1);
+        byte[] renamedParentKey = { 0x41, 0xFA, 0xCE };
+        RunStorageScenario(
+            "dirty-sibling-nested-parent",
+            storageOnDisk,
+            engine =>
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(0), GeneratedValue(0));
+                    transaction.Insert(ContractTable, parentKey, GeneratedValue(1));
+                    using NestedTable nested = transaction.InsertTable(ContractTable, parentKey, 0);
+                    nested.Insert(new byte[] { 5 }, new byte[] { 55 });
+                    using NestedTable deep = nested.GetTable(new byte[] { 5 }, 7);
+                    deep.Insert(new byte[] { 6 }, new byte[] { 66 });
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    transaction.Insert(ContractTable, GeneratedKey(256), GeneratedValue(256));
+                    transaction.Insert(ContractTable, GeneratedKey(257), GeneratedValue(257));
+                    transaction.ChangeKey(ContractTable, parentKey, renamedParentKey);
+                    transaction.Commit();
+                }
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                Assert(!transaction.Select<byte[], byte[]>(ContractTable, parentKey).Exists,
+                    "Old nested parent remained after ChangeKey.");
+                Assert(transaction.Select<byte[], byte[]>(ContractTable, renamedParentKey).Exists,
+                    "Renamed nested parent is missing.");
+                Assert(transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(256)).Exists,
+                    "First dirty sibling was lost while renaming a nested parent.");
+                Assert(transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(257)).Exists,
+                    "Second dirty sibling was lost while renaming a nested parent.");
+                using NestedTable nested = transaction.SelectTable(ContractTable, renamedParentKey, 0);
+                Row<byte[], byte[]> nestedParent = nested.Select<byte[], byte[]>(new byte[] { 5 });
+                Assert(nestedParent.Exists && nestedParent.Value is { Length: > 0 } && nestedParent.Value[0] == 55,
+                    "Nested row after parent ChangeKey is missing its original payload.");
+                using NestedTable deep = nested.GetTable(new byte[] { 5 }, 7);
+                AssertSequenceEqual(new byte[] { 66 }, deep.Select<byte[], byte[]>(new byte[] { 6 }).Value,
+                    "Recursive nested row after parent ChangeKey.");
+            });
+    }
+
+    private static void RunMixedWriteEpoch(bool storageOnDisk, string operationOrder)
+    {
+        byte[] parentKey = { 0xF0, 0x01 };
+        byte[] renamedKey = { 0x41, 0xFE, 0xED };
+        RunStorageScenario(
+            $"mixed-{operationOrder}",
+            storageOnDisk,
+            engine =>
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    for (int i = 0; i < 256; i++)
+                        transaction.Insert(ContractTable, GeneratedKey(i), GeneratedValue(i));
+                    transaction.Insert(ContractTable, parentKey, new byte[] { 9 });
+                    using NestedTable nested = transaction.InsertTable(ContractTable, parentKey, 0);
+                    nested.Insert(new byte[] { 1 }, new byte[] { 11 });
+                    nested.Insert<byte[], byte[]>(new byte[] { 2 }, null);
+                    nested.Insert(new byte[] { 3 }, Array.Empty<byte>());
+                    nested.Insert(new byte[] { 4 }, new byte[] { 44 });
+                    using NestedTable deep = nested.GetTable(new byte[] { 4 }, 7);
+                    deep.Insert(new byte[] { 5 }, new byte[] { 55 });
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable nested = null;
+                    NestedTable deep = null;
+                    try
+                    {
+                        foreach (char operation in operationOrder)
+                        {
+                            switch (operation)
+                            {
+                                case 'B':
+                                    for (int i = 0; i < 32; i++)
+                                        transaction.Insert(ContractTable, GeneratedKey(i), UpdatedGeneratedValue(i));
+                                    for (int i = 32; i < 64; i++)
+                                        transaction.RemoveKey(ContractTable, GeneratedKey(i));
+                                    for (int i = 256; i < 320; i++)
+                                        transaction.Insert(ContractTable, GeneratedKey(i), GeneratedValue(i));
+                                    break;
+                                case 'C':
+                                    transaction.ChangeKey(ContractTable, GeneratedKey(100), renamedKey);
+                                    break;
+                                case 'N':
+                                    nested = transaction.InsertTable(ContractTable, parentKey, 0);
+                                    nested.RemoveKey(new byte[] { 1 });
+                                    nested.ChangeKey(new byte[] { 2 }, new byte[] { 0x12 });
+                                    nested.Insert(new byte[] { 6 }, new byte[] { 66 });
+                                    deep = nested.GetTable(new byte[] { 4 }, 7);
+                                    deep.Insert(new byte[] { 7 }, new byte[] { 77 });
+                                    break;
+                                default:
+                                    throw new InvalidOperationException($"Unknown mixed-epoch operation: {operation}.");
+                            }
+                        }
+
+                        transaction.Commit();
+                    }
+                    finally
+                    {
+                        deep?.Dispose();
+                        nested?.Dispose();
+                    }
+                }
+            },
+            engine => VerifyMixedWriteEpoch(engine, parentKey, renamedKey, operationOrder));
+    }
+
+    private static void VerifyMixedWriteEpoch(
+        DBreezeEngine engine, byte[] parentKey, byte[] renamedKey, string operationOrder)
+    {
+        using var transaction = engine.GetTransaction();
+        for (int i = 0; i < 32; i++)
+        {
+            AssertSequenceEqual(UpdatedGeneratedValue(i),
+                transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(i)).Value,
+                $"Updated row {i}, order {operationOrder}.");
+        }
+        for (int i = 32; i < 64; i++)
+        {
+            Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(i)).Exists,
+                $"Removed row {i}, order {operationOrder}.");
+        }
+        for (int i = 64; i < 256; i++)
+        {
+            if (i == 100)
+                continue;
+            AssertSequenceEqual(GeneratedValue(i),
+                transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(i)).Value,
+                $"Base row {i}, order {operationOrder}.");
+        }
+        for (int i = 256; i < 320; i++)
+        {
+            AssertSequenceEqual(GeneratedValue(i),
+                transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(i)).Value,
+                $"New row {i}, order {operationOrder}.");
+        }
+
+        Assert(!transaction.Select<byte[], byte[]>(ContractTable, GeneratedKey(100)).Exists,
+            $"Old renamed key, order {operationOrder}.");
+        AssertSequenceEqual(GeneratedValue(100),
+            transaction.Select<byte[], byte[]>(ContractTable, renamedKey).Value,
+            $"Renamed value, order {operationOrder}.");
+        AssertEqual(289UL, transaction.Count(ContractTable), $"Mixed row count, order {operationOrder}.");
+
+        using NestedTable nested = transaction.SelectTable(ContractTable, parentKey, 0);
+        byte[][] expectedNestedKeys =
+        {
+            new byte[] { 3 }, new byte[] { 4 }, new byte[] { 6 }, new byte[] { 0x12 },
+        };
+        Row<byte[], byte[]>[] nestedRows = nested.SelectForward<byte[], byte[]>().ToArray();
+        AssertEqual(expectedNestedKeys.Length, nestedRows.Length,
+            $"Nested row count, order {operationOrder}.");
+        for (int i = 0; i < expectedNestedKeys.Length; i++)
+        {
+            AssertSequenceEqual(expectedNestedKeys[i], nestedRows[i].Key,
+                $"Nested key {i}, order {operationOrder}.");
+        }
+        Assert(nested.Select<byte[], byte[]>(new byte[] { 0x12 }).Exists,
+            $"Renamed null nested row, order {operationOrder}.");
+        Assert(nested.Select<byte[], byte[]>(new byte[] { 0x12 }).Value == null,
+            $"Renamed null nested value, order {operationOrder}.");
+        AssertSequenceEqual(new byte[] { 66 }, nested.Select<byte[], byte[]>(new byte[] { 6 }).Value,
+            $"Inserted nested value, order {operationOrder}.");
+        using NestedTable deep = nested.GetTable(new byte[] { 4 }, 7);
+        AssertSequenceEqual(new byte[] { 55 }, deep.Select<byte[], byte[]>(new byte[] { 5 }).Value,
+            $"Original recursive nested value, order {operationOrder}.");
+        AssertSequenceEqual(new byte[] { 77 }, deep.Select<byte[], byte[]>(new byte[] { 7 }).Value,
+            $"Inserted recursive nested value, order {operationOrder}.");
+    }
+
+    private static void RunStorageScenario(
+        string name,
+        bool storageOnDisk,
+        Action<DBreezeEngine> arrangeAndAct,
+        Action<DBreezeEngine> verify)
+    {
+        string folder = storageOnDisk
+            ? Path.Combine(Path.GetTempPath(), "DBreeze.Net8.Tests", name, Guid.NewGuid().ToString("N"))
+            : null;
+        DBreezeEngine engine = storageOnDisk ? new DBreezeEngine(folder) : CreateMemoryEngine();
+        try
+        {
+            arrangeAndAct(engine);
+            verify(engine);
+
+            if (storageOnDisk)
+            {
+                engine.Dispose();
+                engine = new DBreezeEngine(folder);
+                verify(engine);
+            }
+        }
+        finally
+        {
+            engine?.Dispose();
+            if (folder != null && Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static byte[] GeneratedKey(int value) =>
+        new[] { (byte)0x40, (byte)(value >> 8), (byte)value, (byte)(value * 17), (byte)(255 - value) };
+
+    private static byte[] GeneratedValue(int value) =>
+        new[] { (byte)0xA5, (byte)(value >> 8), (byte)value };
+
+    private static byte[] UpdatedGeneratedValue(int value) =>
+        new[] { (byte)0xCC, (byte)(value >> 8), (byte)value, (byte)(value * 31) };
+
     private static void AssertEmptyTraversalContract()
     {
         const string table = "liana-contract-empty";

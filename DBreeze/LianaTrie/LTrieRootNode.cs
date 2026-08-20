@@ -238,8 +238,9 @@ namespace DBreeze.LianaTrie
             LTrieGenerationNode prevNode = null;
 
 
-            foreach (var gn in _generationMap.Descending)
-            {                
+            for (int generationIndex = _generationMap.Count() - 1; generationIndex >= 0; generationIndex--)
+            {
+                LTrieGenerationNode generationNode = _generationMap[generationIndex];
 
                 if (ChangeParent)
                 {
@@ -247,11 +248,11 @@ namespace DBreeze.LianaTrie
 
                     if (prevNode.ToRemoveFromParentNode)
                     {
-                        gn.Value.RemoveKidPointer(prevNode.Value);
+                        generationNode.RemoveKidPointer(prevNode.Value);
                     }
                     else
                     {
-                        gn.Value.SetupKidPointer(prevNode.Value, prevNode.Pointer);
+                        generationNode.SetupKidPointer(prevNode.Value, prevNode.Pointer);
                     }
 
                     //Important switches
@@ -260,7 +261,7 @@ namespace DBreeze.LianaTrie
                     prevNode.ToRemoveFromParentNode = false;
                 }
 
-                if (gn.Key < index)
+                if (generationIndex < index)
                     break;
 
 
@@ -271,21 +272,21 @@ namespace DBreeze.LianaTrie
 
 
                 //Writing on disk
-                gn.Value.WriteSelf();
-                
-                
-                if (gn.Key == 0)
+                generationNode.WriteSelf();
+
+
+                if (generationIndex == 0)
                 {
                     //Setting new LinkToZeroNode for Writing in into the ROOT
-                   
-                    this.LinkToZeroNode = gn.Value.Pointer;
+
+                    this.LinkToZeroNode = generationNode.Pointer;
 
                     //Console.WriteLine("SAVING KEY: {0}", visualizeGenerationMap());
                 }
 
                 //Setting up vital variables
-                prevNode = gn.Value;
-                ChangeParent = gn.Value.ToChangeParentNode;
+                prevNode = generationNode;
+                ChangeParent = generationNode.ToChangeParentNode;
 
 
             }
@@ -976,6 +977,12 @@ namespace DBreeze.LianaTrie
                 if (cleanCheck && i != 0 && _generationMap.ContainsKey(i) && _generationMap[i].Value != key[i - 1])
                 {
                     cleanCheck = false;
+
+                    //The write generation map can contain dirty nodes from another branch.
+                    //They must be persisted before the branch suffix is evicted; otherwise an
+                    //internal read (notably ChangeKey) can silently discard preceding inserts.
+                    Save_GM_nodes_Starting_From(i);
+
                     _generationMap.RemoveBiggerOrEqualThenKey(i);
                 }
 

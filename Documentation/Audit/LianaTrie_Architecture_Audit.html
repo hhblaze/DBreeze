@@ -385,8 +385,8 @@
             <p><code>SaveGenerationMap</code> не равен durable flush. Explicit stack пока покрывает не все traversal families. Pointer cache корректен только внутри строго очищаемого epoch.</p>
           </div>
           <div class="card">
-            <h3 class="danger">Не смешивать с regression</h3>
-            <p>Два nested/mixed-mutation дефекта воспроизводятся и в baseline, и в current. Они требуют отдельного контрактного решения, но не являются потерей при рефакторинге.</p>
+            <h3 class="danger">Унаследованный lifecycle-риск</h3>
+            <p>Early dispose изменённой nested table остаётся отдельным baseline-дефектом. Потеря dirty generation-map при mixed write epoch минимизирована и исправлена без изменения API, journal или wire format.</p>
           </div>
         </div>
       </section>
@@ -720,12 +720,12 @@
                 <td>Не regression рефакторинга. Нужен отдельный owner decision о lifecycle-контракте.</td>
                 <td><span class="risk-high">Высокий</span><br><span class="badge proof">baseline/current repro</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/NestedTables/NestedTable.cs">baseline nested lifecycle</a> · <a href="../../DBreeze/LianaTrie/NestedTables/NestedTable.cs">current nested lifecycle</a></span></td>
               </tr>
-              <tr data-status="inherited" data-risk="high">
-                <td>LT-31</td><td><span class="badge inherited">baseline-дефект</span><br><strong>Mixed write epoch</strong></td>
-                <td>Insert/Remove + ChangeKey + nested mutation в одном epoch может потерять часть новых binary keys.</td>
-                <td>То же воспроизводится; compatibility fixture разделяет классы операций commit boundaries.</td>
-                <td>Исправление требует отдельной минимизации и проверки journal/rollback compatibility.</td>
-                <td><span class="risk-high">Высокий</span><br><span class="badge proof">baseline/current repro</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline write epoch</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current write epoch</a></span></td>
+              <tr data-status="fixed" data-risk="high">
+                <td>LT-31</td><td><span class="badge fixed">исправлено</span><br><strong>Dirty generation-map при ChangeKey</strong></td>
+                <td><code>GetKey</code> удалял divergent suffix через <code>RemoveBiggerOrEqualThenKey(i)</code> без сохранения dirty generation nodes; даже no-op <code>ChangeKey</code> мог потерять предшествующие inserts.</td>
+                <td>Перед pruning вызывается <code>Save_GM_nodes_Starting_From(i)</code>. Descending save переведён с iterator на индексный цикл с тем же порядком записи.</td>
+                <td>Подтверждённые inserts больше не исчезают; отсутствующий source сохраняет <code>WasChanged == false</code>. API, commit/rollback, journal и disk protocol прежние.</td>
+                <td><span class="risk-high">Высокий, закрыт</span><br><span class="badge proof">code</span><span class="badge proof">regression</span><span class="badge proof">disk probe</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieRootNode.cs">baseline GetKey</a> · <a href="../../DBreeze/LianaTrie/LTrieRootNode.cs">current guard</a> · <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">mixed-epoch tests</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="low">
                 <td>LT-32</td><td><span class="badge preserved">несемантическое</span><br><strong>Остальной diff</strong></td>
@@ -860,6 +860,9 @@
               <tr><td>NestedForward100000Value</td><td class="good">−55.60%</td><td class="good">−87.63%</td><td>Structural lookup и traversal allocation reduction.</td></tr>
               <tr><td>ForwardTake100000Lazy, isolated 10-run</td><td class="good">−4.77%</td><td class="good">−20.08%</td><td>Основной run дал шумный outlier; изолированный gate регрессию не подтвердил.</td></tr>
               <tr><td>ForwardTake1000Lazy, isolated 10-run</td><td class="good">−20.62%</td><td class="good">−19.94%</td><td>Второй спорный основной result также не воспроизвёл regression.</td></tr>
+              <tr><td>ChangeKey guard, targeted warmup + 5</td><td class="good">−8.40%</td><td class="good">−0.31%</td><td>Save-before-prune не добавил regression; индексный descending save убрал iterator allocations.</td></tr>
+              <tr><td>Random read-after-write, targeted warmup + 5</td><td>+2.90%</td><td class="good">−0.00002%</td><td>Небольшая разница ниже 5% gate; checksum совпал.</td></tr>
+              <tr><td>Branch-switch insert/remove, targeted warmup + 5</td><td class="good">−3.21%</td><td class="good">−0.62%</td><td>Одинаковая семантика до/после; allocations снизились.</td></tr>
             </tbody>
           </table>
         </div>
@@ -886,14 +889,15 @@
               <li>Current создаёт base → old читает/дописывает → current читает extended.</li>
               <li>В каждом base/extended checkpoint совпали 24/24 файлов по relative path, length и SHA-256.</li>
               <li>Общие операции, counts и checksums совпали.</li>
+              <li>Baseline base → fixed current mixed epoch → baseline verify прошёл; последующая отдельная baseline-запись прочитана current.</li>
             </ul>
           </div>
         </div>
         <div class="grid-2">
           <div class="card">
             <h3>Regression coverage</h3>
-            <p><strong>Свежий Release gate 2026-08-20: 74/74 PASS.</strong> Сценарии покрывают storage/transactions/text/LianaTrie. Liana-specific coverage включает traversal oracle, early enumeration, null/empty partial truth table, committed node images, rapid commits, nested mutation/rename, remove/recreate и randomized operations.</p>
-            <p class="muted">Первая попытка остановилась на 30-second timeout в non-Liana <code>ParallelMultiTableCommitsRemainDurable</code>; немедленный полный повтор прошёл 74/74. Это подтверждает environment-sensitive timing, а не воспроизводимую LianaTrie regression.</p>
+            <p><strong>Свежий Release gate 2026-08-20: 76/76 PASS.</strong> Сценарии покрывают storage/transactions/text/LianaTrie. Liana-specific coverage включает traversal oracle, early enumeration, null/empty partial truth table, committed node images, rapid commits, nested mutation/rename, remove/recreate и randomized operations.</p>
+            <p class="muted">Новые тесты намеренно не выполняют Select/Count/traversal до <code>ChangeKey</code>: проверены memory/disk, commit/rollback/reopen, existing/no-op source, один/два colliding leaf, несколько branch changes, recursive nested parent rename и все шесть порядков batch/change/nested.</p>
           </div>
           <div class="card">
             <h3>Build matrix</h3>
@@ -909,7 +913,6 @@
           <span class="p">P0</span><div><strong>Не нарушать cache epoch.</strong> Любой новый path, способный переиспользовать physical offsets, должен очистить pointer-keyed <code>_nodes</code> до committed read.</div>
           <span class="p">P0</span><div><strong>Сохранить recreate gate.</strong> <code>RemoveAll(true) → insert/nested → commit → reopen</code>, повторная recreation и idempotent terminal dispose обязательны.</div>
           <span class="p p1">P1</span><div><strong>Отдельно решить early nested dispose.</strong> Не менять поведение без owner decision и двусторонней disk/journal fixture.</div>
-          <span class="p p1">P1</span><div><strong>Минимизировать mixed write-epoch defect.</strong> Разделить ChangeKey, nested mutation и binary inserts; затем проектировать fix отдельно от modernization.</div>
           <span class="p p1">P1</span><div><strong>Завершить iterative traversal.</strong> StartFrom, SkipFrom, prefix и min/max перевести на frames только в отдельном change set с deep-key differential tests.</div>
           <span class="p p2">P2</span><div><strong>Убрать архитектурный хвост path parameter.</strong> После завершения recursion migration удалить неиспользуемый <code>cachedGenerationMapLine</code> и устаревшие комментарии.</div>
         </div>
@@ -920,7 +923,7 @@
         <h2>16. Заключение</h2>
         <p>Рефакторинг не демонтировал скрытую cache/flush архитектуру LianaTrie. Он заменил дорогую logical-path identity на pointer identity, рекурсивные hot-path обходы — на explicit frames, а временные serialization buffers — на exact modern primitives. Старые boundaries между trie, transaction и storage сохранены.</p>
         <p>Наблюдаемые пользовательские изменения ограничены исправлением ошибочных side effects и формализацией partial-read edge cases. Формат файлов доказан не только чтением в обе стороны, но и raw byte identity. Memory и performance envelope улучшены по измеренным сценариям.</p>
-        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Оставшуюся recursion и два inherited lifecycle/mixed-mutation дефекта вести отдельными change sets, не смешивая их с этим compatibility gate.</div>
+        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code> исправлена и закрыта regression/disk/performance gates; оставшуюся recursion и early nested dispose вести отдельными change sets.</div>
       </section>
     </main>
   </div>

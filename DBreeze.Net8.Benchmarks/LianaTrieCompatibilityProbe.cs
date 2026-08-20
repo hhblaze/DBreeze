@@ -40,6 +40,11 @@ internal static class LianaTrieCompatibilityProbe
                     Extend(options.DatabasePath);
                     WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, extended: true));
                     break;
+                case "extend-mixed":
+                    Validate(options.DatabasePath, extended: false);
+                    ExtendMixed(options.DatabasePath);
+                    WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, extended: true));
+                    break;
                 case "verify-extended":
                     Validate(options.DatabasePath, extended: true);
                     WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, extended: true));
@@ -114,6 +119,52 @@ internal static class LianaTrieCompatibilityProbe
 
             using (var transaction = engine.GetTransaction())
             {
+                transaction.ChangeKey(MainTable, GeneratedKey(100), RenamedKey);
+
+                using NestedTable a0 = transaction.InsertTable(MainTable, ParentA, 0);
+                a0.RemoveKey(new byte[] { 1 });
+                a0.ChangeKey(new byte[] { 2 }, new byte[] { 0x12 });
+                a0.Insert(new byte[] { 6 }, new byte[] { 66 });
+                using NestedTable deep = a0.GetTable(new byte[] { 4 }, 7);
+                deep.Insert(new byte[] { 7 }, new byte[] { 77 });
+
+                transaction.Commit();
+            }
+
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.RemoveAllKeys(RecreateTable, true);
+                transaction.Insert(RecreateTable, new byte[] { 3 }, new byte[] { 33 });
+                transaction.Commit();
+            }
+
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.SynchronizeTables(MainTable, RollbackTable);
+                transaction.Insert(MainTable, new byte[] { 0xDE, 0xAD }, new byte[] { 1 });
+                transaction.Insert(RollbackTable, 2, 999);
+                transaction.RemoveKey(MainTable, Array.Empty<byte>());
+                transaction.Rollback();
+            }
+
+            engine.Scheme.RenameTable(RenameSource, RenameTarget);
+        }
+        Validate(databasePath, extended: true);
+    }
+
+    private static void ExtendMixed(string databasePath)
+    {
+        using (var engine = new DBreezeEngine(databasePath))
+        {
+            using (var transaction = engine.GetTransaction())
+            {
+                for (int i = 0; i < 32; i++)
+                    transaction.Insert(MainTable, GeneratedKey(i), UpdatedValue(i));
+                for (int i = 32; i < 64; i++)
+                    transaction.RemoveKey(MainTable, GeneratedKey(i));
+                for (int i = 256; i < 320; i++)
+                    transaction.Insert(MainTable, GeneratedKey(i), ValueFor(GeneratedKey(i)));
+
                 transaction.ChangeKey(MainTable, GeneratedKey(100), RenamedKey);
 
                 using NestedTable a0 = transaction.InsertTable(MainTable, ParentA, 0);
