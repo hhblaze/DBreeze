@@ -2,15 +2,15 @@
 
 ![Image of DBreeze](https://raw.githubusercontent.com/hhblaze/DBreeze/master/Documentation/DBreezeLogo2026_K.png)
 
-**DBreeze Database**
+# DBreeze Database
+
+![DBreeze build](https://img.shields.io/badge/DBreeze%20build-1.138%20production-9933FF.svg)
+[![License](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg)](https://github.com/hhblaze/DBreeze/blob/master/LICENSE)
+![Roadmap](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
+[![NuGet downloads](https://img.shields.io/nuget/dt/DBreeze?color=blue&label=Nuget%20downloads)](https://www.nuget.org/packages/DBreeze/)
+[![Powered by tiesky.com](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)](https://tiesky.com)
 
 </div>
-=====================
-![Image of Build](https://img.shields.io/badge/DBreeze%20build-1.138%20production-9933FF.svg) 
-[![Image of Build](https://img.shields.io/badge/License-BSD%203,%20FOSS-FC0574.svg)](https://github.com/hhblaze/DBreeze/blob/master/LICENSE)
-![Image of Build](https://img.shields.io/badge/Roadmap-completed-33CC33.svg)
-[![NuGet Badge](https://img.shields.io/nuget/dt/DBreeze?color=blue&label=Nuget%20downloads)](https://www.nuget.org/packages/DBreeze/)
-[![Image of Build](https://img.shields.io/badge/Powered%20by-tiesky.com-1883F5.svg)](https://tiesky.com)
 
 DBreeze Database is a professional, open-source, multi-paradigm (embedded Key-Value store, objects, NoSql, text search, multi-parameter search, embedding vector database, vector similarity search / clustering etc.), 
 multi-threaded, transactional and ACID-compliant data management system for
