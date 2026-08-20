@@ -15,6 +15,12 @@ if (args.Any(static arg => string.Equals(arg, "--disk-compat", StringComparison.
 if (args.Any(static arg => string.Equals(arg, "--liana-compat", StringComparison.OrdinalIgnoreCase)))
     return LianaTrieCompatibilityProbe.Run(args);
 
+if (args.Any(static arg => string.Equals(arg, "--nested-lifecycle-compat", StringComparison.OrdinalIgnoreCase)))
+    return NestedTableLifecycleCompatibilityProbe.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--nested-lifecycle-perf", StringComparison.OrdinalIgnoreCase)))
+    return NestedTableLifecyclePerformanceProbe.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--liana-traversal-perf", StringComparison.OrdinalIgnoreCase)))
     return LianaTrieTraversalPerformanceProbe.Run(args);
 

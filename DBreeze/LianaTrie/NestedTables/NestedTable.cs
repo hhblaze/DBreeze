@@ -22,6 +22,7 @@ namespace DBreeze.DataTypes
         private NestedTableInternal _tbl = null;
         internal bool _insertAllowed = false;
         private bool _tableExists = false;
+        private int _closeState = 0;
         
         /// <summary>
         /// Constructor
@@ -87,6 +88,9 @@ namespace DBreeze.DataTypes
         /// </summary>
         public void CloseTable()
         {
+            if (System.Threading.Interlocked.Exchange(ref _closeState, 1) != 0)
+                return;
+
             if (!this._tableExists)
                 return;
 

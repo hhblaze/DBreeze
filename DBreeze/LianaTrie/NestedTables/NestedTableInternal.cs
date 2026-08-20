@@ -29,7 +29,11 @@ namespace DBreeze.DataTypes
         LTrie _parentTable = null;
         byte[] _key = null;
         long _rootStart = 0;
+        ulong _fullValueStart = 0;
+        int _disposed = 0;
         internal bool ValuesLazyLoadingIsOn = true;
+        internal bool ClosePending = false;
+        internal bool CoordinatorOwned = false;
 
         public uint quantityOpenReads = 0;
 
@@ -75,7 +79,9 @@ namespace DBreeze.DataTypes
 
         public void Dispose()
         {
-         
+            if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             //Cascade trie disposing
             if (table != null)
             {
@@ -86,14 +92,52 @@ namespace DBreeze.DataTypes
         //internal void CloseTable(bool insertTablesAllowed)
         internal void CloseTable()
         {
-            this._parentTable.NestedTablesCoordinator.CloseTable(ref this._key, ref this._rootStart);
+            this._parentTable.NestedTablesCoordinator.CloseTable(this);
         }
 
-        internal long SetNewRootStart(long newValueStart)
+        internal ulong FullValueStart
         {
-            table.Storage.TrieSettings.ROOT_START = newValueStart + this._shiftFromValueStart;
+            get { return _fullValueStart; }
+        }
 
-            return table.Storage.TrieSettings.ROOT_START;
+        internal long RootStart
+        {
+            get { return _rootStart; }
+        }
+
+        internal byte[] StructuralKey
+        {
+            get { return _key; }
+        }
+
+        internal bool IsModified
+        {
+            get { return table != null && table.TableIsModified; }
+        }
+
+        internal void BindIdentity(ulong fullValueStart, byte[] structuralKey)
+        {
+            _fullValueStart = fullValueStart;
+            _key = structuralKey;
+            CoordinatorOwned = true;
+        }
+
+        internal void DetachFromCoordinator()
+        {
+            ClosePending = false;
+            CoordinatorOwned = false;
+        }
+
+        internal long SetNewRootStart(ulong fullValueStart, long newValueStart, byte[] structuralKey)
+        {
+            _fullValueStart = fullValueStart;
+            if (structuralKey != null)
+                _key = structuralKey;
+
+            table.Storage.TrieSettings.ROOT_START = newValueStart + this._shiftFromValueStart;
+            _rootStart = table.Storage.TrieSettings.ROOT_START;
+
+            return _rootStart;
         }
 
         

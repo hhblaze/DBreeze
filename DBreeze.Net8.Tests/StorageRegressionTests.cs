@@ -5,6 +5,7 @@ using DBreeze.Storage.RemoteInstance;
 
 internal static class StorageRegressionTests
 {
+    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
     public static void StorageViewsCommitRollbackAndAutoFlush()
     {
         RunStorageViewScenario(DBreezeConfiguration.eStorage.DISK);
@@ -891,7 +892,7 @@ internal static class StorageRegressionTests
 
     private static string CreateFolder(string scenario)
     {
-        string path = Path.Combine(Path.GetTempPath(), "DBreeze-StorageTests", scenario + "-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(DatabaseTestRoot, scenario, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
     }

@@ -5,6 +5,7 @@ using System.Reflection;
 
 internal static class TextSearchRegressionTests
 {
+    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
     public static void WabiEnumerationAndMergesMatchReferenceModel()
     {
         Type type = typeof(DBreezeEngine).Assembly.GetType("DBreeze.TextSearch.WABI", throwOnError: true);
@@ -234,7 +235,7 @@ internal static class TextSearchRegressionTests
     {
         const int intermediateBatchCount = 100001;
         const int uniqueWordCount = 100005;
-        string folder = Path.Combine(Path.GetTempPath(), "dbreeze-textsearch-large-batch-" + Guid.NewGuid().ToString("N"));
+        string folder = Path.Combine(DatabaseTestRoot, nameof(LargeLexicalBatchFlushesAndReopens), Guid.NewGuid().ToString("N"));
         try
         {
             var exactWords = new System.Text.StringBuilder(uniqueWordCount * 16);
@@ -390,7 +391,7 @@ internal static class TextSearchRegressionTests
 
     public static void DiskIndexReopensAndUpdates()
     {
-        string folder = Path.Combine(Path.GetTempPath(), "dbreeze-textsearch-" + Guid.NewGuid().ToString("N"));
+        string folder = Path.Combine(DatabaseTestRoot, nameof(DiskIndexReopensAndUpdates), Guid.NewGuid().ToString("N"));
         try
         {
             using (var engine = new DBreezeEngine(folder))
@@ -422,7 +423,7 @@ internal static class TextSearchRegressionTests
 
     private static void VerifyLexicalWordBatch(WabiStreamCrypto encryptor, bool useCrypto, string suffix)
     {
-        string folder = Path.Combine(Path.GetTempPath(), "dbreeze-textsearch-lexical-" + suffix + "-" + Guid.NewGuid().ToString("N"));
+        string folder = Path.Combine(DatabaseTestRoot, "textsearch-lexical-" + suffix, Guid.NewGuid().ToString("N"));
         const string tableName = "text-lexical";
         try
         {

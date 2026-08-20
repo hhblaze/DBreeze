@@ -172,6 +172,8 @@ namespace DBreeze.LianaTrie
 
                 rn.Commit();
 
+                this.NestedTablesCoordinator.TransactionFinished();
+
                 //this.NestedTablesCoordinator.CloseAll();
              
                 TableIsModified = false;
@@ -216,6 +218,8 @@ namespace DBreeze.LianaTrie
 
                     //Only available for Writing root
                     rn.RollBack();
+
+                    this.NestedTablesCoordinator.TransactionFinished();
 
                     TableIsModified = false;
                     GenerationMapSaved = true;
@@ -1741,6 +1745,8 @@ namespace DBreeze.LianaTrie
 
                 this.Cache.TransactionalCommitFinished();
 
+                this.NestedTablesCoordinator.TransactionFinished();
+
                 TableIsModified = false;
                 GenerationMapSaved = true;
                 DtTableFixed = NextTableVersion();
@@ -1774,6 +1780,8 @@ namespace DBreeze.LianaTrie
 
             //No need of try catch here
             rn.TransactionalRollBack();
+
+            this.NestedTablesCoordinator.TransactionFinished();
 
             TableIsModified = false;
             GenerationMapSaved = true;

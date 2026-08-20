@@ -1,17 +1,27 @@
 using DBreeze;
 using DBreeze.DataTypes;
+using DBreeze.LianaTrie;
+using DBreeze.Storage;
 using DBreeze.Transactions;
 
 internal static class LianaTrieRegressionTests
 {
     private const string RecreateTable = "liana-recreate";
     private const string ContractTable = "liana-contract";
+    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
     private static readonly IComparer<byte[]> ByteComparer = new LexicographicByteComparer();
 
     internal static void RemoveAllWithFileRecreationKeepsTableReusable()
     {
         RunRemoveAllWithFileRecreation(storageOnDisk: false);
         RunRemoveAllWithFileRecreation(storageOnDisk: true);
+    }
+
+    internal static void EarlyDisposedNestedTablesFollowMasterTransaction()
+    {
+        RunEarlyDisposedNestedTables(storageOnDisk: false);
+        RunEarlyDisposedNestedTables(storageOnDisk: true);
+        RunDirectLTrieEarlyDispose();
     }
 
     internal static void TraversalContractMatchesReferenceModel()
@@ -953,7 +963,7 @@ internal static class LianaTrieRegressionTests
         Action<DBreezeEngine> verify)
     {
         string folder = storageOnDisk
-            ? Path.Combine(Path.GetTempPath(), "DBreeze.Net8.Tests", name, Guid.NewGuid().ToString("N"))
+            ? Path.Combine(DatabaseTestRoot, name, Guid.NewGuid().ToString("N"))
             : null;
         DBreezeEngine engine = storageOnDisk ? new DBreezeEngine(folder) : CreateMemoryEngine();
         try
@@ -974,6 +984,264 @@ internal static class LianaTrieRegressionTests
             if (folder != null && Directory.Exists(folder))
                 Directory.Delete(folder, true);
         }
+    }
+
+    private static void RunEarlyDisposedNestedTables(bool storageOnDisk)
+    {
+        const string table = "nested-early-dispose";
+        byte[] parent = { 0x10 };
+        byte[] renamedParent = { 0x11 };
+        byte[] recursiveParent = { 0x20 };
+        byte[] removedParent = { 0x30 };
+        byte[] replacementParent = { 0x40 };
+        byte[] key1 = { 1 };
+        byte[] key2 = { 2 };
+        byte[] key3 = { 3 };
+        byte[] key4 = { 4 };
+
+        RunStorageScenario(
+            nameof(EarlyDisposedNestedTablesFollowMasterTransaction) + (storageOnDisk ? "-disk" : "-memory"),
+            storageOnDisk,
+            engine =>
+            {
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable nested = transaction.InsertTable(table, parent, 0);
+                    nested.Insert(key1, new byte[] { 11 });
+                    nested.Insert(key2, new byte[] { 22 });
+                    nested.Dispose();
+                    nested.Dispose();
+                    nested.CloseTable();
+                    transaction.Commit();
+                }
+
+                AssertNestedValue(engine, table, parent, key1, new byte[] { 11 },
+                    "Initial early-disposed insert.");
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable first = transaction.InsertTable(table, parent, 0);
+                    NestedTable second = transaction.InsertTable(table, parent, 0);
+                    first.Insert(key1, new byte[] { 12 });
+                    first.RemoveKey(key2);
+                    first.Dispose();
+                    second.Insert(key3, new byte[] { 33 });
+                    second.Dispose();
+
+                    NestedTable reopened = transaction.InsertTable(table, parent, 0);
+                    AssertSequenceEqual(new byte[] { 12 }, reopened.Select<byte[], byte[]>(key1).Value,
+                        "Reopened nested table lost the dirty value.");
+                    reopened.Insert(key4, new byte[] { 44 });
+                    reopened.Dispose();
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    using NestedTable nested = transaction.SelectTable(table, parent, 0);
+                    AssertSequenceEqual(new byte[] { 12 }, nested.Select<byte[], byte[]>(key1).Value,
+                        "Updated nested value.");
+                    Assert(!nested.Select<byte[], byte[]>(key2).Exists, "Removed nested value is visible.");
+                    AssertSequenceEqual(new byte[] { 33 }, nested.Select<byte[], byte[]>(key3).Value,
+                        "Second handle insert.");
+                    AssertSequenceEqual(new byte[] { 44 }, nested.Select<byte[], byte[]>(key4).Value,
+                        "Reopened handle insert.");
+                }
+
+                using (var readerTransaction = engine.GetTransaction())
+                using (NestedTable reader = readerTransaction.SelectTable(table, parent, 0))
+                {
+                    AssertSequenceEqual(new byte[] { 12 }, reader.Select<byte[], byte[]>(key1).Value,
+                        "Committed reader initial value.");
+
+                    using (var writerTransaction = engine.GetTransaction())
+                    {
+                        NestedTable writer = writerTransaction.InsertTable(table, parent, 0);
+                        writer.Insert(key1, new byte[] { 13 });
+                        writer.Dispose();
+
+                        AssertSequenceEqual(new byte[] { 12 },
+                            reader.Select<byte[], byte[]>(key1, true).Value,
+                            "Committed reader observed the uncommitted writer view.");
+                        writerTransaction.Commit();
+                    }
+
+                    AssertSequenceEqual(new byte[] { 13 },
+                        reader.Select<byte[], byte[]>(key1, true).Value,
+                        "Reader handle did not advance after writer commit.");
+                }
+
+                AssertNestedValue(engine, table, parent, key1, new byte[] { 13 },
+                    "Writer value after committed reader release.");
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable nested = transaction.InsertTable(table, parent, 0);
+                    nested.Insert(new byte[] { 5 }, new byte[] { 55 });
+                    nested.Dispose();
+                    transaction.ChangeKey(table, parent, renamedParent);
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    Assert(!transaction.Select<byte[], byte[]>(table, parent).Exists,
+                        "Old parent key remained after ChangeKey.");
+                    using NestedTable nested = transaction.SelectTable(table, renamedParent, 0);
+                    AssertSequenceEqual(new byte[] { 55 }, nested.Select<byte[], byte[]>(new byte[] { 5 }).Value,
+                        "Deferred nested state was lost across ChangeKey.");
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable nested = transaction.InsertTable(table, renamedParent, 0);
+                    nested.Insert(key1, new byte[] { 99 });
+                    nested.Insert(new byte[] { 6 }, new byte[] { 66 });
+                    nested.Dispose();
+                    transaction.Rollback();
+                }
+
+                AssertNestedValue(engine, table, renamedParent, key1, new byte[] { 13 },
+                    "Explicit rollback of an early-disposed table.");
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable nested = transaction.InsertTable(table, renamedParent, 0);
+                    nested.Insert(key1, new byte[] { 98 });
+                    nested.Insert(new byte[] { 7 }, new byte[] { 77 });
+                    nested.Dispose();
+                }
+
+                AssertNestedValue(engine, table, renamedParent, key1, new byte[] { 13 },
+                    "Implicit rollback of an early-disposed table.");
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable parentTable = transaction.InsertTable(table, recursiveParent, 0);
+                    parentTable.Insert(key1, new byte[] { 1 });
+                    NestedTable childTable = parentTable.GetTable(key1, 3);
+                    childTable.Insert(key2, new byte[] { 2 });
+
+                    // Deliberately close the parent handle first. The internal trie remains owned
+                    // by the master coordinator until the recursive child has been committed.
+                    parentTable.Dispose();
+                    childTable.Dispose();
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    using NestedTable parentTable = transaction.SelectTable(table, recursiveParent, 0);
+                    using NestedTable childTable = parentTable.GetTable(key1, 3);
+                    AssertSequenceEqual(new byte[] { 2 }, childTable.Select<byte[], byte[]>(key2).Value,
+                        "Recursive early-disposed nested value.");
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable nested = transaction.InsertTable(table, removedParent, 0);
+                    nested.Insert(key1, new byte[] { 1 });
+                    nested.Dispose();
+                    transaction.RemoveKey(table, removedParent);
+                    transaction.Commit();
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    Assert(!transaction.Select<byte[], byte[]>(table, removedParent).Exists,
+                        "Removed parent was resurrected by deferred nested cleanup.");
+                }
+
+                using (var transaction = engine.GetTransaction())
+                {
+                    NestedTable discarded = transaction.InsertTable(table, renamedParent, 0);
+                    discarded.Insert(new byte[] { 8 }, new byte[] { 88 });
+
+                    transaction.RemoveAllKeys(table, true);
+                    discarded.Dispose();
+                    discarded.Dispose();
+
+                    NestedTable replacement = transaction.InsertTable(table, replacementParent, 0);
+                    replacement.Insert(key1, new byte[] { 101 });
+                    replacement.Dispose();
+                    transaction.Commit();
+                }
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                AssertEqual(1UL, transaction.Count(table), "Row count after recreate with deferred tables.");
+                using NestedTable nested = transaction.SelectTable(table, replacementParent, 0);
+                AssertSequenceEqual(new byte[] { 101 }, nested.Select<byte[], byte[]>(key1).Value,
+                    "Replacement nested table after recreate.");
+            });
+    }
+
+    private static void RunDirectLTrieEarlyDispose()
+    {
+        string folder = Path.Combine(
+            DatabaseTestRoot, nameof(RunDirectLTrieEarlyDispose), Guid.NewGuid().ToString("N"));
+        string tablePath = Path.Combine(folder, "1");
+        byte[] parent = { 0x51 };
+        byte[] child = { 0x52 };
+        byte[] committedValue = { 0x53 };
+
+        DBreezeConfiguration configuration = null;
+        LTrie trie = null;
+        try
+        {
+            Directory.CreateDirectory(folder);
+            configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            trie = new LTrie(new StorageLayer(tablePath, new TrieSettings(), configuration));
+
+            LTrieRow row = trie.GetKey(parent, false, true);
+            NestedTable nested = trie.GetTable(row, ref parent, 0, trie, true, false);
+            nested.Insert(child, committedValue);
+            nested.Dispose();
+            trie.SingleCommit();
+
+            trie.Dispose();
+            configuration.Dispose();
+            trie = null;
+            configuration = null;
+
+            configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            trie = new LTrie(new StorageLayer(tablePath, new TrieSettings(), configuration));
+            row = trie.GetKey(parent, false, true);
+            using (NestedTable reopened = trie.GetTable(row, ref parent, 0, trie, false, true))
+            {
+                AssertSequenceEqual(committedValue, reopened.Select<byte[], byte[]>(child).Value,
+                    "Direct LTrie commit lost an early-disposed nested value.");
+            }
+
+            row = trie.GetKey(parent, false, true);
+            nested = trie.GetTable(row, ref parent, 0, trie, true, false);
+            nested.Insert(child, new byte[] { 0x99 });
+            nested.Dispose();
+            trie.SingleRollback();
+
+            row = trie.GetKey(parent, false, true);
+            using NestedTable rolledBack = trie.GetTable(row, ref parent, 0, trie, false, true);
+            AssertSequenceEqual(committedValue, rolledBack.Select<byte[], byte[]>(child).Value,
+                "Direct LTrie rollback retained an early-disposed mutation.");
+        }
+        finally
+        {
+            if (trie != null)
+                trie.Dispose();
+            if (configuration != null)
+                configuration.Dispose();
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void AssertNestedValue(
+        DBreezeEngine engine, string table, byte[] parent, byte[] key, byte[] expected, string message)
+    {
+        using var transaction = engine.GetTransaction();
+        using NestedTable nested = transaction.SelectTable(table, parent, 0);
+        AssertSequenceEqual(expected, nested.Select<byte[], byte[]>(key).Value, message);
     }
 
     private static byte[] GeneratedKey(int value) =>
@@ -1034,7 +1302,7 @@ internal static class LianaTrieRegressionTests
     private static void RunRemoveAllWithFileRecreation(bool storageOnDisk)
     {
         string folder = storageOnDisk
-            ? Path.Combine(Path.GetTempPath(), "DBreeze.Net8.Tests", Guid.NewGuid().ToString("N"))
+            ? Path.Combine(DatabaseTestRoot, nameof(RemoveAllWithFileRecreationKeepsTableReusable), Guid.NewGuid().ToString("N"))
             : null;
 
         DBreezeEngine engine = storageOnDisk

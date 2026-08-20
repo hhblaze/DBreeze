@@ -64,6 +64,8 @@ namespace DBreeze.LianaTrie
 
         private int countNested = 0;
         private int _disposed = 0;
+        private List<NestedTableInternal> _deferredClosedTables = null;
+        private int _transactionCompletionPending = 0;
 
         /// <summary>
         /// Will be taken into consideration only from MasterTrie.
@@ -85,17 +87,32 @@ namespace DBreeze.LianaTrie
             {
 
                 byte[] hash = key;
+                byte[] identityKey = key;
 
                 ulong ptr = 0;
 
                 _nestedTblsViaKeys.TryGetValue(hash, out ptr);
 
                 if (ptr == 0)
-                    _nestedTblsViaKeys.Add((byte[])key.Clone(), fullValueStart);
+                {
+                    identityKey = (byte[])key.Clone();
+                    _nestedTblsViaKeys.Add(identityKey, fullValueStart);
+                }
 
                 Dictionary<long, NestedTableInternal> dict = null;
 
                 _nestedTables.TryGetValue(fullValueStart, out dict);
+
+                if (ptr != 0 && dict != null)
+                {
+                    foreach (KeyValuePair<long, NestedTableInternal> existingTable in dict)
+                    {
+                        identityKey = existingTable.Value.StructuralKey;
+                        break;
+                    }
+                }
+
+                nestedTable.BindIdentity(fullValueStart, identityKey);
 
                 if (dict == null)
                 {
@@ -130,16 +147,16 @@ namespace DBreeze.LianaTrie
            
         }
 
-        //NESTED TABLES ARE NOT DELETED AFTER COMMIT OR ROLLBACK etc. Their lifecycle is finished together with Master Trie.
-        //It's necessary for the parallel threads which could start to read before commit and go on to read after commit, 
-        //in case, if after new thread creates a write into the same table (new nested table will be create and parallel read will have reference to the "old" one
-        //- in total 2 tables with different cache can collide)
+        //Nested tables with open handles remain coordinated across commit/rollback so readers can cross the
+        //transaction boundary safely. A clean table is detached when its last handle closes. A dirty table whose
+        //last handle closes is retained until the master transaction completes, then detached and disposed.
 
         /// <summary>
         /// Committing nested tables
         /// </summary>
         internal void TransactionalCommitFinished()
-        {            
+        {
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
 
             Sync_NestedTables.EnterReadLock();
             try
@@ -170,8 +187,9 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void Commit()
         {
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
 
-            Sync_NestedTables.EnterReadLock();         
+            Sync_NestedTables.EnterReadLock();
             try
             {
                 foreach (var nt in _nestedTables)
@@ -202,7 +220,8 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void TransactionalCommit()
         {
-            Sync_NestedTables.EnterReadLock(); 
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
+            Sync_NestedTables.EnterReadLock();
             try
             {
                 foreach (var nt in _nestedTables)
@@ -230,6 +249,7 @@ namespace DBreeze.LianaTrie
 
         internal void Rollback()
         {
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
             Sync_NestedTables.EnterReadLock();
             try
             {
@@ -253,6 +273,7 @@ namespace DBreeze.LianaTrie
             {
                 Sync_NestedTables.ExitReadLock();
             }
+
         }
 
         /// <summary>
@@ -260,6 +281,7 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void TransactionalRollback()
         {
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
             Sync_NestedTables.EnterReadLock();
             try
             {
@@ -281,6 +303,13 @@ namespace DBreeze.LianaTrie
             {
                 Sync_NestedTables.ExitReadLock();
             }
+
+        }
+
+        internal void TransactionFinished()
+        {
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 0);
+            ReleaseDeferredClosedTables();
         }
 
 
@@ -332,10 +361,11 @@ namespace DBreeze.LianaTrie
                     _nestedTables.Add(idNewFullValueStart, new Dictionary<long, NestedTableInternal>());
                 }
 
+                byte[] newIdentityKey = (byte[])newKey.Clone();
                 long rootStart = 0;
                 foreach (var d in dict)
                 {
-                    rootStart = d.Value.SetNewRootStart(valueStart);
+                    rootStart = d.Value.SetNewRootStart(idNewFullValueStart, valueStart, newIdentityKey);
                     _nestedTables[idNewFullValueStart].Add(rootStart, d.Value);
                 }
 
@@ -343,7 +373,7 @@ namespace DBreeze.LianaTrie
 
                 _nestedTblsViaKeys.Remove(hash);
 
-                hash = (byte[])newKey.Clone();
+                hash = newIdentityKey;
 
                 _nestedTblsViaKeys.Add(hash, idNewFullValueStart);               
                 
@@ -394,7 +424,7 @@ namespace DBreeze.LianaTrie
 
                 foreach (var d in dict)
                 {
-                    rootStart = d.Value.SetNewRootStart(valueStart);
+                    rootStart = d.Value.SetNewRootStart(idNewFullValueStart, valueStart, null);
                     _nestedTables[idNewFullValueStart].Add(rootStart, d.Value);
                 }
                               
@@ -491,57 +521,42 @@ namespace DBreeze.LianaTrie
             }
         }
 
-        public void CloseTable(ref byte[] key, ref long rootStart)
+        public void CloseTable(NestedTableInternal nestedTable)
         {
-            //Must close refered nested table and in cascade include tables, for memory efficiency while reading master table with nested tables
-            //Full remove must also clean dictionary entries
+            NestedTableInternal tableToDispose = null;
 
-            //Close must calculate, OpenWritesAndReads
-
-            //We count up/down only reads, CloseTable
             lock (this.lock_nestedTblAccess)
             {
                 Sync_NestedTables.EnterWriteLock();
                 try
                 {
-                    byte[] hash = key;
-
-                    ulong ptr = 0;
-
-                    _nestedTblsViaKeys.TryGetValue(hash, out ptr);
-
-                    if (ptr == 0)
+                    if (!nestedTable.CoordinatorOwned)
                         return;
 
-                    Dictionary<long, NestedTableInternal> dict = null;
-
-                    _nestedTables.TryGetValue(ptr, out dict);
-
-                    if (dict == null)
+                    if (nestedTable.quantityOpenReads == 0)
                         return;
 
-                    if (!dict.ContainsKey(rootStart))
-                        return;
-
-                    //decreasing quantity of open reads
-
-                    uint qor = --dict[rootStart].quantityOpenReads;
-
-                    //if (this.ModificationThreadId != -1)
-                    //    return;
+                    uint qor = --nestedTable.quantityOpenReads;
 
                     if (qor > 0)
                         return;
 
-
-                    dict[rootStart].Dispose();
-
-                    dict.Remove(rootStart);
-
-                    if (dict.Count() == 0)
+                    if (nestedTable.IsModified ||
+                        System.Threading.Interlocked.CompareExchange(ref _transactionCompletionPending, 0, 0) != 0)
                     {
-                        _nestedTblsViaKeys.Remove(hash);
+                        if (!nestedTable.ClosePending)
+                        {
+                            nestedTable.ClosePending = true;
+                            if (_deferredClosedTables == null)
+                                _deferredClosedTables = new List<NestedTableInternal>();
+                            _deferredClosedTables.Add(nestedTable);
+                        }
+                        return;
                     }
+
+                    nestedTable.ClosePending = false;
+                    if (DetachNestedTable(nestedTable))
+                        tableToDispose = nestedTable;
 
                 }
                 finally
@@ -549,6 +564,137 @@ namespace DBreeze.LianaTrie
                     Sync_NestedTables.ExitWriteLock();
                 }
             }
+
+            if (tableToDispose != null)
+                tableToDispose.Dispose();
+        }
+
+        private void ReleaseDeferredClosedTables()
+        {
+            List<NestedTableInternal> tablesToDispose = null;
+
+            lock (this.lock_nestedTblAccess)
+            {
+                Sync_NestedTables.EnterWriteLock();
+                try
+                {
+                    if (_deferredClosedTables == null)
+                        return;
+
+                    List<NestedTableInternal> stillDeferred = null;
+                    foreach (NestedTableInternal nestedTable in _deferredClosedTables)
+                    {
+                        if (!nestedTable.ClosePending)
+                            continue;
+
+                        if (nestedTable.quantityOpenReads > 0)
+                        {
+                            nestedTable.ClosePending = false;
+                            continue;
+                        }
+
+                        if (nestedTable.IsModified)
+                        {
+                            if (stillDeferred == null)
+                                stillDeferred = new List<NestedTableInternal>();
+                            stillDeferred.Add(nestedTable);
+                            continue;
+                        }
+
+                        nestedTable.ClosePending = false;
+                        if (DetachNestedTable(nestedTable))
+                        {
+                            if (tablesToDispose == null)
+                                tablesToDispose = new List<NestedTableInternal>();
+                            tablesToDispose.Add(nestedTable);
+                        }
+                    }
+
+                    _deferredClosedTables = stillDeferred;
+                }
+                finally
+                {
+                    Sync_NestedTables.ExitWriteLock();
+                }
+            }
+
+            DisposeNestedTables(tablesToDispose);
+        }
+
+        private bool DetachNestedTable(NestedTableInternal nestedTable)
+        {
+            ulong fullValueStart = nestedTable.FullValueStart;
+            long rootStart = nestedTable.RootStart;
+            Dictionary<long, NestedTableInternal> dict = null;
+            NestedTableInternal registeredTable = null;
+
+            if (!_nestedTables.TryGetValue(fullValueStart, out dict) ||
+                !dict.TryGetValue(rootStart, out registeredTable) ||
+                !Object.ReferenceEquals(registeredTable, nestedTable))
+            {
+                dict = null;
+                foreach (KeyValuePair<ulong, Dictionary<long, NestedTableInternal>> byPointer in _nestedTables)
+                {
+                    foreach (KeyValuePair<long, NestedTableInternal> byRoot in byPointer.Value)
+                    {
+                        if (Object.ReferenceEquals(byRoot.Value, nestedTable))
+                        {
+                            fullValueStart = byPointer.Key;
+                            rootStart = byRoot.Key;
+                            dict = byPointer.Value;
+                            break;
+                        }
+                    }
+
+                    if (dict != null)
+                        break;
+                }
+            }
+
+            if (dict == null)
+            {
+                nestedTable.DetachFromCoordinator();
+                return false;
+            }
+
+            dict.Remove(rootStart);
+            if (dict.Count == 0)
+            {
+                _nestedTables.Remove(fullValueStart);
+
+                bool keyRemoved = nestedTable.StructuralKey != null &&
+                    _nestedTblsViaKeys.Remove(nestedTable.StructuralKey);
+                if (!keyRemoved)
+                {
+                    byte[] structuralKey = null;
+                    foreach (KeyValuePair<byte[], ulong> byKey in _nestedTblsViaKeys)
+                    {
+                        if (byKey.Value == fullValueStart)
+                        {
+                            structuralKey = byKey.Key;
+                            break;
+                        }
+                    }
+
+                    if (structuralKey != null)
+                        _nestedTblsViaKeys.Remove(structuralKey);
+                }
+
+                if (countNested > 0)
+                    countNested--;
+            }
+
+            nestedTable.DetachFromCoordinator();
+            return true;
+        }
+
+        private static void DisposeNestedTables(List<NestedTableInternal> nestedTables)
+        {
+            if (nestedTables == null)
+                return;
+
+            foreach (NestedTableInternal nestedTable in nestedTables)
+                nestedTable.Dispose();
         }
 
         /// <summary>
@@ -608,32 +754,45 @@ namespace DBreeze.LianaTrie
         }
 
 
-        private void Clear()
+        private List<NestedTableInternal> DetachAll()
         {
+            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 0);
+            List<NestedTableInternal> detachedTables = null;
             foreach (var nt in _nestedTables)
             {
                 foreach (var dit in nt.Value)
                 {
-                    dit.Value.Dispose();
+                    dit.Value.DetachFromCoordinator();
+                    if (detachedTables == null)
+                        detachedTables = new List<NestedTableInternal>();
+                    detachedTables.Add(dit.Value);
                 }
             }
 
             _nestedTables.Clear();
             _nestedTblsViaKeys.Clear();
+            _deferredClosedTables = null;
             countNested = 0;
+            return detachedTables;
         }
 
         internal void Reset()
         {
-            Sync_NestedTables.EnterWriteLock();
-            try
+            List<NestedTableInternal> detachedTables = null;
+            lock (this.lock_nestedTblAccess)
             {
-                Clear();
+                Sync_NestedTables.EnterWriteLock();
+                try
+                {
+                    detachedTables = DetachAll();
+                }
+                finally
+                {
+                    Sync_NestedTables.ExitWriteLock();
+                }
             }
-            finally
-            {
-                Sync_NestedTables.ExitWriteLock();
-            }
+
+            DisposeNestedTables(detachedTables);
         }
 
         public void Dispose()
@@ -641,14 +800,26 @@ namespace DBreeze.LianaTrie
             if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
-            Sync_NestedTables.EnterWriteLock();
+            List<NestedTableInternal> detachedTables = null;
+            lock (this.lock_nestedTblAccess)
+            {
+                Sync_NestedTables.EnterWriteLock();
+                try
+                {
+                    detachedTables = DetachAll();
+                }
+                finally
+                {
+                    Sync_NestedTables.ExitWriteLock();
+                }
+            }
+
             try
             {
-                Clear();
+                DisposeNestedTables(detachedTables);
             }
             finally
             {
-                Sync_NestedTables.ExitWriteLock();
                 Sync_NestedTables.Dispose();
             }
         }

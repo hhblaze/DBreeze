@@ -16,6 +16,25 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--lianatrie-nested-dispose", StringComparison.OrdinalIgnoreCase)))
+        {
+            LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction();
+            Console.WriteLine($"PASS {nameof(LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction)}");
+            LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable();
+            Console.WriteLine($"PASS {nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable)}");
+            LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches();
+            Console.WriteLine($"PASS {nameof(LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches)}");
+            LianaTrieRegressionTests.MixedWriteEpochPreservesAllMutations();
+            Console.WriteLine($"PASS {nameof(LianaTrieRegressionTests.MixedWriteEpochPreservesAllMutations)}");
+            NestedStructuralKeyCacheSurvivesMutationAndRename();
+            Console.WriteLine($"PASS {nameof(NestedStructuralKeyCacheSurvivesMutationAndRename)}");
+            ReadVisibilityUsesCommittedNodeImages();
+            Console.WriteLine($"PASS {nameof(ReadVisibilityUsesCommittedNodeImages)}");
+            StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle();
+            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle)}");
+            return 0;
+        }
+
         (string Name, Action Test)[] tests =
         {
             // This test injects a durable journal marker directly and therefore must run before
@@ -64,6 +83,7 @@ internal static class Program
             (nameof(SchemeRenameWaitsForActiveTable), SchemeRenameWaitsForActiveTable),
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
             (nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable), LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable),
+            (nameof(LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction), LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction),
             (nameof(LianaTrieRegressionTests.TraversalContractMatchesReferenceModel), LianaTrieRegressionTests.TraversalContractMatchesReferenceModel),
             (nameof(LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated), LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated),
             (nameof(LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative), LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative),
@@ -130,7 +150,7 @@ internal static class Program
 
     private static string CreateDatabaseFolder(string scenario)
     {
-        string folder = Path.Combine(DatabaseTestRoot, scenario + "-" + Guid.NewGuid().ToString("N"));
+        string folder = Path.Combine(DatabaseTestRoot, scenario, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
         return folder;
     }
