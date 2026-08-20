@@ -776,8 +776,8 @@
           <p>При первом overwrite существующего node cache запоминает <code>KidsBeforeModification</code>. Повторные writes в том же epoch не заменяют образ. Он нужен read-root для topology visibility и не кеширует произвольные values.</p>
         </details>
         <details>
-          <summary>Почему параметр cachedGenerationMapLine всё ещё виден</summary>
-          <p>Traversal helpers больше не строят path и вызывают <code>ReadSelf</code> с <code>null</code>, однако <code>GenerationNodeRead</code> сохраняет legacy-параметр во внутренней сигнатуре. Pointer cache его не использует. Удалять параметр следует только отдельным call-site/API review; активных path allocations он больше не создаёт.</p>
+          <summary>Legacy path parameter удалён</summary>
+          <p>Отдельный call-site/cache review подтвердил, что logical path после перехода на pointer identity не использовался: все traversal и write-map callers передавали <code>null</code>, а <code>GenerationNodeRead</code> адресовал cache и storage только через physical pointer. Параметр удалён из внутренних <code>ReadSelf</code>/<code>GenerationNodeRead</code> во всех target-specific реализациях; public API, cache epoch и disk protocol не изменились.</p>
         </details>
       </section>
 
@@ -928,13 +928,13 @@
       </section>
 
       <section id="risks">
-        <h2>15. Постоянные P0 gates и открытый backlog</h2>
+        <h2>15. Постоянные P0 gates и закрытые reviews</h2>
         <div class="priority">
           <span class="p">P0 gate</span><div><strong>Не нарушать cache epoch.</strong> Это постоянный regression-инвариант, не открытый дефект: любой новый path, способный переиспользовать physical offsets, должен очистить pointer-keyed <code>_nodes</code> до committed read.</div>
           <span class="p">P0 gate</span><div><strong>Сохранить recreate lifecycle.</strong> <code>RemoveAll(true) → insert/nested → commit → reopen</code>, повторная recreation и idempotent terminal dispose обязательны.</div>
           <span class="p">P0 fixed</span><div><strong>Не возвращать early-dispose data-loss.</strong> Last dirty handle обязан передать table coordinator до commit/rollback outcome; direct и transactional lifecycle, rename и recursive nesting остаются обязательным regression gate.</div>
           <span class="p">P0 fixed</span><div><strong>Не терять следующий epoch открытого handle.</strong> <code>Commit</code>/<code>Rollback</code> завершает cycle, но не инвалидирует writable <code>NestedTable</code>; следующая реальная mutation обязана re-arm-ить master и recursive parent chain, а terminal transaction — инвалидировать session token.</div>
-          <span class="p p2">P2</span><div><strong>Проверить архитектурный хвост path parameter.</strong> Traversal больше не передаёт path, но внутренние <code>ReadSelf</code>/<code>GenerationNodeRead</code> сохраняют legacy-параметр; менять его только отдельным API/cache review.</div>
+          <span class="p p2">P3 closed</span><div><strong>Legacy path parameter удалён.</strong> Внутренние <code>ReadSelf</code>/<code>GenerationNodeRead</code> теперь принимают только реально используемые <code>useCache</code>, physical pointer и maximum node length. Pointer-keyed committed-image cache и его epoch boundaries сохранены.</div>
         </div>
         <p>Подробный отделённый backlog: <a href="../LianaTrie_Modernization_Backlog.md">LianaTrie_Modernization_Backlog.md</a>.</p>
       </section>
@@ -943,7 +943,7 @@
         <h2>16. Заключение</h2>
         <p>Рефакторинг не демонтировал скрытую cache/flush архитектуру LianaTrie. Он заменил дорогую logical-path identity на pointer identity, рекурсивные hot-path обходы — на explicit frames, а временные serialization buffers — на exact modern primitives. Старые boundaries между trie, transaction и storage сохранены.</p>
         <p>Наблюдаемые пользовательские изменения ограничены исправлением ошибочных side effects и формализацией partial-read edge cases. Формат файлов доказан не только чтением в обе стороны, но и raw byte identity. Memory и performance envelope улучшены по измеренным сценариям.</p>
-        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code>, активная traversal recursion, early nested dispose и потеря следующего write epoch через открытый nested handle исправлены и закрыты regression/API/disk/performance gates. Открытым остаётся только низкоприоритетный review legacy path parameter.</div>
+        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code>, активная traversal recursion, early nested dispose и потеря следующего write epoch через открытый nested handle исправлены и закрыты regression/API/disk/performance gates. Низкоприоритетный review legacy path parameter завершён: мёртвый internal parameter удалён без изменения cache identity.</div>
       </section>
     </main>
   </div>

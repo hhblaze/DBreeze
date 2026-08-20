@@ -665,10 +665,9 @@ namespace DBreeze.LianaTrie
         /// </summary>
         /// <param name="useCache"></param>
         /// <param name="pointer"></param>
-        /// <param name="cachedGenerationMapLine"></param>
-        /// <param name="MaximumNodeLineLength"></param>
+        /// <param name="maximumNodeLineLength"></param>
         /// <returns></returns>
-        public byte[] GenerationNodeRead(bool useCache, byte[] pointer, byte[] cachedGenerationMapLine, int MaximumNodeLineLength)
+        public byte[] GenerationNodeRead(bool useCache, byte[] pointer, int maximumNodeLineLength)
         {
             byte[] node=null;
 
@@ -678,7 +677,7 @@ namespace DBreeze.LianaTrie
 
                 if (node != null)
                 {
-                    //Here node can be also of empty length [0] - it means that cachedGenerationMapLine exists but old kids were empty, it will be checked on upper levels
+                    //An empty cached image means that the committed node had no kids; upper levels handle it.
                     return node;
                 }
             }
@@ -694,7 +693,7 @@ namespace DBreeze.LianaTrie
             _sync_nodes.EnterReadLock();
             try
             {
-                line = Trie.Storage.Table_Read(useCache, pointer, MaximumNodeLineLength);               
+                line = Trie.Storage.Table_Read(useCache, pointer, maximumNodeLineLength);
             }
                 catch
             {

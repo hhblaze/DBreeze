@@ -132,7 +132,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode rootNode = new LTrieGenerationNode(_root);
             rootNode.Pointer = _root.LinkToZeroNode;
-            rootNode.ReadSelf(useCache, null);
+            rootNode.ReadSelf(useCache);
 
             Stack<IEnumerator<LTrieKid>> stack = new Stack<IEnumerator<LTrieKid>>();
             stack.Push(rootNode.KidsInNode.GetKidsForward().GetEnumerator());
@@ -159,7 +159,7 @@ namespace DBreeze.LianaTrie.Iterations
                         LTrieGenerationNode node = new LTrieGenerationNode(_root);
                         node.Pointer = kid.Ptr;
                         node.Value = (byte)kid.Val;
-                        node.ReadSelf(useCache, null);
+                        node.ReadSelf(useCache);
                         stack.Push(node.KidsInNode.GetKidsForward().GetEnumerator());
                     }
                 }
@@ -183,7 +183,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode rootNode = new LTrieGenerationNode(_root);
             rootNode.Pointer = _root.LinkToZeroNode;
-            rootNode.ReadSelf(useCache, null);
+            rootNode.ReadSelf(useCache);
 
             Stack<ForwardRangeFrame> stack = new Stack<ForwardRangeFrame>();
             stack.Push(new ForwardRangeFrame
@@ -303,7 +303,7 @@ namespace DBreeze.LianaTrie.Iterations
                     LTrieGenerationNode node = new LTrieGenerationNode(_root);
                     node.Pointer = kid.Ptr;
                     node.Value = (byte)kid.Val;
-                    node.ReadSelf(useCache, null);
+                    node.ReadSelf(useCache);
                     stack.Push(new ForwardRangeFrame
                     {
                         Iterator = GetForwardIterator(node, frame.Depth + 1, startRelation, startKey, hasStart),
@@ -340,7 +340,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode rootNode = new LTrieGenerationNode(_root);
             rootNode.Pointer = _root.LinkToZeroNode;
-            rootNode.ReadSelf(useCache, null);
+            rootNode.ReadSelf(useCache);
 
             Stack<IEnumerator<LTrieKid>> stack = new Stack<IEnumerator<LTrieKid>>();
             stack.Push(rootNode.KidsInNode.GetKidsForward().GetEnumerator());
@@ -373,7 +373,7 @@ namespace DBreeze.LianaTrie.Iterations
                         LTrieGenerationNode node = new LTrieGenerationNode(_root);
                         node.Pointer = kid.Ptr;
                         node.Value = (byte)kid.Val;
-                        node.ReadSelf(useCache, null);
+                        node.ReadSelf(useCache);
                         stack.Push(node.KidsInNode.GetKidsForward().GetEnumerator());
                     }
                 }
@@ -410,7 +410,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode node = new LTrieGenerationNode(_root);
             node.Pointer = _root.LinkToZeroNode;
-            node.ReadSelf(useCache, null);
+            node.ReadSelf(useCache);
 
             while (true)
             {
@@ -429,7 +429,7 @@ namespace DBreeze.LianaTrie.Iterations
                 node = new LTrieGenerationNode(_root);
                 node.Pointer = firstKid.Ptr;
                 node.Value = (byte)firstKid.Val;
-                node.ReadSelf(useCache, null);
+                node.ReadSelf(useCache);
             }
         }
 
@@ -478,7 +478,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode node = new LTrieGenerationNode(_root);
             node.Pointer = _root.LinkToZeroNode;
-            node.ReadSelf(useCache, null);
+            node.ReadSelf(useCache);
 
             int depth = 0;
             while (depth < initKey.Length)
@@ -500,7 +500,7 @@ namespace DBreeze.LianaTrie.Iterations
                 node = new LTrieGenerationNode(_root);
                 node.Pointer = matchedKid.Ptr;
                 node.Value = (byte)matchedKid.Val;
-                node.ReadSelf(useCache, null);
+                node.ReadSelf(useCache);
                 depth++;
             }
         }

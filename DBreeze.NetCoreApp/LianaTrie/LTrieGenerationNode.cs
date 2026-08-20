@@ -494,12 +494,12 @@ namespace DBreeze.LianaTrie
       
         
 
-        public void ReadSelf(bool useCache,byte[] generationMapLine)
+        public void ReadSelf(bool useCache)
         {
             //Cache is used only in case of Reading Functions
             ToChangeParentNode = false;
 
-            byte[] bKids = this._root.Tree.Cache.GenerationNodeRead(useCache, Pointer, generationMapLine, MaximumKidLineLength);
+            byte[] bKids = this._root.Tree.Cache.GenerationNodeRead(useCache, Pointer, MaximumKidLineLength);
 
             if (bKids != null && bKids.Length != 0)
             {

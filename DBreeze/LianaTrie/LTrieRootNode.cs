@@ -326,7 +326,7 @@ namespace DBreeze.LianaTrie
                 //gn.Value=0; - default
                 _generationMap.Add(0, gn);
 
-                gn.ReadSelf(false, null);
+                gn.ReadSelf(false);
             }
 
 
@@ -386,7 +386,7 @@ namespace DBreeze.LianaTrie
                     _generationMap.Add(i, gn);
 
                     if (gn.Pointer != null)
-                        gn.ReadSelf(false, null);
+                        gn.ReadSelf(false);
                     else
                         gn.Pointer = new byte[DefaultPointerLen];       //!!!!!!!!!!!!! Check if it'S really necessary or we can leave it as null
                 }
@@ -482,7 +482,7 @@ namespace DBreeze.LianaTrie
                 //gn.Value=0; - default
                 _generationMap.Add(0, gn);
 
-                gn.ReadSelf(false, null);
+                gn.ReadSelf(false);
             }
 
 
@@ -539,7 +539,7 @@ namespace DBreeze.LianaTrie
                     _generationMap.Add(i, gn);
 
                     if (gn.Pointer != null)
-                        gn.ReadSelf(false, null);
+                        gn.ReadSelf(false);
                     else
                         gn.Pointer = new byte[DefaultPointerLen];       //!!!!!!!!!!!!! Check if it'S really necessary or we can leave it as null
                 }
@@ -625,7 +625,7 @@ namespace DBreeze.LianaTrie
                     //gn.Value=0; - default
                     _generationMap.Add(0, gn);
 
-                    gn.ReadSelf(false, null);
+                    gn.ReadSelf(false);
                 }
 
                 
@@ -729,7 +729,7 @@ namespace DBreeze.LianaTrie
                 //gn.Value=0; - default
                 _generationMap.Add(0, gn);
 
-                gn.ReadSelf(false, null);
+                gn.ReadSelf(false);
             }
 
          
@@ -787,7 +787,7 @@ namespace DBreeze.LianaTrie
                     _generationMap.Add(i, gn);
 
                     if (gn.Pointer != null)
-                        gn.ReadSelf(false, null);
+                        gn.ReadSelf(false);
                     else
                         gn.Pointer = new byte[DefaultPointerLen];       //!!!!!!!!!!!!! Check if it'S really necessary or we can leave it as null
                 }
@@ -946,7 +946,7 @@ namespace DBreeze.LianaTrie
                 //gn.Value=0; - default
                 _generationMap.Add(0, gn);
 
-                gn.ReadSelf(useCache, null);
+                gn.ReadSelf(useCache);
                 //gn.ReadSelf();
             }
 
@@ -1000,7 +1000,7 @@ namespace DBreeze.LianaTrie
                     
                     _generationMap.Add(i, gn);
 
-                    gn.ReadSelf(useCache, null);
+                    gn.ReadSelf(useCache);
                     //gn.ReadSelf();
                 }
 

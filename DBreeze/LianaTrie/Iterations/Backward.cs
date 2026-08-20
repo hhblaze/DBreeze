@@ -128,7 +128,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode rootNode = new LTrieGenerationNode(_root);
             rootNode.Pointer = _root.LinkToZeroNode;
-            rootNode.ReadSelf(useCache, null);
+            rootNode.ReadSelf(useCache);
 
             Stack<IEnumerator<LTrieKid>> stack = new Stack<IEnumerator<LTrieKid>>();
             stack.Push(rootNode.KidsInNode.GetKidsBackward().GetEnumerator());
@@ -155,7 +155,7 @@ namespace DBreeze.LianaTrie.Iterations
                         LTrieGenerationNode node = new LTrieGenerationNode(_root);
                         node.Pointer = kid.Ptr;
                         node.Value = (byte)kid.Val;
-                        node.ReadSelf(useCache, null);
+                        node.ReadSelf(useCache);
                         stack.Push(node.KidsInNode.GetKidsBackward().GetEnumerator());
                     }
                 }
@@ -179,7 +179,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode rootNode = new LTrieGenerationNode(_root);
             rootNode.Pointer = _root.LinkToZeroNode;
-            rootNode.ReadSelf(useCache, null);
+            rootNode.ReadSelf(useCache);
 
             Stack<BackwardRangeFrame> stack = new Stack<BackwardRangeFrame>();
             stack.Push(new BackwardRangeFrame
@@ -299,7 +299,7 @@ namespace DBreeze.LianaTrie.Iterations
                     LTrieGenerationNode node = new LTrieGenerationNode(_root);
                     node.Pointer = kid.Ptr;
                     node.Value = (byte)kid.Val;
-                    node.ReadSelf(useCache, null);
+                    node.ReadSelf(useCache);
                     stack.Push(new BackwardRangeFrame
                     {
                         Iterator = GetBackwardIterator(node, frame.Depth + 1, startRelation, startKey, hasStart),
@@ -336,7 +336,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode rootNode = new LTrieGenerationNode(_root);
             rootNode.Pointer = _root.LinkToZeroNode;
-            rootNode.ReadSelf(useCache, null);
+            rootNode.ReadSelf(useCache);
 
             Stack<IEnumerator<LTrieKid>> stack = new Stack<IEnumerator<LTrieKid>>();
             stack.Push(rootNode.KidsInNode.GetKidsBackward().GetEnumerator());
@@ -369,7 +369,7 @@ namespace DBreeze.LianaTrie.Iterations
                         LTrieGenerationNode node = new LTrieGenerationNode(_root);
                         node.Pointer = kid.Ptr;
                         node.Value = (byte)kid.Val;
-                        node.ReadSelf(useCache, null);
+                        node.ReadSelf(useCache);
                         stack.Push(node.KidsInNode.GetKidsBackward().GetEnumerator());
                     }
                 }
@@ -406,7 +406,7 @@ namespace DBreeze.LianaTrie.Iterations
         {
             LTrieGenerationNode node = new LTrieGenerationNode(_root);
             node.Pointer = _root.LinkToZeroNode;
-            node.ReadSelf(useCache, null);
+            node.ReadSelf(useCache);
 
             while (true)
             {
@@ -425,7 +425,7 @@ namespace DBreeze.LianaTrie.Iterations
                 node = new LTrieGenerationNode(_root);
                 node.Pointer = firstKid.Ptr;
                 node.Value = (byte)firstKid.Val;
-                node.ReadSelf(useCache, null);
+                node.ReadSelf(useCache);
             }
         }
 

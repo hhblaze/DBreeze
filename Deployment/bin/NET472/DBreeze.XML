@@ -1489,51 +1489,10 @@
             </summary>
             <param name="key"></param>
         </member>
-        <member name="F:DBreeze.LianaTrie.Iterations.Backward.ReturnKeyValuePair">
-            <summary>
-            If we use load Key already With Value, or just key and link to the value
-            </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Backward.IterateBackwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            ItBwdFromTo
-            </summary>
-            <param name="gn"></param>
-            <param name="generationMapLine"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-            <summary>
-            IterateBackwardFromTo
-            </summary>
-            <param name="initKey"></param>
-            <param name="stopKey"></param>
-            <param name="inclStartKey"></param>
-            <param name="inclStopKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-        </member>
         <member name="F:DBreeze.LianaTrie.Iterations.Forward.ReturnKeyValuePair">
             <summary>
             If we use load Key already With Value, or just key and link to the value
             </summary>
-        </member>
-        <member name="M:DBreeze.LianaTrie.Iterations.Forward.IterateForwardFromTo(System.Byte[],System.Byte[],System.Boolean,System.Boolean,System.Boolean)">
-            <summary>
-            ItFrwFromTo
-            </summary>
-            <param name="gn"></param>
-            <param name="generationMapLine"></param>
-            <param name="useCache"></param>
-            <returns></returns>
-            <summary>
-            IterateForwardFromTo
-            </summary>
-            <param name="initKey"></param>
-            <param name="stopKey"></param>
-            <param name="inclStartKey"></param>
-            <param name="inclStopKey"></param>
-            <param name="useCache"></param>
-            <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieGenerationMap.GenerateMapNodesValuesUpToIndex(System.Int32,System.Boolean)">
             <summary>

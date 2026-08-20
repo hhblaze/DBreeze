@@ -14,6 +14,9 @@
 - Каждый активный iterator освобождает оставшиеся enumerators через `finally`. `Min`/`Max`
   немедленно освобождают путь после первого leaf. Retained state ограничен O(depth), а прежние
   O(depth²) path copies отсутствуют.
+- После отдельного call-site/cache review удалён неиспользуемый logical-path параметр из внутренних
+  `ReadSelf`/`GenerationNodeRead` во всех target-specific реализациях. Committed-node cache по-прежнему
+  идентифицируется только physical pointer; public API, cache epoch и disk protocol не изменились.
 - Regression gate покрывает общий префикс длиной 8192, ранний `Take(1)`/manual dispose, повторное
   enumeration, lazy/eager, пустые и prefix-ending ключи, `0x00`/`0xFF`, `ulong.MaxValue`, read
   visibility и четырёхуровневую recursive nested-table hierarchy с disk reopen.
