@@ -154,32 +154,10 @@ namespace DBreeze.DataTypes
         /// <returns></returns>
         public byte[] GetValuePart(uint startIndex, uint length)
         {
+            if (!_exists)
+                return null;
 
-            if (_exists)
-            {
-                if (length == 0)
-                    return new byte[0];
-
-                if (startIndex > Int32.MaxValue)
-                    return null;
-
-                //Bringing arguments to int scope
-                if (((ulong)startIndex + length) > Int32.MaxValue)
-                {
-                    length = (uint)Int32.MaxValue - startIndex;
-                }
-
-                if (_row.ValueIsReadOut)
-                    return _row.GetPartialValue(startIndex, length, true);  //Cache plays no role here
-
-
-                long valueStartPointer = 0;
-                uint valueFullLength = 0;
-                //return this._root.Tree.Cache.ReadValuePartially(this._ptrToValue, startIndex, length, this._useCache, out valueStartPointer, out valueFullLength);
-                return this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, length, this._useCache, out valueStartPointer, out valueFullLength);
-            }
-
-            return null;
+            return _row.GetPartialValue(startIndex, length, _useCache);
         }
 
         /// <summary>
@@ -189,28 +167,7 @@ namespace DBreeze.DataTypes
         /// <returns></returns>
         public byte[] GetValuePart(uint startIndex)
         {
-            uint length = Int32.MaxValue;
-
-            if (_exists)
-            {
-                if (startIndex > Int32.MaxValue)
-                    return null;
-
-                //Bringing arguments to int scope
-                if (((ulong)startIndex + length) > Int32.MaxValue)
-                {
-                    length = (uint)Int32.MaxValue - startIndex;
-                }
-
-                if (_row.ValueIsReadOut)
-                    return _row.GetPartialValue(startIndex, length, true); //Cache plays no role here
-
-                long valueStartPointer = 0;
-                uint valueFullLength = 0;
-                return this._row.Root.Tree.Cache.ReadValuePartially(this._row.LinkToValue, startIndex, length, this._useCache, out valueStartPointer, out valueFullLength);
-            }
-
-            return null;
+            return GetValuePart(startIndex, UInt32.MaxValue);
         }
 
         /// <summary>

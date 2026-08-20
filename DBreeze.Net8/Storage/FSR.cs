@@ -32,7 +32,7 @@ namespace DBreeze.Storage
         /// <summary>
         /// Random buffer
         /// </summary>
-        Dictionary<long, byte[]> _randBuf = new Dictionary<long, byte[]>();
+        readonly SortedList<long, byte[]> _randBuf = new SortedList<long, byte[]>();
 
         /// <summary>
         /// Record in rollback is characterized with
@@ -53,7 +53,7 @@ namespace DBreeze.Storage
         /// Rollback cache
         /// Key is offset in data file, value is corresponding offset and length in rollback file
         /// </summary>
-        Dictionary<long, RollbackRecord> _rollbackCache = new Dictionary<long, RollbackRecord>();
+        readonly SortedList<long, RollbackRecord> _rollbackCache = new SortedList<long, RollbackRecord>();
 
         /// <summary>
         /// Random buffer maximal size before flush
@@ -95,7 +95,13 @@ namespace DBreeze.Storage
             public int PageLength;
             public byte CandidateAccessCount;
             public bool IsPopulated;
+            public byte[] ExactBuffer;
+            public long ExactOwnerId;
+            public long ExactMutationVersion;
+            public long ExactOffset;
+            public int ExactLength;
         }
+
         /// <summary>
         /// Pointer to the end of file, before current commit
         /// </summary>
@@ -916,23 +922,38 @@ namespace DBreeze.Storage
 
             while (cursor < end)
             {
-                long coveredEnd = cursor;
-                long nextCoveredStart = end;
-                foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
+                IList<long> keys = _rollbackCache.Keys;
+                int low = 0;
+                int high = keys.Count;
+                while (low < high)
                 {
-                    long rollbackEnd = rollback.Key + rollback.Value.l;
-                    if (rollback.Key <= cursor && rollbackEnd > coveredEnd)
-                        coveredEnd = rollbackEnd;
-                    else if (rollback.Key > cursor && rollback.Key < nextCoveredStart)
-                        nextCoveredStart = rollback.Key;
+                    int middle = low + ((high - low) >> 1);
+                    if (keys[middle] < cursor)
+                        low = middle + 1;
+                    else
+                        high = middle;
                 }
 
-                if (coveredEnd > cursor)
+                int index = low;
+                if (index > 0)
                 {
+                    long precedingStart = keys[index - 1];
+                    long precedingEnd = checked(precedingStart + _rollbackCache.Values[index - 1].l);
+                    if (precedingEnd > cursor)
+                    {
+                        cursor = precedingEnd < end ? precedingEnd : end;
+                        continue;
+                    }
+                }
+
+                if (index < keys.Count && keys[index] == cursor)
+                {
+                    long coveredEnd = checked(cursor + _rollbackCache.Values[index].l);
                     cursor = coveredEnd < end ? coveredEnd : end;
                     continue;
                 }
 
+                long nextCoveredStart = index < keys.Count && keys[index] < end ? keys[index] : end;
                 int uncoveredLength = checked((int)(nextCoveredStart - cursor));
                 AppendRollbackRecord(cursor, uncoveredLength);
                 appended = true;
@@ -1016,7 +1037,10 @@ namespace DBreeze.Storage
                     if (offset < dataLength)
                     {
                         int diskPart = (int)Math.Min((long)resultLength, dataLength - offset);
-                        ReadExactlyAt(_fsData, result, 0, diskPart, offset);
+                        bool readFromPage = diskPart == resultLength &&
+                            TryReadCommittedPage(offset, result, dataLength);
+                        if (!readFromPage)
+                            ReadExactlyAt(_fsData, result, 0, diskPart, offset);
                         if (diskPart < resultLength)
                             Buffer.BlockCopy(_seqBuf.RawBuffer, 0, result, diskPart, resultLength - diskPart);
                     }
@@ -1025,8 +1049,7 @@ namespace DBreeze.Storage
                         Buffer.BlockCopy(_seqBuf.RawBuffer, checked((int)(offset - dataLength)), result, 0, result.Length);
                     }
 
-                    foreach (KeyValuePair<long, byte[]> buffered in _randBuf)
-                        CopyIntersection(buffered.Key, buffered.Value, offset, result);
+                    OverlayRandomBuffer(offset, result);
 
                     return result;
                 }
@@ -1039,12 +1062,15 @@ namespace DBreeze.Storage
                     return Array.Empty<byte>();
 
                 byte[] committed = GC.AllocateUninitializedArray<byte>(committedLength);
-                if (_rollbackCache.Count == 0 &&
-                    !TransactionalCommitIsStarted &&
-                    TryReadCommittedPage(offset, committed, visibleLength))
-                {
+                bool canUseCommittedCache = _rollbackCache.Count == 0 && !TransactionalCommitIsStarted;
+                if (canUseCommittedCache && TryReadCommittedExact(offset, committed))
                     return committed;
-                }
+
+                if (canUseCommittedCache && TryReadCommittedPage(offset, committed, visibleLength))
+                    return committed;
+
+                if (canUseCommittedCache && TryReadAheadCommittedExact(offset, committed, visibleLength))
+                    return committed;
 
                 ReadExactlyAt(_fsData, committed, 0, committed.Length, offset);
 
@@ -1062,6 +1088,47 @@ namespace DBreeze.Storage
 
                 return committed;
             }
+        }
+
+        private bool TryReadCommittedExact(long offset, byte[] result)
+        {
+            ReadPageCache cache = _threadReadPageCache;
+            if (cache?.ExactBuffer == null ||
+                cache.ExactOwnerId != _instanceId ||
+                cache.ExactMutationVersion != _mutationVersion ||
+                offset < cache.ExactOffset)
+            {
+                return false;
+            }
+
+            long relativeOffset = offset - cache.ExactOffset;
+            if (relativeOffset > cache.ExactLength || result.Length > cache.ExactLength - relativeOffset)
+                return false;
+
+            Buffer.BlockCopy(cache.ExactBuffer, (int)relativeOffset, result, 0, result.Length);
+            return true;
+        }
+
+        private bool TryReadAheadCommittedExact(long offset, byte[] result, long visibleLength)
+        {
+            // The 111-byte LTrie probe benefits from read-ahead because key/value materialization
+            // usually follows immediately. Smaller standalone slices should not pay for 256 bytes.
+            if (result.Length < 111 || result.Length > SmallReadThreshold)
+                return false;
+
+            int readAheadLength = (int)Math.Min(SmallReadThreshold, visibleLength - offset);
+            if (readAheadLength < result.Length)
+                return false;
+
+            ReadPageCache cache = _threadReadPageCache ??= new ReadPageCache();
+            cache.ExactBuffer ??= GC.AllocateUninitializedArray<byte>(SmallReadThreshold);
+            ReadExactlyAt(_fsData, cache.ExactBuffer, 0, readAheadLength, offset);
+            Buffer.BlockCopy(cache.ExactBuffer, 0, result, 0, result.Length);
+            cache.ExactOwnerId = _instanceId;
+            cache.ExactMutationVersion = _mutationVersion;
+            cache.ExactOffset = offset;
+            cache.ExactLength = readAheadLength;
+            return true;
         }
 
         private bool TryReadCommittedPage(long offset, byte[] result, long visibleLength)
@@ -1130,6 +1197,37 @@ namespace DBreeze.Storage
 
             Buffer.BlockCopy(source, (int)(copyStart - sourceOffset), destination,
                 (int)(copyStart - destinationOffset), (int)(copyEnd - copyStart));
+        }
+
+        private void OverlayRandomBuffer(long offset, byte[] destination)
+        {
+            int count = _randBuf.Count;
+            if (count == 0 || destination.Length == 0)
+                return;
+
+            IList<long> keys = _randBuf.Keys;
+            int low = 0;
+            int high = count;
+            while (low < high)
+            {
+                int middle = low + ((high - low) >> 1);
+                if (keys[middle] < offset)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+
+            // The buffer contains disjoint physical ranges; the immediately preceding range is
+            // the only one that can overlap the beginning of the requested interval.
+            int index = low > 0 ? low - 1 : low;
+            long resultEnd = checked(offset + destination.Length);
+            for (; index < count; index++)
+            {
+                long key = keys[index];
+                if (key >= resultEnd)
+                    break;
+                CopyIntersection(key, _randBuf.Values[index], offset, destination);
+            }
         }
 
 #if false

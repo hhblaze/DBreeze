@@ -123,7 +123,7 @@ namespace DBreeze.LianaTrie
                 if (this.Value == null)
                     return null;
 
-                if (length == 0)
+                if (this.Value.Length == 0 || length == 0)
                     return new byte[0];
 
                 if (startIndex > (uint)this.Value.Length)
@@ -133,14 +133,18 @@ namespace DBreeze.LianaTrie
                 if (length > availableLength)
                     length = availableLength;
 
+                if (length == 0)
+                    return new byte[0];
+
                 byte[] result = new byte[(int)length];
-                if (length > 0)
-                    Buffer.BlockCopy(this.Value, (int)startIndex, result, 0, (int)length);
+                Buffer.BlockCopy(this.Value, (int)startIndex, result, 0, (int)length);
                 return result;
             }
 
             if (Exists)
+            {
                 return this._root.Tree.Cache.ReadValuePartially(this.LinkToValue, startIndex, length, useCache, out ValueStartPointer, out ValueFullLength);
+            }
 
             return null;
         }

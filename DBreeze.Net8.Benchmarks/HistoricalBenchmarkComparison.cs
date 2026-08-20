@@ -6,9 +6,11 @@ namespace DBreeze.Net8.Benchmarks;
 
 internal static class HistoricalBenchmarkComparison
 {
-    private const int ExpectedCoreScenarios = 70;
+    private const int ExpectedCoreScenarios = 72;
     private const int ExpectedSkipScenarios = 12;
-    private const int ExpectedMeasuredRepetitions = 3;
+    private const int ExpectedRandomScenarios = 1;
+    private const int ExpectedScanScenarios = 2;
+    private const int MinimumMeasuredRepetitions = 3;
 
     private static readonly HashSet<string> DurableScenarios = new(StringComparer.Ordinal)
     {
@@ -34,6 +36,7 @@ internal static class HistoricalBenchmarkComparison
             ValidatedRun newRun = Validate(newReport, "new", allowIncompleteSuite: true);
             ValidatedRun oldRun = Validate(oldReport, "old", allowIncompleteSuite: false);
             HistoricalComparisonReport comparison = Compare(options, newRun, oldRun);
+            ApplyPerformanceGate(comparison, options);
 
             Directory.CreateDirectory(options.OutputDirectory);
             WriteAtomic(Path.Combine(options.OutputDirectory, "comparison.json"),
@@ -44,6 +47,11 @@ internal static class HistoricalBenchmarkComparison
             Console.WriteLine($"Compared {comparison.Scenarios.Count} scenarios.");
             Console.WriteLine($"New-version geometric-mean speedup: {comparison.OverallGeometricMeanSpeedup:F3}x");
             Console.WriteLine($"Reports: {options.OutputDirectory}");
+            if (!comparison.PassedPerformanceGate)
+            {
+                Console.Error.WriteLine("Performance gate failed:\n" + String.Join("\n", comparison.GateViolations));
+                return 1;
+            }
             return 0;
         }
         catch (Exception ex)
@@ -70,9 +78,9 @@ internal static class HistoricalBenchmarkComparison
         string label,
         bool allowIncompleteSuite)
     {
-        if (report.Metadata.Repetitions != ExpectedMeasuredRepetitions)
+        if (report.Metadata.Repetitions < MinimumMeasuredRepetitions || report.Metadata.Repetitions > 20)
             throw new InvalidDataException(
-                $"The {label} report has {report.Metadata.Repetitions} repetitions; expected {ExpectedMeasuredRepetitions}.");
+                $"The {label} report has {report.Metadata.Repetitions} repetitions; expected {MinimumMeasuredRepetitions}..20.");
         if (!string.IsNullOrEmpty(report.Metadata.Failure))
             throw new InvalidDataException($"The {label} suite failed: {report.Metadata.Failure}");
         if (!allowIncompleteSuite && report.Metadata.CompletedUtc is null)
@@ -85,7 +93,13 @@ internal static class HistoricalBenchmarkComparison
             throw new InvalidDataException($"The {label} report contains failed core measurements.");
 
         string scenarioSet = NormalizeScenarioSet(report.Metadata.ScenarioSet);
-        int expectedScenarios = scenarioSet == "skip" ? ExpectedSkipScenarios : ExpectedCoreScenarios;
+        int expectedScenarios = scenarioSet switch
+        {
+            "skip" => ExpectedSkipScenarios,
+            "random" => ExpectedRandomScenarios,
+            "scan" => ExpectedScanScenarios,
+            _ => ExpectedCoreScenarios,
+        };
         var groups = core
             .GroupBy(static item => new ScenarioKey(item.Category, item.Scenario))
             .ToDictionary(static group => group.Key, static group => group.ToList());
@@ -97,10 +111,11 @@ internal static class HistoricalBenchmarkComparison
         {
             int warmups = values.Count(static item => item.IsWarmup);
             int measured = values.Count(static item => !item.IsWarmup);
-            if (warmups != 1 || measured != ExpectedMeasuredRepetitions || values.Count != 4)
+            int expectedMeasured = report.Metadata.Repetitions;
+            if (warmups != 1 || measured != expectedMeasured || values.Count != expectedMeasured + 1)
             {
                 throw new InvalidDataException(
-                    $"The {label} scenario {key} has warmup={warmups}, measured={measured}; expected 1 and {ExpectedMeasuredRepetitions}.");
+                    $"The {label} scenario {key} has warmup={warmups}, measured={measured}; expected 1 and {expectedMeasured}.");
             }
 
             ValidateStable(values, static item => item.Operations, label, key, "operations");
@@ -115,7 +130,7 @@ internal static class HistoricalBenchmarkComparison
     {
         if (string.IsNullOrEmpty(scenarioSet))
             return "core";
-        if (scenarioSet is "core" or "skip")
+        if (scenarioSet is "core" or "skip" or "random" or "scan")
             return scenarioSet;
         throw new InvalidDataException($"Unknown historical scenario set: {scenarioSet}");
     }
@@ -209,7 +224,8 @@ internal static class HistoricalBenchmarkComparison
         if (newRun.Report.Metadata.CompletedUtc is null)
         {
             warnings.Add(
-                "The new suite was stopped after all 70 core scenarios completed; its CompletedUtc is null, but all 280 core records passed strict validation.");
+                $"The new suite was stopped after all {rows.Count} scenarios completed; its CompletedUtc is null, " +
+                $"but all {rows.Count * (newRun.Report.Metadata.Repetitions + 1)} records passed strict validation.");
         }
 
         List<HistoricalCategoryComparison> categories = rows
@@ -241,6 +257,33 @@ internal static class HistoricalBenchmarkComparison
             Categories = categories,
             Scenarios = rows,
         };
+    }
+
+    private static void ApplyPerformanceGate(HistoricalComparisonReport report, ComparisonOptions options)
+    {
+        report.MaxTimeRegressionPercent = options.MaxTimeRegressionPercent;
+        report.FailOnAllocationGrowth = options.FailOnAllocationGrowth;
+
+        foreach (HistoricalComparisonRow row in report.Scenarios)
+        {
+            if (options.MaxTimeRegressionPercent.HasValue &&
+                row.NewTimeDeltaPercent > options.MaxTimeRegressionPercent.Value &&
+                row.NewMinMilliseconds > row.OldMaxMilliseconds)
+            {
+                report.GateViolations.Add(
+                    $"Time {row.Category}/{row.Scenario}: {row.NewTimeDeltaPercent:+0.00;-0.00;0.00}% " +
+                    $"(old max {row.OldMaxMilliseconds:F3} ms, new min {row.NewMinMilliseconds:F3} ms).");
+            }
+
+            if (options.FailOnAllocationGrowth && row.NewMedianAllocatedBytes > row.OldMedianAllocatedBytes)
+            {
+                report.GateViolations.Add(
+                    $"Allocations {row.Category}/{row.Scenario}: old {row.OldMedianAllocatedBytes:F0}, " +
+                    $"new {row.NewMedianAllocatedBytes:F0} bytes.");
+            }
+        }
+
+        report.PassedPerformanceGate = report.GateViolations.Count == 0;
     }
 
     private static long RequireEqual(long oldValue, long newValue, ScenarioKey key, string valueName)
@@ -360,7 +403,16 @@ internal static class HistoricalBenchmarkComparison
         sb.AppendLine();
         sb.AppendLine("## Notes and validation");
         sb.AppendLine();
-        sb.AppendLine("All scenarios have three measured repetitions plus one warmup. Operations, returned counts, and checksums match between versions.");
+        sb.AppendLine($"All scenarios have {report.NewRun.Repetitions} measured repetitions plus one warmup. Operations, returned counts, and checksums match between versions.");
+        if (report.MaxTimeRegressionPercent.HasValue || report.FailOnAllocationGrowth)
+        {
+            sb.AppendLine($"- Performance gate passed: `{report.PassedPerformanceGate}`");
+            if (report.MaxTimeRegressionPercent.HasValue)
+                sb.AppendLine($"- Confirmed time-regression limit: `{report.MaxTimeRegressionPercent.Value:F2}%`");
+            sb.AppendLine($"- Fail on allocation growth: `{report.FailOnAllocationGrowth}`");
+            foreach (string violation in report.GateViolations)
+                sb.AppendLine("- Gate violation: " + violation);
+        }
         foreach (string warning in report.Warnings)
             sb.AppendLine($"- {warning}");
         return sb.ToString();
@@ -441,6 +493,8 @@ internal static class HistoricalBenchmarkComparison
         internal string NewResultsPath { get; private set; }
         internal string OldResultsPath { get; private set; }
         internal string OutputDirectory { get; private set; }
+        internal double? MaxTimeRegressionPercent { get; private set; }
+        internal bool FailOnAllocationGrowth { get; private set; }
 
         internal static ComparisonOptions Parse(string[] args)
         {
@@ -459,6 +513,19 @@ internal static class HistoricalBenchmarkComparison
                         break;
                     case "--output":
                         options.OutputDirectory = ReadValue(args, ref i, "--output");
+                        break;
+                    case "--max-time-regression-percent":
+                        string percentage = ReadValue(args, ref i, "--max-time-regression-percent");
+                        if (!Double.TryParse(percentage, NumberStyles.Float, CultureInfo.InvariantCulture,
+                                out double maxRegression) || maxRegression < 0 || !Double.IsFinite(maxRegression))
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(args),
+                                "--max-time-regression-percent must be a finite non-negative number.");
+                        }
+                        options.MaxTimeRegressionPercent = maxRegression;
+                        break;
+                    case "--fail-on-allocation-growth":
+                        options.FailOnAllocationGrowth = true;
                         break;
                     default:
                         throw new ArgumentException($"Unknown comparison option: {args[i]}", nameof(args));
@@ -500,6 +567,10 @@ internal sealed class HistoricalComparisonReport
     public int NewFasterCount { get; set; }
     public int OldFasterCount { get; set; }
     public int EqualCount { get; set; }
+    public double? MaxTimeRegressionPercent { get; set; }
+    public bool FailOnAllocationGrowth { get; set; }
+    public bool PassedPerformanceGate { get; set; } = true;
+    public List<string> GateViolations { get; set; } = new();
     public List<string> Warnings { get; set; } = new();
     public List<HistoricalCategoryComparison> Categories { get; set; } = new();
     public List<HistoricalComparisonRow> Scenarios { get; set; } = new();

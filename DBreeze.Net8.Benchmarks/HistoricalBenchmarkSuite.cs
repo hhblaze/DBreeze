@@ -12,6 +12,8 @@ internal sealed class HistoricalBenchmarkSuite
     private const string DateTimeTable = "t2";
     private const string UpdateTable = "t3";
     private const string RandomTable = "t5";
+    private const string PartialTable = "partial";
+    private const string NestedTableName = "nested";
     private const long DateStepTicks = TimeSpan.TicksPerSecond * 7;
 
     private static readonly DateTime BaseDate = new(1970, 1, 1);
@@ -46,11 +48,13 @@ internal sealed class HistoricalBenchmarkSuite
             Metadata = HistoricalBenchmarkMetadata.Create(options, _runDirectory),
         };
 
-        _oneMillion = options.Smoke ? 10_000 : 1_000_000;
+        _oneMillion = options.RandomOnly && options.RandomRecordCount.HasValue
+            ? options.RandomRecordCount.Value
+            : options.Smoke ? 10_000 : 1_000_000;
         _tenMillion = options.Smoke ? 100_000 : 10_000_000;
         _hundredThousand = options.Smoke ? 1_000 : 100_000;
         _twoHundredThousand = options.Smoke ? 2_000 : 200_000;
-        if (options.SkipOnly)
+        if (options.SkipOnly || options.ScanOnly)
         {
             _randomBulkKeys = Array.Empty<int>();
             _randomCommitKeys = Array.Empty<int>();
@@ -95,13 +99,24 @@ internal sealed class HistoricalBenchmarkSuite
     {
         try
         {
-            string suiteName = _options.SkipOnly ? "historical-skip" : "historical-core";
+            string suiteName = _options.RandomOnly
+                ? "historical-random"
+                : _options.SkipOnly ? "historical-skip" :
+                    _options.ScanOnly ? "historical-scan" : "historical-core";
             Log($"START {suiteName}; smoke={_options.Smoke}; repetitions={_options.Repetitions}; run={_runDirectory}");
             PersistReports();
 
-            if (_options.SkipOnly)
+            if (_options.RandomOnly)
+            {
+                RunRandomInsert(commitEach: false);
+            }
+            else if (_options.SkipOnly)
             {
                 RunSkipOnlyScenarios(PrepareSkipDatabase());
+            }
+            else if (_options.ScanOnly)
+            {
+                RunScanOnlyScenarios(PrepareSkipDatabase());
             }
             else
             {
@@ -111,6 +126,8 @@ internal sealed class HistoricalBenchmarkSuite
                 RunUpdate(commitEach: false);
                 RunRandomInsert(commitEach: false);
                 RunReadScenarios(readDatabasePath);
+                RunPartialReadScenario();
+                RunNestedReadScenario();
                 RunParallelWriters();
                 if (_options.SkipDurableCommits)
                 {
@@ -222,6 +239,31 @@ internal sealed class HistoricalBenchmarkSuite
         }
 
         RunSkipScenarios(engine, databasePath, _hundredThousand);
+    }
+
+    private void RunScanOnlyScenarios(string databasePath)
+    {
+        Log($"READ DATABASE {databasePath}");
+        using var engine = new DBreezeEngine(databasePath);
+        using (var transaction = engine.GetTransaction())
+        {
+            Ensure((long)transaction.Count(DateTimeTable) == _tenMillion,
+                $"Read database must contain {_tenMillion} rows.");
+        }
+
+        foreach (int take in new[] { 1_000, 100_000 })
+        {
+            string scenario = $"ForwardTake{take}Lazy";
+            RunReadScenario(engine, databasePath, "Read.Scan", scenario, take, () =>
+            {
+                var transaction = engine.GetTransaction();
+                return new PreparedHistoricalOperation(
+                    execute: () => Consume(transaction.SelectForward<DateTime, byte[]>(DateTimeTable),
+                        take, readValue: false),
+                    verify: outcome => EnsureOutcomeCount(outcome, take, scenario),
+                    dispose: transaction.Dispose);
+            });
+        }
     }
 
     private void RunCommitEachInsert()
@@ -549,6 +591,114 @@ internal sealed class HistoricalBenchmarkSuite
                 });
             }
         }
+    }
+
+    private void RunPartialReadScenario()
+    {
+        const int valueLength = 512;
+        const uint startIndex = 123;
+        const uint partLength = 64;
+        int recordCount = _hundredThousand;
+        string category = "Read.Partial";
+        string scenario = $"SequentialRead{recordCount}Part{partLength}";
+        string databasePath = CreateDatabasePath(category, scenario, "fixture");
+        int[] keys = Enumerable.Range(0, recordCount).ToArray();
+
+        using var engine = new DBreezeEngine(databasePath);
+        using (var transaction = engine.GetTransaction())
+        {
+            byte[] value = new byte[valueLength];
+            for (int i = 0; i < value.Length; i++)
+                value[i] = (byte)i;
+            for (int i = 0; i < recordCount; i++)
+                transaction.Insert(PartialTable, i, value);
+            transaction.Commit();
+        }
+
+        long expectedChecksum = recordCount * (partLength + (byte)startIndex);
+        RunReadScenario(engine, databasePath, category, scenario, recordCount, () =>
+        {
+            var transaction = engine.GetTransaction();
+            var rows = new Row<int, byte[]>[recordCount];
+            for (int i = 0; i < rows.Length; i++)
+            {
+                rows[i] = transaction.Select<int, byte[]>(PartialTable, keys[i]);
+                if (!rows[i].Exists)
+                    throw new InvalidOperationException("Partial-read benchmark fixture is missing a row.");
+            }
+
+            return new PreparedHistoricalOperation(
+                execute: () =>
+                {
+                    long count = 0;
+                    long checksum = 0;
+                    foreach (Row<int, byte[]> row in rows)
+                    {
+                        byte[] part = row.GetValuePart(startIndex, partLength);
+                        if (part == null || part.Length != partLength)
+                            throw new InvalidOperationException("Partial-read benchmark returned an invalid slice.");
+                        count++;
+                        checksum += part.Length + part[0];
+                    }
+                    return new HistoricalOperationOutcome(count, checksum);
+                },
+                verify: outcome =>
+                {
+                    Ensure(outcome.Count == recordCount,
+                        $"{scenario} returned {outcome.Count} rows; expected {recordCount}.");
+                    Ensure(outcome.Checksum == expectedChecksum,
+                        $"{scenario} checksum is {outcome.Checksum}; expected {expectedChecksum}.");
+                },
+                dispose: transaction.Dispose);
+        });
+    }
+
+    private void RunNestedReadScenario()
+    {
+        int recordCount = _hundredThousand;
+        string category = "Read.Nested";
+        string scenario = $"NestedForward{recordCount}Value";
+        string databasePath = CreateDatabasePath(category, scenario, "fixture");
+
+        using var engine = new DBreezeEngine(databasePath);
+        using (var transaction = engine.GetTransaction())
+        using (NestedTable nested = transaction.InsertTable(NestedTableName, 1, 0))
+        {
+            for (int i = 0; i < recordCount; i++)
+                nested.Insert(i, i);
+            transaction.Commit();
+        }
+
+        long expectedChecksum = (long)recordCount * (recordCount - 1) / 2;
+        RunReadScenario(engine, databasePath, category, scenario, recordCount, () =>
+        {
+            var transaction = engine.GetTransaction();
+            NestedTable nested = transaction.SelectTable(NestedTableName, 1, 0);
+            return new PreparedHistoricalOperation(
+                execute: () =>
+                {
+                    long count = 0;
+                    long checksum = 0;
+                    foreach (Row<int, int> row in nested.SelectForward<int, int>())
+                    {
+                        count++;
+                        checksum += row.Value;
+                    }
+                    return new HistoricalOperationOutcome(count, checksum);
+                },
+                verify: outcome =>
+                {
+                    Ensure(outcome.Count == recordCount,
+                        $"{scenario} returned {outcome.Count} rows; expected {recordCount}.");
+                    Ensure(outcome.Checksum == expectedChecksum,
+                        $"{scenario} checksum is {outcome.Checksum}; expected {expectedChecksum}.");
+                },
+                dispose: () =>
+                {
+                    nested.Dispose();
+                    transaction.Dispose();
+                });
+        });
     }
 
     private void RunParallelWriters()

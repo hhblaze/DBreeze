@@ -40,6 +40,7 @@ namespace DBreeze.LianaTrie
         /// If ValueStartPointer == -1, has no meaning
         /// </summary>
         public uint ValueFullLength = 0;
+        internal bool ValueIsNull;
 
         DateTime TableFixTime = DateTime.UtcNow;
 
@@ -123,8 +124,8 @@ namespace DBreeze.LianaTrie
                 if (this.Value == null)
                     return null;
 
-                if (length == 0)
-                    return new byte[0];
+                if (this.Value.Length == 0 || length == 0)
+                    return Array.Empty<byte>();
 
                 if (startIndex > (uint)this.Value.Length)
                     return null;
@@ -133,14 +134,37 @@ namespace DBreeze.LianaTrie
                 if (length > availableLength)
                     length = availableLength;
 
-                byte[] result = new byte[(int)length];
-                if (length > 0)
-                    Buffer.BlockCopy(this.Value, (int)startIndex, result, 0, (int)length);
+                if (length == 0)
+                    return Array.Empty<byte>();
+
+                byte[] result = GC.AllocateUninitializedArray<byte>((int)length);
+                Buffer.BlockCopy(this.Value, (int)startIndex, result, 0, (int)length);
                 return result;
             }
 
             if (Exists)
+            {
+                if (ValueStartPointer >= 0 && ValueFullLength <= Int32.MaxValue)
+                {
+                    if (ValueIsNull)
+                        return null;
+                    if (ValueFullLength == 0 || length == 0)
+                        return Array.Empty<byte>();
+                    if (startIndex > ValueFullLength)
+                        return null;
+
+                    uint availableLength = ValueFullLength - startIndex;
+                    if (length > availableLength)
+                        length = availableLength;
+                    if (length == 0)
+                        return Array.Empty<byte>();
+
+                    return _root.Tree.Storage.Table_Read(useCache,
+                        checked(ValueStartPointer + startIndex), (int)length);
+                }
+
                 return this._root.Tree.Cache.ReadValuePartially(this.LinkToValue, startIndex, length, useCache, out ValueStartPointer, out ValueFullLength);
+            }
 
             return null;
         }

@@ -18,7 +18,7 @@ namespace DBreeze.Transactions
     /// Binary keys are copied because they participate in dictionary identity; converted values
     /// are borrowed until Flush or Commit and must not be mutated by the caller meanwhile.
     /// </summary>
-    public sealed class RandomKeySorter
+    public class RandomKeySorter
     {
         private readonly Dictionary<string, TableBatch> _tables =
             new Dictionary<string, TableBatch>(StringComparer.Ordinal);

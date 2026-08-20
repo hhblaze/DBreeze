@@ -1650,46 +1650,79 @@ internal static class Program
     private static void PartialValueRangesAreOverflowSafe()
     {
         using var engine = CreateMemoryEngine();
-        byte[] key = { 1 };
+        byte[] valueKey = { 1 };
+        byte[] nullKey = { 2 };
+        byte[] emptyKey = { 3 };
+        byte[] missingKey = { 4 };
         byte[] value = Enumerable.Range(0, 10).Select(static x => (byte)x).ToArray();
 
         using (var transaction = engine.GetTransaction())
         {
-            transaction.Insert("partial", key, value);
-            transaction.Insert<byte[], byte[]>("partial", new byte[] { 2 }, null);
+            transaction.Insert("partial", valueKey, value);
+            transaction.Insert<byte[], byte[]>("partial", nullKey, null);
+            transaction.Insert("partial", emptyKey, Array.Empty<byte>());
             transaction.Commit();
         }
 
-        using (var transaction = engine.GetTransaction())
+        foreach (bool lazyLoading in new[] { true, false })
         {
-            var lazyRow = transaction.Select<byte[], byte[]>("partial", key);
-            AssertSequenceEqual(value.AsSpan(2).ToArray(), lazyRow.GetValuePart(2, uint.MaxValue),
-                "Lazy partial read with overflowing requested length.");
-            Assert(lazyRow.GetValuePart(uint.MaxValue, uint.MaxValue) == null,
-                "Out-of-range lazy partial read must return null.");
-            AssertEqual(0, lazyRow.GetValuePart(uint.MaxValue, 0).Length,
-                "Zero-length partial read must remain empty.");
-            Assert(transaction.Select<byte[], byte[]>("partial", new byte[] { 2 }).Value == null,
-                "Lazy null value was not preserved.");
-        }
+            using var transaction = engine.GetTransaction();
+            transaction.ValuesLazyLoadingIsOn = lazyLoading;
+            string mode = lazyLoading ? "lazy" : "eager";
 
-        using (var transaction = engine.GetTransaction())
-        {
-            transaction.ValuesLazyLoadingIsOn = false;
-            var eagerRow = transaction.Select<byte[], byte[]>("partial", key);
-            AssertSequenceEqual(value.AsSpan(2).ToArray(), eagerRow.GetValuePart(2),
-                "Eager GetValuePart(startIndex) ignored startIndex.");
-            Assert(eagerRow.GetValuePart(uint.MaxValue, uint.MaxValue) == null,
-                "Out-of-range eager partial read must return null.");
-            Assert(transaction.Select<byte[], byte[]>("partial", new byte[] { 2 }).Value == null,
-                "Eager null value was not preserved.");
+            var valueRow = transaction.Select<byte[], byte[]>("partial", valueKey);
+            AssertSequenceEqual(value.AsSpan(2).ToArray(), valueRow.GetValuePart(2, uint.MaxValue),
+                $"{mode}: overflowing requested length.");
+            AssertSequenceEqual(value.AsSpan(2).ToArray(), valueRow.GetValuePart(2),
+                $"{mode}: GetValuePart(startIndex) must honor startIndex.");
+            AssertSequenceEqual(value.AsSpan(5).ToArray(), valueRow.GetValuePart(5, uint.MaxValue),
+                $"{mode}: uint.MaxValue length must be clamped without wrapping.");
+            AssertEmpty(valueRow.GetValuePart(0, 0), $"{mode}: zero-length slice at start.");
+            AssertEmpty(valueRow.GetValuePart(uint.MaxValue, 0),
+                $"{mode}: zero-length slice outside the value.");
+            AssertEmpty(valueRow.GetValuePart((uint)value.Length, 1),
+                $"{mode}: slice starting exactly at the end.");
+            AssertEmpty(valueRow.GetValuePart((uint)value.Length, uint.MaxValue),
+                $"{mode}: overflowing slice starting exactly at the end.");
+            Assert(valueRow.GetValuePart((uint)value.Length + 1, 1) == null,
+                $"{mode}: start past the end must return null.");
+            Assert(valueRow.GetValuePart(uint.MaxValue, uint.MaxValue) == null,
+                $"{mode}: uint.MaxValue start must return null.");
+            Assert(valueRow.GetValuePart(uint.MaxValue) == null,
+                $"{mode}: one-argument uint.MaxValue start must return null.");
+
+            var nullRow = transaction.Select<byte[], byte[]>("partial", nullKey);
+            Assert(nullRow.GetValuePart(0, 0) == null, $"{mode}: null with zero length.");
+            Assert(nullRow.GetValuePart(uint.MaxValue, 0) == null,
+                $"{mode}: null with out-of-range zero-length slice.");
+            Assert(nullRow.GetValuePart(0, uint.MaxValue) == null, $"{mode}: null with maximum length.");
+            Assert(nullRow.GetValuePart(0) == null, $"{mode}: one-argument null slice.");
+
+            var emptyRow = transaction.Select<byte[], byte[]>("partial", emptyKey);
+            AssertEmpty(emptyRow.GetValuePart(0, 0), $"{mode}: empty value at origin.");
+            AssertEmpty(emptyRow.GetValuePart(1, 0), $"{mode}: empty value zero-length out of range.");
+            AssertEmpty(emptyRow.GetValuePart(1, 1), $"{mode}: empty value non-zero slice out of range.");
+            AssertEmpty(emptyRow.GetValuePart(uint.MaxValue, uint.MaxValue),
+                $"{mode}: empty value at uint limits.");
+            AssertEmpty(emptyRow.GetValuePart(uint.MaxValue),
+                $"{mode}: one-argument empty value at uint limit.");
+
+            var missingRow = transaction.Select<byte[], byte[]>("partial", missingKey);
+            Assert(missingRow.GetValuePart(0, 0) == null, $"{mode}: missing row with zero length.");
+            Assert(missingRow.GetValuePart(0) == null, $"{mode}: missing row one-argument slice.");
         }
 
         using (var transaction = engine.GetTransaction())
         {
             AssertThrows<ArgumentOutOfRangeException>(() =>
-                transaction.InsertPart("partial", key, new byte[] { 1 }, uint.MaxValue));
+                transaction.InsertPart("partial", valueKey, new byte[] { 1 }, uint.MaxValue));
         }
+    }
+
+    private static void AssertEmpty(byte[] actual, string message)
+    {
+        if (actual == null || actual.Length != 0)
+            throw new InvalidOperationException($"{message} Expected an empty array; actual: {Format(actual)}.");
     }
 
     private static void ReadRootRefreshesAfterRapidCommits()

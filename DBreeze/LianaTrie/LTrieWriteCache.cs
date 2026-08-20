@@ -1451,6 +1451,9 @@ namespace DBreeze.LianaTrie
             if (length > availableLength)
                 length = availableLength;
 
+            if (length == 0)
+                return new byte[0];
+
             //--------------------------------------------------------
 
             protocol = data[0];

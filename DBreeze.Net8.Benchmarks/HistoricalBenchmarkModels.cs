@@ -13,6 +13,9 @@ internal sealed class HistoricalBenchmarkOptions
     internal bool Smoke { get; private set; }
     internal bool SkipDurableCommits { get; private set; }
     internal bool SkipOnly { get; private set; }
+    internal bool ScanOnly { get; private set; }
+    internal bool RandomOnly { get; private set; }
+    internal int? RandomRecordCount { get; private set; }
 
     internal static HistoricalBenchmarkOptions Parse(string[] args)
     {
@@ -26,6 +29,12 @@ internal sealed class HistoricalBenchmarkOptions
                     break;
                 case "--historical-skip":
                     options.SkipOnly = true;
+                    break;
+                case "--historical-scan":
+                    options.ScanOnly = true;
+                    break;
+                case "--historical-random":
+                    options.RandomOnly = true;
                     break;
                 case "--smoke":
                     options.Smoke = true;
@@ -50,16 +59,36 @@ internal sealed class HistoricalBenchmarkOptions
 
                     options.Repetitions = repetitions;
                     break;
+                case "--random-records":
+                    string recordCount = ReadValue(args, ref i, "--random-records");
+                    if (!int.TryParse(recordCount, NumberStyles.None, CultureInfo.InvariantCulture,
+                            out int randomRecords) || randomRecords < 1 || randomRecords > 10_000_000)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(args),
+                            "--random-records must be an integer between 1 and 10000000.");
+                    }
+                    options.RandomRecordCount = randomRecords;
+                    break;
                 default:
                     throw new ArgumentException($"Unknown historical benchmark option: {args[i]}", nameof(args));
             }
         }
 
         options.RootPath = Path.GetFullPath(options.RootPath);
+        int selectedModes = (options.SkipOnly ? 1 : 0) + (options.ScanOnly ? 1 : 0) +
+            (options.RandomOnly ? 1 : 0);
+        if (selectedModes > 1)
+            throw new ArgumentException("Only one historical focused mode can be selected.", nameof(args));
+        if (options.RandomRecordCount.HasValue && !options.RandomOnly)
+            throw new ArgumentException("--random-records is valid only with --historical-random.", nameof(args));
         options.RunId ??= DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
-            + (options.SkipOnly
-                ? options.Smoke ? "-net8-skip-smoke" : "-net8-skip"
-                : options.Smoke ? "-net8-smoke" : "-net8");
+            + (options.RandomOnly
+                ? options.Smoke ? "-net8-random-smoke" : "-net8-random"
+                : options.SkipOnly
+                    ? options.Smoke ? "-net8-skip-smoke" : "-net8-skip"
+                    : options.ScanOnly
+                        ? options.Smoke ? "-net8-scan-smoke" : "-net8-scan"
+                    : options.Smoke ? "-net8-smoke" : "-net8");
         ValidateRunId(options.RunId);
         return options;
     }
@@ -128,7 +157,8 @@ internal sealed class HistoricalBenchmarkMetadata
             StartedUtc = DateTime.UtcNow,
             Smoke = options.Smoke,
             Repetitions = options.Repetitions,
-            ScenarioSet = options.SkipOnly ? "skip" : "core",
+            ScenarioSet = options.RandomOnly ? "random" : options.SkipOnly ? "skip" :
+                options.ScanOnly ? "scan" : "core",
             Framework = RuntimeInformation.FrameworkDescription,
             RuntimeVersion = Environment.Version.ToString(),
             OS = RuntimeInformation.OSDescription,

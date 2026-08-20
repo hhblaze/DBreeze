@@ -3,697 +3,962 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
   <title>DBreeze — архитектурный аудит LianaTrie</title>
   <style>
     :root {
-      --bg: #f3f6f8;
+      color-scheme: light dark;
+      --bg: #f4f7f8;
       --surface: #ffffff;
-      --surface-2: #edf2f5;
-      --text: #18242b;
-      --muted: #5b6b74;
-      --line: #d7e0e5;
-      --accent: #006d77;
-      --accent-2: #0a9396;
-      --good: #18794e;
-      --warn: #a15c00;
-      --danger: #b42318;
-      --info: #175cd3;
-      --removed: #6b4fa1;
-      --shadow: 0 12px 32px rgba(24, 36, 43, .08);
-      --radius: 14px;
-      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --surface-2: #eef3f4;
+      --text: #172125;
+      --muted: #607077;
+      --line: #d8e1e4;
+      --accent: #006c72;
+      --accent-2: #0e8790;
+      --good: #137a45;
+      --warn: #a45d00;
+      --danger: #b52828;
+      --info: #265fa5;
+      --shadow: 0 12px 34px rgba(22, 49, 55, .09);
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      --sans: Inter, "Segoe UI", system-ui, sans-serif;
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #101719;
+        --bg: #11191c;
         --surface: #172125;
         --surface-2: #202d32;
         --text: #e8f0f2;
-        --muted: #a5b4ba;
-        --line: #34454c;
-        --accent: #5bc0c3;
-        --accent-2: #77d0d2;
-        --good: #65d6a2;
-        --warn: #ffbd66;
-        --danger: #ff8f87;
-        --info: #84adff;
-        --removed: #c2a7ef;
-        --shadow: 0 12px 32px rgba(0, 0, 0, .28);
+        --muted: #a8b8bd;
+        --line: #33454b;
+        --accent: #6ed5dc;
+        --accent-2: #8de6eb;
+        --good: #72d69d;
+        --warn: #f2b35d;
+        --danger: #ff8585;
+        --info: #86b7f3;
+        --shadow: 0 16px 44px rgba(0, 0, 0, .26);
       }
     }
-
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
+      background:
+        radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 30rem),
+        var(--bg);
       color: var(--text);
-      background: var(--bg);
-      font: 16px/1.58 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-family: var(--sans);
+      line-height: 1.58;
     }
-    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-    a:hover { color: var(--accent-2); }
-    code, .mono { font-family: var(--mono); font-size: .92em; }
+    a { color: var(--accent); text-underline-offset: .16em; }
     code {
-      padding: .08rem .3rem;
+      font-family: var(--mono);
+      font-size: .91em;
+      overflow-wrap: anywhere;
+      padding: .08em .3em;
       border: 1px solid var(--line);
       border-radius: 5px;
       background: var(--surface-2);
-      overflow-wrap: anywhere;
     }
-    h1, h2, h3 { line-height: 1.18; letter-spacing: -.02em; }
-    h2 { margin-top: 0; font-size: clamp(1.45rem, 2.4vw, 2rem); }
-    h3 { margin: 1.5rem 0 .6rem; }
-    p { margin: .6rem 0 1rem; }
-    ul, ol { padding-left: 1.35rem; }
-    li + li { margin-top: .38rem; }
-
     .hero {
-      color: #f4ffff;
+      padding: 4rem max(1.5rem, calc((100vw - 2360px) / 2));
+      color: #f5ffff;
       background:
-        radial-gradient(circle at 85% 10%, rgba(148, 210, 189, .28), transparent 32rem),
-        linear-gradient(135deg, #073b4c, #006d77 62%, #0a9396);
-      padding: 3.8rem max(1.25rem, calc((100vw - 1240px) / 2));
+        linear-gradient(112deg, rgba(0, 55, 61, .97), rgba(0, 111, 119, .91)),
+        repeating-linear-gradient(45deg, transparent 0 18px, rgba(255,255,255,.035) 18px 19px);
+      border-bottom: 4px solid #6ed5dc;
     }
-    .hero .eyebrow { opacity: .82; text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; }
-    .hero h1 { margin: .55rem 0 1rem; max-width: 920px; font-size: clamp(2rem, 4.5vw, 4rem); }
-    .hero p { max-width: 900px; font-size: 1.08rem; opacity: .94; }
-    .hero code { color: inherit; background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.25); }
-    .meta { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.4rem; }
-    .meta span { padding: .32rem .65rem; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; font-size: .86rem; }
-
-    .layout { max-width: 1320px; margin: 0 auto; padding: 1.4rem; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1.4rem; }
+    .hero .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .8rem;
+      opacity: .78;
+    }
+    .hero h1 {
+      max-width: 1700px;
+      margin: .5rem 0 1rem;
+      font-size: clamp(2.15rem, 3.2vw, 4.35rem);
+      line-height: 1.06;
+    }
+    .hero p { max-width: 1560px; margin: .55rem 0; font-size: 1.08rem; opacity: .94; }
+    .hero code { color: inherit; background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.24); }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: .62rem 1.25rem; margin-top: 1.25rem; font-size: .88rem; opacity: .88; }
+    .layout {
+      width: min(2440px, 100%);
+      margin: 0 auto;
+      padding: 1.55rem;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 1.55rem;
+      align-items: start;
+    }
     nav {
-      position: sticky; top: 1rem; align-self: start;
-      padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow: auto;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--shadow);
     }
-    nav strong { display: block; margin-bottom: .65rem; }
-    nav a { display: block; padding: .33rem .45rem; border-radius: 7px; text-decoration: none; font-size: .91rem; }
-    nav a:hover { background: var(--surface-2); }
+    nav strong { display: block; margin: .1rem .55rem .55rem; }
+    nav a {
+      display: block;
+      padding: .42rem .55rem;
+      border-radius: 7px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .86rem;
+    }
+    nav a:hover { color: var(--accent); background: var(--surface-2); }
     main { min-width: 0; }
     section {
-      margin-bottom: 1.4rem; padding: clamp(1.05rem, 2vw, 1.65rem);
-      border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+      margin-bottom: 1.35rem;
+      padding: 1.35rem 1.45rem;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      scroll-margin-top: 1rem;
     }
-    .lead { font-size: 1.08rem; }
-    .callout { margin: 1rem 0; padding: .9rem 1rem; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; }
-    .callout.warning { border-left-color: var(--warn); }
-    .callout.danger { border-left-color: var(--danger); }
-
-    .stats { display: grid; grid-template-columns: repeat(5, minmax(125px, 1fr)); gap: .8rem; margin: 1.1rem 0; }
-    .stat { padding: .9rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-    .stat b { display: block; font-size: 1.7rem; line-height: 1; margin-bottom: .35rem; }
-    .stat span { color: var(--muted); font-size: .85rem; }
-
-    .flow { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 1.5rem; margin: 1.2rem 0; }
-    .flow-step { position: relative; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-    .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -1.15rem; top: 42%; color: var(--accent); font-size: 1.5rem; font-weight: 700; }
-    .flow-step b { display: block; color: var(--accent); margin-bottom: .35rem; }
-    .flow-step small { color: var(--muted); }
-
-    .legend, .filters { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
-    .badge { display: inline-flex; align-items: center; gap: .25rem; padding: .16rem .5rem; border: 1px solid currentColor; border-radius: 999px; font-size: .76rem; white-space: nowrap; }
+    h2 { margin: 0 0 .8rem; font-size: 1.42rem; }
+    h3 { margin: 1.1rem 0 .45rem; font-size: 1.05rem; }
+    p { margin: .55rem 0; }
+    ul { margin: .5rem 0; padding-left: 1.35rem; }
+    li + li { margin-top: .28rem; }
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .danger { color: var(--danger); }
+    .muted { color: var(--muted); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(145px, 1fr));
+      gap: .8rem;
+      margin: 1rem 0;
+    }
+    .stat, .card {
+      min-width: 0;
+      padding: .9rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-2);
+    }
+    .stat strong { display: block; font-size: 1.55rem; line-height: 1.2; color: var(--accent); }
+    .stat span { display: block; margin-top: .22rem; color: var(--muted); font-size: .82rem; }
+    .grid-2, .grid-3 {
+      display: grid;
+      gap: .9rem;
+      margin: .8rem 0;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card h3 { margin-top: 0; }
+    .callout {
+      margin: .9rem 0;
+      padding: .82rem 1rem;
+      border-left: 4px solid var(--info);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--info) 8%, var(--surface));
+    }
+    .callout.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 8%, var(--surface)); color: var(--text); }
+    .callout.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--surface)); color: var(--text); }
+    .callout.danger { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); color: var(--text); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(165px, 1fr));
+      gap: 1.25rem;
+      margin: 1rem 0;
+    }
+    .flow .node {
+      position: relative;
+      padding: .86rem;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface-2);
+    }
+    .flow .node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+    .flow strong { display: block; color: var(--accent); }
+    .flow small { display: block; margin-top: .3rem; color: var(--muted); }
+    .badge {
+      display: inline-block;
+      margin: .1rem .18rem .1rem 0;
+      padding: .16rem .46rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      font-size: .72rem;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
     .preserved { color: var(--good); }
     .replaced { color: var(--info); }
-    .fixed { color: var(--warn); }
-    .removed { color: var(--removed); }
-    .risk-high { color: var(--danger); font-weight: 650; }
-    .risk-medium { color: var(--warn); }
+    .fixed { color: var(--accent); }
+    .removed { color: var(--muted); }
+    .inherited { color: var(--danger); }
+    .open-risk { color: var(--warn); }
+    .proof { color: var(--muted); border-style: dashed; }
+    .sources { display: inline-block; margin-top: .28rem; font-size: .78rem; white-space: nowrap; }
+    .sources a { margin-right: .32rem; }
+    .risk-high { color: var(--danger); font-weight: 680; }
+    .risk-medium { color: var(--warn); font-weight: 620; }
     .risk-low { color: var(--muted); }
-    .proof { color: var(--muted); border-style: dashed; margin: .12rem .14rem .12rem 0; }
-
-    .filters { margin: 1rem 0; padding: .8rem; background: var(--surface-2); border-radius: 12px; }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .62rem;
+      align-items: end;
+      margin: 1rem 0;
+      padding: .82rem;
+      background: var(--surface-2);
+      border-radius: 12px;
+    }
     .filters label { display: grid; gap: .2rem; color: var(--muted); font-size: .78rem; }
     .filters input, .filters select, .filters button {
-      min-height: 38px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .42rem .58rem; font: inherit;
+      min-height: 2.25rem;
+      padding: .38rem .58rem;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--text);
+      background: var(--surface);
+      font: inherit;
+      font-size: .85rem;
     }
-    .filters input { width: min(390px, 72vw); }
-    .filters button { cursor: pointer; color: var(--accent); font-weight: 650; }
-    #visible-count { margin-left: auto; color: var(--muted); font-size: .86rem; }
-
+    .filters input { width: min(560px, 70vw); }
+    .filters button { cursor: pointer; color: var(--accent); font-weight: 680; }
+    #visible-count { margin-left: auto; padding-bottom: .4rem; color: var(--muted); font-size: .84rem; }
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
-    table { width: 100%; min-width: 1180px; border-collapse: collapse; font-size: .89rem; }
-    th, td { padding: .72rem .68rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
-    th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .045em; }
-    tbody tr:last-child td { border-bottom: 0; }
-    tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
-    td:first-child { width: 5rem; font-family: var(--mono); color: var(--muted); }
-    td:nth-child(2) { min-width: 165px; }
-    td:nth-child(3), td:nth-child(4) { min-width: 240px; }
-    td:nth-child(5) { min-width: 285px; }
-    td:nth-child(6) { min-width: 245px; }
-    .hidden { display: none !important; }
-
-    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-    .card { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-    .card h3 { margin-top: 0; }
-    .priority { display: grid; grid-template-columns: auto 1fr; gap: .7rem 1rem; align-items: start; }
-    .priority .p { min-width: 2.5rem; text-align: center; padding: .22rem .45rem; border-radius: 7px; color: white; font-weight: 750; }
-    .p0 { background: var(--danger); } .p1 { background: var(--warn); } .p2 { background: var(--info); }
-    details { border-top: 1px solid var(--line); padding: .65rem 0; }
-    details:first-of-type { border-top: 0; }
-    summary { cursor: pointer; font-weight: 680; }
-    footer { max-width: 1320px; margin: 0 auto; padding: 0 1.4rem 2rem; color: var(--muted); font-size: .84rem; }
-
-    @media (max-width: 980px) {
-      .layout { grid-template-columns: 1fr; }
-      nav { position: static; columns: 2; }
-      nav strong { column-span: all; }
-      .stats { grid-template-columns: repeat(2, minmax(125px, 1fr)); }
-      .flow { grid-template-columns: 1fr; gap: .75rem; }
-      .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -1.25rem; }
-      .grid-2 { grid-template-columns: 1fr; }
+    table { width: 100%; min-width: 1780px; border-collapse: collapse; font-size: .86rem; }
+    th, td { padding: .7rem .66rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
     }
-    @media (max-width: 560px) {
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+    td:nth-child(1) { width: 4.6rem; font-family: var(--mono); color: var(--muted); }
+    td:nth-child(2) { min-width: 185px; }
+    td:nth-child(3), td:nth-child(4) { min-width: 305px; }
+    td:nth-child(5) { min-width: 340px; }
+    td:nth-child(6) { min-width: 300px; }
+    .compact { min-width: 1100px; }
+    .compact td, .compact th { padding: .62rem; }
+    details {
+      margin: .65rem 0;
+      padding: .7rem .85rem;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--surface-2);
+    }
+    summary { cursor: pointer; color: var(--accent); font-weight: 680; }
+    .priority {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: .65rem .9rem;
+      align-items: start;
+      margin: .7rem 0;
+    }
+    .priority .p {
+      min-width: 2.8rem;
+      padding: .2rem .46rem;
+      border-radius: 7px;
+      color: white;
+      text-align: center;
+      font-weight: 760;
+      background: var(--danger);
+    }
+    .priority .p1 { background: var(--warn); }
+    .priority .p2 { background: var(--info); }
+    footer { width: min(2440px, 100%); margin: 0 auto; padding: 0 1.55rem 2rem; color: var(--muted); font-size: .84rem; }
+    @media (min-width: 2100px) {
+      section { padding: 1.55rem 1.7rem; }
+      table { font-size: .89rem; }
+    }
+    @media (max-width: 1650px) {
+      .layout { grid-template-columns: 270px minmax(0, 1fr); }
+      .stats { grid-template-columns: repeat(3, minmax(145px, 1fr)); }
+      .flow { grid-template-columns: repeat(3, minmax(165px, 1fr)); }
+      .flow .node:nth-child(3)::after { display: none; }
+    }
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: static; max-height: none; columns: 2; }
+      nav strong { column-span: all; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr 1fr; gap: .7rem; }
+      .flow .node::after { display: none; }
+    }
+    @media (max-width: 720px) {
+      .hero { padding: 1.5rem 1rem; }
+      .layout { padding: .75rem; }
+      section { padding: 1rem; }
       nav { columns: 1; }
-      .stats { grid-template-columns: 1fr 1fr; }
+      .stats, .grid-2, .flow { grid-template-columns: 1fr; }
       #visible-count { width: 100%; margin-left: 0; }
     }
-
     @media print {
-      :root { --bg: #fff; --surface: #fff; --surface-2: #f3f3f3; --text: #111; --muted: #444; --line: #bbb; }
-      body { font-size: 10pt; }
-      .hero { color: #111; background: none; padding: 1rem 0; }
-      .hero code { background: #eee; border-color: #bbb; }
-      .layout { display: block; max-width: none; padding: 0; }
+      :root { color-scheme: light; }
+      body { background: white; color: #111; }
+      .hero { color: #111; background: none; padding: 1rem 0; border-bottom: 2px solid #777; }
+      .layout { display: block; width: auto; padding: 0; }
       nav, .filters { display: none; }
-      section { box-shadow: none; break-inside: avoid; margin: 0 0 .7rem; padding: .7rem; }
+      section { box-shadow: none; break-inside: avoid; }
       .table-wrap { overflow: visible; }
-      table { min-width: 0; font-size: 7.2pt; }
-      th { position: static; }
-      tr { break-inside: avoid; }
-      a { color: inherit; text-decoration: none; }
-      .flow-step::after { color: #333 !important; }
-      footer { padding: .5rem 0; }
+      table { min-width: 0; font-size: 7pt; }
+      a { color: #111; text-decoration: none; }
     }
   </style>
 </head>
 <body>
   <header class="hero">
-    <div class="eyebrow">DBreeze / Architecture audit</div>
-    <h1>LianaTrie: что действительно изменилось после рефакторинга</h1>
-    <p>Аудит восстанавливает архитектурное намерение эталона и отделяет потерю функциональности от замены механизма, исправления старого side effect и Net8-only оптимизации.</p>
-    <div class="meta">
-      <span>Эталон: <code>a83424e</code></span>
-      <span>Текущий HEAD: <code>a5d76d6</code> + working tree</span>
-      <span>Дата проверки: 2026-08-19</span>
-      <span>Формат БД: без изменений</span>
+    <div class="eyebrow">DBreeze · refactoring review · 20 августа 2026</div>
+    <h1>Архитектурный аудит LianaTrie: текущая версия против эталона</h1>
+    <p>Аудит отвечает не только на вопрос «какие строки изменились», а на вопрос «какие инженерные решения исчезли, сохранились или были заменены эквивалентом». Главные границы: пользовательский контракт, old↔new disk compatibility, retained memory и performance envelope.</p>
+    <p>Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code> (<code>a83424e2</code>). Текущий код: shared <code>DBreeze/LianaTrie</code> и .NET 8 specialization <code>DBreeze.Net8/LianaTrie</code>, HEAD <code>7fba0276c</code> плюс проверенный working tree.</p>
+    <div class="hero-meta">
+      <span>Отчёт автономный: без CDN и внешнего JavaScript</span>
+      <span>Максимальная ширина: 2440 px</span>
+      <span>Матрица: 32 решения</span>
+      <span>Статус: контрактных и format-регрессий не подтверждено</span>
     </div>
   </header>
 
   <div class="layout">
-    <nav aria-label="Оглавление">
-      <strong>Содержание</strong>
-      <a href="#verdict">Главный вывод</a>
-      <a href="#baseline">База сравнения</a>
-      <a href="#flow">Карта lifecycle</a>
-      <a href="#matrix">Матрица решений</a>
-      <a href="#removed">Что удалено</a>
-      <a href="#preserved">Что сохранено иначе</a>
-      <a href="#side-effects">Исправленные side effects</a>
-      <a href="#risks">Открытые риски</a>
-      <a href="#boundaries">Границы слоёв</a>
-      <a href="#platforms">Common и Net8</a>
-      <a href="#evidence">Доказательства</a>
-      <a href="#recommendations">Рекомендации</a>
+    <nav aria-label="Навигация по аудиту">
+      <strong>Разделы</strong>
+      <a href="#verdict">1. Вердикт</a>
+      <a href="#method">2. Метод и охват</a>
+      <a href="#binding">3. Project bindings</a>
+      <a href="#flow">4. Lifecycle и flush</a>
+      <a href="#invariants">5. Disk-инварианты</a>
+      <a href="#catalog">6. Матрица решений</a>
+      <a href="#not-removed">7. Что не было удалено</a>
+      <a href="#cache">8. Cache и visibility</a>
+      <a href="#traversal">9. Итераторы</a>
+      <a href="#nested">10. Nested tables</a>
+      <a href="#partial">11. Partial reads</a>
+      <a href="#memory">12. Память</a>
+      <a href="#performance">13. Производительность</a>
+      <a href="#compatibility">14. API и disk evidence</a>
+      <a href="#risks">15. Риски и backlog</a>
+      <a href="#conclusion">16. Заключение</a>
     </nav>
 
     <main>
       <section id="verdict">
-        <h2>Главный вывод</h2>
-        <p class="lead"><strong>Активный функциональный механизм LianaTrie не был доказанно потерян.</strong> Самое заметное «исчезновение cache» является заменой identity: committed snapshot cache generation nodes сохранён, но вместо полного logical path в Base64 индексируется физическим pointer.</p>
-        <div class="stats" aria-label="Сводка классификации">
-          <div class="stat"><b>24</b><span>архитектурных решения</span></div>
-          <div class="stat"><b>8</b><span>сохранено</span></div>
-          <div class="stat"><b>8</b><span>заменено</span></div>
-          <div class="stat"><b>7</b><span>исправлено</span></div>
-          <div class="stat"><b>1</b><span>pipeline удалён</span></div>
+        <h2>1. Итоговый вердикт</h2>
+        <div class="stats">
+          <div class="stat"><strong>15 / 15</strong><span>baseline/shared файлов рассмотрено</span></div>
+          <div class="stat"><strong>9</strong><span>физических .NET 8 specialization-файлов</span></div>
+          <div class="stat"><strong>0</strong><span>удалённых baseline API-контрактов</span></div>
+          <div class="stat"><strong>24 / 24</strong><span>raw-файлов идентичны в каждом checkpoint</span></div>
+          <div class="stat"><strong>2.247×</strong><span>geomean current speedup, 72 сценария</span></div>
+          <div class="stat"><strong>0 / 72</strong><span>сценариев с ростом allocations</span></div>
         </div>
-        <div class="callout warning"><strong>Главное недопонимание, которого следует избегать:</strong> `SaveGenerationMap()` — не durable flush. Он материализует dirty generation nodes для синхронного чтения через write-root. Буферизация/flush RandomKeySorter принадлежит Transactions, а запись буферов и fsync — Storage.</div>
-        <div class="callout danger"><strong>Главный найденный lifecycle-риск уже исправлен в working tree:</strong> `RemoveAll(true)` больше не использует terminal `Dispose()` координатора nested tables; reusable `Reset()` очищает состояние, не уничтожая lock и не делая текущую `LTrie` неработоспособной.</div>
+        <div class="callout good">
+          <strong>Ни один активный архитектурный механизм LianaTrie не исчез без замены.</strong>
+          Snapshot cache generation nodes, dirty-map save, reservation policy, overwrite/append, read-root visibility, nested ownership и storage commit boundary сохранены. Изменены identity, внутренние traversal algorithms и allocation profile.
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <h3 class="good">Сохранять</h3>
+            <p>Pointer-keyed committed-node cache, explicit DFS для full/range/skip, exact-size .NET 8 serialization, structural nested-key cache, monotonic table version.</p>
+          </div>
+          <div class="card">
+            <h3 class="warn">Не переоценивать</h3>
+            <p><code>SaveGenerationMap</code> не равен durable flush. Explicit stack пока покрывает не все traversal families. Pointer cache корректен только внутри строго очищаемого epoch.</p>
+          </div>
+          <div class="card">
+            <h3 class="danger">Не смешивать с regression</h3>
+            <p>Два nested/mixed-mutation дефекта воспроизводятся и в baseline, и в current. Они требуют отдельного контрактного решения, но не являются потерей при рефакторинге.</p>
+          </div>
+        </div>
       </section>
 
-      <section id="baseline">
-        <h2>База и метод сравнения</h2>
+      <section id="method">
+        <h2>2. Метод и границы аудита</h2>
         <div class="grid-2">
           <div class="card">
-            <h3>Три состояния</h3>
+            <h3>Сравнивалось</h3>
             <ul>
-              <li>Эталон до рефакторинга: <span class="mono">D:\VS\DBreezeRealm_copy\DBreeze</span>, commit <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code>.</li>
-              <li>Текущий common-код: <a href="../../DBreeze/LianaTrie/LianaTrie.cs">DBreeze/LianaTrie</a>.</li>
-              <li>Специализированные hot paths: <a href="../../DBreeze.Net8/LianaTrie/LTrieWriteCache.cs">DBreeze.Net8/LianaTrie</a>.</li>
+              <li>Все 15 C#-файлов эталонного и shared <code>LianaTrie</code>.</li>
+              <li>Все 9 физических .NET 8 specialization-файлов.</li>
+              <li>Call sites в Transactions и Storage, когда без них невозможно корректно определить flush, snapshot или lifecycle.</li>
+              <li>Project bindings, public API probe, regression suite, old/new process fixtures, raw manifests и Release benchmarks.</li>
             </ul>
           </div>
           <div class="card">
-            <h3>Как получены выводы</h3>
+            <h3>Правило классификации</h3>
             <ul>
-              <li>Diff от <code>a83424e</code>, call sites и lifecycle, а не только комментарии.</li>
-              <li>Проверка linked sources в <a href="../../DBreeze.Net8/DBreeze.Net8.csproj">DBreeze.Net8.csproj</a>.</li>
-              <li>Regression suite, old/new process probes, disk manifests и focused benchmarks.</li>
-              <li>Отдельная маркировка того, что доказано кодом, тестом, benchmark или disk probe.</li>
+              <li><span class="badge preserved">сохранено</span> назначение и наблюдаемая семантика прежние;</li>
+              <li><span class="badge replaced">заменено</span> механизм другой, контракт эквивалентен;</li>
+              <li><span class="badge fixed">исправлено</span> устранён ошибочный side effect или regression;</li>
+              <li><span class="badge removed">удалено</span> функция действительно больше не существует;</li>
+              <li><span class="badge inherited">baseline-дефект</span> проблема одинакова до и после;</li>
+              <li><span class="badge open-risk">открытый риск</span> инвариант требует дальнейшего теста или модернизации.</li>
             </ul>
           </div>
         </div>
-        <p><strong>Важно:</strong> аудит включает текущие незакоммиченные correctness-изменения `NestedTablesCoordinator.Reset()` и соответствующие regression tests. Пользовательские изменения в `Deployment` не анализировались и не изменялись.</p>
+        <p class="muted">Удалённый ранее отчёт из Git использовался только как checklist. Все цифры и утверждения обновлены по текущему working tree; старые данные 63-test/70-case в новый verdict не перенесены.</p>
+      </section>
+
+      <section id="binding">
+        <h2>3. Фактическая композиция shared / .NET 8</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Linked из shared в .NET 8</h3>
+            <p><a href="../../DBreeze/LianaTrie/LianaTrie.cs">LianaTrie.cs</a>, <a href="../../DBreeze/LianaTrie/LTrieRootNode.cs">LTrieRootNode.cs</a>, <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">Forward.cs</a>, <a href="../../DBreeze/LianaTrie/Iterations/Backward.cs">Backward.cs</a>, <a href="../../DBreeze/LianaTrie/NestedTables/NestedTable.cs">NestedTable.cs</a> и <a href="../../DBreeze/LianaTrie/NestedTables/NestedTableInternal.cs">NestedTableInternal.cs</a>.</p>
+            <p>Именно поэтому traversal и верхний lifecycle имеют одну реализацию для legacy и .NET 8.</p>
+          </div>
+          <div class="card">
+            <h3>Физически специализировано в .NET 8</h3>
+            <p><a href="../../DBreeze.Net8/LianaTrie/LTrieGenerationNode.cs">generation node</a>, <a href="../../DBreeze.Net8/LianaTrie/LTrieKidsInNode.cs">kids</a>, <a href="../../DBreeze.Net8/LianaTrie/LTrieRow.cs">row</a>, <a href="../../DBreeze.Net8/LianaTrie/LTrieWriteCache.cs">write cache</a>, generation map, small kid/setup holders и nested coordinator/storage.</p>
+            <p>Файлы не скопированы сверх необходимости: specialization используется только там, где есть измеримый выигрыш от modern primitives.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Вывод для review:</strong> отсутствие файла в <code>DBreeze.Net8/LianaTrie</code> не означает удаление функциональности. Сначала требуется проверить <a href="../../DBreeze.Net8/DBreeze.Net8.csproj">DBreeze.Net8.csproj</a> и linked shared source.
+        </div>
       </section>
 
       <section id="flow">
-        <h2>Карта lifecycle и visibility</h2>
-        <div class="flow" role="img" aria-label="Путь изменения от write root до обновления read snapshot">
-          <div class="flow-step"><b>1. Mutation</b><small>write-root меняет generation map; `TableIsModified=true`, `GenerationMapSaved=false`.</small></div>
-          <div class="flow-step"><b>2. Structural save</b><small>`Save_GM_nodes_Starting_From` пишет nodes снизу вверх и обновляет parent pointers.</small></div>
-          <div class="flow-step"><b>3. Old image cache</b><small>Перед overwrite первая committed-версия kids сохраняется по physical pointer.</small></div>
-          <div class="flow-step"><b>4. Commit / rollback</b><small>Storage завершает транзакционный цикл; cache epoch очищается.</small></div>
-          <div class="flow-step"><b>5. Read-root refresh</b><small>`DtTableFixed` меняется; Transaction заменяет устаревший cached read-root.</small></div>
+        <h2>4. Lifecycle, visibility и разные значения слова flush</h2>
+        <div class="flow" aria-label="Последовательность записи LianaTrie">
+          <div class="node"><strong>Mutation</strong><small>Node получает <code>ToWrite</code>, table становится modified.</small></div>
+          <div class="node"><strong>Generation map</strong><small>Dirty nodes живут в writer-root.</small></div>
+          <div class="node"><strong>SaveGenerationMap</strong><small>Структурные bytes уходят в transaction storage.</small></div>
+          <div class="node"><strong>RKS Flush</strong><small>Pending sorted операции materialize в trie.</small></div>
+          <div class="node"><strong>Transaction commit</strong><small>Координация таблиц, journal и read-root version.</small></div>
+          <div class="node"><strong>Storage commit</strong><small>Physical buffers, rollback data и durable file state.</small></div>
         </div>
-        <p>Читатель с <code>useCache=true</code> использует committed root и при overwrite получает старый образ generation node из `LTrieWriteCache._nodes`. Пишущая транзакция читает через write-root; перед такими read API вызывается `SaveGenerationMap()`, чтобы in-memory parent/child pointers стали согласованными. Это copy-on-overwrite snapshot на уровне узлов, а не общий value cache и не полноценный MVCC с произвольным количеством версий.</p>
+        <div class="callout warn">
+          <strong>Внутри LianaTrie не было и сейчас нет политики «flush после N insert».</strong>
+          <code>AutomaticFlushLimitQuantityPerTable</code> принадлежит уровню Transactions/RandomKeySorter; durable flush и fsync принадлежат Storage. <code>SaveGenerationMap</code> делает структуру читаемой в текущем transaction view, но сам по себе не обещает durability.
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Commit</h3><p>Nested coordinator и root завершают transactional phase; после completion node snapshot cache очищается, generation map считается сохранённой, table version меняется.</p></div>
+          <div class="card"><h3>Rollback</h3><p>Storage view и root откатываются; cache epoch заменяется, чтобы physical pointer не адресовал образ из предыдущего состояния.</p></div>
+          <div class="card"><h3>Recreate / Dispose</h3><p><code>Reset()</code> оставляет coordinator reusable для <code>RemoveAll(true)</code>. <code>Dispose()</code> terminal/idempotent и освобождает lock.</p></div>
+        </div>
       </section>
 
-      <section id="matrix">
-        <h2>Матрица архитектурных решений</h2>
-        <div class="legend" aria-label="Легенда">
-          <span class="badge preserved">сохранено</span>
-          <span class="badge replaced">заменено</span>
-          <span class="badge fixed">исправлено</span>
-          <span class="badge removed">удалено</span>
-          <span class="badge risk-high">высокая критичность</span>
+      <section id="invariants">
+        <h2>5. Сохранённые disk-layout инварианты</h2>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Инвариант</th><th>Baseline</th><th>Current shared / .NET 8</th><th>Доказательство</th></tr></thead>
+            <tbody>
+              <tr><td>Byte order</td><td>Числовые поля big-endian.</td><td>Остались big-endian; .NET 8 читает/пишет через <code>BinaryPrimitives</code>.</td><td><span class="badge proof">code</span><span class="badge proof">raw identity</span></td></tr>
+              <tr><td>Node header</td><td>Длина kids line — 2 bytes, затем compact kids payload.</td><td>Порядок и ширина прежние; изменена только сборка output buffer.</td><td><span class="badge proof">24/24 SHA</span></td></tr>
+              <tr><td>Value protocols</td><td>Protocol byte, key length, value length/null marker, reservation и payload.</td><td>Полевая схема не менялась; partial read только безопаснее вычисляет диапазон.</td><td><span class="badge proof">old↔new</span></td></tr>
+              <tr><td>Pointer layout</td><td>Dynamic big-endian pointer с прежней physical interpretation.</td><td>Не менялся; cache использует его числовое значение как in-memory identity.</td><td><span class="badge proof">code</span></td></tr>
+              <tr><td>Reservation</td><td>Slots округляются 1, 2, 4, 8 … 256 и не shrink-ятся.</td><td>Thresholds и padding сохранены; .NET 8 сразу создаёт exact final buffer.</td><td><span class="badge proof">raw identity</span></td></tr>
+              <tr><td>Overwrite / append</td><td>In-place при достаточной reservation, иначе append и parent-pointer propagation.</td><td>Решение и flags <code>OverWriteIsAllowed</code>/<code>ToChangeParentNode</code> сохранены.</td><td><span class="badge proof">code</span><span class="badge proof">fixture</span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="filters" aria-label="Фильтры таблицы">
+        <p class="muted">TextSearch намеренно исключён из byte-identity gate: его недетерминированность не должна маскировать детерминированный LianaTrie-only вывод.</p>
+      </section>
+
+      <section id="catalog">
+        <h2>6. Полный каталог архитектурных решений</h2>
+        <div class="filters" aria-label="Фильтры матрицы">
           <label>Поиск
-            <input id="audit-search" type="search" placeholder="cache, traversal, nested, flush…">
+            <input id="audit-search" type="search" placeholder="Например: cache, flush, recursion, nested, format">
           </label>
-          <label>Класс
+          <label>Статус
             <select id="status-filter">
               <option value="all">Все</option>
               <option value="preserved">Сохранено</option>
               <option value="replaced">Заменено</option>
               <option value="fixed">Исправлено</option>
               <option value="removed">Удалено</option>
+              <option value="inherited">Baseline-дефект</option>
+              <option value="open">Открытый риск</option>
             </select>
           </label>
-          <label>Критичность
+          <label>Риск
             <select id="risk-filter">
-              <option value="all">Любая</option>
-              <option value="high">Высокая</option>
-              <option value="medium">Средняя</option>
-              <option value="low">Низкая</option>
+              <option value="all">Все</option>
+              <option value="high">Высокий</option>
+              <option value="medium">Средний</option>
+              <option value="low">Низкий</option>
             </select>
           </label>
-          <button id="reset-filters" type="button">Сбросить</button>
-          <span id="visible-count" aria-live="polite">Показано 24 из 24</span>
+          <button id="reset-filter" type="button">Сбросить</button>
+          <span id="visible-count" aria-live="polite"></span>
         </div>
-
         <div class="table-wrap">
           <table id="audit-table">
             <thead>
-              <tr>
-                <th>ID</th><th>Решение</th><th>Эталон a83424e</th><th>Текущая реализация</th><th>Намерение и семантика</th><th>Совместимость, риск, доказательство</th>
-              </tr>
+              <tr><th>ID</th><th>Решение</th><th>Эталон a83424e</th><th>Текущая реализация</th><th>Архитектурный смысл</th><th>Риск и доказательство</th></tr>
             </thead>
             <tbody>
-              <tr data-status="replaced" data-risk="medium">
-                <td>LT-01</td><td><span class="badge replaced">заменено</span><br><strong>Identity snapshot cache</strong></td>
-                <td><code>Dictionary&lt;string, byte[]&gt;</code>; ключ — весь `generationMapLine`, закодированный Base64.</td>
-                <td><code>Dictionary&lt;ulong, byte[]&gt;</code>; ключ — physical pointer generation node.</td>
-                <td>Cache старых committed kids сохранён. Убраны path-array и Base64 allocations. Pointer уникален внутри trie/cache epoch; при recreation epoch очищается.</td>
-                <td><span class="risk-medium">Средняя критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><span class="badge proof">benchmark</span><br><a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">LTrieWriteCache.GetNodeKids / GenerationNodeWritingOver</a>; `ReadVisibilityUsesCommittedNodeImages`.</td>
+              <tr data-status="replaced" data-risk="high">
+                <td>LT-01</td><td><span class="badge replaced">заменено</span><br><strong>Snapshot cache identity</strong></td>
+                <td><code>Dictionary&lt;string, byte[]&gt;</code>, key — Base64 полного <code>generationMapLine</code>.</td>
+                <td><code>Dictionary&lt;ulong, byte[]&gt;</code>, key — physical pointer generation node.</td>
+                <td>Cache committed kids не удалён. Убраны path arrays и Base64 allocations; pointer уникален только внутри cache epoch.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">code</span><span class="badge proof">test</span><br><code>ReadVisibilityUsesCommittedNodeImages</code>.<br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieWriteCache.cs">baseline cache</a> · <a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">current cache</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="high">
-                <td>LT-02</td><td><span class="badge preserved">сохранено</span><br><strong>Cache epoch и invalidation</strong></td>
-                <td>`_nodes` пересоздавался после commit, rollback, transactional completion и recreation.</td>
-                <td>Те же lifecycle boundaries; тип ключа изменён на `ulong`. Terminal dispose теперь освобождает lock.</td>
-                <td>Не допустить reuse pointer из другого физического состояния таблицы. Это обязательное условие корректности LT-01.</td>
-                <td><span class="risk-high">Высокая критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">Commit, RollBack, TransactionalCommitFinished, TransactionalRollback, RecreateDB</a>.</td>
+                <td>LT-02</td><td><span class="badge preserved">сохранено</span><br><strong>Cache epoch invalidation</strong></td>
+                <td><code>_nodes</code> пересоздавался на commit, rollback, transactional completion и recreation.</td>
+                <td>Те же lifecycle boundaries, но dictionary теперь pointer-keyed.</td>
+                <td>Запрещает reuse physical offset из другого состояния таблицы. Это условие корректности LT-01.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">code</span><span class="badge proof">lifecycle tests</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieWriteCache.cs">baseline lifecycle</a> · <a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">current lifecycle</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="high">
-                <td>LT-03</td><td><span class="badge preserved">сохранено</span><br><strong>Committed node images</strong></td>
-                <td>Первая старая версия kids сохранялась до overwrite для параллельного read-root.</td>
-                <td>Та же first-image-only семантика: если pointer уже есть в cache, образ не заменяется.</td>
-                <td>Read-root продолжает видеть committed topology, пока writer меняет узлы in-place. Cache хранит одну предыдущую committed картинку, не цепочку версий.</td>
-                <td><span class="risk-high">Высокая критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br>`GenerationNodeWritingOver`; `ReadVisibilityUsesCommittedNodeImages`.</td>
+                <td>LT-03</td><td><span class="badge preserved">сохранено</span><br><strong>Committed old image</strong></td>
+                <td>До первого overwrite сохранялась старая kids line для параллельного read-root.</td>
+                <td>First-image-only семантика сохранена; существующий cache entry не заменяется следующим write.</td>
+                <td>Reader видит committed topology, пока writer меняет тот же node in-place. Это одна старая версия, не MVCC-chain.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">test</span> read visibility<br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieGenerationNode.cs">baseline node</a> · <a href="../../DBreeze/LianaTrie/LTrieGenerationNode.cs">current node</a></span></td>
               </tr>
               <tr data-status="removed" data-risk="low">
                 <td>LT-04</td><td><span class="badge removed">удалено</span><br><strong>Logical-path cache pipeline</strong></td>
-                <td>`Save_GM_nodes_Starting_From` строил path для каждого сохраняемого node; read helpers передавали его до cache lookup.</td>
-                <td>Основные full/range/skip hot paths path не строят; cache игнорирует `cachedGenerationMapLine`.</td>
-                <td>Удалена стратегия identity, а не snapshot functionality. В части старых API параметр и path-building ещё остались как архитектурный хвост.</td>
-                <td><span class="risk-low">Низкая текущая критичность</span><br><span class="badge proof">код</span><br><a href="../../DBreeze/LianaTrie/LTrieRootNode.cs">Save_GM_nodes_Starting_From</a>; `LTrieGenerationNode.WriteSelf()`.</td>
+                <td>Save/read helpers строили и передавали полный path для cache lookup.</td>
+                <td>Основные write/full/range/skip paths path больше не строят; cache lookup идёт по pointer.</td>
+                <td>Удалена только дорогая identity strategy, не snapshot functionality. В recursive legacy helpers path пока остаётся как algorithm state.</td>
+                <td><span class="risk-low">Низкий</span><br><span class="badge proof">code diff</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieRootNode.cs">baseline map path</a> · <a href="../../DBreeze/LianaTrie/LTrieRootNode.cs">current pointer path</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
                 <td>LT-05</td><td><span class="badge replaced">заменено</span><br><strong>Table freshness token</strong></td>
-                <td><code>DateTime.Now.Ticks</code> после commit/rollback; возможны одинаковые значения и движение часов назад.</td>
-                <td>Process-wide monotonic `Interlocked.Increment`; atomic read/write свойства `DtTableFixed`.</td>
-                <td>Назначение не изменилось: invalidation transaction read-root. Семантика значения изменилась: теперь это opaque version, не timestamp.</td>
-                <td><span class="risk-medium">Средняя критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LianaTrie.cs">NextTableVersion / DtTableFixed</a>; <a href="../../DBreeze/Transactions/Transaction.cs">Transaction read-root cache</a>; `ReadRootRefreshesAfterRapidCommits`.</td>
+                <td><code>DateTime.Now.Ticks</code>; могли совпасть значения или измениться wall clock.</td>
+                <td>Process-wide monotonic <code>Interlocked.Increment</code>, atomic access к <code>DtTableFixed</code>.</td>
+                <td>Назначение прежнее — invalidation transaction read-root. Значение теперь opaque version, а не timestamp.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">test</span> rapid commits<br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline token</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current token</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="high">
-                <td>LT-06</td><td><span class="badge preserved">сохранено</span><br><strong>Dirty generation map save</strong></td>
-                <td>`TableIsModified` + `GenerationMapSaved`; read через write-root принудительно сохранял dirty nodes.</td>
-                <td>Механизм и точки вызова сохранены во всех synchronous read API.</td>
-                <td>Обеспечивает согласованные pointers для writer-visible read до commit. Это structural save в transaction storage, не гарантия fsync.</td>
-                <td><span class="risk-high">Высокая критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LianaTrie.cs">SaveGenerationMap и read API</a>.</td>
+                <td>LT-06</td><td><span class="badge preserved">сохранено</span><br><strong>Dirty generation map</strong></td>
+                <td><code>TableIsModified</code>, <code>GenerationMapSaved</code>; writer-visible reads сохраняли dirty nodes.</td>
+                <td>Флаги и вызовы <code>SaveGenerationMap</code> сохранены.</td>
+                <td>Обеспечивает structural readability текущего writer view. Это не durable commit.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">code</span><span class="badge proof">tests</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline dirty map</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current dirty map</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="medium">
-                <td>LT-07</td><td><span class="badge preserved">сохранено</span><br><strong>Граница flush</strong></td>
-                <td>В LianaTrie не было fill-count auto-flush. Commit делегировал durable lifecycle Storage.</td>
-                <td>Так же. `RandomKeySorter.Flush()` вызывается Transaction.Commit; sequential/random buffers и fsync находятся в Storage.</td>
-                <td>Порог `AutomaticFlushLimitQuantityPerTable` не является политикой LianaTrie; в текущем RandomKeySorter он сохранён для API, но auto-flush не выполняет.</td>
-                <td><span class="risk-medium">Средняя критичность терминологии</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/Transactions/Transaction.cs">Transaction.Commit</a>, <a href="../../DBreeze.Net8/Storage/FSR.cs">FSR buffers</a>; `RandomKeySorterUsesValueConversionAndNeverAutoFlushes`.</td>
+                <td>LT-07</td><td><span class="badge preserved">сохранено</span><br><strong>Flush boundary</strong></td>
+                <td>В LianaTrie не было fill-count auto-flush; durable lifecycle делегировался Storage.</td>
+                <td>Так же. RKS flush выполняется слоем Transaction, physical flush — Storage.</td>
+                <td>Не найден ни исчезнувший, ни новый «flush после N insert» внутри LianaTrie.</td>
+                <td><span class="risk-medium">Средний терминологический</span><br><span class="badge proof">cross-layer code</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline commit</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current commit</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="high">
                 <td>LT-08</td><td><span class="badge preserved">сохранено</span><br><strong>Reservation slots</strong></td>
-                <td>Количество kids округляется: 1, 2, 4, 8, …, 256; существующая reservation не уменьшается.</td>
-                <td>`GetQuantityOfReservationSlots()` и `QuantityReservationSlots` сохранены без изменения thresholds.</td>
-                <td>Сохраняются запас места для роста node, вероятность in-place overwrite и физический layout node line.</td>
-                <td><span class="risk-high">Высокая format-критичность</span><br><span class="badge proof">код</span><span class="badge proof">disk probe</span><br><a href="../../DBreeze/LianaTrie/LTrieGenerationNode.cs">WriteSelf / GetQuantityOfReservationSlots</a>.</td>
+                <td>1, 2, 4, 8 … 256; reservation не уменьшается.</td>
+                <td>Те же thresholds и <code>QuantityReservationSlots</code>.</td>
+                <td>Сохраняет physical padding, вероятность in-place growth и wire layout.</td>
+                <td><span class="risk-high">Format-critical</span><br><span class="badge proof">raw identity</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieKidsInNode.cs">baseline reservation</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieKidsInNode.cs">current Net8 reservation</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="high">
-                <td>LT-09</td><td><span class="badge preserved">сохранено</span><br><strong>Overwrite или append</strong></td>
-                <td>Node переписывается in-place, если reservation достаточна и overwrite разрешён; иначе пишется в конец с обновлением parent pointer.</td>
-                <td>Решение и flags `ToChangeParentNode`, `OverWriteIsAllowed`, `KidsBeforeModification` сохранены.</td>
-                <td>Pointer stability и rollback behavior не перепроектированы. `bKids.Length &gt; KidsBeforeModification.Length` по-прежнему запрещает unsafe overwrite.</td>
-                <td><span class="risk-high">Высокая correctness/format-критичность</span><br><span class="badge proof">код</span><span class="badge proof">disk probe</span><br><a href="../../DBreeze/LianaTrie/LTrieGenerationNode.cs">LTrieGenerationNode.WriteSelf</a>.</td>
+                <td>LT-09</td><td><span class="badge preserved">сохранено</span><br><strong>Overwrite / append</strong></td>
+                <td>Overwrite при достаточной reservation; иначе append и обновление parent pointer.</td>
+                <td>Flags, size checks и propagation сохранены.</td>
+                <td>Pointer stability и rollback policy не перепроектированы.</td>
+                <td><span class="risk-high">Correctness/format</span><br><span class="badge proof">code</span><span class="badge proof">fixture</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieGenerationNode.cs">baseline write</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieGenerationNode.cs">current Net8 write</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
                 <td>LT-10</td><td><span class="badge replaced">заменено</span><br><strong>Full traversal</strong></td>
-                <td>Recursive iterator спускался по trie и строил path arrays.</td>
-                <td>Explicit DFS stack из enumerators для forward/backward.</td>
-                <td>Порядок остался byte-lexicographic; глубина больше не ограничена call stack. Память O(depth) перенесена в managed stack.</td>
-                <td><span class="risk-medium">Средняя критичность</span><br><span class="badge proof">тест</span><span class="badge proof">benchmark</span><br><a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">IterateForwardCore</a>, <a href="../../DBreeze/LianaTrie/Iterations/Backward.cs">IterateBackwardCore</a>; `DeepFullScanDoesNotUseTheCallStack`.</td>
+                <td>Recursive iterator и path-copy на каждом уровне.</td>
+                <td>Explicit DFS <code>Stack&lt;IEnumerator&lt;LTrieKid&gt;&gt;</code>.</td>
+                <td>Byte-lexicographic order и lazy yield сохранены; глубина full scan больше не ограничена call stack.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">oracle</span><span class="badge proof">deep test</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Forward.cs">baseline forward</a> · <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">current forward</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="high">
                 <td>LT-11</td><td><span class="badge replaced">заменено</span><br><strong>Bounded range traversal</strong></td>
-                <td>Отдельные recursive helpers несли start/stop state по ветвям.</td>
-                <td>Explicit range frames с pruning ветвей и inclusive/exclusive bounds.</td>
-                <td>Это не post-filter полного scan: границы применяются при обходе. Наиболее чувствительная зона — prefix-related keys и 0/255 edges.</td>
-                <td><span class="risk-high">Высокая contract-критичность</span><br><span class="badge proof">тест</span><span class="badge proof">benchmark</span><br>`TraversalContractMatchesReferenceModel`, `RangeIterationStopsAtItsBoundary`.</td>
+                <td>Recursive helpers переносили start/stop state по ветвям.</td>
+                <td>Explicit range frames с depth/start/stop relation и branch pruning.</td>
+                <td>Это не full-scan post-filter. Inclusive/exclusive bounds применяются во время обхода.</td>
+                <td><span class="risk-high">Contract-critical</span><br><span class="badge proof">differential oracle</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Backward.cs">baseline range</a> · <a href="../../DBreeze/LianaTrie/Iterations/Backward.cs">current range</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
                 <td>LT-12</td><td><span class="badge replaced">заменено</span><br><strong>Skip traversal</strong></td>
-                <td>Recursive iterator считал пропущенные rows через shared counters.</td>
-                <td>Explicit DFS stack и `remainingToSkip`; rows не материализуются заранее.</td>
-                <td>Сохранена семантика «пропустить N в порядке traversal», уменьшен риск stack overflow и allocations path identity.</td>
-                <td><span class="risk-medium">Средняя критичность</span><br><span class="badge proof">тест</span><span class="badge proof">benchmark</span><br>`SkipTraversalMatchesReferenceModel`; historical skip: 1.024×, allocations −3.9…−5.9%.</td>
+                <td>Recursive traversal с shared counters.</td>
+                <td>Explicit DFS и <code>remainingToSkip</code>; rows не materialize-ятся заранее.</td>
+                <td>Семантика «skip N в traversal order» сохранена; раннее завершение остаётся lazy.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">oracle</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Forward.cs">baseline skip</a> · <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">current skip</a></span></td>
               </tr>
-              <tr data-status="preserved" data-risk="medium">
-                <td>LT-13</td><td><span class="badge preserved">сохранено частично</span><br><strong>Оставшиеся recursive families</strong></td>
-                <td>Start-from, skip-from, min/max и prefix methods использовали recursion и растущий `generationMapLine`.</td>
-                <td>Эти ветки в основном остались recursive; path length нужен алгоритму, хотя cache identity уже pointer-based.</td>
-                <td>Утверждение «traversal полностью iterative» неверно. Deep-key stack safety доказана только для full scan; здесь остаются O(depth²) path-copy allocations.</td>
-                <td><span class="risk-medium">Открытый средний риск</span><br><span class="badge proof">код</span><span class="badge proof">требует проверки</span><br><a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">IterateForwardStartFrom / SkipFrom / StartsWith</a>.</td>
+              <tr data-status="open" data-risk="medium">
+                <td>LT-13</td><td><span class="badge open-risk">открытый риск</span><br><strong>Remaining recursion</strong></td>
+                <td>StartFrom, SkipFrom, min/max и prefix families были recursive.</td>
+                <td>Эти families в основном всё ещё recursive и копируют <code>generationMapLine</code>.</td>
+                <td>Утверждение «весь traversal iterative» неверно. Для них остаются stack-depth и O(depth²) path-copy concerns.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">code</span><br>Вынесено в modernization backlog.<br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/Iterations/Forward.cs">baseline recursive</a> · <a href="../../DBreeze/LianaTrie/Iterations/Forward.cs">current recursive</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
                 <td>LT-14</td><td><span class="badge replaced">заменено</span><br><strong>Kids enumeration</strong></td>
-                <td>Каждый scan проверял весь диапазон slots 1…256.</td>
-                <td>`SearchExtremums()` ограничивает цикл `MinKid..MaxKid`, включая bounded start.</td>
-                <td>Порядок не меняется; выигрыш зависит от sparse fan-out. Корректность требует точной invalidation extrema при add/remove/reset.</td>
-                <td><span class="risk-medium">Средняя критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><span class="badge proof">benchmark</span><br><a href="../../DBreeze/LianaTrie/LTrieKidsInNode.cs">GetKidsForward / GetKidsBackward</a>.</td>
+                <td>Scan проверял slots 1…256.</td>
+                <td><code>SearchExtremums()</code> ограничивает scan диапазоном <code>MinKid..MaxKid</code>.</td>
+                <td>Порядок не изменён; sparse fan-out дешевле. Correctness зависит от полного reset extrema.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">randomized oracle</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieKidsInNode.cs">baseline scan</a> · <a href="../../DBreeze/LianaTrie/LTrieKidsInNode.cs">current extrema</a></span></td>
               </tr>
               <tr data-status="fixed" data-risk="high">
                 <td>LT-15</td><td><span class="badge fixed">исправлено</span><br><strong>RemoveAllKids state</strong></td>
-                <td>Создавался новый `_f`, но явно не сбрасывались `PtrToValue`, `count`, `ValueIsEmpty`, Min/Max values.</td>
-                <td>Массивы переиспользуются через `Array.Clear`; вся логическая state сбрасывается.</td>
-                <td>Это correctness fix плюс снижение allocation. Особенно важно для пустого ключа, value-kid и повторного использования node.</td>
-                <td><span class="risk-high">Высокая correctness-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br>`RemoveAllResetsEmptyKeyState`, randomized oracle.</td>
+                <td>Создавался новый <code>_f</code>, но логические поля явно сбрасывались неполно.</td>
+                <td>Backing arrays переиспользуются через <code>Array.Clear</code>; value pointer, count, empty flag и extrema сбрасываются.</td>
+                <td>Correctness fix для пустого ключа/value kid плюс устранение allocation.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">test</span> empty-key state<br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieKidsInNode.cs">baseline reset</a> · <a href="../../DBreeze/LianaTrie/LTrieKidsInNode.cs">current reset</a></span></td>
               </tr>
               <tr data-status="fixed" data-risk="medium">
                 <td>LT-16</td><td><span class="badge fixed">исправлено</span><br><strong>GenerationMap cleanup</strong></td>
-                <td>`Clear` и range remove уменьшали logical size, оставляя ссылки в backing array и cached path.</td>
-                <td>`Array.Clear` освобождает references; `MapValuesUpToIndex=null`; bounds нормализованы.</td>
-                <td>Снижается retention старых nodes и исключается reuse stale generated path после усечения map.</td>
-                <td><span class="risk-medium">Средняя memory/correctness-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LTrieGenerationMap.cs">Clear / RemoveBigger*</a>.</td>
+                <td>Logical size уменьшался, но backing array удерживал node references и cached path.</td>
+                <td><code>Array.Clear</code>, invalidation <code>MapValuesUpToIndex</code>, нормализованные bounds.</td>
+                <td>Уменьшает retained memory и исключает reuse stale generated path.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">code</span><span class="badge proof">tests</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieGenerationMap.cs">baseline map</a> · <a href="../../DBreeze/LianaTrie/LTrieGenerationMap.cs">current map</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="medium">
                 <td>LT-17</td><td><span class="badge replaced">заменено</span><br><strong>Nested key identity</strong></td>
-                <td>`Dictionary&lt;string, ulong&gt;`; каждый lookup создавал Base64 string.</td>
-                <td>Structural `Dictionary&lt;byte[], ulong&gt;`; stored keys клонируются, lookup сравнивает содержимое.</td>
-                <td>Убраны Base64 allocations; clone защищает dictionary от мутации caller buffer. Net8 использует `SequenceEqual` и `HashCode`, common — deterministic comparer.</td>
-                <td><span class="risk-medium">Средняя identity-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze.Net8/LianaTrie/NestedTables/NestedTablesCoordinator.cs">ByteArrayEqualityComparer</a>; `NestedStructuralKeyCacheSurvivesMutationAndRename`.</td>
+                <td><code>Dictionary&lt;string, ulong&gt;</code>, Base64 allocation на lookup.</td>
+                <td>Structural <code>Dictionary&lt;byte[], ulong&gt;</code>; stored key clone, content comparer.</td>
+                <td>Lookup allocations снижены; clone защищает dictionary от мутации caller buffer. Net8 использует span/HashCode.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">mutation/rename test</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/NestedTables/NestedTablesCoordinator.cs">baseline key cache</a> · <a href="../../DBreeze.Net8/LianaTrie/NestedTables/NestedTablesCoordinator.cs">current Net8 key cache</a></span></td>
               </tr>
               <tr data-status="fixed" data-risk="high">
-                <td>LT-18</td><td><span class="badge fixed">исправлено</span><br><strong>Reset против terminal Dispose</strong></td>
-                <td>`Dispose()` фактически был reusable clear и не освобождал lock; `RemoveAll(true)` на это полагался.</td>
-                <td>`Dispose()` стал terminal/idempotent и освобождает lock; отдельный `Reset()` очищает nested state без `_disposed` и без смены `ModificationThreadId`.</td>
-                <td>Первый вариант рефакторинга вызвал regression: `RemoveAll(true)` уничтожал lock. Working tree разделяет две lifecycle semantics.</td>
-                <td><span class="risk-high">Высокая lifecycle-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LianaTrie.cs">LTrie.RemoveAll</a>, <a href="../../DBreeze/LianaTrie/NestedTables/NestedTablesCoordinator.cs">Reset / Dispose</a>; `RemoveAllWithFileRecreationKeepsTableReusable`.</td>
+                <td>LT-18</td><td><span class="badge fixed">исправлено</span><br><strong>Reset vs Dispose</strong></td>
+                <td><code>Dispose()</code> фактически был reusable clear и не освобождал lock.</td>
+                <td><code>Reset()</code> очищает reusable state; terminal/idempotent <code>Dispose()</code> освобождает lock.</td>
+                <td>Исправлена промежуточная regression, где <code>RemoveAll(true)</code> уничтожала coordinator lock.</td>
+                <td><span class="risk-high">Высокий lifecycle</span><br><span class="badge proof">memory/disk test</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/NestedTables/NestedTablesCoordinator.cs">baseline dispose</a> · <a href="../../DBreeze/LianaTrie/NestedTables/NestedTablesCoordinator.cs">current reset/dispose</a></span></td>
               </tr>
               <tr data-status="fixed" data-risk="high">
-                <td>LT-19</td><td><span class="badge fixed">исправлено</span><br><strong>Insert-if-absent side effects</strong></td>
-                <td>Даже при `dontUpdateIfExists=true` existing row оставлял node dirty, удалял nested association и помечал table modified.</td>
-                <td>Предыдущее `ToWrite` восстанавливается; nested data и flags меняются только при реальной записи.</td>
-                <td>No-op стал действительно side-effect-free. Это публично наблюдаемое исправление, а не только performance optimization.</td>
-                <td><span class="risk-high">Высокая semantic-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LTrieGenerationNode.cs">SetupKidWithValue</a>; `InsertIfAbsentPreservesNestedTable`.</td>
+                <td>LT-19</td><td><span class="badge fixed">исправлено</span><br><strong>Insert-if-absent no-op</strong></td>
+                <td>Existing key с <code>dontUpdateIfExists</code> мог оставить node dirty и удалить nested association.</td>
+                <td>Предыдущее <code>ToWrite</code> восстанавливается; flags/nested меняются только при реальной записи.</td>
+                <td>No-op теперь не повреждает nested data и не создаёт ложный commit/version cycle.</td>
+                <td><span class="risk-high">Высокий semantic</span><br><span class="badge proof">test</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieGenerationNode.cs">baseline insert</a> · <a href="../../DBreeze/LianaTrie/LTrieGenerationNode.cs">current insert</a></span></td>
               </tr>
               <tr data-status="fixed" data-risk="medium">
-                <td>LT-20</td><td><span class="badge fixed">исправлено</span><br><strong>Remove missing side effects</strong></td>
-                <td>Удаление отсутствующего ключа всё равно трогало nested coordinator и dirty flags.</td>
-                <td>Side effects выполняются только при `WasRemoved=true`.</td>
-                <td>No-op больше не создаёт ложную модификацию, commit work и version churn.</td>
-                <td><span class="risk-medium">Средняя semantic-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LianaTrie.cs">LTrie.Remove</a>; randomized operations oracle.</td>
+                <td>LT-20</td><td><span class="badge fixed">исправлено</span><br><strong>Remove missing no-op</strong></td>
+                <td>Удаление отсутствующего key трогало coordinator и dirty flags.</td>
+                <td>Side effects выполняются только при <code>WasRemoved</code>.</td>
+                <td>Отсутствующая запись больше не превращает table в modified.</td>
+                <td><span class="risk-medium">Средний</span><br><span class="badge proof">randomized oracle</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline remove</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current remove</a></span></td>
               </tr>
-              <tr data-status="fixed" data-risk="medium">
-                <td>LT-21</td><td><span class="badge fixed">исправлено</span><br><strong>Partial value bounds</strong></td>
-                <td>Eager path делал unchecked casts/`Substring`; oversized start/length могли бросать несогласованные exceptions или переполняться.</td>
-                <td>Нулевой length возвращает empty; start за концом — null; length clamp; AddPartially и reads проверяют Int32 limits.</td>
-                <td>On-disk representation не меняется, но edge-case public semantics стала определённой. Net8 дополнительно валидирует oversized `ReadKeyValue`; common parity здесь неполная.</td>
-                <td><span class="risk-medium">Средняя API-критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LTrieRow.cs">GetPartialValue</a>, <a href="../../DBreeze.Net8/LianaTrie/LTrieWriteCache.cs">ReadValuePartially</a>; `PartialValueRangesAreOverflowSafe`.</td>
+              <tr data-status="fixed" data-risk="high">
+                <td>LT-21</td><td><span class="badge fixed">исправлено</span><br><strong>Partial value ranges</strong></td>
+                <td>Unchecked casts/substring и <code>startIndex + length</code> могли overflow или дать разные eager/lazy результаты.</td>
+                <td>Shared и Net8 используют subtraction-based clamp, Int32 guards и согласованный null/empty contract.</td>
+                <td>Wire bytes прежние; изменено ошибочное edge behavior публичного API.</td>
+                <td><span class="risk-high">Public contract</span><br><span class="badge proof">truth-table test</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieRow.cs">baseline partial</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieRow.cs">current Net8 partial</a></span></td>
               </tr>
               <tr data-status="replaced" data-risk="high">
-                <td>LT-22</td><td><span class="badge replaced">заменено</span><br><strong>Net8 serialization hot paths</strong></td>
-                <td>Concat helpers, temporary arrays, `Buffer.BlockCopy`, conversions через small byte arrays.</td>
-                <td>`BinaryPrimitives`, spans, direct copy, pre-sized buffers, `GC.AllocateUninitializedArray` с полным последующим заполнением.</td>
-                <td>Изменён способ формирования bytes, но не endian, field order, reservation padding или pointer layout.</td>
-                <td><span class="risk-high">Высокая format-критичность</span><br><span class="badge proof">код</span><span class="badge proof">disk probe</span><span class="badge proof">benchmark</span><br><a href="../../DBreeze.Net8/LianaTrie/LTrieGenerationNode.cs">SerializeNode</a>, <a href="../../DBreeze.Net8/LianaTrie/LTrieKidsInNode.cs">GetKidsForSave</a>.</td>
+                <td>LT-22</td><td><span class="badge replaced">.NET 8</span><br><strong>Node serialization</strong></td>
+                <td>Concat helpers, small arrays и промежуточные buffers.</td>
+                <td><code>BinaryPrimitives</code>, spans, exact-size buffer, полностью заполняемый <code>GC.AllocateUninitializedArray</code>.</td>
+                <td>Меняется способ получения bytes, но не endian, field order или padding.</td>
+                <td><span class="risk-high">Format-critical</span><br><span class="badge proof">raw identity</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieGenerationNode.cs">baseline serializer</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieGenerationNode.cs">current Net8 serializer</a></span></td>
+              </tr>
+              <tr data-status="replaced" data-risk="medium">
+                <td>LT-23</td><td><span class="badge replaced">.NET 8</span><br><strong>Read probe size</strong></td>
+                <td><code>ReadKeyValue</code> обычно начинал с 4096-byte read.</td>
+                <td>Committed positioned read начинает с 111 bytes; writer/delete-update path сохраняет 4096.</td>
+                <td>Учитывает отсутствие FileStream read-ahead в positioned I/O, не меняя record parsing.</td>
+                <td><span class="risk-medium">Performance</span><br><span class="badge proof">10-run scan</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieWriteCache.cs">baseline read probe</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieWriteCache.cs">current Net8 read probe</a></span></td>
               </tr>
               <tr data-status="fixed" data-risk="low">
-                <td>LT-23</td><td><span class="badge fixed">исправлено</span><br><strong>Exception и terminal disposal</strong></td>
-                <td>Много `throw ex` теряло original stack; Dispose мог повторно выполнять cleanup, locks не освобождались.</td>
-                <td>`throw;`; `_disposed` через Interlocked; locks освобождаются только в terminal Dispose.</td>
-                <td>Улучшена диагностика и ресурсный lifecycle. Reusable операции обязаны использовать Reset/Recreate, не Dispose.</td>
-                <td><span class="risk-low">Низкая функциональная критичность</span><br><span class="badge proof">код</span><span class="badge proof">тест</span><br><a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">LTrieWriteCache.Dispose</a>.</td>
+                <td>LT-24</td><td><span class="badge fixed">исправлено</span><br><strong>Exception/disposal hygiene</strong></td>
+                <td><code>throw ex</code> терял stack; cleanup мог выполняться повторно.</td>
+                <td><code>throw;</code>, Interlocked idempotence, terminal lock disposal.</td>
+                <td>Наблюдаемая бизнес-семантика прежняя; диагностика и resource lifecycle надёжнее.</td>
+                <td><span class="risk-low">Низкий</span><br><span class="badge proof">code</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieWriteCache.cs">baseline exceptions</a> · <a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">current disposal</a></span></td>
               </tr>
               <tr data-status="preserved" data-risk="low">
-                <td>LT-24</td><td><span class="badge preserved">уже неактивно</span><br><strong>Value/dynamic-block dictionaries</strong></td>
-                <td>Поля `_values`, `dDynamicDataBlocks` и почти весь их lifecycle уже были закомментированы в эталоне.</td>
-                <td>Они по-прежнему являются commented scaffolding; активный node snapshot cache существует.</td>
-                <td>Нельзя считать эти dictionaries cache, потерянным данным рефакторингом: рабочей архитектурой baseline они не были.</td>
-                <td><span class="risk-low">Низкая критичность, высокий риск неверного вывода LLM</span><br><span class="badge proof">код baseline/current</span><br><a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">LTrieWriteCache fields</a>.</td>
+                <td>LT-25</td><td><span class="badge preserved">неактивно</span><br><strong>Value/dynamic caches</strong></td>
+                <td><code>_values</code> и <code>dDynamicDataBlocks</code> уже были закомментированным scaffolding.</td>
+                <td>Остаются неактивными; рабочий node snapshot cache существует отдельно.</td>
+                <td>Это не cache functionality, потерянная рефакторингом.</td>
+                <td><span class="risk-low">Низкий; высокий риск неверного LLM-вывода</span><br><span class="badge proof">baseline code</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieWriteCache.cs">baseline scaffolding</a> · <a href="../../DBreeze/LianaTrie/LTrieWriteCache.cs">current scaffolding</a></span></td>
+              </tr>
+              <tr data-status="replaced" data-risk="medium">
+                <td>LT-26</td><td><span class="badge replaced">.NET 8</span><br><strong>Lazy row metadata</strong></td>
+                <td>Partial lazy read повторно разбирал record header через write cache.</td>
+                <td>Root read сохраняет <code>ValueStartPointer</code>, length и null flag; часть value читается напрямую из Storage.</td>
+                <td>Убирает повторный header read; committed/uncommitted view передаётся тем же <code>useCache</code>.</td>
+                <td><span class="risk-medium">Visibility</span><br><span class="badge proof">eager/lazy truth table</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieRootNode.cs">baseline row load</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieRow.cs">current direct partial</a></span></td>
+              </tr>
+              <tr data-status="preserved" data-risk="high">
+                <td>LT-27</td><td><span class="badge preserved">сохранено</span><br><strong>Project composition</strong></td>
+                <td>Shared source использовался всеми target frameworks.</td>
+                <td>Net8 links upper lifecycle/traversal и заменяет только физические hot-path files.</td>
+                <td>Legacy frameworks не получают modern API, а Net8 не теряет shared functionality.</td>
+                <td><span class="risk-high">Build/API</span><br><span class="badge proof">csproj</span><span class="badge proof">build matrix</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze.Net8/DBreeze.Net8.csproj">baseline project</a> · <a href="../../DBreeze.Net8/DBreeze.Net8.csproj">current project</a></span></td>
+              </tr>
+              <tr data-status="preserved" data-risk="high">
+                <td>LT-28</td><td><span class="badge preserved">сохранено</span><br><strong>Public API surface</strong></td>
+                <td>1423 baseline surface entries в полном probe.</td>
+                <td>1425 entries; removals/changes 0. Два reviewed additions относятся к disposable lock, не к LianaTrie user API.</td>
+                <td>Сигнатуры, visibility и generic constraints baseline сохранены.</td>
+                <td><span class="risk-high">Contract</span><br><span class="badge proof">API probe</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/DataTypes/Row.cs">baseline Row API</a> · <a href="../../DBreeze/DataTypes/Row.cs">current Row API</a></span></td>
+              </tr>
+              <tr data-status="preserved" data-risk="high">
+                <td>LT-29</td><td><span class="badge preserved">сохранено</span><br><strong>Disk format</strong></td>
+                <td>Legacy LianaTrie node/value/pointer protocol.</td>
+                <td>Old и current создают и дозаписывают взаимно читаемые, byte-identical deterministic fixtures.</td>
+                <td>Не только semantic compatibility: raw files совпадают по length и SHA-256.</td>
+                <td><span class="risk-high">Format</span><br><span class="badge proof">24/24 × checkpoints</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieGenerationNode.cs">baseline wire writer</a> · <a href="../../DBreeze.Net8/LianaTrie/LTrieGenerationNode.cs">current wire writer</a></span></td>
+              </tr>
+              <tr data-status="inherited" data-risk="high">
+                <td>LT-30</td><td><span class="badge inherited">baseline-дефект</span><br><strong>Early nested dispose</strong></td>
+                <td>Dispose изменённой nested table до master Commit может потерять изменения.</td>
+                <td>Поведение воспроизводится без отличий.</td>
+                <td>Не regression рефакторинга. Нужен отдельный owner decision о lifecycle-контракте.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">baseline/current repro</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/NestedTables/NestedTable.cs">baseline nested lifecycle</a> · <a href="../../DBreeze/LianaTrie/NestedTables/NestedTable.cs">current nested lifecycle</a></span></td>
+              </tr>
+              <tr data-status="inherited" data-risk="high">
+                <td>LT-31</td><td><span class="badge inherited">baseline-дефект</span><br><strong>Mixed write epoch</strong></td>
+                <td>Insert/Remove + ChangeKey + nested mutation в одном epoch может потерять часть новых binary keys.</td>
+                <td>То же воспроизводится; compatibility fixture разделяет классы операций commit boundaries.</td>
+                <td>Исправление требует отдельной минимизации и проверки journal/rollback compatibility.</td>
+                <td><span class="risk-high">Высокий</span><br><span class="badge proof">baseline/current repro</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline write epoch</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current write epoch</a></span></td>
+              </tr>
+              <tr data-status="preserved" data-risk="low">
+                <td>LT-32</td><td><span class="badge preserved">несемантическое</span><br><strong>Остальной diff</strong></td>
+                <td>Legacy comments, redundant temporary arrays, redundant impossible-size check, <code>Console.WriteLine</code>.</td>
+                <td>Comments/formatting, direct primitive reads, Debug output и removal доказуемо redundant paths.</td>
+                <td>Активных дополнительных cache, threshold, serialization или lifecycle решений за пределами LT-01…LT-31 не найдено.</td>
+                <td><span class="risk-low">Низкий</span><br><span class="badge proof">file-by-file diff</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/">baseline folder</a> · <a href="../../DBreeze/LianaTrie/">current folder</a></span></td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <section id="removed">
-        <h2>Что действительно удалено</h2>
-        <p><strong>Функциональная подсистема не удалена.</strong> Удалены или вытеснены четыре implementation strategy:</p>
-        <ol>
-          <li><strong>Logical path как identity cache entry.</strong> Полный byte path + Base64 заменён physical pointer.</li>
-          <li><strong>Recursive helpers для full/from-to/skip.</strong> Их обязанности перенесены в explicit DFS frames.</li>
-          <li><strong>Лишние zero-fill и intermediate arrays.</strong> Новые массивы CLR уже zeroed; Net8 полностью заполняет uninitialized buffers.</li>
-          <li><strong>Wall-clock ticks как invalidation token.</strong> Назначение сохранено через monotonic version.</li>
-        </ol>
-        <p>Fresh allocation `_f` в `RemoveAllKids()` также удалён, но это не cache policy: массив теперь очищается и переиспользуется с полным reset логического состояния.</p>
-      </section>
-
-      <section id="preserved">
-        <h2>Что выглядит удалённым, но сохранено иначе</h2>
-        <div class="grid-2">
-          <div class="card"><h3>Cache</h3><p>Сохранён cache старых committed kids generation node. Изменены key identity и allocation profile. Это не data cache значений: `_values` и `dDynamicDataBlocks` уже не работали в baseline.</p></div>
-          <div class="card"><h3>Write buffering</h3><p>Сохранены dirty generation map, reservation и storage buffers. Нет нового или исчезнувшего «flush после N insert» внутри LianaTrie.</p></div>
-          <div class="card"><h3>Pointer policy</h3><p>Сохранено решение overwrite-in-place при достаточной reservation и append с propagation parent pointer при росте.</p></div>
-          <div class="card"><h3>Read snapshots</h3><p>Transaction по-прежнему кеширует read-root и обновляет его после commit/rollback. `DtTableFixed` стал надёжнее, но перестал быть временем.</p></div>
-          <div class="card"><h3>Nested ownership</h3><p>Coordinator продолжает держать несколько root views и `quantityOpenReads`; commit/rollback не означает безусловное закрытие всех читателей.</p></div>
-          <div class="card"><h3>Disk format</h3><p>Big-endian fields, reservation padding, pointer length и node/value protocols сохранены. Net8 меняет только способ сборки buffer.</p></div>
+      <section id="not-removed">
+        <h2>7. Что выглядит удалённым, но сохранено иначе</h2>
+        <div class="grid-3">
+          <div class="card"><h3>Cache</h3><p>Сохранён cache старых committed kids. Удалён Base64(path), а не snapshot. Неактивные value dictionaries не были рабочим cache baseline.</p></div>
+          <div class="card"><h3>Write buffering</h3><p>Dirty generation map, node reservation и Storage buffers сохранены. LianaTrie-level flush counter не существовал.</p></div>
+          <div class="card"><h3>Pointer policy</h3><p>Overwrite-in-place и append с parent propagation сохранены; pointer теперь дополнительно служит cache identity.</p></div>
+          <div class="card"><h3>Read snapshots</h3><p>Transaction read-root по-прежнему refresh-ится после commit/rollback. Версия стала monotonic token вместо wall-clock ticks.</p></div>
+          <div class="card"><h3>Nested ownership</h3><p>Несколько root views и <code>quantityOpenReads</code> сохранены; Reset отделён от terminal resource disposal.</p></div>
+          <div class="card"><h3>Disk bytes</h3><p>Modern primitives меняют construction pipeline, но raw deterministic output совпадает с baseline.</p></div>
         </div>
       </section>
 
-      <section id="side-effects">
-        <h2>Исправленные старые side effects</h2>
-        <ul>
-          <li><strong>Insert-if-absent existing key:</strong> больше не dirty, не удаляет nested table, не вызывает лишний commit/version cycle.</li>
-          <li><strong>Remove missing key:</strong> больше не считается mutation.</li>
-          <li><strong>RemoveAll with recreation:</strong> reset coordinator отделён от terminal resource disposal.</li>
-          <li><strong>RemoveAllKids:</strong> очищает value pointer, count, empty-value flag и extrema.</li>
-          <li><strong>Partial value:</strong> eager и lazy paths получили согласованные границы и overflow guards.</li>
-          <li><strong>GenerationMap shrink:</strong> больше не удерживает обрезанные node references.</li>
-        </ul>
-        <div class="callout">Эти изменения намеренно не воспроизводят каждый ошибочный side effect эталона. Они сохраняют заявленный контракт операций: no-op не должен повреждать nested data или превращать таблицу в modified.</div>
+      <section id="cache">
+        <h2>8. Cache, cache epoch и read visibility</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Почему pointer-key безопаснее и дешевле</h3>
+            <p>Baseline строил массив logical path и Base64 string даже ради lookup одного physical node. Current использует уже имеющийся dynamic pointer как <code>ulong</code>: меньше transient allocations, короче hashing и нет зависимости identity от построения path.</p>
+          </div>
+          <div class="card">
+            <h3>Цена решения</h3>
+            <p>Pointer unique не навсегда, а только внутри physical state таблицы. Commit completion, rollback и recreation обязаны заменить dictionary до следующего committed read. Любой новый lifecycle path должен соблюдать этот invariant.</p>
+          </div>
+        </div>
+        <details open>
+          <summary>First-image-only, а не общий data cache</summary>
+          <p>При первом overwrite существующего node cache запоминает <code>KidsBeforeModification</code>. Повторные writes в том же epoch не заменяют образ. Он нужен read-root для topology visibility и не кеширует произвольные values.</p>
+        </details>
+        <details>
+          <summary>Почему остаточный cachedGenerationMapLine всё ещё виден</summary>
+          <p>Некоторые старые recursive helpers продолжают строить path как traversal state, а <code>GenerationNodeRead</code> сохраняет совместимый параметр. Pointer cache его уже не использует. Это modernization tail и источник лишних allocations, но не потеря cache semantics.</p>
+        </details>
+      </section>
+
+      <section id="traversal">
+        <h2>9. Итераторы: что стало iterative, а что нет</h2>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Family</th><th>Baseline</th><th>Current</th><th>Семантика / риск</th></tr></thead>
+            <tbody>
+              <tr><td>Full forward/backward</td><td>Recursive DFS.</td><td>Explicit stack of kid enumerators.</td><td>Lazy yield, order и early disposal сохранены; stack overflow устранён.</td></tr>
+              <tr><td>FromTo range</td><td>Recursive bound state.</td><td>Explicit frame с relation к start/stop.</td><td>Branch pruning сохранён; prefix/0/255 edges проверены oracle.</td></tr>
+              <tr><td>Skip</td><td>Recursive counter.</td><td>Explicit DFS + remaining count.</td><td>Не создаёт промежуточную коллекцию.</td></tr>
+              <tr><td>StartFrom / SkipFrom</td><td>Recursive, path copy.</td><td>В основном осталось так же.</td><td>Контракт сохранён; deep stack и O(depth²) allocations остаются backlog.</td></tr>
+              <tr><td>StartsWith / closest prefix</td><td>Recursive depth/path state.</td><td>Осталось recursive.</td><td>Не включать в утверждение о полной stack safety.</td></tr>
+              <tr><td>Min / Max</td><td>Recursive descent.</td><td>Осталось recursive.</td><td>Короткий типовой путь, но теоретический deep-key риск сохраняется.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Full/range/skip stack удерживает O(depth) enumerators/frames, а не O(row count). Раннее завершение enumeration освобождает stack через iterator <code>finally</code> и <code>Dispose</code> вложенных enumerators.</p>
+      </section>
+
+      <section id="nested">
+        <h2>10. Nested tables: identity, ownership и lifecycle</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Structural key cache</h3>
+            <p>Base64-string identity заменена comparer-ом байтов. Stored key clone — осознанная retained allocation: без него мутация caller buffer разрушила бы hash dictionary. Net8 использует <code>SequenceEqual</code> и <code>HashCode.AddBytes</code>; shared — deterministic loop/FNV-style hash.</p>
+          </div>
+          <div class="card">
+            <h3>Root views</h3>
+            <p>Coordinator по-прежнему различает write root и read roots, считает открытые readers и не обязан закрывать их безусловно на каждом commit. Rename/remove обновляют key→pointer association по содержимому ключа.</p>
+          </div>
+        </div>
+        <div class="callout danger">
+          <strong>Inherited lifecycle caveat:</strong> закрытие изменённой nested table до master <code>Commit</code> может потерять её dirty state. Это одинаково в baseline/current и потому не исправлялось совместно с refactoring regressions.
+        </div>
+      </section>
+
+      <section id="partial">
+        <h2>11. Partial reads: закреплённый публичный контракт</h2>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Stored value / range</th><th>Ожидаемый результат</th><th>Eager</th><th>Lazy shared</th><th>Lazy .NET 8</th></tr></thead>
+            <tbody>
+              <tr><td><code>null</code>, любые start/length</td><td><code>null</code></td><td>Да</td><td>Да</td><td>Да, null flag известен из row metadata</td></tr>
+              <tr><td><code>byte[0]</code>, любые start/length</td><td>empty</td><td>Да</td><td>Да</td><td>Да, <code>Array.Empty&lt;byte&gt;()</code></td></tr>
+              <tr><td>Непустое, <code>length == 0</code>, любой start</td><td>empty</td><td>Да</td><td>Да</td><td>Да</td></tr>
+              <tr><td><code>start == value.Length</code></td><td>empty</td><td>Да</td><td>Да</td><td>Да</td></tr>
+              <tr><td><code>start &gt; value.Length</code>, length &gt; 0</td><td><code>null</code></td><td>Да</td><td>Да</td><td>Да</td></tr>
+              <tr><td>Range выходит за конец</td><td>Clamp до available length</td><td>Да</td><td>Да</td><td>Да</td></tr>
+              <tr><td><code>uint.MaxValue</code></td><td>Без wraparound; empty/null по правилам выше</td><td>Да</td><td>Да</td><td>Да</td></tr>
+              <tr><td><code>GetValuePart(startIndex)</code></td><td>Читает от start до конца</td><td colspan="3">Делегирует <code>GetValuePart(startIndex, UInt32.MaxValue)</code>; start не теряется</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Shared возвращает новый zero-length array в legacy-compatible коде; .NET 8 использует безаллокационный <code>Array.Empty&lt;byte&gt;()</code>. Для непустой части Net8 выделяет uninitialized array только перед полным заполнением.</p>
+      </section>
+
+      <section id="memory">
+        <h2>12. Память: transient allocations и retained state</h2>
+        <div class="grid-3">
+          <div class="card"><h3 class="good">Снижено</h3><ul><li>Base64/path allocations node cache.</li><li>Base64 lookup nested cache.</li><li>Temporary endian arrays и concatenations.</li><li>256-slot serialization buffer там, где reservation меньше.</li><li>Новые backing arrays в <code>RemoveAllKids</code>.</li></ul></div>
+          <div class="card"><h3 class="good">Retention исправлен</h3><ul><li>Generation map очищает отрезанные references.</li><li>Cached path invalidates при shrink.</li><li>Terminal Dispose освобождает locks.</li><li>Cache dictionary заменяется на lifecycle boundary.</li></ul></div>
+          <div class="card"><h3 class="warn">Осознанно удерживается</h3><ul><li>Один clone каждого открытого nested key.</li><li>Один committed kids image на изменённый physical node в epoch.</li><li>O(depth) frames полного/range/skip traversal.</li><li>Path copies в оставшихся recursive families.</li></ul></div>
+        </div>
+        <div class="callout">
+          Benchmark allocation gate: рост не обнаружен ни в одном из 72 сценариев. На ключевых workloads: random insert −76.20%, update −95.39%, partial read −79.92%, nested scan −87.63%.
+        </div>
+      </section>
+
+      <section id="performance">
+        <h2>13. Производительность</h2>
+        <div class="stats">
+          <div class="stat"><strong>72</strong><span>Release-сценария</span></div>
+          <div class="stat"><strong>432</strong><span>warmup + 5 измерений</span></div>
+          <div class="stat"><strong>2.247×</strong><span>общий geomean speedup</span></div>
+          <div class="stat"><strong>70 / 72</strong><span>current faster в основном прогоне</span></div>
+          <div class="stat"><strong>0%</strong><span>DB-size delta во всех сценариях</span></div>
+          <div class="stat"><strong>PASS</strong><span>5% regression/allocation gate</span></div>
+        </div>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead><tr><th>Сценарий</th><th>Time delta current</th><th>Allocation delta</th><th>Интерпретация</th></tr></thead>
+            <tbody>
+              <tr><td>RandomBulkInsert1M</td><td class="good">−30.66%</td><td class="good">−76.20%</td><td>Меньше key/cache/serialization temporaries.</td></tr>
+              <tr><td>BulkUpdate100K</td><td class="good">−27.74%</td><td class="good">−95.39%</td><td>Exact buffers и отсутствие промежуточных concatenations.</td></tr>
+              <tr><td>SequentialRead100000Part64</td><td class="good">−23.20%</td><td class="good">−79.92%</td><td>Row metadata и direct partial Storage read.</td></tr>
+              <tr><td>NestedForward100000Value</td><td class="good">−55.60%</td><td class="good">−87.63%</td><td>Structural lookup и traversal allocation reduction.</td></tr>
+              <tr><td>ForwardTake100000Lazy, isolated 10-run</td><td class="good">−4.77%</td><td class="good">−20.08%</td><td>Основной run дал шумный outlier; изолированный gate регрессию не подтвердил.</td></tr>
+              <tr><td>ForwardTake1000Lazy, isolated 10-run</td><td class="good">−20.62%</td><td class="good">−19.94%</td><td>Второй спорный основной result также не воспроизвёл regression.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">Ограничения: OS file cache был прогрет и явно не очищался; old/current запускались последовательно, не interleaved. Поэтому небольшие различия интерпретируются по изолированным повторам, а не по одному median.</p>
+        <p>Сохранённые отчёты: <code>D:\Temp\DBreezeLianaAudit-20260819-implementation\full-scale-5\comparison-final-5pct\comparison.md</code> и <code>...\final-gates\scan-isolated-10\comparison-5pct\comparison.md</code>.</p>
+      </section>
+
+      <section id="compatibility">
+        <h2>14. API, regression и disk compatibility evidence</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="good">Public API</h3>
+            <ul>
+              <li>Полный baseline surface: 1423 entries.</li>
+              <li>Current: 1425; удалено 0, изменено 0.</li>
+              <li>Reviewed additions: реализация <code>IDisposable</code> и <code>Dispose()</code> у <code>DbReaderWriterLock</code>.</li>
+              <li>LianaTrie-facing <code>Row</code>, <code>Transaction</code>, <code>NestedTable</code> и traversal signatures сохранены.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 class="good">Old↔new deterministic fixture</h3>
+            <ul>
+              <li>Old создаёт base 286 rows → current читает/дописывает → old читает 318.</li>
+              <li>Current создаёт base → old читает/дописывает → current читает extended.</li>
+              <li>В каждом base/extended checkpoint совпали 24/24 файлов по relative path, length и SHA-256.</li>
+              <li>Общие операции, counts и checksums совпали.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Regression coverage</h3>
+            <p><strong>Свежий Release gate 2026-08-20: 74/74 PASS.</strong> Сценарии покрывают storage/transactions/text/LianaTrie. Liana-specific coverage включает traversal oracle, early enumeration, null/empty partial truth table, committed node images, rapid commits, nested mutation/rename, remove/recreate и randomized operations.</p>
+            <p class="muted">Первая попытка остановилась на 30-second timeout в non-Liana <code>ParallelMultiTableCommitsRemainDurable</code>; немедленный полный повтор прошёл 74/74. Это подтверждает environment-sensitive timing, а не воспроизводимую LianaTrie regression.</p>
+          </div>
+          <div class="card">
+            <h3>Build matrix</h3>
+            <p>Проверены .NET Framework 4.7.2, PCL Profile111, netcoreapp3.1, netstandard2.1, net6.0 и net8.0. Modern specialization не протекает в legacy targets.</p>
+            <p>Источники: <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">LianaTrieRegressionTests.cs</a>, <a href="../../DBreeze.Net8.Benchmarks/LianaTrieCompatibilityProbe.cs">LianaTrieCompatibilityProbe.cs</a>, <a href="../../DBreeze.Net8.Benchmarks/ApiSurfaceProbe.cs">ApiSurfaceProbe.cs</a>.</p>
+          </div>
+        </div>
       </section>
 
       <section id="risks">
-        <h2>Спорные места и открытые риски</h2>
-        <details open>
-          <summary>1. Traversal-переход завершён не полностью</summary>
-          <p>Deep full scan защищён explicit stack, но start-from, skip-from, min/max, starts-with и closest-prefix ещё рекурсивны. Нужны deep-key tests отдельно для каждого семейства и последующая iterative миграция с oracle.</p>
-        </details>
-        <details open>
-          <summary>2. `cachedGenerationMapLine` стал мёртвой частью внутреннего интерфейса</summary>
-          <p>`GenerationNodeRead` принимает path, но lookup выполняется только по pointer. В remaining recursive code path всё ещё копируется на каждом уровне. Это не correctness regression, но поддерживает ложную архитектурную модель и лишние allocations.</p>
-        </details>
-        <details open>
-          <summary>3. Physical-pointer cache требует жёсткой epoch discipline</summary>
-          <p>Корректность зависит от очистки `_nodes` на каждом событии, которое может переиспользовать physical offsets. Текущие commit/rollback/recreate paths это делают; новые lifecycle paths обязаны сохранять invariant.</p>
-        </details>
-        <details>
-          <summary>4. Platform parity partial reads</summary>
-          <p>Net8 `ReadKeyValue` проверяет `valueLength &gt; Int32.MaxValue`; common full `ReadKeyValue` всё ещё делает прямой cast в одном path. Для нормальных DB файлов это недостижимо, но corrupt/hostile storage semantics различаются.</p>
-        </details>
-        <details>
-          <summary>5. Имя `DtTableFixed` теперь вводит в заблуждение</summary>
-          <p>Значение больше нельзя трактовать как `DateTime.Ticks`. Публичную сигнатуру менять не нужно, но внутренний контракт следует документировать как opaque monotonic version.</p>
-        </details>
-        <details>
-          <summary>6. Structural key hash различается по платформам</summary>
-          <p>Common comparer использует deterministic FNV-like hash, Net8 — process-randomized `HashCode`. Dictionary живёт только в памяти, поэтому disk/order compatibility не затрагивается; возможна только разница performance profile.</p>
-        </details>
-      </section>
-
-      <section id="boundaries">
-        <h2>Границы ответственности LianaTrie / Transactions / Storage</h2>
-        <div class="grid-2">
-          <div class="card">
-            <h3>LianaTrie</h3>
-            <ul>
-              <li>Trie topology, kids/value pointers и reservation.</li>
-              <li>Dirty generation map и writer-visible structural save.</li>
-              <li>Committed old-image cache при node overwrite.</li>
-              <li>Nested trie lifecycle внутри master table.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Transactions</h3>
-            <ul>
-              <li>Выбор write-root против committed read-root.</li>
-              <li>Кеширование read-root и refresh по `DtTableFixed`.</li>
-              <li>`RandomKeySorter.Flush()` перед transaction commit.</li>
-              <li>Locking, table reservation и multi-table atomicity.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Storage</h3>
-            <ul>
-              <li>Sequential/random write buffers.</li>
-              <li>Rollback и rollback-helper files.</li>
-              <li>Физический flush/fsync и backup stream.</li>
-              <li>Read view committed/uncommitted bytes.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Практическая формулировка</h3>
-            <p><code>SaveGenerationMap</code> делает trie structurally readable. <code>Commit</code> завершает transaction semantics. Storage flush делает bytes durable. Эти три события нельзя называть одним словом «flush» без уточнения слоя.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="platforms">
-        <h2>Common и Net8: фактическая композиция</h2>
-        <p>Net8-проект не содержит независимую копию всей LianaTrie. Он связывает общие файлы, поэтому common correctness-изменения автоматически входят в Net8:</p>
-        <div class="grid-2">
-          <div class="card">
-            <h3>Linked из common</h3>
-            <p><code>LianaTrie.cs</code>, <code>LTrieRootNode.cs</code>, `Iterations/Forward.cs`, `Iterations/Backward.cs`, `NestedTable.cs`, `NestedTableInternal.cs`.</p>
-          </div>
-          <div class="card">
-            <h3>Net8 specialized</h3>
-            <p><code>LTrieGenerationMap</code>, <code>LTrieGenerationNode</code>, <code>LTrieKidsInNode</code>, <code>LTrieRow</code>, <code>LTrieWriteCache</code>, coordinator/storage nested tables и small data holders.</p>
-          </div>
-        </div>
-        <p>Следствие: iterative traversal является общей оптимизацией всех проектов, которые подключают эти файлы; `BinaryPrimitives`, spans и `AllocateUninitializedArray` остаются Net8-only. Correctness fixes в duplicated specialized файлах необходимо зеркалить по платформенной матрице.</p>
-      </section>
-
-      <section id="evidence">
-        <h2>Доказательства и уровень уверенности</h2>
-        <h3>Regression suite</h3>
-        <p>Повторный запуск 2026-08-19: <code>dotnet run --project DBreeze.Net8.Tests\DBreeze.Net8.Tests.csproj -c Release</code> — <strong>63/63 PASS</strong>.</p>
-        <ul>
-          <li>`RemoveAllResetsEmptyKeyState`, `RemoveAllWithFileRecreationKeepsTableReusable`.</li>
-          <li>`TraversalContractMatchesReferenceModel`, `RangeIterationStopsAtItsBoundary`, `SkipTraversalMatchesReferenceModel`.</li>
-          <li>`DeepFullScanDoesNotUseTheCallStack`.</li>
-          <li>`ReadRootRefreshesAfterRapidCommits`, `ReadVisibilityUsesCommittedNodeImages`.</li>
-          <li>`InsertIfAbsentPreservesNestedTable`, `NestedStructuralKeyCacheSurvivesMutationAndRename`.</li>
-          <li>`PartialValueRangesAreOverflowSafe`, `RandomizedOperationsMatchReferenceModel`.</li>
-        </ul>
-        <p>Исходники: <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">LianaTrieRegressionTests.cs</a> и <a href="../../DBreeze.Net8.Tests/Program.cs">Program.cs</a>.</p>
-
-        <h3>Disk compatibility</h3>
-        <ul>
-          <li>Process-separated old-create → new-extend → old-verify: PASS.</li>
-          <li>New-create → old-extend → new-verify: PASS.</li>
-          <li>Deterministic LianaTrie tables: совпали file inventory, structure и lengths; общий размер strict-created набора — 222710 bytes.</li>
-          <li>Один hash расходился в TextSearch-файле вне LianaTrie; поэтому для всего комплексного набора заявляется logical/length compatibility, а не полная byte identity каждого файла.</li>
-        </ul>
-        <p>Probe: <a href="../../DBreeze.Net8.Benchmarks/DiskCompatibilityProbe.cs">DiskCompatibilityProbe.cs</a>.</p>
-
-        <h3>Focused performance evidence</h3>
-        <ul>
-          <li>ForwardScanLazy + NarrowForwardRange: geometric mean около <strong>1.012×</strong>, allocation regression не обнаружена.</li>
-          <li>Historical skip: около <strong>1.024×</strong>; allocations ниже на <strong>3.9–5.9%</strong>.</li>
-          <li>Более широкий 70-case smoke: около <strong>0.967×</strong> по времени при <strong>−9.73%</strong> allocations — небольшая aggregate time regression требует scenario-level интерпретации.</li>
-        </ul>
-        <p>Benchmarks доказывают allocation direction, но не заменяют contract tests. Источник сценариев: <a href="../../DBreeze.Net8.Benchmarks/LianaTrieBenchmarks.cs">LianaTrieBenchmarks.cs</a>.</p>
-
-        <h3>Что пока доказано только кодом</h3>
-        <ul>
-          <li>Deep stack safety remaining start/prefix/min/max families — <strong>не доказана</strong>.</li>
-          <li>Pointer-cache invariant при будущих новых recreation paths — требует обязательного lifecycle review.</li>
-          <li>Common-platform behavior на corrupt value length &gt; Int32.MaxValue отличается от Net8.</li>
-        </ul>
-      </section>
-
-      <section id="recommendations">
-        <h2>Рекомендации и следующий приоритет</h2>
+        <h2>15. Открытые риски и следующий этап</h2>
         <div class="priority">
-          <span class="p p0">P0</span><div><strong>Закрепить deep traversal matrix для оставшихся recursive API.</strong> Отдельно start-from, skip-from, min/max, starts-with и closest-prefix в обе стороны; глубина должна превышать безопасный recursive stack.</div>
-          <span class="p p0">P0</span><div><strong>Сохранить lifecycle regression как обязательный gate.</strong> `RemoveAll(true) → insert/nested → commit → reopen`, несколько recreation и idempotent dispose для memory/disk.</div>
-          <span class="p p1">P1</span><div><strong>Завершить pointer-cache migration.</strong> Удалить внутренний `cachedGenerationMapLine`, заменить depth/path-copy в remaining traversal на frame state, затем повторить oracle и benchmarks.</div>
-          <span class="p p1">P1</span><div><strong>Формализовать cache-epoch invariant.</strong> Любой новый path, способный переиспользовать offsets, обязан очистить `_nodes` до последующего committed read.</div>
-          <span class="p p1">P1</span><div><strong>Выровнять oversized/corrupt read guards.</strong> Общие и Net8 implementations должны выдавать одинаковую контролируемую ошибку без unchecked cast.</div>
-          <span class="p p2">P2</span><div><strong>Документировать `DtTableFixed` как version token.</strong> Не менять public API, но убрать трактовку как DateTime из комментариев и внутренних имён при следующем совместимом refactor.</div>
-          <span class="p p2">P2</span><div><strong>Удалить commented cache archaeology отдельным cleanup-коммитом.</strong> Это уменьшит вероятность, что следующая LLM сочтёт `_values` или dynamic-block dictionaries потерянной рабочей системой.</div>
-          <span class="p p2">P2</span><div><strong>Добавить sparse fan-out benchmark.</strong> Он напрямую измерит эффект `MinKid..MaxKid` и стоимость поддержания extrema.</div>
+          <span class="p">P0</span><div><strong>Не нарушать cache epoch.</strong> Любой новый path, способный переиспользовать physical offsets, должен очистить pointer-keyed <code>_nodes</code> до committed read.</div>
+          <span class="p">P0</span><div><strong>Сохранить recreate gate.</strong> <code>RemoveAll(true) → insert/nested → commit → reopen</code>, повторная recreation и idempotent terminal dispose обязательны.</div>
+          <span class="p p1">P1</span><div><strong>Отдельно решить early nested dispose.</strong> Не менять поведение без owner decision и двусторонней disk/journal fixture.</div>
+          <span class="p p1">P1</span><div><strong>Минимизировать mixed write-epoch defect.</strong> Разделить ChangeKey, nested mutation и binary inserts; затем проектировать fix отдельно от modernization.</div>
+          <span class="p p1">P1</span><div><strong>Завершить iterative traversal.</strong> StartFrom, SkipFrom, prefix и min/max перевести на frames только в отдельном change set с deep-key differential tests.</div>
+          <span class="p p2">P2</span><div><strong>Убрать архитектурный хвост path parameter.</strong> После завершения recursion migration удалить неиспользуемый <code>cachedGenerationMapLine</code> и устаревшие комментарии.</div>
         </div>
+        <p>Подробный отделённый backlog: <a href="../LianaTrie_Modernization_Backlog.md">LianaTrie_Modernization_Backlog.md</a>.</p>
+      </section>
+
+      <section id="conclusion">
+        <h2>16. Заключение</h2>
+        <p>Рефакторинг не демонтировал скрытую cache/flush архитектуру LianaTrie. Он заменил дорогую logical-path identity на pointer identity, рекурсивные hot-path обходы — на explicit frames, а временные serialization buffers — на exact modern primitives. Старые boundaries между trie, transaction и storage сохранены.</p>
+        <p>Наблюдаемые пользовательские изменения ограничены исправлением ошибочных side effects и формализацией partial-read edge cases. Формат файлов доказан не только чтением в обе стороны, но и raw byte identity. Memory и performance envelope улучшены по измеренным сценариям.</p>
+        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Оставшуюся recursion и два inherited lifecycle/mixed-mutation дефекта вести отдельными change sets, не смешивая их с этим compatibility gate.</div>
       </section>
     </main>
   </div>
 
   <footer>
-    Автономный отчёт: внешние CSS, JavaScript, шрифты и сетевые ресурсы не используются. При отключённом JavaScript вся информация остаётся доступной; JavaScript нужен только для фильтрации матрицы.
+    DBreeze LianaTrie Architecture Audit · baseline <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code> · current HEAD <code>7fba0276cad9937a9dbc4f1f42af7903e000793b</code> + audited working tree · generated 2026-08-20.
   </footer>
 
   <script>
     (() => {
-      "use strict";
-      const table = document.getElementById("audit-table");
-      const rows = Array.from(table.tBodies[0].rows);
-      const search = document.getElementById("audit-search");
-      const status = document.getElementById("status-filter");
-      const risk = document.getElementById("risk-filter");
-      const count = document.getElementById("visible-count");
-      const reset = document.getElementById("reset-filters");
+      const search = document.getElementById('audit-search');
+      const status = document.getElementById('status-filter');
+      const risk = document.getElementById('risk-filter');
+      const reset = document.getElementById('reset-filter');
+      const count = document.getElementById('visible-count');
+      const rows = Array.from(document.querySelectorAll('#audit-table tbody tr'));
 
       const apply = () => {
-        const query = search.value.trim().toLocaleLowerCase("ru");
+        const query = search.value.trim().toLocaleLowerCase('ru');
         let visible = 0;
         for (const row of rows) {
-          const matchesText = !query || row.textContent.toLocaleLowerCase("ru").includes(query);
-          const matchesStatus = status.value === "all" || row.dataset.status === status.value;
-          const matchesRisk = risk.value === "all" || row.dataset.risk === risk.value;
-          const show = matchesText && matchesStatus && matchesRisk;
-          row.classList.toggle("hidden", !show);
+          const statusMatches = status.value === 'all' || row.dataset.status === status.value;
+          const riskMatches = risk.value === 'all' || row.dataset.risk === risk.value;
+          const textMatches = !query || row.textContent.toLocaleLowerCase('ru').includes(query);
+          const show = statusMatches && riskMatches && textMatches;
+          row.hidden = !show;
           if (show) visible++;
         }
-        count.textContent = `Показано ${visible} из ${rows.length}`;
+        count.textContent = 'Показано: ' + visible + ' / ' + rows.length;
       };
 
-      search.addEventListener("input", apply);
-      status.addEventListener("change", apply);
-      risk.addEventListener("change", apply);
-      reset.addEventListener("click", () => {
-        search.value = "";
-        status.value = "all";
-        risk.value = "all";
+      search.addEventListener('input', apply);
+      status.addEventListener('change', apply);
+      risk.addEventListener('change', apply);
+      reset.addEventListener('click', () => {
+        search.value = '';
+        status.value = 'all';
+        risk.value = 'all';
         apply();
         search.focus();
       });

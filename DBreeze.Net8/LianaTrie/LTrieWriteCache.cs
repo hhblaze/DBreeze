@@ -1221,6 +1221,16 @@ namespace DBreeze.LianaTrie
         /// <returns></returns>
         public byte[] ReadKey(bool useCache, byte[] pointer)
         {
+            return ReadKey(useCache, pointer, out _, out _, out _);
+        }
+
+        internal byte[] ReadKey(bool useCache, byte[] pointer, out long valueStartPtr,
+            out uint valueLength, out bool valueIsNull)
+        {
+            valueStartPtr = -1;
+            valueLength = 0;
+            valueIsNull = false;
+
             //Changing format:
             //1byte - protocol, FullKeyLen (2 bytes), FullValueLen (4 bytes),[Reserved Space For Update- 4 bytes],FullKey,FullValue
             //1 + 2 + 4 + 4 + 100 = 111
@@ -1232,6 +1242,10 @@ namespace DBreeze.LianaTrie
             byte[] data = Trie.Storage.Table_Read(useCache, pointer, initRead);
             byte protocol = data[0];
             ushort keySize = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(1, 2));
+            valueIsNull = (data[3] & 0x80) != 0;
+            if (!valueIsNull)
+                valueLength = BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(3, 4));
+            long recordPointer = (long)pointer.DynamicLength_To_UInt64_BigEndian();
 
 
             byte[] key = null;
@@ -1251,6 +1265,7 @@ namespace DBreeze.LianaTrie
                     }
 
                     key = data.Substring(7, keySize);
+                    valueStartPtr = recordPointer + 7 + keySize;
 
                     break;
                 case 1:
@@ -1262,6 +1277,7 @@ namespace DBreeze.LianaTrie
                     }
 
                     key = data.Substring(11, keySize);
+                    valueStartPtr = recordPointer + 11 + keySize;
 
                     break;
             }
@@ -1291,9 +1307,10 @@ namespace DBreeze.LianaTrie
 
             //Changing format:
             //1 byte protocol type, FullKeyLen (2 bytes), FullValueLen (4 bytes), [ReservedSpace], FullKey,FullValue        
-            //1 + 2 + 4 + 4 + 100  = 111
-            //int initRead = 111; //Where 100 is standard max size of the key in case of words (even 50 must be enough), in case of sentences can be much longer, probably we can setup it later
-            int initRead = 4096;
+            // Positioned reader I/O has no FileStream read-ahead to amortize the historical
+            // 4 KiB probe. Writer-side delete/update paths, however, use the complete record
+            // and benefit from the original single read for common values.
+            int initRead = useCache ? 111 : 4096;
 
             byte[] data = null;
             byte protocol = 0;
@@ -1323,7 +1340,7 @@ namespace DBreeze.LianaTrie
             //if (valueSize == 0)
             //    return null;
             if (valueSize == 0)
-                return new byte[0];
+                return Array.Empty<byte>();
             /**************/
 
             protocol = data[0];
@@ -1427,12 +1444,12 @@ namespace DBreeze.LianaTrie
             //if (valueSize == 0)
             //    return null;
             if (valueSize == 0)
-                return new byte[0];
+                return Array.Empty<byte>();
             /**************/
 
             //Checking startIndex and Length compliance with valueSize
             if (length == 0)
-                return new byte[0];
+                return Array.Empty<byte>();
 
             if (startIndex > (uint)valueSize)
                 return null;
@@ -1440,6 +1457,9 @@ namespace DBreeze.LianaTrie
             uint availableLength = (uint)valueSize - startIndex;
             if (length > availableLength)
                 length = availableLength;
+
+            if (length == 0)
+                return Array.Empty<byte>();
 
             //--------------------------------------------------------
 

@@ -1021,6 +1021,9 @@ namespace DBreeze.LianaTrie
                         //byte[] storedKey = _generationMap[i].ReadKidKeyFromValPtr(kidDef.Ptr);                                               
                         long valueStartPtr = 0;
                         uint valueLength = 0;
+#if NET8_0_OR_GREATER
+                        bool valueIsNull = false;
+#endif
                         byte[] xValue = null;
                         byte[] storedKey = null;
 
@@ -1030,7 +1033,12 @@ namespace DBreeze.LianaTrie
                         }
                         else
                         {
+#if NET8_0_OR_GREATER
+                            storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr,
+                                out valueStartPtr, out valueLength, out valueIsNull);
+#else
                             storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
+#endif
                         }
 
                        // byte[] storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
@@ -1045,6 +1053,14 @@ namespace DBreeze.LianaTrie
                             kv.Value = xValue;                           
                             kv.ValueIsReadOut = true;
                         }
+#if NET8_0_OR_GREATER
+                        else
+                        {
+                            kv.ValueStartPointer = valueStartPtr;
+                            kv.ValueFullLength = valueLength;
+                            kv.ValueIsNull = valueIsNull;
+                        }
+#endif
                         kv.LinkToValue = kidDef.Ptr;
                         return kv;
                     }
