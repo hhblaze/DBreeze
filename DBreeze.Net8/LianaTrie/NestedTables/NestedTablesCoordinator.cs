@@ -57,7 +57,7 @@ namespace DBreeze.LianaTrie
         private int countNested = 0;
         private int _disposed = 0;
         private List<NestedTableInternal> _deferredClosedTables = null;
-        private int _transactionCompletionPending = 0;
+        private int _commitCycleCompletionPending = 0;
 
         /// <summary>
         /// Will be taken into consideration only from MasterTrie.
@@ -148,7 +148,7 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void TransactionalCommitFinished()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 1);
 
             Sync_NestedTables.EnterReadLock();
             try
@@ -179,7 +179,7 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void Commit()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 1);
 
             Sync_NestedTables.EnterReadLock();
             try
@@ -212,7 +212,7 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void TransactionalCommit()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 1);
             Sync_NestedTables.EnterReadLock();
             try
             {
@@ -241,7 +241,7 @@ namespace DBreeze.LianaTrie
 
         internal void Rollback()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 1);
             Sync_NestedTables.EnterReadLock();
             try
             {
@@ -273,7 +273,7 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal void TransactionalRollback()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 1);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 1);
             Sync_NestedTables.EnterReadLock();
             try
             {
@@ -298,9 +298,11 @@ namespace DBreeze.LianaTrie
 
         }
 
-        internal void TransactionFinished()
+        // Completes one commit/rollback cycle. It does not end the public Transaction and deliberately
+        // keeps nested tables with open handles coordinated for the next write epoch.
+        internal void CommitCycleFinished()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 0);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 0);
             ReleaseDeferredClosedTables();
         }
 
@@ -534,7 +536,7 @@ namespace DBreeze.LianaTrie
                         return;
 
                     if (nestedTable.IsModified ||
-                        System.Threading.Interlocked.CompareExchange(ref _transactionCompletionPending, 0, 0) != 0)
+                        System.Threading.Interlocked.CompareExchange(ref _commitCycleCompletionPending, 0, 0) != 0)
                     {
                         if (!nestedTable.ClosePending)
                         {
@@ -748,7 +750,7 @@ namespace DBreeze.LianaTrie
 
         private List<NestedTableInternal> DetachAll()
         {
-            System.Threading.Interlocked.Exchange(ref _transactionCompletionPending, 0);
+            System.Threading.Interlocked.Exchange(ref _commitCycleCompletionPending, 0);
             List<NestedTableInternal> detachedTables = null;
             foreach (var nt in _nestedTables)
             {

@@ -330,7 +330,7 @@
     <div class="eyebrow">DBreeze · refactoring review · 20 августа 2026</div>
     <h1>Архитектурный аудит LianaTrie: текущая версия против эталона</h1>
     <p>Аудит отвечает не только на вопрос «какие строки изменились», а на вопрос «какие инженерные решения исчезли, сохранились или были заменены эквивалентом». Главные границы: пользовательский контракт, old↔new disk compatibility, retained memory и performance envelope.</p>
-    <p>Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code> (<code>a83424e2</code>). Текущий код: shared <code>DBreeze/LianaTrie</code> и .NET 8 specialization <code>DBreeze.Net8/LianaTrie</code>, HEAD <code>1584af315</code> плюс проверенный working tree.</p>
+    <p>Эталон: <code>D:\VS\DBreezeRealm_copy\DBreeze</code> (<code>a83424e2</code>). Текущий код: shared <code>DBreeze/LianaTrie</code> и .NET 8 specialization <code>DBreeze.Net8/LianaTrie</code>, HEAD <code>5c6054804</code> плюс проверенный working tree.</p>
     <div class="hero-meta">
       <span>Отчёт автономный: без CDN и внешнего JavaScript</span>
       <span>Максимальная ширина: 2440 px</span>
@@ -386,7 +386,7 @@
           </div>
           <div class="card">
             <h3 class="good">Унаследованные data-loss дефекты закрыты</h3>
-            <p>Dirty generation-map при mixed write epoch и early dispose изменённой nested table исправлены без изменения публичного API, journal или wire format. Оба сценария закреплены постоянными P0 regression-gates.</p>
+            <p>Dirty generation-map при mixed write epoch, early dispose изменённой nested table и потеря второго write epoch через оставшийся открытым handle исправлены без изменения публичного API, journal или wire format. Все три сценария закреплены постоянными P0 regression-gates.</p>
           </div>
         </div>
       </section>
@@ -453,7 +453,7 @@
           <code>AutomaticFlushLimitQuantityPerTable</code> принадлежит уровню Transactions/RandomKeySorter; durable flush и fsync принадлежат Storage. <code>SaveGenerationMap</code> делает структуру читаемой в текущем transaction view, но сам по себе не обещает durability.
         </div>
         <div class="grid-3">
-          <div class="card"><h3>Commit</h3><p>Dirty nested table с нулём handles остаётся coordinator-owned до завершения master root/storage phase. Только после completion она detach-ится и освобождается; между фазами transactional commit cleanup запрещён.</p></div>
+          <div class="card"><h3>Commit</h3><p>Dirty nested table с нулём handles остаётся coordinator-owned до завершения master root/storage phase. <code>CommitCycleFinished</code> завершает только этот cycle, а не пользовательский <code>Transaction</code>: zero-handle table после completion detach-ится, открытые handles сохраняются для следующего epoch; между фазами transactional commit cleanup запрещён.</p></div>
           <div class="card"><h3>Rollback</h3><p>Deferred nested mutations сначала откатываются вместе с master view, затем освобождаются. Cache epoch заменяется, чтобы physical pointer не адресовал образ из предыдущего состояния.</p></div>
           <div class="card"><h3>Recreate / Dispose</h3><p><code>Reset()</code> оставляет coordinator reusable для <code>RemoveAll(true)</code>. Terminal <code>Dispose()</code> и internal cleanup идемпотентны; тяжёлое освобождение выполняется вне coordinator write-lock.</p></div>
         </div>
@@ -717,7 +717,7 @@
               <tr data-status="fixed" data-risk="high">
                 <td>LT-30</td><td><span class="badge fixed">исправлено</span><br><strong>Early nested dispose</strong></td>
                 <td>Dispose изменённой nested table до master Commit может потерять изменения.</td>
-                <td>Public handle закрывается один раз; dirty internal table deferred до исхода master transaction. Atomic phase-token запрещает cleanup после nested sub-commit, но до master completion. Rollback, relocation, Reset/recreate и terminal cleanup синхронизированы во всех target coordinators.</td>
+                <td>Public handle закрывается один раз; dirty internal table deferred до исхода master commit/rollback cycle. Atomic phase-token запрещает cleanup после nested sub-commit, но до master completion. Rollback, relocation, Reset/recreate и terminal cleanup синхронизированы во всех target coordinators.</td>
                 <td>Контракт закреплён: <code>Dispose</code> закрывает handle, <code>Commit</code> сохраняет уже выполненные nested mutations, <code>Rollback</code> отменяет их. Wire format и journal не менялись.</td>
                 <td><span class="risk-high">P0 data-loss, закрыт</span><br><span class="badge proof">code</span><span class="badge proof">regression</span><span class="badge proof">disk probe</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/NestedTables/NestedTable.cs">baseline lifecycle</a> · <a href="../../DBreeze/LianaTrie/NestedTables/NestedTablesCoordinator.cs">current coordinator</a> · <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">lifecycle tests</a></span></td>
               </tr>
@@ -728,11 +728,18 @@
                 <td>Подтверждённые inserts больше не исчезают; отсутствующий source сохраняет <code>WasChanged == false</code>. API, commit/rollback, journal и disk protocol прежние.</td>
                 <td><span class="risk-high">Высокий, закрыт</span><br><span class="badge proof">code</span><span class="badge proof">regression</span><span class="badge proof">disk probe</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LTrieRootNode.cs">baseline GetKey</a> · <a href="../../DBreeze/LianaTrie/LTrieRootNode.cs">current guard</a> · <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">mixed-epoch tests</a></span></td>
               </tr>
+              <tr data-status="fixed" data-risk="high">
+                <td>LT-32</td><td><span class="badge fixed">исправлено</span><br><strong>Открытый NestedTable между Commit cycles</strong></td>
+                <td>После первого <code>Commit</code>/<code>Rollback</code> handle оставался доступным, но следующая mutation не re-arm-ила master table; второй commit терял её. Baseline/current repro: <code>K1=true, K2=false</code>.</td>
+                <td>Master trie выдаёт allocation-free session token на пользовательскую write session. Реальная child mutation восстанавливает owner-thread coordinator и итеративно помечает immediate/recursive parent chain; <code>CommitCycleFinished</code> не инвалидирует открытые handles. Terminal transaction меняет token.</td>
+                <td><code>Commit</code> завершает epoch, не <code>Transaction</code>. Тот же writable handle начинает следующий epoch; no-op не создаёт dirty cycle, stale/cross-thread вызовы отклоняются. Direct <code>LTrie</code> поддерживает ту же модель.</td>
+                <td><span class="risk-high">P0 data-loss, закрыт</span><br><span class="badge proof">code</span><span class="badge proof">regression</span><span class="badge proof">disk probe</span><span class="badge proof">benchmark</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/LianaTrie.cs">baseline commit cycle</a> · <a href="../../DBreeze/LianaTrie/LianaTrie.cs">current session token</a> · <a href="../../DBreeze/LianaTrie/NestedTables/NestedTableInternal.cs">current re-arm</a> · <a href="../../DBreeze.Net8.Tests/LianaTrieRegressionTests.cs">repeated-cycle tests</a></span></td>
+              </tr>
               <tr data-status="preserved" data-risk="low">
-                <td>LT-32</td><td><span class="badge preserved">несемантическое</span><br><strong>Остальной diff</strong></td>
+                <td>LT-33</td><td><span class="badge preserved">несемантическое</span><br><strong>Остальной diff</strong></td>
                 <td>Legacy comments, redundant temporary arrays, redundant impossible-size check, <code>Console.WriteLine</code>.</td>
                 <td>Comments/formatting, direct primitive reads, Debug output и removal доказуемо redundant paths.</td>
-                <td>Активных дополнительных cache, threshold, serialization или lifecycle решений за пределами LT-01…LT-32 не найдено.</td>
+                <td>Активных дополнительных cache, threshold, serialization или lifecycle решений за пределами LT-01…LT-33 не найдено.</td>
                 <td><span class="risk-low">Низкий</span><br><span class="badge proof">file-by-file diff</span><br><span class="sources"><a href="file:///D:/VS/DBreezeRealm_copy/DBreeze/DBreeze/LianaTrie/">baseline folder</a> · <a href="../../DBreeze/LianaTrie/">current folder</a></span></td>
               </tr>
             </tbody>
@@ -747,7 +754,7 @@
           <div class="card"><h3>Write buffering</h3><p>Dirty generation map, node reservation и Storage buffers сохранены. LianaTrie-level flush counter не существовал.</p></div>
           <div class="card"><h3>Pointer policy</h3><p>Overwrite-in-place и append с parent propagation сохранены; pointer теперь дополнительно служит cache identity.</p></div>
           <div class="card"><h3>Read snapshots</h3><p>Transaction read-root по-прежнему refresh-ится после commit/rollback. Версия стала monotonic token вместо wall-clock ticks.</p></div>
-          <div class="card"><h3>Nested ownership</h3><p>Несколько root views и <code>quantityOpenReads</code> сохранены; Reset отделён от terminal resource disposal.</p></div>
+          <div class="card"><h3>Nested ownership</h3><p>Несколько root views и <code>quantityOpenReads</code> сохранены; Reset отделён от terminal resource disposal, а commit-cycle completion — от окончания пользовательского Transaction.</p></div>
           <div class="card"><h3>Disk bytes</h3><p>Modern primitives меняют construction pipeline, но raw deterministic output совпадает с baseline.</p></div>
         </div>
       </section>
@@ -801,11 +808,14 @@
           </div>
           <div class="card">
             <h3>Root views</h3>
-            <p>Coordinator по-прежнему различает write root и read roots и считает открытые handles. Rename/relocation обновляют key, full-value pointer и root каждой retained table; last clean handle освобождает table сразу, last dirty handle передаёт её master coordinator до transaction outcome.</p>
+            <p>Coordinator по-прежнему различает write root и read roots и считает открытые handles. Rename/relocation обновляют key, full-value pointer и root каждой retained table; last clean handle освобождает table сразу, last dirty handle передаёт её master coordinator до commit/rollback-cycle outcome.</p>
           </div>
         </div>
         <div class="callout good">
           <strong>Исправленный lifecycle-контракт:</strong> <code>Dispose</code>/<code>CloseTable</code> атомарно и идемпотентно закрывает только конкретный handle. Dirty state остаётся доступным coordinator до успешного <code>Commit</code> либо <code>Rollback</code>; освобождение не выполняется между фазами transactional commit и не удерживает coordinator write-lock во время cascade dispose.
+        </div>
+        <div class="callout good">
+          <strong>Несколько commit cycles:</strong> открытый writable <code>NestedTable</code> не инвалидируется промежуточным <code>Commit</code>/<code>Rollback</code>. Session token master trie остаётся стабильным до terminal <code>TransactionIsFinished</code>; первая реальная mutation следующего epoch allocation-free re-arm-ит coordinator и всю recursive parent chain. No-op операции не помечают master dirty.
         </div>
       </section>
 
@@ -834,7 +844,7 @@
         <div class="grid-3">
           <div class="card"><h3 class="good">Снижено</h3><ul><li>Base64/path allocations node cache.</li><li>Base64 lookup nested cache.</li><li>Temporary endian arrays и concatenations.</li><li>256-slot serialization buffer там, где reservation меньше.</li><li>Новые backing arrays в <code>RemoveAllKids</code>.</li></ul></div>
           <div class="card"><h3 class="good">Retention исправлен</h3><ul><li>Generation map очищает отрезанные references.</li><li>Cached path invalidates при shrink.</li><li>Terminal Dispose освобождает locks.</li><li>Cache dictionary заменяется на lifecycle boundary.</li></ul></div>
-          <div class="card"><h3 class="warn">Осознанно удерживается</h3><ul><li>Один canonical clone structural key на активный nested parent.</li><li>Dirty nested internal после last-handle close — только до transaction outcome.</li><li>Один committed kids image на изменённый physical node в epoch.</li><li>O(depth) frames активного traversal.</li></ul></div>
+          <div class="card"><h3 class="warn">Осознанно удерживается</h3><ul><li>Один canonical clone structural key на активный nested parent.</li><li>Dirty nested internal после last-handle close — только до commit/rollback-cycle outcome.</li><li>Один committed kids image на изменённый physical node в epoch.</li><li>O(depth) frames активного traversal.</li></ul></div>
         </div>
         <div class="callout">
           Benchmark allocation gate: рост не обнаружен ни в одном из 72 сценариев. На ключевых workloads: random insert −76.20%, update −95.39%, partial read −79.92%, nested scan −87.63%.
@@ -866,6 +876,7 @@
               <tr><td>Branch-switch insert/remove, targeted warmup + 5</td><td class="good">−3.21%</td><td class="good">−0.62%</td><td>Одинаковая семантика до/после; allocations снизились.</td></tr>
               <tr><td>Nested read-only open/select/close, A/B/B/A warmup + 5</td><td class="good">−46.13% / −45.71%</td><td class="good">−12.90%</td><td>10 000 операций на measurement; оба порядка запуска дали одинаковый verdict после добавления atomic phase-token, retained delta +224 B у baseline и current.</td></tr>
               <tr><td>Early-dispose commit / rollback, current warmup + 5</td><td>19.405 ms / 0.273 ms per op</td><td>17 248 / 22 512 B per op</td><td>Короткий disk diagnostic по 100 операций. Baseline не является валидным performance comparator: он не выполняет тот же корректный контракт и теряет mutation. Retained delta +224 B.</td></tr>
+              <tr><td>Repeated nested write/commit, equivalent re-open A/B, warmup + 5</td><td class="good">19.670 → 19.642 ms/op (−0.14%)</td><td class="good">43 402.08 → 17 232 B/op</td><td>100 корректных nested write/commit на measurement; baseline re-open используется как одинаковый-work comparator, поскольку same-handle baseline теряет второй epoch. Retained delta одинаковый +224 B; session/re-arm path сам объектов не создаёт.</td></tr>
             </tbody>
           </table>
         </div>
@@ -898,14 +909,15 @@
               <li>Общие операции, counts и checksums совпали.</li>
               <li>Baseline base → fixed current mixed epoch → baseline verify прошёл; последующая отдельная baseline-запись прочитана current.</li>
               <li>Отдельная lifecycle fixture: baseline create → current early-dispose + rename → baseline read; current create → baseline read/safe write → current read. Все 8 process actions прошли.</li>
+              <li>Repeated-cycle fixture: baseline create → current дважды commit через те же parent/deep handles → baseline read; current create → baseline safe write → current read. Все 6 process actions прошли.</li>
             </ul>
           </div>
         </div>
         <div class="grid-2">
           <div class="card">
             <h3>Regression coverage</h3>
-            <p><strong>Свежий Release gate 2026-08-20: 79/79 PASS.</strong> После финального atomic phase-token отдельно повторены 7/7 nested/cache/recreate/ChangeKey tests; полный suite намеренно не запускался второй раз. Сценарии покрывают storage/transactions/text/LianaTrie.</p>
-            <p class="muted">Early-dispose gate выполняется в memory/disk и direct LTrie storage: commit/reopen, explicit/implicit rollback, double dispose, несколько handles, close/reopen, committed reader, ChangeKey/relocation, parent removal, <code>RemoveAll(true)</code>, recursive nesting и разные порядки закрытия. ChangeKey gate по-прежнему не выполняет Select/Count/traversal до mutation.</p>
+            <p><strong>Свежий Release gate 2026-08-20: 80/80 PASS.</strong> Перед полным suite отдельно прошли 7/7 nested/cache/recreate/ChangeKey tests и новый composite repeated-cycle gate. Сценарии покрывают storage/transactions/text/LianaTrie.</p>
+            <p class="muted">Early-dispose и repeated-cycle gates выполняются в memory/disk и direct LTrie storage: commit/reopen, explicit/implicit rollback, double dispose, несколько handles, close/reopen, committed reader, ChangeKey/relocation, insert/update/remove/insert-part/data-block, parent removal, <code>RemoveAll(true)</code>, recursive nesting, multi-table transactional commit, no-op, stale/cross-thread rejection и разные порядки закрытия. ChangeKey gate по-прежнему не выполняет Select/Count/traversal до mutation.</p>
           </div>
           <div class="card">
             <h3>Build matrix</h3>
@@ -921,6 +933,7 @@
           <span class="p">P0 gate</span><div><strong>Не нарушать cache epoch.</strong> Это постоянный regression-инвариант, не открытый дефект: любой новый path, способный переиспользовать physical offsets, должен очистить pointer-keyed <code>_nodes</code> до committed read.</div>
           <span class="p">P0 gate</span><div><strong>Сохранить recreate lifecycle.</strong> <code>RemoveAll(true) → insert/nested → commit → reopen</code>, повторная recreation и idempotent terminal dispose обязательны.</div>
           <span class="p">P0 fixed</span><div><strong>Не возвращать early-dispose data-loss.</strong> Last dirty handle обязан передать table coordinator до commit/rollback outcome; direct и transactional lifecycle, rename и recursive nesting остаются обязательным regression gate.</div>
+          <span class="p">P0 fixed</span><div><strong>Не терять следующий epoch открытого handle.</strong> <code>Commit</code>/<code>Rollback</code> завершает cycle, но не инвалидирует writable <code>NestedTable</code>; следующая реальная mutation обязана re-arm-ить master и recursive parent chain, а terminal transaction — инвалидировать session token.</div>
           <span class="p p2">P2</span><div><strong>Проверить архитектурный хвост path parameter.</strong> Traversal больше не передаёт path, но внутренние <code>ReadSelf</code>/<code>GenerationNodeRead</code> сохраняют legacy-параметр; менять его только отдельным API/cache review.</div>
         </div>
         <p>Подробный отделённый backlog: <a href="../LianaTrie_Modernization_Backlog.md">LianaTrie_Modernization_Backlog.md</a>.</p>
@@ -930,13 +943,13 @@
         <h2>16. Заключение</h2>
         <p>Рефакторинг не демонтировал скрытую cache/flush архитектуру LianaTrie. Он заменил дорогую logical-path identity на pointer identity, рекурсивные hot-path обходы — на explicit frames, а временные serialization buffers — на exact modern primitives. Старые boundaries между trie, transaction и storage сохранены.</p>
         <p>Наблюдаемые пользовательские изменения ограничены исправлением ошибочных side effects и формализацией partial-read edge cases. Формат файлов доказан не только чтением в обе стороны, но и raw byte identity. Memory и performance envelope улучшены по измеренным сценариям.</p>
-        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code>, активная traversal recursion и early nested dispose исправлены и закрыты regression/API/disk/performance gates. Открытым остаётся только низкоприоритетный review legacy path parameter.</div>
+        <div class="callout good"><strong>Рекомендация:</strong> текущую LianaTrie-архитектуру можно принимать как backward-compatible refactoring. Потеря dirty generation-map при <code>ChangeKey</code>, активная traversal recursion, early nested dispose и потеря следующего write epoch через открытый nested handle исправлены и закрыты regression/API/disk/performance gates. Открытым остаётся только низкоприоритетный review legacy path parameter.</div>
       </section>
     </main>
   </div>
 
   <footer>
-    DBreeze LianaTrie Architecture Audit · baseline <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code> · current HEAD <code>1584af315aedc3800e88a946a216ec97846821fe</code> + audited working tree · updated 2026-08-20.
+    DBreeze LianaTrie Architecture Audit · baseline <code>a83424e2fa742ec05a8e4a359562d3f3a5e008c8</code> · current HEAD <code>5c60548041962a369c8e4aa03c39f7f4e1e1cc94</code> + audited working tree · updated 2026-08-20.
   </footer>
 
   <script>

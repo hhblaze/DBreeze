@@ -172,7 +172,7 @@ namespace DBreeze.LianaTrie
 
                 rn.Commit();
 
-                this.NestedTablesCoordinator.TransactionFinished();
+                this.NestedTablesCoordinator.CommitCycleFinished();
 
                 //this.NestedTablesCoordinator.CloseAll();
              
@@ -219,7 +219,7 @@ namespace DBreeze.LianaTrie
                     //Only available for Writing root
                     rn.RollBack();
 
-                    this.NestedTablesCoordinator.TransactionFinished();
+                    this.NestedTablesCoordinator.CommitCycleFinished();
 
                     TableIsModified = false;
                     GenerationMapSaved = true;
@@ -247,6 +247,11 @@ namespace DBreeze.LianaTrie
         /// <param name="useCache">Regulates READ table thread or WRITE table thread - visibilityscope</param>
         /// <returns></returns>
         public NestedTable GetTable(LTrieRow row, ref byte[] btKey, uint tableIndex, LTrie masterTrie, bool insertTable, bool useCache)
+        {
+            return GetTable(row, ref btKey, tableIndex, masterTrie, insertTable, useCache, null);
+        }
+
+        internal NestedTable GetTable(LTrieRow row, ref byte[] btKey, uint tableIndex, LTrie masterTrie, bool insertTable, bool useCache, NestedTableInternal parentNestedTable)
         {
             //Console.WriteLine(useCache.ToString() + " " +  System.Threading.Thread.CurrentThread.ManagedThreadId.ToString());
 
@@ -315,7 +320,7 @@ namespace DBreeze.LianaTrie
 
                         lock (this.NestedTablesCoordinator.lock_nestedTblAccess)
                         {
-                            dit = new DataTypes.NestedTableInternal(true, masterTrie, Id_RootStart, (tableIndex * this.Storage.TrieSettings.ROOT_SIZE), false,this,ref btKey);
+                            dit = new DataTypes.NestedTableInternal(true, masterTrie, Id_RootStart, (tableIndex * this.Storage.TrieSettings.ROOT_SIZE), false, parentNestedTable, ref btKey);
                             this.NestedTablesCoordinator.AddNestedTable(ref btKey, fullValuePointer.DynamicLength_To_UInt64_BigEndian(), Id_RootStart, dit);
 
                             //if (!insertTable)
@@ -340,7 +345,7 @@ namespace DBreeze.LianaTrie
 
                             if (dit == null)
                             {
-                                dit = new DataTypes.NestedTableInternal(true, masterTrie, Id_RootStart, (tableIndex * this.Storage.TrieSettings.ROOT_SIZE), useCache, this, ref btKey);
+                                dit = new DataTypes.NestedTableInternal(true, masterTrie, Id_RootStart, (tableIndex * this.Storage.TrieSettings.ROOT_SIZE), useCache, parentNestedTable, ref btKey);
                                 this.NestedTablesCoordinator.AddNestedTable(ref btKey, fullValuePointer.DynamicLength_To_UInt64_BigEndian(), Id_RootStart, dit);
                             }                           
 
@@ -370,7 +375,7 @@ namespace DBreeze.LianaTrie
 
                     lock (this.NestedTablesCoordinator.lock_nestedTblAccess)
                     {
-                        dit = new DataTypes.NestedTableInternal(true, masterTrie, Id_RootStart, (tableIndex * this.Storage.TrieSettings.ROOT_SIZE), false, this, ref btKey);
+                        dit = new DataTypes.NestedTableInternal(true, masterTrie, Id_RootStart, (tableIndex * this.Storage.TrieSettings.ROOT_SIZE), false, parentNestedTable, ref btKey);
                         this.NestedTablesCoordinator.AddNestedTable(ref btKey, fullValuePointer.DynamicLength_To_UInt64_BigEndian(), Id_RootStart, dit);
 
                         //if (!insertTable)
@@ -1745,7 +1750,7 @@ namespace DBreeze.LianaTrie
 
                 this.Cache.TransactionalCommitFinished();
 
-                this.NestedTablesCoordinator.TransactionFinished();
+                this.NestedTablesCoordinator.CommitCycleFinished();
 
                 TableIsModified = false;
                 GenerationMapSaved = true;
@@ -1781,7 +1786,7 @@ namespace DBreeze.LianaTrie
             //No need of try catch here
             rn.TransactionalRollBack();
 
-            this.NestedTablesCoordinator.TransactionFinished();
+            this.NestedTablesCoordinator.CommitCycleFinished();
 
             TableIsModified = false;
             GenerationMapSaved = true;
@@ -1793,6 +1798,7 @@ namespace DBreeze.LianaTrie
         {
             //Console.WriteLine("TransactionIsFinished ThreadId: {0}", transactionThreadId);
 
+            AdvanceModificationSession();
             _modificationThreadId = -1;
             //////this.NestedTablesCoordinator.ModificationThreadId = -1;
 
@@ -1825,9 +1831,30 @@ namespace DBreeze.LianaTrie
         /// No need of lock.
         /// </summary>
         internal int _modificationThreadId = -1;
+        private const int MaxModificationSession = 0x3FFFFFFF;
+        private int _modificationSessionId = 0;
+
+        internal int ModificationSessionId
+        {
+            get { return System.Threading.Interlocked.CompareExchange(ref _modificationSessionId, 0, 0); }
+        }
+
+        private void AdvanceModificationSession()
+        {
+            int current;
+            int next;
+            do
+            {
+                current = System.Threading.Interlocked.CompareExchange(ref _modificationSessionId, 0, 0);
+                next = current >= MaxModificationSession ? 1 : current + 1;
+            }
+            while (System.Threading.Interlocked.CompareExchange(ref _modificationSessionId, next, current) != current);
+        }
 
         public void ModificationThreadId(int transactionThreadId)
         {
+            if (_modificationThreadId != transactionThreadId)
+                AdvanceModificationSession();
             _modificationThreadId = transactionThreadId;
         }
 

@@ -43,6 +43,28 @@
   committed reader, rename/relocation, parent removal, `RemoveAll(true)`, recursive hierarchy и direct/
   transactional lifecycle. Двусторонний baseline/current process probe прошёл; историческая потеря
   данных является единственным reviewed behavioral difference.
+- `Commit` и `Rollback` завершают write epoch, но не пользовательский `Transaction`. Внутренний
+  callback coordinator переименован из двусмысленного `TransactionFinished` в
+  `CommitCycleFinished`: он освобождает только deferred tables с нулём handles и не вызывает
+  `Reset`/`Dispose`. Открытые handles и их `NestedTableInternal` остаются coordinated.
+- Исправлена ещё одна унаследованная потеря данных: writable `NestedTable`, оставшаяся открытой
+  после `Commit`/`Rollback`, теперь автоматически участвует в следующем epoch без повторного
+  `InsertTable`. Handle хранит allocation-free session token master trie; token стабилен между
+  промежуточными cycles и инвалидируется только при terminal `TransactionIsFinished`. Реальная
+  nested mutation восстанавливает coordinator owner-thread и итеративно помечает всю parent chain
+  до master; no-op insert/remove/change-key новый epoch dirty не делает. После terminal transaction
+  stale handle бросает `TRANSACTION_DOESNT_EXIST`, чужой поток —
+  `TRANSACTION_CANBEUSED_FROM_ONE_THREAD`.
+- Regression gate повторных cycles покрывает memory/disk, insert/update/remove/change-key/
+  insert-part/data-block, commit→rollback→commit, несколько handles, early dispose,
+  четырёхуровневую recursive hierarchy, multi-table transactional commit, direct `LTrie`,
+  committed reader, no-op, stale и cross-thread rejection. Baseline create → current two-commit →
+  baseline read и обратный current create → baseline safe write → current read прошли. Полный
+  Release suite — `80/80 PASS`; API — `1423→1425` без removals/changes; compile matrix прошла.
+- Короткий одинаковый-work A/B (100 nested write/commit на measurement, warmup + 5) дал median
+  `19.670 ms/op` baseline и `19.642 ms/op` current (`−0.14%`), allocations
+  `43,402.08→17,232 B/op`, retained delta одинаковый `+224 B`. Session/re-arm path не создаёт
+  объектов; полный historical benchmark suite повторно не запускался.
 - Потеря dirty generation-map при `ChangeKey` была минимизирована до переключения sibling-ветки:
   внутренний `LTrieRootNode.GetKey` удалял divergent suffix без предварительного сохранения dirty
   generation nodes. Теперь `Save_GM_nodes_Starting_From(i)` выполняется до pruning, а descending
@@ -59,7 +81,8 @@
 - Никаких изменений wire format и baseline public surface.
 - Двусторонний old↔new disk test и raw-file identity для детерминированной fixture.
 - Cache epoch и recreate остаются постоянными P0 regression-gates; это инварианты, а не открытые
-  дефекты. Early nested dispose также остаётся P0 data-loss gate после исправления.
+  дефекты. Early nested dispose и повторная mutation через открытый handle после commit/rollback
+  также остаются P0 data-loss gates после исправления.
 - Отсутствие stack overflow на максимальной поддерживаемой глубине и устойчивого замедления более
   5% относительно текущей реализации; для contract-changing исправлений сравнивать одинаковый
   объём реально выполненной работы.

@@ -35,6 +35,13 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--lianatrie-repeated-commit", StringComparison.OrdinalIgnoreCase)))
+        {
+            LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles();
+            Console.WriteLine($"PASS {nameof(LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles)}");
+            return 0;
+        }
+
         (string Name, Action Test)[] tests =
         {
             // This test injects a durable journal marker directly and therefore must run before
@@ -84,6 +91,7 @@ internal static class Program
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
             (nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable), LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable),
             (nameof(LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction), LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction),
+            (nameof(LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles), LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles),
             (nameof(LianaTrieRegressionTests.TraversalContractMatchesReferenceModel), LianaTrieRegressionTests.TraversalContractMatchesReferenceModel),
             (nameof(LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated), LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated),
             (nameof(LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative), LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative),

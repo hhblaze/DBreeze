@@ -22,7 +22,8 @@ namespace DBreeze.DataTypes
         private NestedTableInternal _tbl = null;
         internal bool _insertAllowed = false;
         private bool _tableExists = false;
-        private int _closeState = 0;
+        private const int HandleClosedMask = unchecked((int)0x80000000);
+        private int _handleState = 0;
         
         /// <summary>
         /// Constructor
@@ -35,6 +36,25 @@ namespace DBreeze.DataTypes
             _tbl = nt;
             _insertAllowed = insertTablesAllowed;
             _tableExists = tableExists;
+            if (insertTablesAllowed && nt != null)
+                _handleState = nt.CaptureWriteHandleState();
+        }
+
+        private int ValidateWriteHandle()
+        {
+            if (!_insertAllowed)
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
+
+            int handleState = System.Threading.Interlocked.CompareExchange(ref _handleState, 0, 0);
+            if ((handleState & HandleClosedMask) != 0)
+                throw new ObjectDisposedException("NestedTable");
+
+            return _tbl.ValidateWriteHandleState(handleState);
+        }
+
+        private void CompleteWriteEpoch(int modificationThreadId)
+        {
+            _tbl.CompleteWriteEpoch(modificationThreadId);
         }
 
         bool _valuesLazyLoadingIsOn = true;
@@ -71,7 +91,13 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return new NestedTable(null, false, false);
 
-            return _tbl.GetTable(key, tableIndex, this._insertAllowed);
+            if (!this._insertAllowed)
+                return _tbl.GetTable(key, tableIndex, false);
+
+            int modificationThreadId = ValidateWriteHandle();
+            NestedTable nestedTable = _tbl.GetTable(key, tableIndex, true);
+            CompleteWriteEpoch(modificationThreadId);
+            return nestedTable;
         }
 
         /// <summary>
@@ -88,8 +114,17 @@ namespace DBreeze.DataTypes
         /// </summary>
         public void CloseTable()
         {
-            if (System.Threading.Interlocked.Exchange(ref _closeState, 1) != 0)
-                return;
+            int handleState;
+            do
+            {
+                handleState = System.Threading.Interlocked.CompareExchange(ref _handleState, 0, 0);
+                if ((handleState & HandleClosedMask) != 0)
+                    return;
+            }
+            while (System.Threading.Interlocked.CompareExchange(
+                ref _handleState,
+                handleState | HandleClosedMask,
+                handleState) != handleState);
 
             if (!this._tableExists)
                 return;
@@ -114,7 +149,10 @@ namespace DBreeze.DataTypes
         /// </returns>
         public byte[] InsertDataBlock(byte[] initialPointer, byte[] data)
         {
-            return _tbl.table.InsertDataBlock(ref initialPointer, ref data);
+            int modificationThreadId = ValidateWriteHandle();
+            byte[] result = _tbl.table.InsertDataBlock(ref initialPointer, ref data);
+            CompleteWriteEpoch(modificationThreadId);
+            return result;
         }
 
         /// <summary>
@@ -202,10 +240,7 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return new NestedTable(null, false, false);
 
-            if (!_insertAllowed)
-            {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            }
+            int modificationThreadId = ValidateWriteHandle();
 
 
             //Special check of null of nulls is integrated inside of the convertor
@@ -215,6 +250,7 @@ namespace DBreeze.DataTypes
             byte[] btValue = DataTypesConvertor.ConvertValue<TValue>(value);
 
             refToInsertedValue = _tbl.table.Add(ref btKey, ref btValue, out WasUpdated, dontUpdateIfExists);
+            CompleteWriteEpoch(modificationThreadId);
 
             if (refToInsertedValue != null)
                 refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
@@ -522,10 +558,7 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return new NestedTable(null, false, false);
 
-            if (!_insertAllowed)
-            {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            }
+            int modificationThreadId = ValidateWriteHandle();
 
 
             //Special check of null of nulls is integrated inside of the convertor
@@ -536,6 +569,7 @@ namespace DBreeze.DataTypes
 
             long valueStartPtr = 0;
             refToInsertedValue = _tbl.table.AddPartially(ref btKey, ref btValue, startIndex, out valueStartPtr);
+            CompleteWriteEpoch(modificationThreadId);
 
             if (refToInsertedValue != null)
                 refToInsertedValue = refToInsertedValue.EnlargeByteArray_BigEndian(8);
@@ -669,12 +703,10 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return new NestedTable(null, false, false);
 
-            if (!_insertAllowed)
-            {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            }
+            int modificationThreadId = ValidateWriteHandle();
 
             _tbl.RemoveAll();
+            CompleteWriteEpoch(modificationThreadId);
 
             return this;
         }
@@ -732,14 +764,12 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return new NestedTable(null, false, false);
 
-            if (!_insertAllowed)
-            {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            }
+            int modificationThreadId = ValidateWriteHandle();
 
             byte[] btKey = DataTypesConvertor.ConvertKey<TKey>(key);
 
             _tbl.table.Remove(ref btKey, out WasRemoved, retrieveDeletedValue, out deletedValue);
+            CompleteWriteEpoch(modificationThreadId);
 
             return this;
         }
@@ -795,15 +825,13 @@ namespace DBreeze.DataTypes
             if (!this._tableExists)
                 return new NestedTable(null, false, false);
 
-            if (!_insertAllowed)
-            {
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DBINTABLE_CHANGEDATA_FROMSELECTVIEW);
-            }
+            int modificationThreadId = ValidateWriteHandle();
 
             byte[] btOldKey = DataTypesConvertor.ConvertKey<TKey>(oldKey);
             byte[] btNewKey = DataTypesConvertor.ConvertKey<TKey>(newKey);
 
             _tbl.table.ChangeKey(ref btOldKey, ref btNewKey, out ptrToNewKey,out WasChanged);
+            CompleteWriteEpoch(modificationThreadId);
 
             return this;
         }

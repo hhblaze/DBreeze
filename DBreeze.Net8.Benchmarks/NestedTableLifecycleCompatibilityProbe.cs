@@ -42,6 +42,11 @@ internal static class NestedTableLifecycleCompatibilityProbe
                 case "verify-safe":
                     Verify(options.DatabasePath, FixtureState.SafeWrite);
                     break;
+                case "write-multi":
+                    Verify(options.DatabasePath, FixtureState.Base);
+                    WriteWithOpenHandlesAcrossCommits(options.DatabasePath);
+                    Verify(options.DatabasePath, FixtureState.SafeWrite);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(options.Action), options.Action,
                         "Unknown nested lifecycle compatibility action.");
@@ -106,6 +111,21 @@ internal static class NestedTableLifecycleCompatibilityProbe
         parent.Insert(new byte[] { 0x01 }, new byte[] { 12 });
         parent.Insert(new byte[] { 0x07 }, new byte[] { 70 });
         using NestedTable deep = parent.GetTable(DeepParent, 7);
+        deep.Insert(new byte[] { 0x05 }, new byte[] { 55 });
+        transaction.Commit();
+    }
+
+    private static void WriteWithOpenHandlesAcrossCommits(string databasePath)
+    {
+        using var engine = new DBreezeEngine(databasePath);
+        using var transaction = engine.GetTransaction();
+        using NestedTable parent = transaction.InsertTable(Table, OriginalParent, 0);
+        using NestedTable deep = parent.GetTable(DeepParent, 7);
+
+        parent.Insert(new byte[] { 0x07 }, new byte[] { 70 });
+        transaction.Commit();
+
+        parent.Insert(new byte[] { 0x01 }, new byte[] { 12 });
         deep.Insert(new byte[] { 0x05 }, new byte[] { 55 });
         transaction.Commit();
     }

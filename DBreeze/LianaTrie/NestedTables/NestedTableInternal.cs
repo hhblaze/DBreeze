@@ -25,8 +25,7 @@ namespace DBreeze.DataTypes
         internal LTrie _masterTrie =null;
         //bool _masterTableInsert = false;
         long _shiftFromValueStart = 0;
-        bool _useCache = false;
-        LTrie _parentTable = null;
+        NestedTableInternal _parentNestedTable = null;
         byte[] _key = null;
         long _rootStart = 0;
         ulong _fullValueStart = 0;
@@ -42,7 +41,7 @@ namespace DBreeze.DataTypes
         /// </summary>
         public bool TableExists = false;
 
-        public NestedTableInternal(bool tableExists, LTrie masterTrie, long rootStart, long shiftFromValueStart, bool useCache, LTrie parentTrie,ref byte[] key)
+        public NestedTableInternal(bool tableExists, LTrie masterTrie, long rootStart, long shiftFromValueStart, bool useCache, NestedTableInternal parentNestedTable, ref byte[] key)
         {
             //DbInTableStorage - Dispose and Recreate (Stay Empty)
 
@@ -53,12 +52,11 @@ namespace DBreeze.DataTypes
 
             if (tableExists)
             {
-                _useCache = useCache;
                 _shiftFromValueStart = shiftFromValueStart;
                 //Flag distinguish between masterTrie.InsertTable or masterTrie.SelectTable (InsertTable, creates tables if they don't exist)
                 //_masterTableInsert = masterTableInsert;
                 _masterTrie = masterTrie;
-                _parentTable = parentTrie;
+                _parentNestedTable = parentNestedTable;
                 _key = key;
                 _rootStart = rootStart;
                 
@@ -92,7 +90,85 @@ namespace DBreeze.DataTypes
         //internal void CloseTable(bool insertTablesAllowed)
         internal void CloseTable()
         {
-            this._parentTable.NestedTablesCoordinator.CloseTable(this);
+            // The master trie can be auto-closed when its owning Transaction ends.
+            // Its coordinator detaches every nested table before disposing the lock;
+            // a handle disposed afterwards therefore has nothing left to release.
+            if (!CoordinatorOwned)
+                return;
+
+            this.ParentTrie.NestedTablesCoordinator.CloseTable(this);
+        }
+
+        private LTrie ParentTrie
+        {
+            get { return _parentNestedTable == null ? _masterTrie : _parentNestedTable.table; }
+        }
+
+        private const int DirectHandleMask = 0x40000000;
+        private const int HandlePayloadMask = 0x3FFFFFFF;
+
+        internal int CaptureWriteHandleState()
+        {
+#if NET35 || NETr40
+            int currentThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+#else
+            int currentThreadId = Environment.CurrentManagedThreadId;
+#endif
+            if (_masterTrie._modificationThreadId == -1)
+                return DirectHandleMask | (currentThreadId & HandlePayloadMask);
+
+            return _masterTrie.ModificationSessionId;
+        }
+
+        internal int ValidateWriteHandleState(int handleState)
+        {
+#if NET35 || NETr40
+            int currentThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+#else
+            int currentThreadId = Environment.CurrentManagedThreadId;
+#endif
+            if ((handleState & DirectHandleMask) != 0)
+            {
+                if ((handleState & HandlePayloadMask) != (currentThreadId & HandlePayloadMask))
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_CANBEUSED_FROM_ONE_THREAD);
+
+                if (_masterTrie._modificationThreadId != -1)
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_DOESNT_EXIST);
+
+                return currentThreadId;
+            }
+
+            if (handleState == 0 ||
+                _masterTrie.ModificationSessionId != handleState ||
+                _masterTrie._modificationThreadId == -1)
+            {
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_DOESNT_EXIST);
+            }
+
+            if (_masterTrie._modificationThreadId != currentThreadId)
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_CANBEUSED_FROM_ONE_THREAD);
+
+            return currentThreadId;
+        }
+
+        internal void CompleteWriteEpoch(int modificationThreadId)
+        {
+            if (!IsModified)
+                return;
+
+            if (_masterTrie.NestedTablesCoordinator.ModificationThreadId != modificationThreadId)
+                _masterTrie.NestedTablesCoordinator.ModificationThreadId = modificationThreadId;
+
+            LTrie immediateParent = ParentTrie;
+            if (immediateParent.TableIsModified && _masterTrie.TableIsModified)
+                return;
+
+            NestedTableInternal current = this;
+            while (current != null)
+            {
+                current.ParentTrie.TableIsModified = true;
+                current = current._parentNestedTable;
+            }
         }
 
         internal ulong FullValueStart
@@ -180,7 +256,7 @@ namespace DBreeze.DataTypes
             if (insertIsAllowed)        //Insert of table is allowed by calls generation
             {
                 row = table.GetKey(ref btKey, null, true);
-                return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, true, false);
+                return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, true, false, this);
             }
 
             //Only selects are allowed
@@ -192,14 +268,14 @@ namespace DBreeze.DataTypes
             {
                 //This thread must NOT use cache
                 row = table.GetKey(ref btKey, null, true);
-                return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, false, false);
+                return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, false, false, this);
             }
             else
             {
                 LTrieRootNode readRootNode = new LTrieRootNode(table);
                 row = table.GetKey(ref btKey, readRootNode, true);
 
-                return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, false, true);
+                return table.GetTable(row, ref btKey, tableIndex, this._masterTrie, false, true, this);
             }
         }
 

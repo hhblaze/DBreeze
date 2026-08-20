@@ -24,6 +24,16 @@ internal static class LianaTrieRegressionTests
         RunDirectLTrieEarlyDispose();
     }
 
+    internal static void OpenNestedTableSupportsRepeatedCommitCycles()
+    {
+        RunOpenNestedTableCommitCycles(storageOnDisk: false);
+        RunOpenNestedTableCommitCycles(storageOnDisk: true);
+        RunRecursiveNestedCommitCycles(storageOnDisk: false);
+        RunRecursiveNestedCommitCycles(storageOnDisk: true);
+        RunMultiTableNestedCommitCycles();
+        RunDirectLTrieRepeatedCommitCycles();
+    }
+
     internal static void TraversalContractMatchesReferenceModel()
     {
         AssertEmptyTraversalContract();
@@ -954,6 +964,267 @@ internal static class LianaTrieRegressionTests
             $"Original recursive nested value, order {operationOrder}.");
         AssertSequenceEqual(new byte[] { 77 }, deep.Select<byte[], byte[]>(new byte[] { 7 }).Value,
             $"Inserted recursive nested value, order {operationOrder}.");
+    }
+
+    private static void RunOpenNestedTableCommitCycles(bool storageOnDisk)
+    {
+        const string table = "nested-repeated-commit";
+        byte[] parent = { 0x10 };
+        byte[] key1 = { 0x01 };
+        byte[] key2 = { 0x02 };
+        byte[] renamedKey = { 0x03 };
+        byte[] finalKey = { 0x04 };
+        byte[] removableKey = { 0x05 };
+        byte[] secondHandleKey = { 0x06 };
+        byte[] missingKey = { 0x7F };
+        byte[] crossThreadKey = { 0x7E };
+        byte[] dataBlockPointer = null;
+
+        RunStorageScenario(
+            nameof(OpenNestedTableSupportsRepeatedCommitCycles) + (storageOnDisk ? "-disk" : "-memory"),
+            storageOnDisk,
+            engine =>
+            {
+                DBreeze.Transactions.Transaction transaction = engine.GetTransaction();
+                NestedTable nested = null;
+                try
+                {
+                    nested = transaction.InsertTable(table, parent, 0);
+                    nested.Insert(key1, new byte[] { 1, 2, 3 });
+                    nested.Insert(removableKey, new byte[] { 50 });
+                    transaction.Commit();
+
+                    nested.Insert(key1, new byte[] { 1, 8, 3 });
+                    nested.Insert(key2, new byte[] { 20 });
+                    Task.Run(() =>
+                    {
+                        using var readerTransaction = engine.GetTransaction();
+                        using NestedTable reader = readerTransaction.SelectTable(table, parent, 0);
+                        AssertSequenceEqual(new byte[] { 1, 2, 3 }, reader.Select<byte[], byte[]>(key1).Value,
+                            "Committed reader lost the first commit cycle.");
+                        Assert(!reader.Select<byte[], byte[]>(key2).Exists,
+                            "Committed reader observed the second dirty commit cycle.");
+                    }).GetAwaiter().GetResult();
+
+                    nested.InsertPart(key1, new byte[] { 9 }, 1);
+                    nested.ChangeKey(key2, renamedKey);
+                    nested.RemoveKey(removableKey);
+                    NestedTable secondHandle = transaction.InsertTable(table, parent, 0);
+                    secondHandle.Insert(secondHandleKey, new byte[] { 60 });
+                    secondHandle.Dispose();
+                    AssertThrows<ObjectDisposedException>(
+                        () => secondHandle.Insert(new byte[] { 0x6A }, new byte[] { 1 }));
+                    dataBlockPointer = nested.InsertDataBlock(null, new byte[] { 7, 8, 9 });
+                    transaction.Commit();
+
+                    AssertSequenceEqual(new byte[] { 1, 9, 3 }, nested.Select<byte[], byte[]>(key1).Value,
+                        "Same handle did not advance after its second commit.");
+                    AssertSequenceEqual(new byte[] { 20 }, nested.Select<byte[], byte[]>(renamedKey).Value,
+                        "Same-handle ChangeKey was not committed.");
+                    Assert(!nested.Select<byte[], byte[]>(removableKey).Exists,
+                        "Same-handle RemoveKey was not committed.");
+                    AssertSequenceEqual(new byte[] { 60 }, nested.Select<byte[], byte[]>(secondHandleKey).Value,
+                        "An early-disposed sibling handle lost its mutation.");
+
+                    nested.RemoveKey(key1);
+                    nested.Insert(finalKey, new byte[] { 40 });
+                    transaction.Rollback();
+
+                    AssertSequenceEqual(new byte[] { 1, 9, 3 }, nested.Select<byte[], byte[]>(key1).Value,
+                        "Rollback did not restore the previous commit cycle.");
+                    Assert(!nested.Select<byte[], byte[]>(finalKey).Exists,
+                        "Rollback retained a same-handle insert.");
+
+                    nested.RemoveKey(missingKey, out bool wasRemoved);
+                    nested.ChangeKey(missingKey, new byte[] { 0x70 }, out _, out bool wasChanged);
+                    nested.Insert(renamedKey, new byte[] { 99 }, out _, out bool wasUpdated, true);
+                    Assert(!wasRemoved, "Missing RemoveKey reported a mutation.");
+                    Assert(!wasChanged, "Missing ChangeKey reported a mutation.");
+                    Assert(wasUpdated, "Insert-if-absent did not report the existing key.");
+                    transaction.Commit();
+
+                    Exception wrongThread = Task.Run(() =>
+                    {
+                        try
+                        {
+                            nested.Insert(crossThreadKey, new byte[] { 1 });
+                            return null;
+                        }
+                        catch (Exception ex)
+                        {
+                            return ex;
+                        }
+                    }).GetAwaiter().GetResult();
+                    Assert(wrongThread is DBreeze.Exceptions.DBreezeException &&
+                        wrongThread.Message.Contains("one thread", StringComparison.OrdinalIgnoreCase),
+                        "A writable NestedTable accepted a mutation from another thread.");
+
+                    nested.Insert(finalKey, new byte[] { 41 });
+                    transaction.Commit();
+                }
+                finally
+                {
+                    transaction.Dispose();
+                }
+
+                AssertThrows<DBreeze.Exceptions.DBreezeException>(
+                    () => nested.Insert(new byte[] { 0x6F }, new byte[] { 1 }));
+                nested.Dispose();
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                using NestedTable nested = transaction.SelectTable(table, parent, 0);
+                AssertSequenceEqual(new byte[] { 1, 9, 3 }, nested.Select<byte[], byte[]>(key1).Value,
+                    "Repeated commit value.");
+                Assert(!nested.Select<byte[], byte[]>(key2).Exists, "Old ChangeKey source remained visible.");
+                AssertSequenceEqual(new byte[] { 20 }, nested.Select<byte[], byte[]>(renamedKey).Value,
+                    "Repeated commit renamed value.");
+                AssertSequenceEqual(new byte[] { 41 }, nested.Select<byte[], byte[]>(finalKey).Value,
+                    "Mutation after rollback was not committed.");
+                Assert(!nested.Select<byte[], byte[]>(removableKey).Exists,
+                    "Committed same-handle removal was lost after reopen.");
+                AssertSequenceEqual(new byte[] { 60 }, nested.Select<byte[], byte[]>(secondHandleKey).Value,
+                    "Early-disposed sibling-handle mutation was lost after reopen.");
+                Assert(!nested.Select<byte[], byte[]>(crossThreadKey).Exists,
+                    "Rejected cross-thread mutation became visible.");
+                AssertSequenceEqual(new byte[] { 7, 8, 9 }, nested.SelectDataBlock(dataBlockPointer),
+                    "Repeated commit data block.");
+            });
+    }
+
+    private static void RunRecursiveNestedCommitCycles(bool storageOnDisk)
+    {
+        const string table = "nested-repeated-recursive";
+        byte[] parent = { 0x20 };
+        byte[] level1Key = { 0x21 };
+        byte[] level2Key = { 0x22 };
+        byte[] level3Key = { 0x23 };
+        byte[] firstLeaf = { 0x31 };
+        byte[] secondLeaf = { 0x32 };
+
+        RunStorageScenario(
+            nameof(RunRecursiveNestedCommitCycles) + (storageOnDisk ? "-disk" : "-memory"),
+            storageOnDisk,
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                using NestedTable level0 = transaction.InsertTable(table, parent, 0);
+                using NestedTable level1 = level0.GetTable(level1Key, 0);
+                using NestedTable level2 = level1.GetTable(level2Key, 0);
+                using NestedTable level3 = level2.GetTable(level3Key, 0);
+
+                level3.Insert(firstLeaf, new byte[] { 51 });
+                transaction.Commit();
+                level3.Insert(secondLeaf, new byte[] { 52 });
+                transaction.Commit();
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                using NestedTable level0 = transaction.SelectTable(table, parent, 0);
+                using NestedTable level1 = level0.GetTable(level1Key, 0);
+                using NestedTable level2 = level1.GetTable(level2Key, 0);
+                using NestedTable level3 = level2.GetTable(level3Key, 0);
+                AssertSequenceEqual(new byte[] { 51 }, level3.Select<byte[], byte[]>(firstLeaf).Value,
+                    "Recursive first commit cycle.");
+                AssertSequenceEqual(new byte[] { 52 }, level3.Select<byte[], byte[]>(secondLeaf).Value,
+                    "Recursive same-handle second commit cycle.");
+            });
+    }
+
+    private static void RunMultiTableNestedCommitCycles()
+    {
+        const string nestedTableName = "nested-repeated-transactional";
+        const string secondTableName = "nested-repeated-transactional-peer";
+        byte[] parent = { 0x40 };
+
+        RunStorageScenario(
+            nameof(RunMultiTableNestedCommitCycles),
+            storageOnDisk: true,
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                transaction.SynchronizeTables(nestedTableName, secondTableName);
+                using NestedTable nested = transaction.InsertTable(nestedTableName, parent, 0);
+                nested.Insert(new byte[] { 1 }, new byte[] { 11 });
+                transaction.Insert(secondTableName, 1, 101);
+                transaction.Commit();
+
+                nested.Insert(new byte[] { 2 }, new byte[] { 22 });
+                transaction.Insert(secondTableName, 2, 202);
+                transaction.Commit();
+            },
+            engine =>
+            {
+                using var transaction = engine.GetTransaction();
+                using NestedTable nested = transaction.SelectTable(nestedTableName, parent, 0);
+                AssertSequenceEqual(new byte[] { 11 }, nested.Select<byte[], byte[]>(new byte[] { 1 }).Value,
+                    "Transactional first nested commit cycle.");
+                AssertSequenceEqual(new byte[] { 22 }, nested.Select<byte[], byte[]>(new byte[] { 2 }).Value,
+                    "Transactional second nested commit cycle.");
+                AssertEqual(101, transaction.Select<int, int>(secondTableName, 1).Value,
+                    "Transactional peer first commit cycle.");
+                AssertEqual(202, transaction.Select<int, int>(secondTableName, 2).Value,
+                    "Transactional peer second commit cycle.");
+            });
+    }
+
+    private static void RunDirectLTrieRepeatedCommitCycles()
+    {
+        string folder = Path.Combine(
+            DatabaseTestRoot, nameof(RunDirectLTrieRepeatedCommitCycles), Guid.NewGuid().ToString("N"));
+        string tablePath = Path.Combine(folder, "1");
+        byte[] parent = { 0x61 };
+        byte[] firstKey = { 0x62 };
+        byte[] secondKey = { 0x63 };
+        byte[] rolledBackKey = { 0x64 };
+
+        DBreezeConfiguration configuration = null;
+        LTrie trie = null;
+        try
+        {
+            Directory.CreateDirectory(folder);
+            configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            trie = new LTrie(new StorageLayer(tablePath, new TrieSettings(), configuration));
+
+            LTrieRow row = trie.GetKey(parent, false, true);
+            using NestedTable nested = trie.GetTable(row, ref parent, 0, trie, true, false);
+            nested.Insert(firstKey, new byte[] { 71 });
+            trie.Commit();
+            nested.Insert(rolledBackKey, new byte[] { 73 });
+            trie.RollBack();
+            Assert(!nested.Select<byte[], byte[]>(rolledBackKey).Exists,
+                "Direct LTrie rollback retained a same-handle mutation.");
+            nested.Insert(secondKey, new byte[] { 72 });
+            trie.Commit();
+            nested.Dispose();
+
+            trie.Dispose();
+            configuration.Dispose();
+            trie = null;
+            configuration = null;
+
+            configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            trie = new LTrie(new StorageLayer(tablePath, new TrieSettings(), configuration));
+            row = trie.GetKey(parent, false, true);
+            using NestedTable reopened = trie.GetTable(row, ref parent, 0, trie, false, true);
+            AssertSequenceEqual(new byte[] { 71 }, reopened.Select<byte[], byte[]>(firstKey).Value,
+                "Direct LTrie first commit cycle.");
+            AssertSequenceEqual(new byte[] { 72 }, reopened.Select<byte[], byte[]>(secondKey).Value,
+                "Direct LTrie same-handle second commit cycle.");
+            Assert(!reopened.Select<byte[], byte[]>(rolledBackKey).Exists,
+                "Direct LTrie rollback became visible after reopen.");
+        }
+        finally
+        {
+            if (trie != null)
+                trie.Dispose();
+            if (configuration != null)
+                configuration.Dispose();
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
     }
 
     private static void RunStorageScenario(
