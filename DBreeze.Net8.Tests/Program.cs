@@ -31,8 +31,8 @@ internal static class Program
             Console.WriteLine($"PASS {nameof(NestedStructuralKeyCacheSurvivesMutationAndRename)}");
             ReadVisibilityUsesCommittedNodeImages();
             Console.WriteLine($"PASS {nameof(ReadVisibilityUsesCommittedNodeImages)}");
-            StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle();
-            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle)}");
+            StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle();
+            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle)}");
             return 0;
         }
 
@@ -52,9 +52,9 @@ internal static class Program
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
             (nameof(RemoteInitializationFailureIsTerminal), RemoteInitializationFailureIsTerminal),
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
-            (nameof(StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle), StorageRegressionTests.CommittedPageCacheTracksStorageLifecycle),
-            (nameof(StorageRegressionTests.CommittedPageCacheAdmissionIsLazy), StorageRegressionTests.CommittedPageCacheAdmissionIsLazy),
-            (nameof(StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedPageCacheIsSafeDuringConcurrentCommits),
+            (nameof(StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle), StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle),
+            (nameof(StorageRegressionTests.CommittedReadCacheAdmissionIsLazy), StorageRegressionTests.CommittedReadCacheAdmissionIsLazy),
+            (nameof(StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits),
             (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
             (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),
             (nameof(StorageRegressionTests.RemoteStorageChunksLargeIoAndFinalFlush), StorageRegressionTests.RemoteStorageChunksLargeIoAndFinalFlush),

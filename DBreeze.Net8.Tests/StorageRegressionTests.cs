@@ -13,9 +13,9 @@ internal static class StorageRegressionTests
         RunStorageViewScenario(DBreezeConfiguration.eStorage.MEMORY);
     }
 
-    public static void CommittedPageCacheTracksStorageLifecycle()
+    public static void CommittedReadCachesTrackStorageLifecycle()
     {
-        string root = CreateFolder(nameof(CommittedPageCacheTracksStorageLifecycle));
+        string root = CreateFolder(nameof(CommittedReadCachesTrackStorageLifecycle));
         string tablePath = Path.Combine(root, "1");
         try
         {
@@ -36,6 +36,9 @@ internal static class StorageRegressionTests
                     "Second committed page admission read failed.");
                 AssertBytes(localExpected, storage.Table_Read(true, start + 97, localExpected.Length),
                     "Admitted committed page read failed.");
+                byte[] sharedBuffer = GetSharedReadBuffer(storage);
+                Assert(sharedBuffer != null && sharedBuffer.Length == 8 * 1024,
+                    "Small committed read did not allocate the shared 8 KiB buffer.");
 
                 const int readPageSize = 32 * 1024;
                 long crossPageOffset = ((start + readPageSize) / readPageSize * readPageSize) - 23;
@@ -71,6 +74,8 @@ internal static class StorageRegressionTests
                 storage.TransactionalCommitIsFinished();
                 AssertBytes(replacement, storage.Table_Read(true, start + 97, replacement.Length),
                     "Commit-finished did not invalidate the committed page.");
+                Assert(ReferenceEquals(sharedBuffer, GetSharedReadBuffer(storage)),
+                    "Commit replaced instead of invalidating the shared read buffer.");
                 storage.Table_Read(true, start + 97, replacement.Length);
                 storage.Table_Read(true, start + 97, replacement.Length);
 
@@ -80,9 +85,13 @@ internal static class StorageRegressionTests
                 storage.TransactionalRollback();
                 AssertBytes(replacement, storage.Table_Read(true, start + 97, replacement.Length),
                     "Rollback left a stale page in the committed cache.");
+                Assert(ReferenceEquals(sharedBuffer, GetSharedReadBuffer(storage)),
+                    "Rollback replaced instead of invalidating the shared read buffer.");
                 storage.Table_Read(true, start + 97, replacement.Length);
                 storage.Table_Read(true, start + 97, replacement.Length);
                 storage.Table_Dispose();
+                AssertSharedReadBuffer(storage, expectedAllocated: false,
+                    "Disposed storage retained the shared read buffer.");
             }
 
             using (var reopenedConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
@@ -106,6 +115,7 @@ internal static class StorageRegressionTests
                 reopened.RestoreTableFromTheOtherTable(sourcePath);
                 AssertBytes(restoredPayload.AsSpan(97, 64).ToArray(), reopened.Table_Read(true, start + 97, 64),
                     "Restore reused a page from the replaced data file.");
+                byte[] reopenedSharedBuffer = GetSharedReadBuffer(reopened);
                 reopened.Table_Read(true, start + 97, 64);
                 reopened.Table_Read(true, start + 97, 64);
 
@@ -115,6 +125,8 @@ internal static class StorageRegressionTests
                 reopened.Commit();
                 AssertBytes(recreatedPayload, reopened.Table_Read(true, recreatedStart, recreatedPayload.Length),
                     "Recreate retained cached bytes from the old file.");
+                Assert(ReferenceEquals(reopenedSharedBuffer, GetSharedReadBuffer(reopened)),
+                    "Restore or recreate replaced instead of invalidating the shared read buffer.");
                 reopened.Table_Dispose();
             }
         }
@@ -124,10 +136,11 @@ internal static class StorageRegressionTests
         }
     }
 
-    public static void CommittedPageCacheAdmissionIsLazy()
+    public static void CommittedReadCacheAdmissionIsLazy()
     {
+        const int sharedReadBufferSize = 8 * 1024;
         const int readPageSize = 32 * 1024;
-        string root = CreateFolder(nameof(CommittedPageCacheAdmissionIsLazy));
+        string root = CreateFolder(nameof(CommittedReadCacheAdmissionIsLazy));
         try
         {
             using var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
@@ -139,55 +152,54 @@ internal static class StorageRegressionTests
             long firstFullPage = AlignUp(start, readPageSize);
             Type fsrType = GetTableStorage(storage).GetType();
 
-            RunOnFreshThread(() =>
-            {
-                for (int page = 0; page < 8; page++)
-                {
-                    long offset = firstFullPage + page * (long)readPageSize + 31;
-                    AssertBytes(payload.AsSpan(checked((int)(offset - start)), 64).ToArray(),
-                        storage.Table_Read(true, offset, 64),
-                        "A cold committed page read returned incorrect bytes.");
-                }
+            AssertSharedReadBuffer(storage, expectedAllocated: false,
+                "Opening committed storage eagerly allocated the shared read buffer.");
+            long firstOffset = firstFullPage + 127;
+            AssertBytes(payload.AsSpan(checked((int)(firstOffset - start)), 64).ToArray(),
+                storage.Table_Read(true, firstOffset, 64),
+                "The first shared-buffer read returned incorrect bytes.");
+            byte[] sharedBuffer = GetSharedReadBuffer(storage);
+            Assert(sharedBuffer != null && sharedBuffer.Length == sharedReadBufferSize,
+                "The first small committed read did not allocate exactly 8 KiB.");
+            Assert(GetSharedReadBufferLength(storage) == 4 * 1024,
+                "A random single-reader miss did not use the bounded 4 KiB admission fill.");
 
-                AssertThreadPageCacheBuffer(fsrType, expectedAllocated: false,
-                    "Cold unique pages allocated the 32 KiB thread-static page buffer.");
-            });
+            long hitOffset = firstOffset + 257;
+            AssertBytes(payload.AsSpan(checked((int)(hitOffset - start)), 64).ToArray(),
+                storage.Table_Read(true, hitOffset, 64),
+                "A shared-buffer hit returned incorrect bytes.");
+            Assert(ReferenceEquals(sharedBuffer, GetSharedReadBuffer(storage)),
+                "A shared-buffer hit replaced the 8 KiB buffer.");
 
-            RunOnFreshThread(() =>
-            {
-                long offset = firstFullPage + 127;
-                storage.Table_Read(true, offset, 64);
-                AssertThreadPageCacheBuffer(fsrType, expectedAllocated: false,
-                    "The first small read allocated the page buffer.");
-                storage.Table_Read(true, offset + 64, 64);
-                AssertThreadPageCacheBuffer(fsrType, expectedAllocated: false,
-                    "The second small read allocated the page buffer.");
-                storage.Table_Read(true, offset + 128, 64);
-                AssertThreadPageCacheBuffer(fsrType, expectedAllocated: true,
-                    "The third same-page small read did not populate the page buffer.");
+            long missOffset = firstOffset + sharedReadBufferSize + 17;
+            AssertBytes(payload.AsSpan(checked((int)(missOffset - start)), 64).ToArray(),
+                storage.Table_Read(true, missOffset, 64),
+                "A shared-buffer miss returned incorrect bytes.");
+            Assert(ReferenceEquals(sharedBuffer, GetSharedReadBuffer(storage)),
+                "A shared-buffer miss allocated a second buffer.");
+            Assert(GetSharedReadBufferLength(storage) == sharedReadBufferSize,
+                "A local forward miss did not promote read-ahead to the full 8 KiB lane.");
 
-                byte[] admittedBuffer = GetThreadPageCacheBuffer(fsrType);
-                long nextPageOffset = firstFullPage + readPageSize + 127;
-                storage.Table_Read(true, nextPageOffset, 64);
-                storage.Table_Read(true, nextPageOffset + 64, 64);
-                storage.Table_Read(true, nextPageOffset + 128, 64);
-                Assert(ReferenceEquals(admittedBuffer, GetThreadPageCacheBuffer(fsrType)),
-                    "Changing the admitted page replaced instead of reusing the thread-static buffer.");
-            });
+            long nearEofOffset = start + payload.Length - 31;
+            AssertBytes(payload.AsSpan(payload.Length - 31, 31).ToArray(),
+                storage.Table_Read(true, nearEofOffset, 64),
+                "A shared-buffer read near EOF was not truncated correctly.");
 
             RunOnFreshThread(() =>
             {
                 long offset = firstFullPage + 512;
-                storage.Table_Read(true, offset, 4 * 1024);
+                const int largeReadSize = 9 * 1024;
+                storage.Table_Read(true, offset, largeReadSize);
                 AssertThreadPageCacheBuffer(fsrType, expectedAllocated: false,
-                    "The first 4 KiB read allocated the page buffer.");
-                storage.Table_Read(true, offset + 4 * 1024, 4 * 1024);
+                    "The first large read allocated the page buffer.");
+                storage.Table_Read(true, offset + largeReadSize, largeReadSize);
                 AssertThreadPageCacheBuffer(fsrType, expectedAllocated: true,
-                    "The second same-page 4 KiB read did not populate the page buffer.");
+                    "The second same-page large read did not populate the page buffer.");
             });
 
             var mixedStorages = new StorageLayer[4];
             var mixedStarts = new long[mixedStorages.Length];
+            var mixedPayloadStarts = new long[mixedStorages.Length];
             byte[] mixedPayload = new byte[2 * readPageSize];
             new Random(4181).NextBytes(mixedPayload);
             for (int i = 0; i < mixedStorages.Length; i++)
@@ -195,21 +207,23 @@ internal static class StorageRegressionTests
                 mixedStorages[i] = new StorageLayer(Path.Combine(root, (20 + i).ToString()), new TrieSettings(), configuration);
                 long mixedStart = DecodePointer(mixedStorages[i].Table_WriteToTheEnd(mixedPayload));
                 mixedStorages[i].Commit();
+                mixedPayloadStarts[i] = mixedStart;
                 mixedStarts[i] = AlignUp(mixedStart, readPageSize);
             }
 
-            RunOnFreshThread(() =>
+            var mixedBuffers = new byte[mixedStorages.Length][];
+            for (int i = 0; i < mixedStorages.Length; i++)
             {
-                for (int i = 0; i < 1024; i++)
-                {
-                    int table = i & 3;
-                    long offset = mixedStarts[table] + ((i * 97) % (readPageSize - 64));
-                    mixedStorages[table].Table_Read(true, offset, 64);
-                }
-
-                AssertThreadPageCacheBuffer(fsrType, expectedAllocated: false,
-                    "A mixed-table worker allocated a page buffer for a non-repeating owner.");
-            });
+                int payloadOffset = checked((int)(mixedStarts[i] + 97 - mixedPayloadStarts[i]));
+                byte[] expected = mixedPayload.AsSpan(payloadOffset, 64).ToArray();
+                AssertBytes(expected, mixedStorages[i].Table_Read(true, mixedStarts[i] + 97, 64),
+                    "A mixed-table shared read returned incorrect bytes.");
+                mixedBuffers[i] = GetSharedReadBuffer(mixedStorages[i]);
+                Assert(mixedBuffers[i] != null, "A mixed-table read did not allocate its table-local buffer.");
+                for (int preceding = 0; preceding < i; preceding++)
+                    Assert(!ReferenceEquals(mixedBuffers[preceding], mixedBuffers[i]),
+                        "Two FSR instances unexpectedly shared one read buffer.");
+            }
 
             foreach (StorageLayer mixedStorage in mixedStorages)
                 mixedStorage.Table_Dispose();
@@ -221,51 +235,58 @@ internal static class StorageRegressionTests
         }
     }
 
-    public static void CommittedPageCacheIsSafeDuringConcurrentCommits()
+    public static void CommittedReadCacheIsSafeDuringConcurrentCommits()
     {
-        string root = CreateFolder(nameof(CommittedPageCacheIsSafeDuringConcurrentCommits));
+        string root = CreateFolder(nameof(CommittedReadCacheIsSafeDuringConcurrentCommits));
         try
         {
             using var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
-            var storage = new StorageLayer(Path.Combine(root, "1"), new TrieSettings(), configuration);
-            byte[] initial = new byte[64];
-            long start = DecodePointer(storage.Table_WriteToTheEnd(initial));
-            storage.Commit();
-            storage.Table_Read(true, start, initial.Length);
-            storage.Table_Read(true, start, initial.Length);
-
-            int finished = 0;
-            Task writer = Task.Run(() =>
+            foreach (int readerCount in new[] { 2, 8 })
             {
-                try
+                var storage = new StorageLayer(Path.Combine(root, readerCount.ToString()), new TrieSettings(), configuration);
+                byte[] initial = new byte[64];
+                long start = DecodePointer(storage.Table_WriteToTheEnd(initial));
+                storage.Commit();
+                storage.Table_Read(true, start, initial.Length);
+
+                int finished = 0;
+                using var startBarrier = new Barrier(readerCount + 1);
+                Task writer = Task.Run(() =>
                 {
-                    for (int generation = 1; generation <= 100; generation++)
+                    startBarrier.SignalAndWait();
+                    try
                     {
-                        storage.Table_WriteByOffset(start, Enumerable.Repeat((byte)generation, 64).ToArray());
-                        storage.Commit();
+                        for (int generation = 1; generation <= 100; generation++)
+                        {
+                            storage.Table_WriteByOffset(start, Enumerable.Repeat((byte)generation, 64).ToArray());
+                            storage.Commit();
+                        }
                     }
-                }
-                finally
-                {
-                    Volatile.Write(ref finished, 1);
-                }
-            });
+                    finally
+                    {
+                        Volatile.Write(ref finished, 1);
+                    }
+                });
 
-            Task[] readers = Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
-            {
-                while (Volatile.Read(ref finished) == 0)
+                Task[] readers = Enumerable.Range(0, readerCount).Select(_ => Task.Run(() =>
                 {
-                    byte[] value = storage.Table_Read(true, start, 64);
-                    byte generation = value[0];
-                    if (value.AsSpan().IndexOfAnyExcept(generation) >= 0)
-                        throw new InvalidOperationException("Concurrent committed read observed torn page contents.");
-                }
-            })).ToArray();
+                    startBarrier.SignalAndWait();
+                    while (Volatile.Read(ref finished) == 0)
+                    {
+                        byte[] value = storage.Table_Read(true, start, 64);
+                        byte generation = value[0];
+                        if (value.AsSpan().IndexOfAnyExcept(generation) >= 0)
+                            throw new InvalidOperationException("Concurrent committed read observed torn buffer contents.");
+                    }
+                })).ToArray();
 
-            Task.WaitAll(readers.Append(writer).ToArray());
-            AssertBytes(Enumerable.Repeat((byte)100, 64).ToArray(), storage.Table_Read(true, start, 64),
-                "Concurrent commit did not publish its final generation.");
-            storage.Table_Dispose();
+                Task[] participants = readers.Append(writer).ToArray();
+                Assert(Task.WaitAll(participants, TimeSpan.FromSeconds(60)),
+                    $"Concurrent committed read test timed out with {readerCount} readers.");
+                AssertBytes(Enumerable.Repeat((byte)100, 64).ToArray(), storage.Table_Read(true, start, 64),
+                    "Concurrent commit did not publish its final generation.");
+                storage.Table_Dispose();
+            }
         }
         finally
         {
@@ -845,6 +866,34 @@ internal static class StorageRegressionTests
         typeof(StorageLayer).GetField("_tableStorage", BindingFlags.Instance | BindingFlags.NonPublic)
             ?.GetValue(storage)
         ?? throw new InvalidOperationException("StorageLayer._tableStorage was not found.");
+
+    private static void AssertSharedReadBuffer(StorageLayer storage, bool expectedAllocated, string message)
+    {
+        byte[] buffer = GetSharedReadBuffer(storage);
+        Assert((buffer != null) == expectedAllocated, message);
+        if (buffer != null)
+            Assert(buffer.Length == 8 * 1024, "Shared read-buffer size changed.");
+    }
+
+    private static byte[] GetSharedReadBuffer(StorageLayer storage)
+    {
+        object tableStorage = GetTableStorage(storage);
+        FieldInfo bufferField = tableStorage.GetType().GetField(
+            "_sharedReadBuffer",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FSR._sharedReadBuffer was not found.");
+        return (byte[])bufferField.GetValue(tableStorage);
+    }
+
+    private static int GetSharedReadBufferLength(StorageLayer storage)
+    {
+        object tableStorage = GetTableStorage(storage);
+        FieldInfo lengthField = tableStorage.GetType().GetField(
+            "_sharedReadBufferLength",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FSR._sharedReadBufferLength was not found.");
+        return (int)lengthField.GetValue(tableStorage);
+    }
 
     private static void AssertThreadPageCacheBuffer(Type fsrType, bool expectedAllocated, string message)
     {

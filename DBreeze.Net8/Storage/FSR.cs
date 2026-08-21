@@ -76,8 +76,15 @@ namespace DBreeze.Storage
         FileStream _fsData = null;
         FileStream _fsRollback = null;
         FileStream _fsRollbackHelper = null;
+        const int SharedReadBufferSize = 8 * 1024;
+        const int SingleReaderReadAheadSize = 4 * 1024;
         const int ReadPageSize = 32 * 1024;
         const int SmallReadThreshold = 256;
+        readonly object _sharedReadLane = new object();
+        byte[] _sharedReadBuffer;
+        long _sharedReadBufferOffset;
+        int _sharedReadBufferLength;
+        long _sharedReadBufferMutationVersion;
         static long _nextInstanceId;
         readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
         long _mutationVersion = 1;
@@ -95,11 +102,6 @@ namespace DBreeze.Storage
             public int PageLength;
             public byte CandidateAccessCount;
             public bool IsPopulated;
-            public byte[] ExactBuffer;
-            public long ExactOwnerId;
-            public long ExactMutationVersion;
-            public long ExactOffset;
-            public int ExactLength;
         }
 
         /// <summary>
@@ -126,29 +128,48 @@ namespace DBreeze.Storage
         private readonly struct StorageLockScope : IDisposable
         {
             private readonly ReaderWriterLockSlim _lock;
+            private readonly object _writeGate;
             private readonly bool _write;
 
-            public StorageLockScope(ReaderWriterLockSlim sync, bool write)
+            public StorageLockScope(ReaderWriterLockSlim sync, object writeGate, bool write)
             {
                 _lock = sync;
+                _writeGate = writeGate;
                 _write = write;
                 if (write)
-                    sync.EnterWriteLock();
+                {
+                    Monitor.Enter(writeGate);
+                    try
+                    {
+                        sync.EnterWriteLock();
+                    }
+                    catch
+                    {
+                        Monitor.Exit(writeGate);
+                        throw;
+                    }
+                }
                 else
                     sync.EnterReadLock();
             }
 
             public void Dispose()
             {
+                if (_lock == null)
+                    return;
+
                 if (_write)
+                {
                     _lock.ExitWriteLock();
+                    Monitor.Exit(_writeGate);
+                }
                 else
                     _lock.ExitReadLock();
             }
         }
 
-        private StorageLockScope AcquireReadLock() => new StorageLockScope(lock_fs, false);
-        private StorageLockScope AcquireWriteLock() => new StorageLockScope(lock_fs, true);
+        private StorageLockScope AcquireReadLock() => new StorageLockScope(lock_fs, null, false);
+        private StorageLockScope AcquireWriteLock() => new StorageLockScope(lock_fs, _sharedReadLane, true);
 
         public FSR(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
         {
@@ -238,6 +259,7 @@ namespace DBreeze.Storage
                 eofRollback = 0;
                 _physicalDataLength = 0;
                 InvalidateReadCache();
+                _sharedReadBuffer = null;
                 TransactionalCommitIsStarted = false;
             }
 
@@ -444,7 +466,9 @@ namespace DBreeze.Storage
                 Mode = FileMode.OpenOrCreate,
                 Share = FileShare.None,
                 BufferSize = 1,
-                Options = FileOptions.WriteThrough | FileOptions.RandomAccess
+                // The shared read lane supplies the historical 8 KiB locality. Keeping the OS
+                // random-access hint here disables useful cache-manager read-ahead for trie walks.
+                Options = FileOptions.WriteThrough
             });
         }
 
@@ -475,6 +499,9 @@ namespace DBreeze.Storage
                 if (_mutationVersion == 0)
                     _mutationVersion = 1;
             }
+
+            _sharedReadBufferLength = 0;
+            _sharedReadBufferMutationVersion = 0;
         }
 
         private static void ReadExactlyAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
@@ -487,6 +514,20 @@ namespace DBreeze.Storage
                     throw new EndOfStreamException("Unexpected end of storage stream.");
                 destination = destination.Slice(read);
                 fileOffset += read;
+            }
+        }
+
+        private static void ReadExactlySequential(FileStream stream, byte[] buffer, int bufferOffset, int count,
+            long fileOffset)
+        {
+            stream.Position = fileOffset;
+            Span<byte> destination = new Span<byte>(buffer, bufferOffset, count);
+            while (!destination.IsEmpty)
+            {
+                int read = stream.Read(destination);
+                if (read == 0)
+                    throw new EndOfStreamException("Unexpected end of storage stream.");
+                destination = destination.Slice(read);
             }
         }
         #endregion
@@ -1019,7 +1060,23 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public byte[] Table_Read(bool useCache, long offset, int count)
         {
-            using (AcquireReadLock())
+            // The historical FSR used one buffered FileStream cursor guarded by a table-wide
+            // monitor. Keep that locality and admission behavior for small committed reads while
+            // retaining positioned IO for writes, large reads, and reads of different tables.
+            if (useCache && count > 0 && count < SharedReadBufferSize)
+            {
+                lock (_sharedReadLane)
+                    return Table_ReadCore(useCache, offset, count, useSharedReadLane: true);
+            }
+
+            return Table_ReadCore(useCache, offset, count, useSharedReadLane: false);
+        }
+
+        private byte[] Table_ReadCore(bool useCache, long offset, int count, bool useSharedReadLane)
+        {
+            // Small committed reads already own _sharedReadLane. Writers take the same gate before
+            // their write lock, so a second per-read ReaderWriterLockSlim acquisition is redundant.
+            using (useSharedReadLane ? default : AcquireReadLock())
             {
                 if (offset < 0)
                     throw new ArgumentOutOfRangeException(nameof(offset));
@@ -1063,16 +1120,20 @@ namespace DBreeze.Storage
 
                 byte[] committed = GC.AllocateUninitializedArray<byte>(committedLength);
                 bool canUseCommittedCache = _rollbackCache.Count == 0 && !TransactionalCommitIsStarted;
-                if (canUseCommittedCache && TryReadCommittedExact(offset, committed))
+                if (useSharedReadLane)
+                {
+                    ReadFromSharedBuffer(offset, committed, visibleLength);
+                    if (canUseCommittedCache)
+                        return committed;
+                }
+                else if (canUseCommittedCache && TryReadCommittedPage(offset, committed, visibleLength))
+                {
                     return committed;
-
-                if (canUseCommittedCache && TryReadCommittedPage(offset, committed, visibleLength))
-                    return committed;
-
-                if (canUseCommittedCache && TryReadAheadCommittedExact(offset, committed, visibleLength))
-                    return committed;
-
-                ReadExactlyAt(_fsData, committed, 0, committed.Length, offset);
+                }
+                else
+                {
+                    ReadExactlyAt(_fsData, committed, 0, committed.Length, offset);
+                }
 
                 foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
                 {
@@ -1090,45 +1151,33 @@ namespace DBreeze.Storage
             }
         }
 
-        private bool TryReadCommittedExact(long offset, byte[] result)
+        private void ReadFromSharedBuffer(long offset, byte[] result, long visibleLength)
         {
-            ReadPageCache cache = _threadReadPageCache;
-            if (cache?.ExactBuffer == null ||
-                cache.ExactOwnerId != _instanceId ||
-                cache.ExactMutationVersion != _mutationVersion ||
-                offset < cache.ExactOffset)
+            long relativeOffset = offset - _sharedReadBufferOffset;
+            bool cacheHit = _sharedReadBuffer != null &&
+                _sharedReadBufferMutationVersion == _mutationVersion &&
+                relativeOffset >= 0 &&
+                relativeOffset <= _sharedReadBufferLength &&
+                result.Length <= _sharedReadBufferLength - relativeOffset;
+
+            if (!cacheHit)
             {
-                return false;
+                _sharedReadBuffer ??= GC.AllocateUninitializedArray<byte>(SharedReadBufferSize);
+                long previousBufferEnd = _sharedReadBufferOffset + _sharedReadBufferLength;
+                bool continuesSequentialRead = _sharedReadBufferMutationVersion == _mutationVersion &&
+                    offset >= previousBufferEnd - result.Length &&
+                    offset <= previousBufferEnd + SharedReadBufferSize;
+                int readAheadLength = continuesSequentialRead
+                    ? SharedReadBufferSize
+                    : Math.Max(result.Length, SingleReaderReadAheadSize);
+                int bufferLength = (int)Math.Min(readAheadLength, visibleLength - offset);
+                ReadExactlySequential(_fsData, _sharedReadBuffer, 0, bufferLength, offset);
+                _sharedReadBufferOffset = offset;
+                _sharedReadBufferLength = bufferLength;
+                _sharedReadBufferMutationVersion = _mutationVersion;
+                relativeOffset = 0;
             }
-
-            long relativeOffset = offset - cache.ExactOffset;
-            if (relativeOffset > cache.ExactLength || result.Length > cache.ExactLength - relativeOffset)
-                return false;
-
-            Buffer.BlockCopy(cache.ExactBuffer, (int)relativeOffset, result, 0, result.Length);
-            return true;
-        }
-
-        private bool TryReadAheadCommittedExact(long offset, byte[] result, long visibleLength)
-        {
-            // The 111-byte LTrie probe benefits from read-ahead because key/value materialization
-            // usually follows immediately. Smaller standalone slices should not pay for 256 bytes.
-            if (result.Length < 111 || result.Length > SmallReadThreshold)
-                return false;
-
-            int readAheadLength = (int)Math.Min(SmallReadThreshold, visibleLength - offset);
-            if (readAheadLength < result.Length)
-                return false;
-
-            ReadPageCache cache = _threadReadPageCache ??= new ReadPageCache();
-            cache.ExactBuffer ??= GC.AllocateUninitializedArray<byte>(SmallReadThreshold);
-            ReadExactlyAt(_fsData, cache.ExactBuffer, 0, readAheadLength, offset);
-            Buffer.BlockCopy(cache.ExactBuffer, 0, result, 0, result.Length);
-            cache.ExactOwnerId = _instanceId;
-            cache.ExactMutationVersion = _mutationVersion;
-            cache.ExactOffset = offset;
-            cache.ExactLength = readAheadLength;
-            return true;
+            new ReadOnlySpan<byte>(_sharedReadBuffer, (int)relativeOffset, result.Length).CopyTo(result);
         }
 
         private bool TryReadCommittedPage(long offset, byte[] result, long visibleLength)
