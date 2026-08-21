@@ -8,8 +8,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == ''">
     <ProjectReference Include="..\DBreeze.Net8\DBreeze.Net8.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' != ''">
+    <Reference Include="DBreeze" HintPath="$(DBreezeAssemblyReference)" Private="true" />
   </ItemGroup>
 
 </Project>

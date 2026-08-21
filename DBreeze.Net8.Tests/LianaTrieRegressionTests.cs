@@ -8,7 +8,8 @@ internal static class LianaTrieRegressionTests
 {
     private const string RecreateTable = "liana-recreate";
     private const string ContractTable = "liana-contract";
-    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
+    private static readonly string DatabaseTestRoot =
+        Environment.GetEnvironmentVariable("DBREEZE_TEST_ROOT") ?? @"D:\Temp\DbreezeDbTest";
     private static readonly IComparer<byte[]> ByteComparer = new LexicographicByteComparer();
 
     internal static void RemoveAllWithFileRecreationKeepsTableReusable()

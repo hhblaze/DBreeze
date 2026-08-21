@@ -5,7 +5,8 @@ using System.Reflection;
 
 internal static class TextSearchRegressionTests
 {
-    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
+    private static readonly string DatabaseTestRoot =
+        Environment.GetEnvironmentVariable("DBREEZE_TEST_ROOT") ?? @"D:\Temp\DbreezeDbTest";
     public static void WabiEnumerationAndMergesMatchReferenceModel()
     {
         Type type = typeof(DBreezeEngine).Assembly.GetType("DBreeze.TextSearch.WABI", throwOnError: true);

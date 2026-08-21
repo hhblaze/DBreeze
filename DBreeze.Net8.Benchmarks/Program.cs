@@ -1,6 +1,15 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Any(static arg => string.Equals(arg, "--render-audit", StringComparison.OrdinalIgnoreCase)))
+    return AuditArtifactRenderer.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--compare-all", StringComparison.OrdinalIgnoreCase)))
+    return AuditOrchestrator.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--audit-worker", StringComparison.OrdinalIgnoreCase)))
+    return AuditWorker.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--api-surface", StringComparison.OrdinalIgnoreCase)
         || string.Equals(arg, "--api-compare", StringComparison.OrdinalIgnoreCase)
         || string.Equals(arg, "--api-compatible", StringComparison.OrdinalIgnoreCase)))

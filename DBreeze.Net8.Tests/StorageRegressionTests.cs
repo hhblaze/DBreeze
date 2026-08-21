@@ -5,7 +5,8 @@ using DBreeze.Storage.RemoteInstance;
 
 internal static class StorageRegressionTests
 {
-    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
+    private static readonly string DatabaseTestRoot =
+        Environment.GetEnvironmentVariable("DBREEZE_TEST_ROOT") ?? @"D:\Temp\DbreezeDbTest";
     public static void StorageViewsCommitRollbackAndAutoFlush()
     {
         RunStorageViewScenario(DBreezeConfiguration.eStorage.DISK);

@@ -1609,14 +1609,13 @@
             <param name="newData"></param>
             <param name="kidsBeforeModification"></param>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Byte[],System.Int32)">
+        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.GenerationNodeRead(System.Boolean,System.Byte[],System.Int32)">
             <summary>
             
             </summary>
             <param name="useCache"></param>
             <param name="pointer"></param>
-            <param name="cachedGenerationMapLine"></param>
-            <param name="MaximumNodeLineLength"></param>
+            <param name="maximumNodeLineLength"></param>
             <returns></returns>
         </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadDynamicDataBlock(System.Byte[]@,System.Boolean)">

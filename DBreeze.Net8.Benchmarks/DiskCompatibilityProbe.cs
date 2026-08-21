@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DBreeze;
+using DBreeze.DataTypes;
+using DBreeze.Objects;
 using DBreeze.Storage;
 using DBreeze.Utils;
 
@@ -19,6 +21,29 @@ internal static class DiskCompatibilityProbe
         "compat-int",
         "compat-date",
         "compat-bytes",
+        "compat-parts",
+        "compat-blocks",
+        "compat-fixed",
+        "compat-master",
+        "compat-objects",
+        "compat-nullable-values",
+        "compat-type-byte",
+        "compat-type-sbyte",
+        "compat-type-short",
+        "compat-type-ushort",
+        "compat-type-uint",
+        "compat-type-long",
+        "compat-type-ulong",
+        "compat-type-float",
+        "compat-type-double",
+        "compat-type-decimal",
+        "compat-type-string",
+        "compat-type-utf8",
+        "compat-type-ascii",
+        "compat-type-unicode",
+        "compat-type-bool",
+        "compat-type-char",
+        "compat-type-guid",
         "compat-rks",
         "compat-dictionary",
         "compat-hashset",
@@ -62,6 +87,14 @@ internal static class DiskCompatibilityProbe
                 case "restore-backup":
                     RestoreBackup(options.DatabasePath, options.BackupPath);
                     WriteManifest(options.OutputPath, BuildManifest(options.DatabasePath, "base"));
+                    break;
+                case "create-journal":
+                    CreateJournalRecoveryFixture(options.DatabasePath);
+                    WriteManifest(options.OutputPath, BuildJournalManifest(options.DatabasePath));
+                    break;
+                case "verify-journal":
+                    VerifyJournalRecoveryFixture(options.DatabasePath);
+                    WriteManifest(options.OutputPath, BuildJournalManifest(options.DatabasePath));
                     break;
                 case "compare":
                     Compare(options.LeftManifestPath, options.RightManifestPath, options.OutputPath,
@@ -132,6 +165,83 @@ internal static class DiskCompatibilityProbe
         Validate(databasePath, extended: false);
     }
 
+    private static void CreateJournalRecoveryFixture(string databasePath)
+    {
+        PrepareNewDatabase(databasePath);
+        var configuration = new DBreezeConfiguration
+        {
+            DBreezeDataFolderName = databasePath,
+            NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+        };
+        configuration.AlternativeTablesLocations["journal-b"] = Path.Combine(databasePath, "alternative");
+        using (var engine = new DBreezeEngine(configuration))
+        {
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.Insert("journal-a", 1, "a");
+                transaction.Commit();
+            }
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.Insert("journal-b", 2, "b");
+                transaction.Commit();
+            }
+
+            var field = typeof(DBreezeEngine).GetField("_transactionsJournal",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Ensure(field != null, "Transactions journal field was not found.");
+            var journal = (DBreeze.Transactions.TransactionsJournal)field.GetValue(engine);
+            ulong transactionNumber = journal.GetTransactionNumber();
+            journal.AddTableForTransaction(transactionNumber, new FailingJournalTable("journal-a"));
+            journal.AddTableForTransaction(transactionNumber, new FailingJournalTable("journal-b"));
+            try
+            {
+                journal.FinishTransaction(transactionNumber);
+                throw new InvalidDataException("Injected journal failure did not fail.");
+            }
+            catch (InvalidOperationException)
+            {
+                // Expected: leaves a durable crash-recovery marker for the other version.
+            }
+        }
+
+        byte[][] payloads = ReadJournalPayloads(databasePath, configuration);
+        Ensure(payloads.Length == 1, "Journal fixture did not persist exactly one marker.");
+        Ensure(payloads[0].SequenceEqual(Encoding.UTF8.GetBytes(
+            "<string>journal-a</string>\n<string>journal-b</string>\n")),
+            "Journal payload format changed.");
+    }
+
+    private static void VerifyJournalRecoveryFixture(string databasePath)
+    {
+        if (!Directory.Exists(databasePath))
+            throw new DirectoryNotFoundException(databasePath);
+        var configuration = new DBreezeConfiguration
+        {
+            DBreezeDataFolderName = databasePath,
+            NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+        };
+        configuration.AlternativeTablesLocations["journal-b"] = Path.Combine(databasePath, "alternative");
+        using (var engine = new DBreezeEngine(configuration))
+        using (var transaction = engine.GetTransaction())
+        {
+            Ensure(transaction.Select<int, string>("journal-a", 1).Value == "a",
+                "Journal recovery damaged journal-a.");
+            Ensure(transaction.Select<int, string>("journal-b", 2).Value == "b",
+                "Journal recovery damaged journal-b.");
+        }
+        Ensure(ReadJournalPayloads(databasePath, configuration).Length == 0,
+            "Journal recovery did not clear the durable marker.");
+    }
+
+    private static byte[][] ReadJournalPayloads(string databasePath, DBreezeConfiguration configuration)
+    {
+        var storage = new StorageLayer(Path.Combine(databasePath, "_DBreezeTranJrnl"),
+            new TrieSettings(), configuration);
+        using var journal = new DBreeze.LianaTrie.LTrie(storage) { TableName = "DBreeze.TranJournal" };
+        return journal.IterateForward(true, false).Select(static row => row.GetFullValue(true)).ToArray();
+    }
+
     private static void PrepareNewDatabase(string databasePath)
     {
         if (Directory.Exists(databasePath))
@@ -156,6 +266,40 @@ internal static class DiskCompatibilityProbe
         for (int i = 0; i < ByteRows; i++)
             transaction.Insert("compat-bytes", ByteKey(i), ByteValue(i));
 
+        transaction.Insert("compat-parts", 1, new byte[24]);
+        transaction.InsertPart("compat-parts", 1, new byte[] { 1, 2, 3 }, 8, out _, out _);
+        byte[] blockPointer = transaction.InsertDataBlock("compat-blocks", null,
+            Encoding.UTF8.GetBytes("compat-ordinary-base"));
+        transaction.Insert("compat-blocks", 1, blockPointer);
+        byte[] fixedPointer = transaction.InsertDataBlockWithFixedAddress("compat-fixed", null,
+            Encoding.UTF8.GetBytes("compat-fixed-base"));
+        transaction.Insert("compat-fixed", 1, fixedPointer);
+
+        NestedTable nested = transaction.InsertTable("compat-master", 1, 0);
+        for (int i = 1; i <= 6; i++)
+            nested.Insert(i, "nested-base-" + i.ToString(CultureInfo.InvariantCulture));
+        NestedTable child = nested.GetTable(100, 1);
+        child.Insert(1, 101);
+        NestedTable nestedDictionary = nested.GetTable(101, 1);
+        nestedDictionary.InsertDictionary(new Dictionary<int, string> { [1] = "one", [2] = "two" }, true);
+        NestedTable nestedSet = nested.GetTable(102, 1);
+        nestedSet.InsertHashSet(new HashSet<int> { 3, 4 }, true);
+
+        long identity = transaction.ObjectGetNewIdentity<long>("compat-objects");
+        DBreezeObjectInsertResult<byte[]> objectResult = transaction.ObjectInsert("compat-objects",
+            new DBreezeObject<byte[]>
+            {
+                NewEntity = true,
+                Entity = new byte[] { 7, 8, 9 },
+                Indexes = new List<DBreezeIndex>
+                {
+                    new(1, identity) { PrimaryIndex = true },
+                    new(2, "compat-object"),
+                },
+            });
+        Ensure(objectResult.EntityWasInserted && identity == 1, "Compatibility object insert failed.");
+        InsertScalarTypes(transaction);
+
         for (int i = 0; i < 512; i++)
             transaction.RandomKeySorter.Insert("compat-rks", i, i * 3);
         for (int i = 0; i < 64; i++)
@@ -171,6 +315,17 @@ internal static class DiskCompatibilityProbe
             transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), contains, "group" + (i % 4));
         }
         transaction.Commit();
+        nestedSet.CloseTable();
+        nestedDictionary.CloseTable();
+        child.CloseTable();
+        nested.CloseTable();
+
+        using (var schemeTransaction = engine.GetTransaction())
+        {
+            schemeTransaction.Insert("compat-scheme-source", 1, "scheme-value");
+            schemeTransaction.Commit();
+        }
+        engine.Scheme.RenameTable("compat-scheme-source", "compat-scheme-live");
 
         engine.Resources.Insert<byte[]>("compat-resource-null", null);
         engine.Resources.Insert("compat-resource-empty", Array.Empty<byte>());
@@ -186,9 +341,10 @@ internal static class DiskCompatibilityProbe
     private static void Extend(string databasePath)
     {
         using (var engine = new DBreezeEngine(databasePath))
-        using (var transaction = engine.GetTransaction())
         {
-            transaction.SynchronizeTables(CompatibilityTables);
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.SynchronizeTables(CompatibilityTables);
 
             for (int i = 0; i < 256; i++)
                 transaction.Insert("compat-int", i, ExtendedValue(i));
@@ -196,6 +352,21 @@ internal static class DiskCompatibilityProbe
                 transaction.RemoveKey("compat-int", i);
             for (int i = BaseIntRows; i < BaseIntRows + 256; i++)
                 transaction.Insert("compat-int", i, AddedValue(i));
+
+            transaction.InsertPart("compat-parts", 1, new byte[] { 4, 5 }, 12, out _, out _);
+            byte[] blockPointer = transaction.Select<int, byte[]>("compat-blocks", 1).Value;
+            blockPointer = transaction.InsertDataBlock("compat-blocks", blockPointer,
+                Encoding.UTF8.GetBytes("compat-ordinary-extended"));
+            transaction.Insert("compat-blocks", 1, blockPointer);
+            byte[] fixedPointer = transaction.Select<int, byte[]>("compat-fixed", 1).Value;
+            transaction.InsertDataBlockWithFixedAddress("compat-fixed", fixedPointer,
+                Encoding.UTF8.GetBytes("compat-fixed-next"));
+
+            NestedTable nested = transaction.InsertTable("compat-master", 1, 0);
+            nested.Insert(2, "nested-extended-2");
+            nested.Insert(7, "nested-added-7");
+            NestedTable child = nested.GetTable(100, 1);
+            child.Insert(2, 202);
 
             for (int i = 64; i < 96; i++)
                 transaction.RandomKeySorter.Remove("compat-rks", i);
@@ -212,12 +383,23 @@ internal static class DiskCompatibilityProbe
                 transaction.TextRemoveAll("compat-text", i.To_4_bytes_array_BigEndian());
             for (int i = 128; i < 160; i++)
                 transaction.TextInsert("compat-text", i.To_4_bytes_array_BigEndian(), "compatibility added", "extended");
-            transaction.Commit();
+                transaction.Commit();
+                child.CloseTable();
+                nested.CloseTable();
+            }
 
             engine.Resources.Insert("compat-resource-update", new byte[] { 40, 41 });
             engine.Resources.Remove("compat-resource-remove");
             engine.Resources.Insert("compat-resource-added", new byte[] { 6, 7 });
             engine.Resources.Insert("compat-resource-prefix-a", new byte[] { 100 });
+
+            engine.Scheme.RenameTable("compat-scheme-live", "compat-scheme-renamed");
+            using (var lifecycle = engine.GetTransaction())
+            {
+                lifecycle.Insert("compat-scheme-temporary", 1, 1);
+                lifecycle.Commit();
+            }
+            engine.Scheme.DeleteTable("compat-scheme-temporary");
         }
 
         Validate(databasePath, extended: true);
@@ -267,6 +449,88 @@ internal static class DiskCompatibilityProbe
             checksum.Add(byteRows[i].Value);
             rowCount++;
         }
+
+        byte[] part = transaction.Select<int, byte[]>("compat-parts", 1).Value;
+        byte[] expectedPart = new byte[24];
+        expectedPart[8] = 1;
+        expectedPart[9] = 2;
+        expectedPart[10] = 3;
+        if (extended)
+        {
+            expectedPart[12] = 4;
+            expectedPart[13] = 5;
+        }
+        Ensure(part.SequenceEqual(expectedPart), "compat-parts mismatch");
+        checksum.Add(part);
+        rowCount++;
+
+        byte[] blockPointer = transaction.Select<int, byte[]>("compat-blocks", 1).Value;
+        byte[] block = transaction.SelectDataBlock("compat-blocks", blockPointer);
+        string expectedBlock = extended ? "compat-ordinary-extended" : "compat-ordinary-base";
+        Ensure(Encoding.UTF8.GetString(block) == expectedBlock, "compat ordinary data block mismatch");
+        checksum.Add(block);
+        rowCount++;
+
+        byte[] fixedPointer = transaction.Select<int, byte[]>("compat-fixed", 1).Value;
+        byte[] fixedBlock = transaction.SelectDataBlockWithFixedAddress<byte[]>("compat-fixed", fixedPointer);
+        string expectedFixed = extended ? "compat-fixed-next" : "compat-fixed-base";
+        Ensure(Encoding.UTF8.GetString(fixedBlock) == expectedFixed, "compat fixed data block mismatch");
+        checksum.Add(fixedBlock);
+        rowCount++;
+
+        NestedTable nested = transaction.SelectTable<int>("compat-master", 1, 0);
+        int lastNestedKey = extended ? 7 : 6;
+        for (int i = 1; i <= lastNestedKey; i++)
+        {
+            string expected = extended && i == 2
+                ? "nested-extended-2"
+                : i == 7 ? "nested-added-7" : "nested-base-" + i.ToString(CultureInfo.InvariantCulture);
+            Ensure(nested.Select<int, string>(i).Value == expected, $"compat nested mismatch for {i}");
+            checksum.Add(i);
+            checksum.Add(expected);
+            rowCount++;
+        }
+        NestedTable child = nested.GetTable(100, 1);
+        Ensure(child.Select<int, int>(1).Value == 101, "compat nested child base mismatch");
+        checksum.Add(101);
+        rowCount++;
+        if (extended)
+        {
+            Ensure(child.Select<int, int>(2).Value == 202, "compat nested child extension mismatch");
+            checksum.Add(202);
+            rowCount++;
+        }
+        child.CloseTable();
+        NestedTable nestedDictionary = nested.GetTable(101, 1);
+        Dictionary<int, string> childDictionary = nestedDictionary.SelectDictionary<int, string>();
+        Ensure(childDictionary.Count == 2 && childDictionary[1] == "one" && childDictionary[2] == "two",
+            "compat nested dictionary mismatch");
+        foreach (KeyValuePair<int, string> pair in childDictionary.OrderBy(static pair => pair.Key))
+        {
+            checksum.Add(pair.Key);
+            checksum.Add(pair.Value);
+            rowCount++;
+        }
+        nestedDictionary.CloseTable();
+        NestedTable nestedSet = nested.GetTable(102, 1);
+        HashSet<int> childSet = nestedSet.SelectHashSet<int>();
+        Ensure(childSet.SetEquals(new[] { 3, 4 }), "compat nested hash-set mismatch");
+        foreach (int value in childSet.OrderBy(static value => value))
+        {
+            checksum.Add(value);
+            rowCount++;
+        }
+        nestedSet.CloseTable();
+        nested.CloseTable();
+
+        Row<byte[], byte[]> objectRow = transaction.Select<byte[], byte[]>("compat-objects", 1.ToIndex(1L));
+        DBreezeObject<byte[]> storedObject = objectRow.ObjectGet<byte[]>();
+        Ensure(storedObject?.Entity?.SequenceEqual(new byte[] { 7, 8, 9 }) == true,
+            "compat object mismatch");
+        checksum.Add(storedObject.Entity);
+        rowCount++;
+
+        rowCount += ValidateScalarTypes(transaction, checksum);
 
         var rksRows = transaction.SelectForward<int, int>("compat-rks").ToArray();
         int expectedRksCount = extended ? 544 : 448;
@@ -323,7 +587,17 @@ internal static class DiskCompatibilityProbe
 
         ValidateResources(engine, extended, checksum, ref rowCount);
 
-        long expectedRows = extended ? 3_513 : 3_433;
+        string schemeTable = extended ? "compat-scheme-renamed" : "compat-scheme-live";
+        Ensure(engine.Scheme.IfUserTableExists(schemeTable), "compat Scheme renamed table is missing");
+        Ensure(!engine.Scheme.IfUserTableExists(extended ? "compat-scheme-live" : "compat-scheme-source"),
+            "compat Scheme source table unexpectedly exists");
+        Ensure(transaction.Select<int, string>(schemeTable, 1).Value == "scheme-value",
+            "compat Scheme value mismatch");
+        checksum.Add(schemeTable);
+        checksum.Add("scheme-value");
+        rowCount++;
+
+        long expectedRows = extended ? 3_562 : 3_480;
         Ensure(rowCount == expectedRows, $"Total compatibility row count: {rowCount}");
         return new CompatibilitySummary(rowCount, checksum.Value);
     }
@@ -385,6 +659,102 @@ internal static class DiskCompatibilityProbe
             "Compatibility resource remove state mismatch.");
     }
 
+    private static void InsertScalarTypes(DBreeze.Transactions.Transaction transaction)
+    {
+        transaction.Insert("compat-type-byte", (byte)7, (byte)8);
+        transaction.Insert("compat-type-sbyte", (sbyte)-7, (sbyte)-8);
+        transaction.Insert("compat-type-short", (short)-1_234, (short)-2_345);
+        transaction.Insert("compat-type-ushort", (ushort)1_234, (ushort)2_345);
+        transaction.Insert("compat-type-uint", 123_456U, 654_321U);
+        transaction.Insert("compat-type-long", -9_876_543_210L, 1_234_567_890L);
+        transaction.Insert("compat-type-ulong", 9_876_543_210UL, 12_345_678_901UL);
+        transaction.Insert("compat-type-float", -12.25F, 77.5F);
+        transaction.Insert("compat-type-double", -1234.5D, 9876.25D);
+        transaction.Insert("compat-type-decimal", -123456.789M, 987654.321M);
+        transaction.Insert("compat-type-string", "ключ-周", "value-ß");
+        transaction.Insert("compat-type-utf8", new DbUTF8("utf8-key-周"), new DbUTF8("utf8-value-ß"));
+        transaction.Insert("compat-type-ascii", new DbAscii("ascii-key"), new DbAscii("ascii-value"));
+        transaction.Insert("compat-type-unicode", new DbUnicode("unicode-key-Ж"), new DbUnicode("unicode-value-周"));
+        transaction.Insert("compat-type-bool", 1, true);
+        transaction.Insert("compat-type-char", 'Ж', '周');
+        transaction.Insert("compat-type-guid", new Guid("11111111-2222-3333-4444-555555555555"),
+            new Guid("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+
+        transaction.Insert<int, int?>("compat-nullable-values", 1, null);
+        transaction.Insert<int, uint?>("compat-nullable-values", 2, null);
+        transaction.Insert<int, long?>("compat-nullable-values", 3, null);
+        transaction.Insert<int, ulong?>("compat-nullable-values", 4, null);
+        transaction.Insert<int, short?>("compat-nullable-values", 5, null);
+        transaction.Insert<int, ushort?>("compat-nullable-values", 6, null);
+        transaction.Insert<int, byte?>("compat-nullable-values", 7, null);
+        transaction.Insert<int, sbyte?>("compat-nullable-values", 8, null);
+        transaction.Insert<int, DateTime?>("compat-nullable-values", 9, null);
+        transaction.Insert<int, double?>("compat-nullable-values", 10, null);
+        transaction.Insert<int, float?>("compat-nullable-values", 11, null);
+        transaction.Insert<int, decimal?>("compat-nullable-values", 12, null);
+        transaction.Insert<int, bool?>("compat-nullable-values", 13, null);
+        transaction.Insert<int, char?>("compat-nullable-values", 14, null);
+    }
+
+    private static int ValidateScalarTypes(DBreeze.Transactions.Transaction transaction, StableChecksum checksum)
+    {
+        Ensure(transaction.Select<byte, byte>("compat-type-byte", 7).Value == 8, "compat byte mismatch");
+        Ensure(transaction.Select<sbyte, sbyte>("compat-type-sbyte", -7).Value == -8, "compat sbyte mismatch");
+        Ensure(transaction.Select<short, short>("compat-type-short", -1_234).Value == -2_345, "compat short mismatch");
+        Ensure(transaction.Select<ushort, ushort>("compat-type-ushort", 1_234).Value == 2_345, "compat ushort mismatch");
+        Ensure(transaction.Select<uint, uint>("compat-type-uint", 123_456U).Value == 654_321U, "compat uint mismatch");
+        Ensure(transaction.Select<long, long>("compat-type-long", -9_876_543_210L).Value == 1_234_567_890L,
+            "compat long mismatch");
+        Ensure(transaction.Select<ulong, ulong>("compat-type-ulong", 9_876_543_210UL).Value == 12_345_678_901UL,
+            "compat ulong mismatch");
+        Ensure(transaction.Select<float, float>("compat-type-float", -12.25F).Value == 77.5F, "compat float mismatch");
+        Ensure(transaction.Select<double, double>("compat-type-double", -1234.5D).Value == 9876.25D,
+            "compat double mismatch");
+        Ensure(transaction.Select<decimal, decimal>("compat-type-decimal", -123456.789M).Value == 987654.321M,
+            "compat decimal mismatch");
+        Ensure(transaction.Select<string, string>("compat-type-string", "ключ-周").Value == "value-ß",
+            "compat string mismatch");
+        Ensure(transaction.Select<DbUTF8, DbUTF8>("compat-type-utf8", new DbUTF8("utf8-key-周")).Value.Get ==
+               "utf8-value-ß", "compat DbUTF8 mismatch");
+        Ensure(transaction.Select<DbAscii, DbAscii>("compat-type-ascii", new DbAscii("ascii-key")).Value.Get ==
+               "ascii-value", "compat DbAscii mismatch");
+        Ensure(transaction.Select<DbUnicode, DbUnicode>("compat-type-unicode", new DbUnicode("unicode-key-Ж")).Value.Get ==
+               "unicode-value-周", "compat DbUnicode mismatch");
+        Ensure(transaction.Select<int, bool>("compat-type-bool", 1).Value, "compat bool mismatch");
+        Ensure(transaction.Select<char, char>("compat-type-char", 'Ж').Value == '周', "compat char mismatch");
+        Ensure(transaction.Select<Guid, Guid>("compat-type-guid",
+                   new Guid("11111111-2222-3333-4444-555555555555")).Value ==
+               new Guid("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), "compat Guid mismatch");
+
+        EnsureNull<int>(transaction, 1);
+        EnsureNull<uint>(transaction, 2);
+        EnsureNull<long>(transaction, 3);
+        EnsureNull<ulong>(transaction, 4);
+        EnsureNull<short>(transaction, 5);
+        EnsureNull<ushort>(transaction, 6);
+        EnsureNull<byte>(transaction, 7);
+        EnsureNull<sbyte>(transaction, 8);
+        EnsureNull<DateTime>(transaction, 9);
+        EnsureNull<double>(transaction, 10);
+        EnsureNull<float>(transaction, 11);
+        EnsureNull<decimal>(transaction, 12);
+        EnsureNull<bool>(transaction, 13);
+        EnsureNull<char>(transaction, 14);
+
+        foreach (string table in CompatibilityTables.Where(static name => name.StartsWith("compat-type-", StringComparison.Ordinal)))
+            checksum.Add(table);
+        for (int key = 1; key <= 14; key++)
+            checksum.Add(key);
+        return 31;
+    }
+
+    private static void EnsureNull<T>(DBreeze.Transactions.Transaction transaction, int key) where T : struct
+    {
+        Row<int, T?> row = transaction.Select<int, T?>("compat-nullable-values", key);
+        Ensure(row.Exists && row.Value == null,
+            $"compat nullable value mismatch for {key}");
+    }
+
     private static int[] TextIds(DBreeze.Transactions.Transaction transaction, string contains, string exact = "")
     {
         return transaction.TextSearch("compat-text")
@@ -414,6 +784,34 @@ internal static class DiskCompatibilityProbe
             DBreezeAssemblyVersion = typeof(DBreezeEngine).Assembly.GetName().Version?.ToString() ?? string.Empty,
             RowCount = summary.RowCount,
             Checksum = summary.Checksum,
+            TotalBytes = files.Sum(static file => file.Length),
+            Files = files,
+        };
+    }
+
+    private static CompatibilityManifest BuildJournalManifest(string databasePath)
+    {
+        var checksum = new StableChecksum();
+        checksum.Add(1);
+        checksum.Add("a");
+        checksum.Add(2);
+        checksum.Add("b");
+        CompatibilityFile[] files = Directory.EnumerateFiles(databasePath, "*", SearchOption.AllDirectories)
+            .Select(path => new CompatibilityFile
+            {
+                Path = Path.GetRelativePath(databasePath, path).Replace(Path.DirectorySeparatorChar, '/'),
+                Length = new FileInfo(path).Length,
+                Sha256 = ComputeSha256(path),
+            })
+            .OrderBy(static file => file.Path, StringComparer.Ordinal)
+            .ToArray();
+        return new CompatibilityManifest
+        {
+            State = "journal",
+            DatabasePath = databasePath,
+            DBreezeAssemblyVersion = typeof(DBreezeEngine).Assembly.GetName().Version?.ToString() ?? String.Empty,
+            RowCount = 2,
+            Checksum = checksum.Value,
             TotalBytes = files.Sum(static file => file.Length),
             Files = files,
         };
@@ -632,6 +1030,19 @@ internal static class DiskCompatibilityProbe
                 throw new ArgumentException($"{option} requires a value.", nameof(args));
             return args[index];
         }
+    }
+
+    private sealed class FailingJournalTable : DBreeze.Transactions.ITransactable
+    {
+        internal FailingJournalTable(string tableName) => TableName = tableName;
+        public string TableName { get; set; }
+        public void ITRCommitFinished() => throw new InvalidOperationException("Simulated process failure.");
+        public void ITRCommit() { }
+        public void ITRRollBack() { }
+        public void ModificationThreadId(int transactionThreadId) { }
+        public void SingleCommit() { }
+        public void SingleRollback() { }
+        public void TransactionIsFinished(int transactionThreadId) { }
     }
 
     private sealed class StableChecksum

@@ -5,7 +5,8 @@ using DBreeze.Utils;
 internal static class Program
 {
     private static readonly IComparer<byte[]> ByteComparer = new LexicographicByteComparer();
-    private static readonly string DatabaseTestRoot = @"D:\Temp\DbreezeDbTest";
+    private static readonly string DatabaseTestRoot =
+        Environment.GetEnvironmentVariable("DBREEZE_TEST_ROOT") ?? @"D:\Temp\DbreezeDbTest";
 
     private static int Main(string[] args)
     {
