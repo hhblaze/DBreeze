@@ -87,7 +87,10 @@ namespace DBreeze.Storage
         /// If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
         /// LTrieRow will have different version and will return exception.
         /// </summary>
-        DateTime _storageFixTime = DateTime.UtcNow;
+        // Read by every LTrieRow freshness check. Taking lock_fs here adds two
+        // ReaderWriterLockSlim round-trips to a typical missing point lookup. This
+        // generation stamp is published atomically by recreate/init operations.
+        long _storageFixTimeTicks = DateTime.UtcNow.Ticks;
         #endregion
 
         private readonly struct StorageLockScope : IDisposable
@@ -134,7 +137,7 @@ namespace DBreeze.Storage
         /// </summary>
         public DateTime StorageFixTime
         {
-            get { using (AcquireReadLock()) { return _storageFixTime; } }
+            get { return new DateTime(Volatile.Read(ref _storageFixTimeTicks), DateTimeKind.Utc); }
         }
 
         public TrieSettings TrieSettings
@@ -200,7 +203,7 @@ namespace DBreeze.Storage
 
                 eofData = this._fsData.EOF;
 
-                _storageFixTime = DateTime.UtcNow;
+                Volatile.Write(ref _storageFixTimeTicks, DateTime.UtcNow.Ticks);
             }
             catch (Exception ex)
             {
@@ -240,7 +243,7 @@ namespace DBreeze.Storage
 
                 _fsData.Write_ToTheEnd(new byte[64]);
                 eofData = _fsData.EOF;
-                _storageFixTime = DateTime.UtcNow;
+                Volatile.Write(ref _storageFixTimeTicks, DateTime.UtcNow.Ticks);
                 IsOperable = true;
 
             }

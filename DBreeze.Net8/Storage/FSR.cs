@@ -121,7 +121,10 @@ namespace DBreeze.Storage
         /// If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
         /// LTrieRow will have different version and will return exception.
         /// </summary>
-        DateTime _storageFixTime = DateTime.UtcNow;
+        // LTrieRow uses this generation stamp to reject stale links after a table
+        // restore/recreate. It is read on every point lookup, so it must not acquire
+        // the storage I/O lock. InitFiles publishes the new generation atomically.
+        long _storageFixTimeTicks = DateTime.UtcNow.Ticks;
 
         #endregion
 
@@ -199,7 +202,7 @@ namespace DBreeze.Storage
         /// </summary>
         public DateTime StorageFixTime
         {
-            get { using (AcquireReadLock()) { return _storageFixTime; } }
+            get { return new DateTime(Volatile.Read(ref _storageFixTimeTicks), DateTimeKind.Utc); }
         }
 
         /// <summary>
@@ -314,7 +317,7 @@ namespace DBreeze.Storage
                 }
 
 
-                _storageFixTime = DateTime.UtcNow;
+                Volatile.Write(ref _storageFixTimeTicks, DateTime.UtcNow.Ticks);
             }
             catch (Exception ex)
             {

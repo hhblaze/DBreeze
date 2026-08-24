@@ -871,7 +871,7 @@ namespace DBreeze.LianaTrie
                 //Creating new Root -
                 LTrieRootNode readRootNode = new LTrieRootNode(this);
 
-                return readRootNode.GetKey(key, true, ValuesLazyLoadingIsOn);
+                return readRootNode.GetKeyReadOnly(key, ValuesLazyLoadingIsOn);
             }
             else
             {
@@ -907,7 +907,7 @@ namespace DBreeze.LianaTrie
             }
             else
             {
-                return ((LTrieRootNode)readRootNode).GetKey(key, true, ValuesLazyLoadingIsOn);
+                return ((LTrieRootNode)readRootNode).GetKeyReadOnly(key, ValuesLazyLoadingIsOn);
             }
         }
  

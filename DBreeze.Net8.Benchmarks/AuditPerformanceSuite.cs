@@ -35,6 +35,7 @@ internal static class AuditPerformanceSuite
         {
             Scenario("Memory", "SequentialInsert64", 1, large, large, PrepareMemorySequentialInsert),
             Scenario("Memory", "PointRead64", 1, large, large, PrepareMemoryPointRead),
+            Scenario("Memory", "PointMissing", 1, large, large, PrepareMemoryPointMissing),
             Scenario("Disk.Write", "SequentialInsertNull", 1, large, large, PrepareDiskSequentialNull),
             Scenario("Disk.Write", "SequentialInsert64", 1, large, large, PrepareDiskSequential64),
             Scenario("Disk.Write", "RandomInsert64", 1, medium, medium, PrepareDiskRandomInsert),
@@ -202,6 +203,18 @@ internal static class AuditPerformanceSuite
         return Prepared(
             () => PointRead(transaction, records, missing: false),
             outcome => Ensure(outcome.Count == records, "Memory point-read count mismatch."),
+            transaction, engine);
+    }
+
+    private static AuditPreparedOperation PrepareMemoryPointMissing(string path, int records)
+    {
+        _ = path;
+        var engine = MemoryEngine();
+        Seed(engine, MainTable, records, Value64());
+        var transaction = engine.GetTransaction();
+        return Prepared(
+            () => PointRead(transaction, records, missing: true),
+            outcome => Ensure(outcome.Count == records, "Memory missing point-read count mismatch."),
             transaction, engine);
     }
 

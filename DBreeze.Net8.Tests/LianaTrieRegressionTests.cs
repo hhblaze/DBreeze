@@ -3,6 +3,7 @@ using DBreeze.DataTypes;
 using DBreeze.LianaTrie;
 using DBreeze.Storage;
 using DBreeze.Transactions;
+using System.Security.Cryptography;
 
 internal static class LianaTrieRegressionTests
 {
@@ -33,6 +34,12 @@ internal static class LianaTrieRegressionTests
         RunRecursiveNestedCommitCycles(storageOnDisk: true);
         RunMultiTableNestedCommitCycles();
         RunDirectLTrieRepeatedCommitCycles();
+    }
+
+    internal static void ReadOnlyPointLookupsPreserveGenerationMapsAndFiles()
+    {
+        RunReadOnlyPointLookups(storageOnDisk: false);
+        RunReadOnlyPointLookups(storageOnDisk: true);
     }
 
     internal static void TraversalContractMatchesReferenceModel()
@@ -1255,6 +1262,182 @@ internal static class LianaTrieRegressionTests
             engine?.Dispose();
             if (folder != null && Directory.Exists(folder))
                 Directory.Delete(folder, true);
+        }
+    }
+
+    private static void RunReadOnlyPointLookups(bool storageOnDisk)
+    {
+        const string table = "readonly-point-lookups";
+        string folder = storageOnDisk
+            ? Path.Combine(DatabaseTestRoot, nameof(ReadOnlyPointLookupsPreserveGenerationMapsAndFiles),
+                Guid.NewGuid().ToString("N"))
+            : null;
+        byte[][] existingKeys =
+        {
+            new byte[] { 0x10, 0x10, 0x01 },
+            new byte[] { 0x10, 0xF0, 0x02 },
+            new byte[] { 0x40, 0x10, 0x03 },
+            new byte[] { 0x80, 0x80, 0x04 },
+            new byte[] { 0xF0, 0x10, 0x05 },
+        };
+        byte[][] missingKeys =
+        {
+            new byte[] { 0x00 },
+            new byte[] { 0x10, 0x80 },
+            new byte[] { 0x60, 0x01 },
+            new byte[] { 0xC0, 0x01 },
+            new byte[] { 0xFF, 0xFF },
+        };
+        byte[] nestedParent = { 0x70, 0x70, 0x70 };
+        byte[][] nestedKeys =
+        {
+            new byte[] { 0x11, 0x01 },
+            new byte[] { 0x55, 0x02 },
+            new byte[] { 0x99, 0x03 },
+            new byte[] { 0xDD, 0x04 },
+        };
+        byte[][] nestedMissingKeys =
+        {
+            new byte[] { 0x01 },
+            new byte[] { 0x33, 0x01 },
+            new byte[] { 0x77, 0x01 },
+            new byte[] { 0xBB, 0x01 },
+            new byte[] { 0xFF },
+        };
+
+        DBreezeEngine engine = storageOnDisk ? new DBreezeEngine(folder) : CreateMemoryEngine();
+        try
+        {
+            using (var transaction = engine.GetTransaction())
+            {
+                foreach (byte[] key in existingKeys)
+                    transaction.Insert(table, key, ValueFor(key));
+                transaction.Insert(table, nestedParent, ValueFor(nestedParent));
+
+                using NestedTable nested = transaction.InsertTable(table, nestedParent, 0);
+                foreach (byte[] key in nestedKeys)
+                    nested.Insert(key, ValueFor(key));
+                transaction.Commit();
+            }
+
+            Dictionary<string, string> inventoryBefore = null;
+            if (storageOnDisk)
+            {
+                engine.Dispose();
+                engine = null;
+                inventoryBefore = CaptureFileInventory(folder);
+                engine = new DBreezeEngine(folder);
+            }
+
+            VerifyReadOnlyPointLookups(
+                engine, table, existingKeys, missingKeys, nestedParent, nestedKeys, nestedMissingKeys);
+            if (storageOnDisk)
+            {
+                engine.Dispose();
+                engine = null;
+                AssertFileInventoryEqual(inventoryBefore, CaptureFileInventory(folder));
+                engine = new DBreezeEngine(folder);
+                VerifyReadOnlyPointLookups(
+                    engine, table, existingKeys, missingKeys, nestedParent, nestedKeys, nestedMissingKeys);
+            }
+        }
+        finally
+        {
+            engine?.Dispose();
+            if (folder != null && Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void VerifyReadOnlyPointLookups(
+        DBreezeEngine engine,
+        string table,
+        byte[][] existingKeys,
+        byte[][] missingKeys,
+        byte[] nestedParent,
+        byte[][] nestedKeys,
+        byte[][] nestedMissingKeys)
+    {
+        const int repetitions = 32;
+        long expectedPerRepetition = existingKeys.Sum(static key => ValueFor(key).Length)
+            + missingKeys.Length
+            + nestedKeys.Sum(static key => ValueFor(key).Length)
+            + nestedMissingKeys.Length;
+
+        foreach (bool lazyLoading in new[] { true, false })
+        {
+            using var transaction = engine.GetTransaction();
+            transaction.ValuesLazyLoadingIsOn = lazyLoading;
+            using NestedTable nested = transaction.SelectTable(table, nestedParent, 0);
+            nested.ValuesLazyLoadingIsOn = lazyLoading;
+            long checksum = 0;
+
+            for (int repetition = 0; repetition < repetitions; repetition++)
+            {
+                for (int index = 0; index < existingKeys.Length; index++)
+                {
+                    byte[] existingKey = existingKeys[(index + repetition) % existingKeys.Length];
+                    Row<byte[], byte[]> existing = transaction.Select<byte[], byte[]>(table, existingKey);
+                    AssertSequenceEqual(ValueFor(existingKey), existing.Value,
+                        $"Read-only existing row, lazy={lazyLoading}.");
+                    checksum += existing.Value.Length;
+
+                    byte[] missingKey = missingKeys[(missingKeys.Length - 1 - index + repetition)
+                        % missingKeys.Length];
+                    Row<byte[], byte[]> missing = transaction.Select<byte[], byte[]>(table, missingKey);
+                    Assert(!missing.Exists, $"Read-only missing row exists, lazy={lazyLoading}.");
+                    checksum++;
+                }
+
+                for (int index = 0; index < nestedKeys.Length; index++)
+                {
+                    byte[] existingKey = nestedKeys[(index + repetition) % nestedKeys.Length];
+                    Row<byte[], byte[]> existing = nested.Select<byte[], byte[]>(existingKey);
+                    AssertSequenceEqual(ValueFor(existingKey), existing.Value,
+                        $"Nested read-only existing row, lazy={lazyLoading}.");
+                    checksum += existing.Value.Length;
+                }
+
+                for (int index = 0; index < nestedMissingKeys.Length; index++)
+                {
+                    byte[] missingKey = nestedMissingKeys[(index + repetition) % nestedMissingKeys.Length];
+                    Assert(!nested.Select<byte[], byte[]>(missingKey).Exists,
+                        $"Nested read-only missing row exists, lazy={lazyLoading}.");
+                    checksum++;
+                }
+            }
+
+            AssertEqual(expectedPerRepetition * repetitions, checksum,
+                $"Read-only point lookup checksum, lazy={lazyLoading}.");
+            AssertEqual((ulong)(existingKeys.Length + 1), transaction.Count(table),
+                $"Read-only point lookup row count, lazy={lazyLoading}.");
+        }
+    }
+
+    private static Dictionary<string, string> CaptureFileInventory(string folder)
+    {
+        var inventory = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+        {
+            using var stream = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            string relativePath = Path.GetRelativePath(folder, path);
+            inventory.Add(relativePath,
+                stream.Length + ":" + Convert.ToHexString(SHA256.HashData(stream)));
+        }
+        return inventory;
+    }
+
+    private static void AssertFileInventoryEqual(
+        Dictionary<string, string> expected, Dictionary<string, string> actual)
+    {
+        AssertEqual(expected.Count, actual.Count, "Read-only file inventory count.");
+        foreach (KeyValuePair<string, string> file in expected)
+        {
+            Assert(actual.TryGetValue(file.Key, out string actualSignature),
+                "Read-only lookup removed file: " + file.Key);
+            AssertEqual(file.Value, actualSignature,
+                "Read-only lookup changed file: " + file.Key);
         }
     }
 

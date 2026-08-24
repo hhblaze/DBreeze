@@ -631,7 +631,7 @@ namespace DBreeze.DataTypes
                 if (readRootNode == null)
                     readRootNode = new LTrieRootNode(_tbl.table);
 
-                row = readRootNode.GetKey(btKey, true, this._valuesLazyLoadingIsOn);
+                row = readRootNode.GetKeyReadOnly(btKey, this._valuesLazyLoadingIsOn);
             }
             else
                 row = _tbl.table.GetKey(btKey, useCache, this._valuesLazyLoadingIsOn);

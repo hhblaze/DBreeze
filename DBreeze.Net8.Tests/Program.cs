@@ -94,6 +94,7 @@ internal static class Program
             (nameof(LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction), LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction),
             (nameof(LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles), LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles),
             (nameof(LianaTrieRegressionTests.TraversalContractMatchesReferenceModel), LianaTrieRegressionTests.TraversalContractMatchesReferenceModel),
+            (nameof(LianaTrieRegressionTests.ReadOnlyPointLookupsPreserveGenerationMapsAndFiles), LianaTrieRegressionTests.ReadOnlyPointLookupsPreserveGenerationMapsAndFiles),
             (nameof(LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated), LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated),
             (nameof(LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative), LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative),
             (nameof(LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches), LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches),

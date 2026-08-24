@@ -29,7 +29,6 @@ namespace DBreeze.LianaTrie
         /// </summary>
         public ulong RecordsCount = 0;
 
-
         public LTrieRootNode(LTrie tree)
         {
             Tree = tree;
@@ -924,7 +923,23 @@ namespace DBreeze.LianaTrie
         /// <param name="ValuesLazyLoadingIsOn">if true reads key only</param>
         /// <returns></returns>
         public LTrieRow GetKey(byte[] key, bool useCache, bool ValuesLazyLoadingIsOn)
-        {            
+        {
+            return GetKeyCore(key, useCache, ValuesLazyLoadingIsOn, preserveDirtySuffix: true);
+        }
+
+        /// <summary>
+        /// Reads through a snapshot root. Snapshot generation nodes are never dirty, so changing
+        /// branches only evicts the inapplicable cached suffix.
+        /// </summary>
+        internal LTrieRow GetKeyReadOnly(byte[] key, bool ValuesLazyLoadingIsOn)
+        {
+            return GetKeyCore(key, useCache: true, ValuesLazyLoadingIsOn,
+                preserveDirtySuffix: false);
+        }
+
+        private LTrieRow GetKeyCore(byte[] key, bool useCache, bool ValuesLazyLoadingIsOn,
+            bool preserveDirtySuffix)
+        {
             LTrieRow kv = new LTrieRow(this);
 
             kv.Key = key;
@@ -981,7 +996,8 @@ namespace DBreeze.LianaTrie
                     //The write generation map can contain dirty nodes from another branch.
                     //They must be persisted before the branch suffix is evicted; otherwise an
                     //internal read (notably ChangeKey) can silently discard preceding inserts.
-                    Save_GM_nodes_Starting_From(i);
+                    if (preserveDirtySuffix)
+                        Save_GM_nodes_Starting_From(i);
 
                     _generationMap.RemoveBiggerOrEqualThenKey(i);
                 }
@@ -1025,7 +1041,7 @@ namespace DBreeze.LianaTrie
 
                     if (!kidDef.LinkToNode)
                     {
-                        //byte[] storedKey = _generationMap[i].ReadKidKeyFromValPtr(kidDef.Ptr);                                               
+                        //byte[] storedKey = _generationMap[i].ReadKidKeyFromValPtr(kidDef.Ptr);                                                
                         long valueStartPtr = 0;
                         uint valueLength = 0;
 #if NET8_0_OR_GREATER
