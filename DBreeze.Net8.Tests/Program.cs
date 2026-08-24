@@ -10,6 +10,9 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Any(static arg => String.Equals(arg, "--coordinator", StringComparison.OrdinalIgnoreCase)))
+            return RunCoordinatorTests();
+
         if (args.Any(static arg => String.Equals(arg, "--textsearch-large-batch", StringComparison.OrdinalIgnoreCase)))
         {
             TextSearchRegressionTests.LargeLexicalBatchFlushesAndReopens();
@@ -128,6 +131,34 @@ internal static class Program
             (nameof(RandomizedOperationsMatchReferenceModel), RandomizedOperationsMatchReferenceModel),
             // Deadlock cancellation exercises forced rollback of concurrent writers. Keep it
             // last because the legacy in-memory journal storage is process-global.
+            (nameof(CoordinatorCleansUpNotifyAheadFailure), CoordinatorCleansUpNotifyAheadFailure),
+            (nameof(CoordinatorDetectsThreeWayDeadlock), CoordinatorDetectsThreeWayDeadlock),
+        };
+
+        try
+        {
+            foreach (var test in tests)
+            {
+                test.Test();
+                Console.WriteLine($"PASS {test.Name}");
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
+            return 1;
+        }
+    }
+
+    private static int RunCoordinatorTests()
+    {
+        (string Name, Action Test)[] tests =
+        {
+            (nameof(CoordinatorTargetsEligibleWaitersAndPreservesConflictOrder), CoordinatorTargetsEligibleWaitersAndPreservesConflictOrder),
+            (nameof(CoordinatorDoesNotLoseWakeups), CoordinatorDoesNotLoseWakeups),
+            (nameof(CoordinatorOverlappingRingCompletes), CoordinatorOverlappingRingCompletes),
             (nameof(CoordinatorCleansUpNotifyAheadFailure), CoordinatorCleansUpNotifyAheadFailure),
             (nameof(CoordinatorDetectsThreeWayDeadlock), CoordinatorDetectsThreeWayDeadlock),
         };
@@ -1271,6 +1302,65 @@ internal static class Program
         transaction.Rollback();
     }
 
+    private static void CoordinatorTargetsEligibleWaitersAndPreservesConflictOrder()
+    {
+        using var engine = CreateMemoryEngine();
+        var holder = engine.GetTransaction();
+        using var earlyStarted = new ManualResetEventSlim(false);
+        using var earlyAcquired = new ManualResetEventSlim(false);
+        using var releaseEarly = new ManualResetEventSlim(false);
+        using var laterStarted = new ManualResetEventSlim(false);
+        using var laterAcquired = new ManualResetEventSlim(false);
+        using var unrelatedAcquired = new ManualResetEventSlim(false);
+
+        holder.SynchronizeTables("coordinator-targeted-a");
+
+        Task early = Task.Factory.StartNew(() =>
+        {
+            using var transaction = engine.GetTransaction();
+            earlyStarted.Set();
+            transaction.SynchronizeTables("coordinator-targeted-a", "coordinator-targeted-b");
+            earlyAcquired.Set();
+            Assert(releaseEarly.Wait(TimeSpan.FromSeconds(10)), "Early coordinator waiter was not released by the test.");
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        Assert(earlyStarted.Wait(TimeSpan.FromSeconds(5)), "Early coordinator waiter did not start.");
+        Thread.Sleep(100);
+        Assert(!earlyAcquired.IsSet, "Early coordinator waiter bypassed the active holder.");
+
+        Task later = Task.Factory.StartNew(() =>
+        {
+            using var transaction = engine.GetTransaction();
+            laterStarted.Set();
+            transaction.SynchronizeTables("coordinator-targeted-b", "coordinator-targeted-c");
+            laterAcquired.Set();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        Assert(laterStarted.Wait(TimeSpan.FromSeconds(5)), "Later coordinator waiter did not start.");
+        Thread.Sleep(100);
+        Assert(!laterAcquired.IsSet, "Later conflicting waiter bypassed the earlier waiter.");
+
+        Task unrelated = Task.Factory.StartNew(() =>
+        {
+            using var transaction = engine.GetTransaction();
+            transaction.SynchronizeTables("coordinator-targeted-d", "coordinator-targeted-e");
+            unrelatedAcquired.Set();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        Assert(unrelatedAcquired.Wait(TimeSpan.FromSeconds(5)), "Unrelated coordinator waiter was unnecessarily blocked.");
+        Assert(unrelated.Wait(TimeSpan.FromSeconds(5)), "Unrelated coordinator waiter did not complete.");
+
+        holder.Dispose();
+        Assert(earlyAcquired.Wait(TimeSpan.FromSeconds(5)), "Eligible early waiter was not targeted after holder release.");
+        Assert(!laterAcquired.Wait(TimeSpan.FromMilliseconds(200)),
+            "Later conflicting waiter was released while the earlier waiter was active.");
+
+        releaseEarly.Set();
+        Assert(early.Wait(TimeSpan.FromSeconds(5)), "Early coordinator waiter did not complete.");
+        Assert(laterAcquired.Wait(TimeSpan.FromSeconds(5)), "Later coordinator waiter was not released in order.");
+        Assert(later.Wait(TimeSpan.FromSeconds(5)), "Later coordinator waiter did not complete.");
+    }
+
     private static void CoordinatorDoesNotLoseWakeups()
     {
         using var engine = CreateMemoryEngine();
@@ -1337,6 +1427,58 @@ internal static class Program
             if (Directory.Exists(folder))
                 Directory.Delete(folder, true);
         }
+    }
+
+    private static void CoordinatorOverlappingRingCompletes()
+    {
+        using var engine = CreateMemoryEngine();
+        const int workers = 12;
+        const int iterations = 8;
+        const int tableCount = 4;
+        using var start = new ManualResetEventSlim(false);
+
+        Task[] tasks = Enumerable.Range(0, workers).Select(worker => Task.Factory.StartNew(() =>
+        {
+            string first = "coordinator-ring-" + (worker % tableCount);
+            string second = "coordinator-ring-" + ((worker + 1) % tableCount);
+            start.Wait();
+
+            for (int iteration = 0; iteration < iterations; iteration++)
+            {
+                int key = worker * iterations + iteration;
+                using var transaction = engine.GetTransaction();
+                transaction.SynchronizeTables(first, second);
+                transaction.Insert(first, key, key);
+                transaction.Insert(second, key, key);
+                transaction.Commit();
+            }
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
+
+        start.Set();
+        Assert(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)), "Overlapping coordinator ring did not complete.");
+
+        int expectedCount = workers * iterations * 2;
+        long expectedChecksum = 0;
+        for (int worker = 0; worker < workers; worker++)
+        {
+            for (int iteration = 0; iteration < iterations; iteration++)
+                expectedChecksum += 2L * (worker * iterations + iteration);
+        }
+
+        int actualCount = 0;
+        long actualChecksum = 0;
+        using var reader = engine.GetTransaction();
+        for (int table = 0; table < tableCount; table++)
+        {
+            foreach (var row in reader.SelectForward<int, int>("coordinator-ring-" + table))
+            {
+                actualCount++;
+                actualChecksum += row.Value;
+            }
+        }
+
+        AssertEqual(expectedCount, actualCount, "Overlapping coordinator ring row count.");
+        AssertEqual(expectedChecksum, actualChecksum, "Overlapping coordinator ring checksum.");
     }
 
     private static void MultiSelectMergesAndKeepsTieOrder()

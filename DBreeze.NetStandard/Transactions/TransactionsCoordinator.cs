@@ -288,6 +288,13 @@ namespace DBreeze.Transactions
         {
             lock (_sync_dl)
             {
+                if (removedTransactionThreadId == Int32.MinValue)
+                {
+                    foreach (WriteReservationWaiter waiter in _writeWaiters.Values)
+                        waiter.Gate.OpenGate();
+                    return;
+                }
+
                 WriteReservationWaiter removedWaiter;
                 if (_writeWaiters.TryGetValue(removedTransactionThreadId, out removedWaiter))
                 {
@@ -297,8 +304,8 @@ namespace DBreeze.Transactions
 
                 foreach (WriteReservationWaiter waiter in _writeWaiters.Values)
                 {
-                    waiter.Blockers.RemoveAll(r => r == removedTransactionThreadId);
-                    waiter.Gate.OpenGate();
+                    if (waiter.Blockers.Remove(removedTransactionThreadId) && waiter.Blockers.Count == 0)
+                        waiter.Gate.OpenGate();
                 }
             }
         }
@@ -359,54 +366,67 @@ namespace DBreeze.Transactions
                             }
                             else
                             {
-                                if (!calledBySynchronizer)
-                                {
-                                    if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(), tablesNames))
-                                        return;
-                                    if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock && transactionUnit.TransactionWriteTablesCount > 0)
-                                        throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
-                                }
-
                                 if (waiter == null)
                                 {
+                                    bool requiresDeadlockDetection = false;
+                                    if (!calledBySynchronizer)
+                                    {
+                                        if (DbUserTables.TableNamesIntersect(transactionUnit.GetTransactionWriteTablesNames(), tablesNames))
+                                            return;
+
+                                        int transactionWriteTablesCount = transactionUnit.TransactionWriteTablesCount;
+                                        if (_engine.Configuration.NotifyAhead_WhenWriteTablePossibleDeadlock && transactionWriteTablesCount > 0)
+                                            throw new Exception("Put table \"" + tablesNames.FirstOrDefault() + "\" into tran.SynchronizeTables statement, because it will be modified");
+
+                                        // A transaction holding no write table cannot close a wait cycle.
+                                        // SynchronizeTables also reserves its complete set atomically before any write.
+                                        requiresDeadlockDetection = transactionWriteTablesCount > 0;
+                                    }
+
                                     waiter = new WriteReservationWaiter(transactionThreadId, tablesNames);
                                     _writeWaiters[transactionThreadId] = waiter;
                                     _writeWaiterSequence.Add(transactionThreadId);
                                     transactionUnit.AddTransactionWriteTablesAwaitingReservation(tablesNames);
-                                }
 
-                                List<int> blockers = new List<int>();
-                                foreach (var other in this._transactions)
-                                {
-                                    if (other.Key != transactionThreadId &&
-                                        DbUserTables.TableNamesIntersect(waiter.Tables, other.Value.GetTransactionWriteTablesNames()))
-                                        blockers.Add(other.Key);
-                                }
-
-                                // A later request may pass unrelated requests, but never an earlier
-                                // conflicting one. This prevents an exclusive writer from starving.
-                                foreach (int queuedId in _writeWaiterSequence)
-                                {
-                                    if (queuedId == transactionThreadId)
-                                        break;
-                                    WriteReservationWaiter earlier;
-                                    if (_writeWaiters.TryGetValue(queuedId, out earlier) &&
-                                        DbUserTables.TableNamesIntersect(waiter.Tables, earlier.Tables) &&
-                                        !blockers.Contains(queuedId))
-                                        blockers.Add(queuedId);
-                                }
-
-                                waiter.Blockers = blockers;
-                                foreach (int blocker in blockers)
-                                {
-                                    if (WaitPathExists(blocker, transactionThreadId, new HashSet<int>()))
+                                    List<int> blockers = new List<int>();
+                                    foreach (var other in this._transactions)
                                     {
-                                        deadlock = true;
-                                        break;
+                                        if (other.Key != transactionThreadId &&
+                                            DbUserTables.TableNamesIntersect(waiter.Tables, other.Value.GetTransactionWriteTablesNames()))
+                                            blockers.Add(other.Key);
+                                    }
+
+                                    // A later request may pass unrelated requests, but never an earlier
+                                    // conflicting one. This prevents an exclusive writer from starving.
+                                    foreach (int queuedId in _writeWaiterSequence)
+                                    {
+                                        if (queuedId == transactionThreadId)
+                                            break;
+                                        WriteReservationWaiter earlier;
+                                        if (_writeWaiters.TryGetValue(queuedId, out earlier) &&
+                                            DbUserTables.TableNamesIntersect(waiter.Tables, earlier.Tables) &&
+                                            !blockers.Contains(queuedId))
+                                            blockers.Add(queuedId);
+                                    }
+
+                                    // Blockers are monotonic while the waiter is queued: a later conflicting
+                                    // request cannot pass it, and an earlier waiter keeps the same transaction id
+                                    // after its reservation is granted. Only transaction removal can unblock it.
+                                    waiter.Blockers = blockers;
+                                    if (requiresDeadlockDetection)
+                                    {
+                                        foreach (int blocker in blockers)
+                                        {
+                                            if (WaitPathExists(blocker, transactionThreadId, new HashSet<int>()))
+                                            {
+                                                deadlock = true;
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
 
-                                if (blockers.Count == 0)
+                                if (!deadlock && waiter.Blockers.Count == 0)
                                 {
                                     RemoveWriteWaiterUnderLock(transactionThreadId);
                                     transactionUnit.ClearTransactionWriteTablesAwaitingReservation(tablesNames);
