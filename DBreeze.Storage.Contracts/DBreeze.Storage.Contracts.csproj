@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <StorageTarget Condition="'$(StorageTarget)' == ''">Net6</StorageTarget>
+    <TargetFramework Condition="'$(StorageTarget)' == 'Net6'">net6.0</TargetFramework>
+    <TargetFramework Condition="'$(StorageTarget)' == 'NetStandard'">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(StorageTarget)' == 'NetCoreApp'">netcoreapp3.1</TargetFramework>
+    <TargetFramework Condition="'$(StorageTarget)' == 'NetFramework' Or '$(StorageTarget)' == 'Portable'">net472</TargetFramework>
+    <TargetFramework Condition="'$(StorageTarget)' == 'Net8'">net8.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NuGetAudit>false</NuGetAudit>
+    <OutputPath>bin\$(Configuration)\$(StorageTarget)\</OutputPath>
+    <IntermediateOutputPath>obj\$(StorageTarget)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants Condition="'$(StorageTarget)' == 'Net6'">$(DefineConstants);NET6_HOST;ALLOC_COUNTER</DefineConstants>
+    <DefineConstants Condition="'$(StorageTarget)' == 'NetStandard'">$(DefineConstants);NETSTANDARD_HOST;ALLOC_COUNTER</DefineConstants>
+    <DefineConstants Condition="'$(StorageTarget)' == 'NetCoreApp'">$(DefineConstants);NETCOREAPP_HOST</DefineConstants>
+    <DefineConstants Condition="'$(StorageTarget)' == 'NetFramework'">$(DefineConstants);NETFRAMEWORK_HOST</DefineConstants>
+    <DefineConstants Condition="'$(StorageTarget)' == 'Portable'">$(DefineConstants);PORTABLE_HOST</DefineConstants>
+    <DefineConstants Condition="'$(StorageTarget)' == 'Net8'">$(DefineConstants);NET8_HOST;ALLOC_COUNTER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' != ''">
+    <Reference Include="DBreeze" HintPath="$(DBreezeAssemblyReference)" Private="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(StorageTarget)' == 'Net6'">
+    <ProjectReference Include="..\DBreeze.Net5\DBreeze.Net5.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(StorageTarget)' == 'NetStandard'">
+    <ProjectReference Include="..\DBreeze.NetStandard\DBreeze.NetStandard.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(StorageTarget)' == 'NetCoreApp'">
+    <ProjectReference Include="..\DBreeze.NetCoreApp\DBreeze.NetCoreApp.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(StorageTarget)' == 'NetFramework'">
+    <ProjectReference Include="..\DBreeze\DBreeze.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(StorageTarget)' == 'Portable'">
+    <ProjectReference Include="..\NETPortable\DBreeze.Portable.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(StorageTarget)' == 'Net8'">
+    <ProjectReference Include="..\DBreeze.Net8\DBreeze.Net8.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(StorageTarget)' == 'Portable'">
+    <Compile Include="..\NETPortable\__Prereq\FSFactory.cs" Link="FSFactory.cs" />
+  </ItemGroup>
+
+</Project>
