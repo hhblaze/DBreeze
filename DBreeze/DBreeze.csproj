@@ -41,6 +41,9 @@
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(DBreezeDurabilityTestHooks)' == 'true'">
+    <DefineConstants>$(DefineConstants);DBREEZE_DURABILITY_TEST_HOOKS</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -81,6 +84,8 @@
     <Compile Include="Exceptions\TableNotOperableException.cs" />
     <Compile Include="Diagnostic\SpeedStatistic.cs" />
     <Compile Include="Storage\FSR.cs" />
+    <Compile Include="Storage\BufferedWriteSet.cs" />
+    <Compile Include="Storage\DurabilityTestHooks.cs" />
     <Compile Include="Storage\RemoteInstance\IRemoteInstanceCommunicator.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteInstanceCommander.cs" />
     <Compile Include="Storage\RemoteInstance\RemoteTable.cs" />

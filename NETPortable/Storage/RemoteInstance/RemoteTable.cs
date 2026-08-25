@@ -84,19 +84,19 @@ namespace DBreeze.Storage.RemoteInstance
         public byte[] DataFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
-                return Write(_fsData, position, withFlush, data, offset, count);
+                return Write(_fsData, position, withFlush, data, offset, count, "remote.data");
         }
 
         public byte[] RollbackFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
-                return Write(_fsRollback, position, withFlush, data, offset, count);
+                return Write(_fsRollback, position, withFlush, data, offset, count, "remote.rollback");
         }
 
         public byte[] RollbackHelperFileWrite(long position, bool withFlush, byte[] data, int offset, int count)
         {
             lock (lock_fs)
-                return Write(_fsRollbackHelper, position, withFlush, data, offset, count);
+                return Write(_fsRollbackHelper, position, withFlush, data, offset, count, "remote.rollback-helper");
         }
 
         public byte[] DataFileRead(long position, int count)
@@ -143,14 +143,18 @@ namespace DBreeze.Storage.RemoteInstance
             return Success();
         }
 
-        byte[] Write(IFileStream stream, long position, bool withFlush, byte[] data, int offset, int count)
+        byte[] Write(IFileStream stream, long position, bool withFlush, byte[] data, int offset, int count, string checkpointPrefix)
         {
             if (stream == null)
                 throw new InvalidOperationException("The remote table is not open.");
             stream.Position = position;
             stream.Write(data, offset, count);
+            DurabilityTestHooks.Hit(checkpointPrefix + ".written");
             if (withFlush)
+            {
                 FSR.NET_Flush(stream);
+                DurabilityTestHooks.Hit(checkpointPrefix + ".flushed");
+            }
             return CreateLengthResponse(stream.Length);
         }
 

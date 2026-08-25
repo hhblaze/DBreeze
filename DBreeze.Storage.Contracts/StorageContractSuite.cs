@@ -6,19 +6,241 @@ using System.Threading;
 using System.Threading.Tasks;
 using DBreeze;
 using DBreeze.Storage;
+using DBreeze.Storage.RemoteInstance;
 
 internal static class StorageContractSuite
 {
     internal static void RunAll()
     {
         Run("BaselineArchitecture", BaselineArchitecture);
+        Run("BufferedWriteSetRandomizedModel", BufferedWriteSetRandomizedModel);
         Run("CommitRollbackOverlapAndAutoFlush", CommitRollbackOverlapAndAutoFlush);
         Run("CrashRecoveryAndTruncatedJournal", CrashRecoveryAndTruncatedJournal);
         Run("RestoreRecreateAndReopen", RestoreRecreateAndReopen);
         Run("BackupRoundTrip", BackupRoundTrip);
+        Run("AlternativeDiskAndMemoryContracts", AlternativeDiskAndMemoryContracts);
+        Run("RemoteInstanceLoopbackContract", RemoteInstanceLoopbackContract);
         Run("ConcurrentReadersAndWriter2", delegate { ConcurrentReadersAndWriter(2); });
         Run("ConcurrentReadersAndWriter8", delegate { ConcurrentReadersAndWriter(8); });
         Console.WriteLine("PASS StorageContracts target=" + StorageTestSupport.TargetName);
+    }
+
+    private static void AlternativeDiskAndMemoryContracts()
+    {
+        string root = StorageTestSupport.CreateRoot("storage-modes");
+        string main = Path.Combine(root, "main");
+        string alternative = Path.Combine(root, "alternative");
+        try
+        {
+            using (DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration())
+            {
+                configuration.DBreezeDataFolderName = main;
+                configuration.AlternativeTablesLocations.Add("alt*", alternative);
+                configuration.AlternativeTablesLocations.Add("mem*", String.Empty);
+                using (DBreezeEngine engine = new DBreezeEngine(configuration))
+                {
+                    using (DBreeze.Transactions.Transaction transaction = engine.GetTransaction())
+                    {
+                        transaction.SynchronizeTables("default_table", "alt_table");
+                        transaction.Insert<int, int>("default_table", 1, 11);
+                        transaction.Insert<int, int>("alt_table", 1, 22);
+                        transaction.Commit();
+                    }
+                    using (DBreeze.Transactions.Transaction transaction = engine.GetTransaction())
+                    {
+                        transaction.Insert<int, int>("mem_table", 1, 33);
+                        transaction.Commit();
+                    }
+                    using (DBreeze.Transactions.Transaction transaction = engine.GetTransaction())
+                    {
+                        transaction.Insert<int, int>("mem_table", 1, 44);
+                        transaction.Rollback();
+                        StorageTestSupport.Assert(transaction.Select<int, int>("mem_table", 1).Value == 33,
+                            "MEMORY rollback contract failed in-process.");
+                    }
+                }
+            }
+
+            using (DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration())
+            {
+                configuration.DBreezeDataFolderName = main;
+                configuration.AlternativeTablesLocations.Add("alt*", alternative);
+                configuration.AlternativeTablesLocations.Add("mem*", String.Empty);
+                using (DBreezeEngine engine = new DBreezeEngine(configuration))
+                using (DBreeze.Transactions.Transaction transaction = engine.GetTransaction())
+                {
+                    StorageTestSupport.Assert(transaction.Select<int, int>("default_table", 1).Value == 11,
+                        "Default DISK table did not reopen.");
+                    StorageTestSupport.Assert(transaction.Select<int, int>("alt_table", 1).Value == 22,
+                        "Alternative DISK table did not reopen.");
+                    StorageTestSupport.Assert(!transaction.Select<int, int>("mem_table", 1).Exists,
+                        "MEMORY table unexpectedly survived engine restart.");
+                }
+            }
+        }
+        finally
+        {
+            StorageTestSupport.DeleteRoot(root);
+        }
+    }
+
+    private static void RemoteInstanceLoopbackContract()
+    {
+        string root = StorageTestSupport.CreateRoot("remote-loopback");
+        try
+        {
+#if PORTABLE_HOST
+            using (DBreezeConfiguration serverConfiguration = StorageTestSupport.CreateConfiguration())
+            {
+                serverConfiguration.DBreezeDataFolderName = root;
+                using (RemoteTablesHandler server = new RemoteTablesHandler(serverConfiguration))
+                    RunRemoteInstanceLoopback(server);
+            }
+#else
+            using (RemoteTablesHandler server = new RemoteTablesHandler(root))
+                RunRemoteInstanceLoopback(server);
+#endif
+        }
+        finally
+        {
+            StorageTestSupport.DeleteRoot(root);
+        }
+    }
+
+    private static void RunRemoteInstanceLoopback(RemoteTablesHandler server)
+    {
+            LoopbackCommunicator communicator = new LoopbackCommunicator(server);
+            using (DBreezeRemoteEngine engine = CreateRemoteEngine(communicator))
+            using (DBreeze.Transactions.Transaction transaction = engine.GetTransaction())
+            {
+                transaction.SynchronizeTables("remote_a", "remote_b");
+                transaction.Insert<int, int>("remote_a", 1, 101);
+                transaction.Insert<int, int>("remote_b", 1, 202);
+                transaction.Commit();
+            }
+
+            using (DBreezeRemoteEngine engine = CreateRemoteEngine(communicator))
+            {
+                using (DBreeze.Transactions.Transaction transaction = engine.GetTransaction())
+                {
+                    StorageTestSupport.Assert(transaction.Select<int, int>("remote_a", 1).Value == 101,
+                        "RemoteInstance durable commit did not reopen table A.");
+                    StorageTestSupport.Assert(transaction.Select<int, int>("remote_b", 1).Value == 202,
+                        "RemoteInstance durable commit did not reopen table B.");
+                    transaction.SynchronizeTables("remote_a", "remote_b");
+                    transaction.Insert<int, int>("remote_a", 1, 303);
+                    transaction.Insert<int, int>("remote_b", 1, 404);
+                    transaction.Rollback();
+                }
+                using (DBreeze.Transactions.Transaction verify = engine.GetTransaction())
+                    StorageTestSupport.Assert(verify.Select<int, int>("remote_a", 1).Value == 101
+                        && verify.Select<int, int>("remote_b", 1).Value == 202,
+                        "RemoteInstance rollback contract failed.");
+            }
+            StorageTestSupport.Assert(communicator.Calls != 0, "Loopback communicator was not used.");
+    }
+
+    private static DBreezeRemoteEngine CreateRemoteEngine(IRemoteInstanceCommunicator communicator)
+    {
+        DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration();
+        configuration.Storage = DBreezeConfiguration.eStorage.RemoteInstance;
+        configuration.DBreezeDataFolderName = "remote_db";
+        configuration.RICommunicator = communicator;
+        return new DBreezeRemoteEngine(configuration);
+    }
+
+    private sealed class LoopbackCommunicator : IRemoteInstanceCommunicator
+    {
+        private readonly RemoteTablesHandler server;
+        internal int Calls;
+
+        internal LoopbackCommunicator(RemoteTablesHandler server)
+        {
+            this.server = server;
+        }
+
+        public byte[] Send(byte[] data)
+        {
+            Interlocked.Increment(ref Calls);
+            return server.ParseProtocol(data);
+        }
+    }
+
+    private static void BufferedWriteSetRandomizedModel()
+    {
+        Type type = typeof(StorageLayer).Assembly.GetType("DBreeze.Storage.BufferedWriteSet", true);
+        object writeSet = Activator.CreateInstance(type, true);
+        MethodInfo add = type.GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo overlay = type.GetMethod("Overlay", BindingFlags.Instance | BindingFlags.NonPublic);
+        PropertyInfo count = type.GetProperty("Count", BindingFlags.Instance | BindingFlags.NonPublic);
+        PropertyInfo item = type.GetProperty("Item", BindingFlags.Instance | BindingFlags.NonPublic);
+        PropertyInfo operations = type.GetProperty("WriteOperations", BindingFlags.Instance | BindingFlags.NonPublic);
+        StorageTestSupport.Assert(add != null && overlay != null && count != null && item != null && operations != null,
+            "BufferedWriteSet internal contract is incomplete.");
+
+        byte[] baseline = StorageTestSupport.Bytes(8192, 1601);
+        byte[] oracle = (byte[])baseline.Clone();
+        Random random = new Random(1602);
+        int operationCount = 0;
+
+        // Explicit nested, adjacent and full-cover cases before randomized pressure.
+        AddModelWrite(writeSet, add, oracle, 1000, StorageTestSupport.Bytes(2000, 1603)); operationCount++;
+        AddModelWrite(writeSet, add, oracle, 1250, StorageTestSupport.Bytes(300, 1604)); operationCount++;
+        AddModelWrite(writeSet, add, oracle, 3000, StorageTestSupport.Bytes(512, 1605)); operationCount++;
+        AddModelWrite(writeSet, add, oracle, 900, StorageTestSupport.Bytes(3000, 1606)); operationCount++;
+
+        for (int index = 0; index < 5000; index++)
+        {
+            int offset = random.Next(0, oracle.Length);
+            int maximum = Math.Min(1024, oracle.Length - offset);
+            int length = random.Next(1, maximum + 1);
+            byte[] data = new byte[length];
+            random.NextBytes(data);
+            AddModelWrite(writeSet, add, oracle, offset, data);
+            operationCount++;
+
+            if ((index & 31) == 0)
+            {
+                int readOffset = random.Next(0, oracle.Length);
+                int readLength = random.Next(0, oracle.Length - readOffset + 1);
+                byte[] actual = new byte[readLength];
+                Buffer.BlockCopy(baseline, readOffset, actual, 0, readLength);
+                overlay.Invoke(writeSet, new object[] { (long)readOffset, actual });
+                byte[] expected = new byte[readLength];
+                Buffer.BlockCopy(oracle, readOffset, expected, 0, readLength);
+                StorageTestSupport.AssertBytes(expected, actual, "BufferedWriteSet overlay differs from byte-array oracle.");
+                AssertSortedNonOverlapping(writeSet, count, item);
+            }
+        }
+
+        StorageTestSupport.Assert((int)operations.GetValue(writeSet, null) == operationCount,
+            "BufferedWriteSet lost incoming-operation accounting.");
+        byte[] complete = (byte[])baseline.Clone();
+        overlay.Invoke(writeSet, new object[] { 0L, complete });
+        StorageTestSupport.AssertBytes(oracle, complete, "BufferedWriteSet final view differs from oracle.");
+        AssertSortedNonOverlapping(writeSet, count, item);
+    }
+
+    private static void AddModelWrite(object writeSet, MethodInfo add, byte[] oracle, int offset, byte[] data)
+    {
+        add.Invoke(writeSet, new object[] { (long)offset, data });
+        Buffer.BlockCopy(data, 0, oracle, offset, data.Length);
+    }
+
+    private static void AssertSortedNonOverlapping(object writeSet, PropertyInfo countProperty, PropertyInfo itemProperty)
+    {
+        int count = (int)countProperty.GetValue(writeSet, null);
+        long previousEnd = -1;
+        for (int index = 0; index < count; index++)
+        {
+            object segment = itemProperty.GetValue(writeSet, new object[] { index });
+            Type segmentType = segment.GetType();
+            long offset = (long)segmentType.GetField("Offset", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(segment);
+            long end = (long)segmentType.GetField("End", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(segment);
+            StorageTestSupport.Assert(offset >= previousEnd && end > offset,
+                "BufferedWriteSet segments are not sorted and non-overlapping.");
+            previousEnd = end;
+        }
     }
 
     private static void Run(string name, Action test)
@@ -158,7 +380,12 @@ internal static class StorageContractSuite
             File.WriteAllBytes(truncated + ".rol", new byte[] { 1, 0, 0, 0, 0 });
             File.WriteAllBytes(truncated + ".rhp", StorageTestSupport.Int64BigEndian(5));
             using (DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration())
-                StorageTestSupport.AssertThrows<Exception>(delegate { new StorageLayer(truncated, new TrieSettings(), configuration); });
+            {
+                var recoveredTruncated = new StorageLayer(truncated, new TrieSettings(), configuration);
+                recoveredTruncated.Table_Dispose();
+            }
+            StorageTestSupport.AssertBytes(StorageTestSupport.Int64BigEndian(0), File.ReadAllBytes(truncated + ".rhp"),
+                "Legacy-compatible truncated rollback recovery did not clear its marker.");
         }
         finally
         {

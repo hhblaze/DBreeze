@@ -298,13 +298,16 @@ namespace DBreeze
         /// Uses the same storage override decision as the normal table-opening path.
         /// Returns null for removed and in-memory tables.
         /// </summary>
-        internal LTrie OpenTableForRollbackRecovery(string userTableName)
+        internal LTrie OpenTableForCommittedRecovery(string userTableName)
         {
             string physicalPath = GetPhysicalPathToTheUserTable(userTableName);
             if (physicalPath == String.Empty || physicalPath == "MEMORY")
                 return null;
 
-            TrieSettings settings = new TrieSettings();
+            TrieSettings settings = new TrieSettings
+            {
+                RollbackRecovery = RollbackRecoveryIntent.FinalizeJournalCommitted
+            };
             string alternativeTableLocation;
             if (CheckAlternativeTableLocationsIntersections(userTableName, out alternativeTableLocation))
             {

@@ -573,7 +573,12 @@ internal static class StorageRegressionTests
             File.WriteAllBytes(tablePath + ".rol", new byte[] { 1, 0, 0, 0, 0 });
             File.WriteAllBytes(tablePath + ".rhp", Int64BigEndian(5));
             using (var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
-                AssertThrows<Exception>(() => new StorageLayer(tablePath, new TrieSettings(), configuration));
+            {
+                var truncatedRecovery = new StorageLayer(tablePath, new TrieSettings(), configuration);
+                truncatedRecovery.Table_Dispose();
+            }
+            AssertBytes(Int64BigEndian(0), File.ReadAllBytes(tablePath + ".rhp"),
+                "Legacy-compatible truncated rollback recovery did not clear its marker.");
 
             string recoveryPath = Path.Combine(diskFolder, "3");
             byte[] diskOriginal = new byte[4096];

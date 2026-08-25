@@ -134,9 +134,10 @@ namespace DBreeze.Transactions
 
                     foreach (var fn in committedTablesNames)
                     {                       
-                        ltrie = Engine.DBreezeSchema.OpenTableForRollbackRecovery(fn);
+                        ltrie = Engine.DBreezeSchema.OpenTableForCommittedRecovery(fn);
                         if (ltrie != null)
                             ltrie.Dispose();
+                        DurabilityTestHooks.Hit("journal.recovery-participant-finalized");
 
                     }
 
@@ -145,6 +146,7 @@ namespace DBreeze.Transactions
 
                 //If all ok, recreate file
                 RecreateJournalStorage();
+                DurabilityTestHooks.Hit("journal.removed");
             }
             catch (OperationCanceledException)
             {
@@ -233,19 +235,25 @@ namespace DBreeze.Transactions
             lock (_sync_journalIo)
             {
                     LTrie.Add(ref key, ref btSerTbls);
+                    DurabilityTestHooks.Hit("journal.before-commit-marker");
                     LTrie.Commit();
+                    DurabilityTestHooks.Hit("journal.committed");
             }
 
             // 2. Potentially slow per-table I/O does not hold the journal state lock.
             // If this throws, the durable marker intentionally remains for startup recovery.
             foreach (var table in transactionTables.Values)
+            {
                 table.ITRCommitFinished();
+                DurabilityTestHooks.Hit("journal.participant-finalized");
+            }
 
             // 3. All tables are finalized; remove the marker durably.
             lock (_sync_journalIo)
             {
                     LTrie.Remove(ref key);
                     LTrie.Commit();
+                    DurabilityTestHooks.Hit("journal.removed");
             }
 
             bool journalCanBeCompacted;

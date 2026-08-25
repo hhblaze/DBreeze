@@ -134,9 +134,10 @@ namespace DBreeze.Transactions
 
                     foreach (var fn in committedTablesNames)
                     {                       
-                        ltrie = Engine.DBreezeSchema.OpenTableForRollbackRecovery(fn);
+                        ltrie = Engine.DBreezeSchema.OpenTableForCommittedRecovery(fn);
                         if (ltrie != null)
                             ltrie.Dispose();
+                        DurabilityTestHooks.Hit("journal.recovery-participant-finalized");
 
                     }
 
@@ -145,6 +146,7 @@ namespace DBreeze.Transactions
 
                 //If all ok, recreate file
                 RecreateJournalStorage();
+                DurabilityTestHooks.Hit("journal.removed");
             }
             catch (OperationCanceledException ex)
             {
@@ -235,7 +237,9 @@ namespace DBreeze.Transactions
                     byte[] key = tranNumber.To_8_bytes_array_BigEndian();
 
                     LTrie.Add(ref key, ref btSerTbls);
+                    DurabilityTestHooks.Hit("journal.before-commit-marker");
                     LTrie.Commit();
+                    DurabilityTestHooks.Hit("journal.committed");
 
                     //2. Calling transaction End for all tables
                     try
@@ -243,6 +247,7 @@ namespace DBreeze.Transactions
                         foreach (var tt in tbls)
                         {
                             tt.Value.ITRCommitFinished();
+                            DurabilityTestHooks.Hit("journal.participant-finalized");
                         }
                     }
                     catch (Exception ex)
@@ -254,6 +259,7 @@ namespace DBreeze.Transactions
                     //3. Deleting Record in Journal
                     LTrie.Remove(ref key);
                     LTrie.Commit();
+                    DurabilityTestHooks.Hit("journal.removed");
 
                     //Clearing transaction number
                     tbls.Clear();

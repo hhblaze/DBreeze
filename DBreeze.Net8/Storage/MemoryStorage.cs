@@ -233,6 +233,28 @@ namespace DBreeze.Storage
             Buffer.BlockCopy(data, 0, _f, offset, data.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Write(byte[] data, int dataOffset, int count, int offset)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentOutOfRangeException.ThrowIfNegative(dataOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            if (dataOffset > data.Length - count)
+                throw new ArgumentOutOfRangeException(nameof(dataOffset));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+
+            long end = (long)offset + count;
+            if (end > Array.MaxLength)
+                throw new ArgumentOutOfRangeException(nameof(count), "MemoryStorage capacity exceeds Array.MaxLength.");
+
+            int pe = (int)end;
+            if (pe > _capacity)
+                Resize(pe);
+            if (pe > _ptrEnd)
+                _ptrEnd = pe;
+            data.AsSpan(dataOffset, count).CopyTo(_f.AsSpan(offset));
+        }
+
         //}
 
         /// <summary>
@@ -264,6 +286,12 @@ namespace DBreeze.Storage
                 return;
 
             Write(data, offset);
+        }
+
+        internal void Write_ByOffset(int offset, byte[] data, int dataOffset, int count)
+        {
+            CheckDisposed();
+            Write(data, dataOffset, count, offset);
         }
 
         /// <summary>

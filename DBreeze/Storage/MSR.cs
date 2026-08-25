@@ -29,7 +29,7 @@ namespace DBreeze.Storage
         /// <summary>
         /// Random buffer
         /// </summary>
-        Dictionary<long, byte[]> _randBuf = new Dictionary<long, byte[]>();
+        readonly BufferedWriteSet _randBuf = new BufferedWriteSet();
 
         /// <summary>
         /// Record in rollback is characterized with 
@@ -291,32 +291,11 @@ namespace DBreeze.Storage
                 }
 
 
-                byte[] inBuf = null;
-                if (_randBuf.TryGetValue(offset, out inBuf))
-                {
-                    if (inBuf.Length != data.Length)
-                    {
-                        //OLD solution
-                        //it means we overwrite second time the same position with different length of data - what is not allowed
-                        //throw new Exception("MSR.WriteByOffset: inBuf.Length != data.Length");
-
-                        //Solution from 20140425
-                        //we just overwrite offset value with the new data
-                    }
-
-                    usedBufferSize += data.Length - inBuf.Length;
-                    _randBuf[offset] = data;
-                }
-                else
-                {
-                    //We put data to the buffer first and flush it if buffer > allowed space. We dont take care if data is bigger then buffer.
-                    //In any case first we put it to the buffer 
-                    _randBuf.Add(offset, data);
-                    usedBufferSize += data.Length;
-                }
+                _randBuf.Add(offset, data);
+                usedBufferSize = checked(usedBufferSize + data.Length);
 
                 //if we are able to store data into buffer lets do it
-                if (usedBufferSize >= maxRandomBufferSize || _randBuf.Count > maxRandomElementsCount)
+                if (usedBufferSize >= maxRandomBufferSize || _randBuf.WriteOperations > maxRandomElementsCount)
                     FlushRandomBuffer();
             }
         }
@@ -337,16 +316,13 @@ namespace DBreeze.Storage
             //then updating data of data file but dont call update
             //clearing random buffer
 
-            List<long> keys = new List<long>(_randBuf.Keys);
-            keys.Sort();
-
             bool flushRollback = false;
 
             //first loop for saving rollback data
-            foreach (long key in keys)
+            for (int i = 0; i < _randBuf.Count; i++)
             {
-                byte[] value = _randBuf[key];
-                if (PreserveRollbackRange(key, value.Length))
+                BufferedWriteSet.Segment segment = _randBuf[i];
+                if (PreserveRollbackRange(segment.Offset, segment.Length))
                     flushRollback = true;
             }
 
@@ -361,10 +337,11 @@ namespace DBreeze.Storage
 
 
             //second loop for saving data
-            foreach (long key in keys)
+            for (int i = 0; i < _randBuf.Count; i++)
             {
-                byte[] value = _randBuf[key];
-                _fsData.Write_ByOffset((int)key, ref value);
+                BufferedWriteSet.Segment segment = _randBuf[i];
+                _fsData.Write_ByOffset(checked((int)segment.Offset), segment.Buffer,
+                    segment.BufferOffset, segment.Length);
             }
 
             //No flush of data file, it will be done on Flush()                        
@@ -474,8 +451,8 @@ namespace DBreeze.Storage
 
                     byte[] result = _fsData.Read((int)offset, resultLength);
 
-                    foreach (KeyValuePair<long, byte[]> buffered in _randBuf)
-                        CopyIntersection(buffered.Key, buffered.Value, offset, result);
+                    if (_randBuf.Count != 0)
+                        _randBuf.Overlay(offset, result);
                     return result;
                 }
 

@@ -10,6 +10,12 @@ using System.Text;
 
 namespace DBreeze.Storage
 {
+    internal enum RollbackRecoveryIntent
+    {
+        RollbackUncommitted = 0,
+        FinalizeJournalCommitted = 1
+    }
+
     public class TrieSettings
     {
         //Combines user settings for the Trie and internal transport data.
@@ -59,6 +65,13 @@ namespace DBreeze.Storage
         internal string AlternativeTableStorageFolder = String.Empty;
         internal DBreeze.DBreezeConfiguration.eStorage AlternativeTableStorageType = DBreezeConfiguration.eStorage.DISK;
         internal bool StorageWasOverriden = false;
+
+        /// <summary>
+        /// Startup-only recovery mode. A durable transaction-journal row is the
+        /// commit point, therefore its participants must keep the already flushed
+        /// data and only clear their rollback marker.
+        /// </summary>
+        internal RollbackRecoveryIntent RollbackRecovery = RollbackRecoveryIntent.RollbackUncommitted;
 
         ///// <summary>
         ///// Concerning disk flush behaviour

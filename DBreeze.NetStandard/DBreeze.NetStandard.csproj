@@ -25,6 +25,10 @@
     <DefineConstants>$(DefineConstants);NET6FUNC;NETSTANDARD1_6;NET40;NETPORTABLE;NETSTANDARD2_1</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DBreezeDurabilityTestHooks)' == 'true'">
+    <DefineConstants>$(DefineConstants);DBREEZE_DURABILITY_TEST_HOOKS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Storage\FSR.cs" />
     <Compile Remove="Storage\Backup\Backup.cs" />
@@ -37,6 +41,8 @@
 
   <ItemGroup>
     <Compile Include="..\DBreeze\Storage\FSR.cs" Link="Storage\FSR.cs" />
+    <Compile Include="..\DBreeze\Storage\BufferedWriteSet.cs" Link="Storage\BufferedWriteSet.cs" />
+    <Compile Include="..\DBreeze\Storage\DurabilityTestHooks.cs" Link="Storage\DurabilityTestHooks.cs" />
     <Compile Include="..\DBreeze\Storage\Backup\Backup.cs" Link="Storage\Backup\Backup.cs" />
     <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
     <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />

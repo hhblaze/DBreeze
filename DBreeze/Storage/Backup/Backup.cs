@@ -242,6 +242,7 @@ namespace DBreeze.Storage
                 fs.Write(_recordHeader, 0, headerLength);
                 if (dataCount != 0)
                     fs.Write(data, dataOffset, dataCount);
+                DurabilityTestHooks.Hit("backup.record.written");
             }
            
             //Console.WriteLine(String.Format("{0}> FN: {1} - {2}; at {3} q {4}", writeTime.ToString("dd.MM.yyyy HH:mm:ss"), fileNumber, type.ToString(), pos.ToString(), 
@@ -278,6 +279,7 @@ namespace DBreeze.Storage
                     return;
 
                 FSR.NET_Flush(fs);
+                DurabilityTestHooks.Hit("backup.flushed");
                 wasWritten = false;
             }
         }

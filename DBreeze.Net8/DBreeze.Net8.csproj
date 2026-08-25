@@ -22,6 +22,10 @@
     <DefineConstants>$(DefineConstants);NET40;NET6FUNC;NET8_0;NETCOREAPP1_0;NETCOREAPP2_0</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DBreezeDurabilityTestHooks)' == 'true'">
+    <DefineConstants>$(DefineConstants);DBREEZE_DURABILITY_TEST_HOOKS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Storage\Backup\Backup.cs" />
     <Compile Remove="Storage\Backup\BackupRestorer.cs" />
@@ -35,6 +39,7 @@
     <Compile Include="..\DBreeze\Storage\Backup\Backup.cs" Link="Storage\Backup\Backup.cs" />
     <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
     <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />
+    <Compile Include="..\DBreeze\Storage\DurabilityTestHooks.cs" Link="Storage\DurabilityTestHooks.cs" />
     <Compile Remove="Utils\AsyncOperations.cs" />
     <Compile Remove="Utils\BytesProcessing_old.cs" />
     <Compile Remove="VectorLayer\VectorMath.cs" />

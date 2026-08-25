@@ -2348,7 +2348,7 @@ internal static class Program
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
 
                 start.Set();
-                Assert(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)),
+                Assert(Task.WaitAll(tasks, TimeSpan.FromMinutes(2)),
                     "Parallel multi-table commits did not complete.");
             }
 

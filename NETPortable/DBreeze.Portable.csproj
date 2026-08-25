@@ -38,6 +38,9 @@
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(DBreezeDurabilityTestHooks)' == 'true'">
+    <DefineConstants>$(DefineConstants);DBREEZE_DURABILITY_TEST_HOOKS</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\..\Keys\jahdrosigning.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -89,6 +92,12 @@
     </Compile>
     <Compile Include="..\DBreeze\Storage\IStorage.cs">
       <Link>Storage\IStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\BufferedWriteSet.cs">
+      <Link>Storage\BufferedWriteSet.cs</Link>
+    </Compile>
+    <Compile Include="..\DBreeze\Storage\DurabilityTestHooks.cs">
+      <Link>Storage\DurabilityTestHooks.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\Storage\MemoryStorage.cs">
       <Link>Storage\MemoryStorage.cs</Link>

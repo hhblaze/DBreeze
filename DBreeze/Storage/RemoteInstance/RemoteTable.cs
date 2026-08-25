@@ -120,9 +120,13 @@ namespace DBreeze.Storage.RemoteInstance
             {
                 _fsData.Position = position;
                 _fsData.Write(data, offset, count);
+                DurabilityTestHooks.Hit("remote.data.written");
 
                 if (withFlush)
+                {
                     FSR.NET_Flush(_fsData);
+                    DurabilityTestHooks.Hit("remote.data.flushed");
+                }
 
                 return CreateLengthResponse(_fsData.Length);
             }            
@@ -141,9 +145,13 @@ namespace DBreeze.Storage.RemoteInstance
             {
                 _fsRollback.Position = position;
                 _fsRollback.Write(data, offset, count);
+                DurabilityTestHooks.Hit("remote.rollback.written");
 
                 if (withFlush)
+                {
                     FSR.NET_Flush(_fsRollback);
+                    DurabilityTestHooks.Hit("remote.rollback.flushed");
+                }
 
                 return CreateLengthResponse(_fsRollback.Length);
             }
@@ -163,9 +171,13 @@ namespace DBreeze.Storage.RemoteInstance
             {
                 _fsRollbackHelper.Position = position;
                 _fsRollbackHelper.Write(data, offset, count);
+                DurabilityTestHooks.Hit("remote.rollback-helper.written");
 
                 if (withFlush)
+                {
                     FSR.NET_Flush(_fsRollbackHelper);
+                    DurabilityTestHooks.Hit("remote.rollback-helper.flushed");
+                }
 
                 return CreateLengthResponse(_fsRollbackHelper.Length);
             }

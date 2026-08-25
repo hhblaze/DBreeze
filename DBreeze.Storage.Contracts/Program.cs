@@ -34,11 +34,59 @@ internal static class Program
                 return 0;
             }
 
+            if (EqualsArgument(args[0], "--compat-prepare-rollback"))
+            {
+                RequireArguments(args, 3);
+                StorageCompatibility.PrepareRollback(args[1], Int32.Parse(args[2]));
+                return 0;
+            }
+
+            if (EqualsArgument(args[0], "--compat-verify-rollback"))
+            {
+                RequireArguments(args, 3);
+                StorageCompatibility.VerifyRollbackRecovered(args[1], Int32.Parse(args[2]));
+                return 0;
+            }
+
+            if (EqualsArgument(args[0], "--compat-backup-create"))
+            {
+                RequireArguments(args, 4);
+                StorageCompatibility.CreateBackup(args[1], args[2], Int32.Parse(args[3]));
+                return 0;
+            }
+
+            if (EqualsArgument(args[0], "--compat-backup-restore"))
+            {
+                RequireArguments(args, 4);
+                StorageCompatibility.RestoreBackup(args[1], args[2], Int32.Parse(args[3]));
+                return 0;
+            }
+
+            if (EqualsArgument(args[0], "--compat-corruption"))
+            {
+                RequireArguments(args, 4);
+                StorageCompatibility.RunCorruption(args[1], args[2], Int32.Parse(args[3]));
+                return 0;
+            }
+
             if (EqualsArgument(args[0], "--performance"))
             {
                 if (args.Length != 3 && args.Length != 4)
                     throw new ArgumentException("Expected root, records and optional comma-separated scenarios after --performance.");
                 StoragePerformance.Run(args[1], Int32.Parse(args[2]), args.Length == 4 ? args[3] : null);
+                return 0;
+            }
+
+            if (EqualsArgument(args[0], "--durability-crash-contracts"))
+            {
+                DurabilityCrashContracts.RunAll();
+                return 0;
+            }
+
+            if (EqualsArgument(args[0], "--durability-crash-worker"))
+            {
+                RequireArguments(args, 5);
+                DurabilityCrashContracts.RunWorker(args[1], args[2], args[3], Int32.Parse(args[4]));
                 return 0;
             }
 

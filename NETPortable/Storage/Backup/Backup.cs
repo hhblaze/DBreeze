@@ -235,6 +235,7 @@ namespace DBreeze.Storage
                 fs.Write(_recordHeader, 0, headerLength);
                 if (dataCount != 0)
                     fs.Write(data, dataOffset, dataCount);
+                DurabilityTestHooks.Hit("backup.record.written");
             }
         }
 
@@ -267,6 +268,7 @@ namespace DBreeze.Storage
                 if (!wasWritten || fs == null)
                     return;
                 FSR.NET_Flush(fs);
+                DurabilityTestHooks.Hit("backup.flushed");
                 wasWritten = false;
             }
         }

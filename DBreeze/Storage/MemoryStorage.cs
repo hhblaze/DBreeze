@@ -247,7 +247,29 @@ namespace DBreeze.Storage
             if (pe > _ptrEnd)
                 _ptrEnd = pe;
 
-            Buffer.BlockCopy(data, 0, _f, offset, data.Length);            
+            Buffer.BlockCopy(data, 0, _f, offset, data.Length);
+        }
+
+        private void Write(byte[] data, int dataOffset, int count, int offset)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+            if (dataOffset < 0 || count < 0 || dataOffset > data.Length - count)
+                throw new ArgumentOutOfRangeException("dataOffset/count");
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException("offset");
+
+            long end = (long)offset + count;
+            if (end > Int32.MaxValue)
+                throw new OutOfMemoryException("MemoryStorage cannot exceed Int32.MaxValue bytes.");
+
+            int pe = (int)end;
+            if (pe > _capacity)
+                Resize(pe);
+            if (pe > _ptrEnd)
+                _ptrEnd = pe;
+            if (count != 0)
+                Buffer.BlockCopy(data, dataOffset, _f, offset, count);
         }
 
         /// <summary>
@@ -324,6 +346,15 @@ namespace DBreeze.Storage
                     return;
 
                 Write(ref data, offset);
+            }
+        }
+
+        internal void Write_ByOffset(int offset, byte[] data, int dataOffset, int count)
+        {
+            lock (_lock)
+            {
+                CheckDisposed();
+                Write(data, dataOffset, count, offset);
             }
         }
 
