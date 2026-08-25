@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AuditTarget Condition="'$(AuditTarget)' == ''">Net8</AuditTarget>
+    <TargetFramework Condition="'$(AuditTarget)' == 'Net8'">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(AuditTarget)' == 'NetFramework'">net472</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Optimize>true</Optimize>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NuGetAudit>false</NuGetAudit>
+    <OutputPath>bin\$(Configuration)\$(AuditTarget)\</OutputPath>
+    <IntermediateOutputPath>obj\$(AuditTarget)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants Condition="'$(AuditTarget)' == 'Net8'">$(DefineConstants);NET8_HOST;THREAD_ALLOC_COUNTER</DefineConstants>
+    <DefineConstants Condition="'$(AuditTarget)' == 'NetFramework'">$(DefineConstants);NETFRAMEWORK_HOST</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ReleaseAuditProtocolReference)' == ''">
+    <ProjectReference Include="..\DBreeze.ReleaseAudit.Protocol\DBreeze.ReleaseAudit.Protocol.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ReleaseAuditProtocolReference)' != ''">
+    <Reference Include="DBreeze.ReleaseAudit.Protocol" HintPath="$(ReleaseAuditProtocolReference)" Private="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' != ''">
+    <Reference Include="DBreeze" HintPath="$(DBreezeAssemblyReference)" Private="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(AuditTarget)' == 'Net8'">
+    <ProjectReference Include="..\DBreeze.Net8\DBreeze.Net8.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DBreezeAssemblyReference)' == '' And '$(AuditTarget)' == 'NetFramework'">
+    <ProjectReference Include="..\DBreeze\DBreeze.csproj" />
+  </ItemGroup>
+</Project>
