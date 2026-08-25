@@ -82,6 +82,7 @@ internal static class Program
             (nameof(DeferredIndexerFailureParksDurableBatch), DeferredIndexerFailureParksDurableBatch),
             (nameof(DeferredIndexerSequenceAndDiskFormatRemainCompatible), DeferredIndexerSequenceAndDiskFormatRemainCompatible),
             (nameof(ResourcesKeepCacheAndStorageCoherent), ResourcesKeepCacheAndStorageCoherent),
+            (nameof(ResourcesVerifySingleDiskWrites), ResourcesVerifySingleDiskWrites),
             (nameof(ResourcesPersistNullAfterNegativeCache), ResourcesPersistNullAfterNegativeCache),
             (nameof(ResourcesPreserveEmptyArraysAndActiveSnapshots), ResourcesPreserveEmptyArraysAndActiveSnapshots),
             (nameof(ResourcesRemainCoherentUnderConcurrentWrites), ResourcesRemainCoherentUnderConcurrentWrites),
@@ -635,6 +636,64 @@ internal static class Program
             using var reopened = new DBreezeEngine(folder);
             AssertEqual("new", reopened.Resources.Select<string>("coherent"),
                 "Reopened resource differs from the live cache value.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static void ResourcesVerifySingleDiskWrites()
+    {
+        string folder = CreateDatabaseFolder(nameof(ResourcesVerifySingleDiskWrites));
+        var diskOnly = new DBreezeResources.Settings
+        {
+            HoldInMemory = false,
+            HoldOnDisk = true,
+            InsertWithVerification = true,
+        };
+
+        try
+        {
+            using (var engine = new DBreezeEngine(folder))
+            {
+                engine.Resources.Insert("verified-single", new byte[] { 1 }, diskOnly);
+                AssertSequenceEqual(new byte[] { 1 },
+                    engine.Resources.Select<byte[]>("verified-single", diskOnly),
+                    "A verified single insert did not persist a new key.");
+
+                engine.Resources.Insert("verified-single", new byte[] { 1 }, diskOnly);
+                AssertSequenceEqual(new byte[] { 1 },
+                    engine.Resources.Select<byte[]>("verified-single", diskOnly),
+                    "An identical verified single insert changed the value.");
+
+                engine.Resources.Insert("verified-single", new byte[] { 2 }, diskOnly);
+                AssertSequenceEqual(new byte[] { 2 },
+                    engine.Resources.Select<byte[]>("verified-single", diskOnly),
+                    "A verified single insert did not replace the stored value.");
+
+                engine.Resources.Insert(new Dictionary<string, byte[]>(StringComparer.Ordinal)
+                {
+                    ["verified-single"] = new byte[] { 2 },
+                    ["verified-batch-new"] = new byte[] { 3 },
+                }, diskOnly);
+
+                IDictionary<string, byte[]> batch = engine.Resources.Select<byte[]>(
+                    new[] { "verified-single", "verified-batch-new" }, diskOnly);
+                AssertSequenceEqual(new byte[] { 2 }, batch["verified-single"],
+                    "Batch verification changed an identical committed value.");
+                AssertSequenceEqual(new byte[] { 3 }, batch["verified-batch-new"],
+                    "Batch verification did not persist a new value.");
+            }
+
+            using var reopened = new DBreezeEngine(folder);
+            AssertSequenceEqual(new byte[] { 2 },
+                reopened.Resources.Select<byte[]>("verified-single", diskOnly),
+                "A verified single replacement did not survive reopen.");
+            AssertSequenceEqual(new byte[] { 3 },
+                reopened.Resources.Select<byte[]>("verified-batch-new", diskOnly),
+                "A verified batch insert did not survive reopen.");
         }
         finally
         {

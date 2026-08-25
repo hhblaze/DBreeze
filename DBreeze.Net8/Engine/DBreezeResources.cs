@@ -141,8 +141,6 @@ namespace DBreeze
             if (!settings.HoldOnDisk && !settings.HoldInMemory)
                 return;
 
-            CommittedReadRoot readRoot = default;
-            bool readRootRented = false;
             _storageLock.EnterWriteLock();
             try
             {
@@ -164,12 +162,7 @@ namespace DBreeze
 
                 byte[] diskKey = CreateDiskKey(resourceName);
                 if (settings.InsertWithVerification &&
-                    DiskValueEquals(
-                        resourceName,
-                        diskKey,
-                        value,
-                        ref readRoot,
-                        ref readRootRented))
+                    DiskValueEqualsUnderWriteLock(resourceName, diskKey, value))
                 {
                     BeginMutation();
                     if (settings.HoldInMemory)
@@ -201,8 +194,6 @@ namespace DBreeze
             }
             finally
             {
-                if (readRootRented)
-                    ReturnCommittedReadRoot(readRoot);
                 _storageLock.ExitWriteLock();
             }
         }
@@ -652,6 +643,15 @@ namespace DBreeze
                 return false;
 
             return ByteValuesEqual(row.GetFullValue(false), value);
+        }
+
+        private bool DiskValueEqualsUnderWriteLock(string resourceName, byte[] diskKey, byte[] value)
+        {
+            if (_cache.TryGetValue(resourceName, out CacheEntry cached) && cached.IsPersisted)
+                return !cached.IsMissing && CacheValueEquals(cached, value);
+
+            LTrieRow row = LTrie.GetKey(diskKey, false, false);
+            return row.Exists && ByteValuesEqual(row.GetFullValue(false), value);
         }
 
         private static bool CacheValueEquals(CacheEntry entry, byte[] value)
