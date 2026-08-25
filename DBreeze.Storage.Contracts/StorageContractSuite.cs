@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DBreeze;
@@ -13,6 +14,8 @@ internal static class StorageContractSuite
     internal static void RunAll()
     {
         Run("BaselineArchitecture", BaselineArchitecture);
+        Run("TransactionJournalPayloadCodec", TransactionJournalPayloadCodec);
+        Run("MalformedTransactionJournalFailsClosed", MalformedTransactionJournalFailsClosed);
         Run("BufferedWriteSetRandomizedModel", BufferedWriteSetRandomizedModel);
         Run("CommitRollbackOverlapAndAutoFlush", CommitRollbackOverlapAndAutoFlush);
         Run("CrashRecoveryAndTruncatedJournal", CrashRecoveryAndTruncatedJournal);
@@ -23,6 +26,168 @@ internal static class StorageContractSuite
         Run("ConcurrentReadersAndWriter2", delegate { ConcurrentReadersAndWriter(2); });
         Run("ConcurrentReadersAndWriter8", delegate { ConcurrentReadersAndWriter(8); });
         Console.WriteLine("PASS StorageContracts target=" + StorageTestSupport.TargetName);
+    }
+
+    private static void TransactionJournalPayloadCodec()
+    {
+        const string compact = "<string>journal-a</string>\n<string>journal-b</string>\n";
+        const string framework =
+            "<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n" +
+            "<ArrayOfString xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+            "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n" +
+            "  <string>journal-a</string>\r\n" +
+            "  <string>journal-b</string>\r\n" +
+            "</ArrayOfString>";
+        const string canonical =
+            "<ArrayOfString>\n<string>journal-a</string>\n<string>journal-b</string>\n</ArrayOfString>";
+
+        Type codec = typeof(StorageLayer).Assembly.GetType(
+            "DBreeze.Transactions.TransactionJournalPayloadCodec", true);
+        MethodInfo serialize = codec.GetMethod("Serialize", BindingFlags.Static | BindingFlags.NonPublic);
+        MethodInfo deserialize = codec.GetMethod("Deserialize", BindingFlags.Static | BindingFlags.NonPublic);
+        StorageTestSupport.Assert(serialize != null && deserialize != null,
+            "Transaction journal payload codec contract is incomplete.");
+
+        var names = new List<string> { "journal-a", "journal-b" };
+        StorageTestSupport.Assert(Encoding.UTF8.GetByteCount(compact) == 54,
+            "Legacy compact journal fixture changed.");
+        StorageTestSupport.Assert(Encoding.UTF8.GetByteCount(framework) == 233,
+            "Legacy Framework journal fixture changed.");
+        AssertJournalNames(deserialize, compact, names, "legacy compact");
+        AssertJournalNames(deserialize, framework, names, "legacy Framework");
+        StorageTestSupport.Assert((string)serialize.Invoke(null, new object[] { names }) == canonical,
+            "Canonical journal payload changed.");
+
+        var escaped = new List<string> { "journal-&-<tag>", "journal-line\r\nbreak", "journal-😀" };
+        string escapedPayload = (string)serialize.Invoke(null, new object[] { escaped });
+        AssertJournalNames(deserialize, escapedPayload, escaped, "escaped canonical");
+
+        AssertJournalPayloadRejected(deserialize, String.Empty);
+        AssertJournalPayloadRejected(deserialize, "<unknown />");
+        AssertJournalPayloadRejected(deserialize, "<string>journal-a");
+        AssertJournalPayloadRejected(deserialize, "<ArrayOfString />");
+        AssertJournalPayloadRejected(deserialize,
+            "<!DOCTYPE ArrayOfString [<!ENTITY x 'journal-a'>]><ArrayOfString><string>&x;</string></ArrayOfString>");
+    }
+
+    private static void AssertJournalNames(
+        MethodInfo deserialize, string payload, IList<string> expected, string format)
+    {
+        var actual = (IList<string>)deserialize.Invoke(null, new object[] { payload });
+        StorageTestSupport.Assert(actual.Count == expected.Count,
+            "Unexpected " + format + " journal table count.");
+        for (int i = 0; i < expected.Count; i++)
+            StorageTestSupport.Assert(actual[i] == expected[i],
+                "Unexpected " + format + " journal table at index " + i + ".");
+    }
+
+    private static void AssertJournalPayloadRejected(MethodInfo deserialize, string payload)
+    {
+        try
+        {
+            deserialize.Invoke(null, new object[] { payload });
+        }
+        catch (TargetInvocationException exception)
+        {
+            if (exception.InnerException is InvalidDataException)
+                return;
+            throw;
+        }
+        throw new InvalidOperationException("An invalid transaction journal payload was accepted.");
+    }
+
+    private static void MalformedTransactionJournalFailsClosed()
+    {
+        byte[][] invalidPayloads =
+        {
+            new byte[0],
+            Encoding.UTF8.GetBytes("<string>journal-a"),
+            Encoding.UTF8.GetBytes("<ArrayOfString><string>journal-a</ArrayOfString>"),
+        };
+
+        for (int index = 0; index < invalidPayloads.Length; index++)
+            AssertMalformedTransactionJournalFailsClosed(invalidPayloads[index], index);
+    }
+
+    private static void AssertMalformedTransactionJournalFailsClosed(byte[] payload, int index)
+    {
+        string root = StorageTestSupport.CreateRoot("malformed-transaction-journal-" + index);
+        DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration();
+        configuration.DBreezeDataFolderName = root;
+        configuration.NotifyAhead_WhenWriteTablePossibleDeadlock = false;
+
+        try
+        {
+            using (DBreezeEngine engine = new DBreezeEngine(configuration))
+            {
+            }
+
+            WriteTransactionJournalPayload(root, configuration, payload);
+
+            bool failedClosed = false;
+            try
+            {
+                using (DBreezeEngine unexpected = new DBreezeEngine(configuration))
+                {
+                }
+            }
+            catch (DBreeze.Exceptions.DBreezeException exception)
+            {
+                failedClosed = ContainsException<InvalidDataException>(exception);
+            }
+
+            StorageTestSupport.Assert(failedClosed,
+                "Malformed transaction journal startup did not preserve InvalidDataException.");
+            byte[][] persisted = ReadTransactionJournalPayloads(root, configuration);
+            StorageTestSupport.Assert(persisted.Length == 1,
+                "Malformed transaction journal marker was cleared.");
+            StorageTestSupport.AssertBytes(payload, persisted[0],
+                "Malformed transaction journal marker was modified.");
+        }
+        finally
+        {
+            StorageTestSupport.DeleteRoot(root);
+        }
+    }
+
+    private static void WriteTransactionJournalPayload(
+        string root, DBreezeConfiguration configuration, byte[] payload)
+    {
+        var storage = new StorageLayer(
+            Path.Combine(root, "_DBreezeTranJrnl"), new TrieSettings(), configuration);
+        using (var journal = new DBreeze.LianaTrie.LTrie(storage))
+        {
+            journal.TableName = "DBreeze.TranJournal";
+            byte[] key = { 0, 0, 0, 0, 0, 0, 0, 1 };
+            journal.Add(ref key, ref payload);
+            journal.Commit();
+        }
+    }
+
+    private static byte[][] ReadTransactionJournalPayloads(
+        string root, DBreezeConfiguration configuration)
+    {
+        var storage = new StorageLayer(
+            Path.Combine(root, "_DBreezeTranJrnl"), new TrieSettings(), configuration);
+        using (var journal = new DBreeze.LianaTrie.LTrie(storage))
+        {
+            journal.TableName = "DBreeze.TranJournal";
+            var payloads = new List<byte[]>();
+            foreach (var row in journal.IterateForward(true, false))
+                payloads.Add(row.GetFullValue(true));
+            return payloads.ToArray();
+        }
+    }
+
+    private static bool ContainsException<TException>(Exception exception) where TException : Exception
+    {
+        while (exception != null)
+        {
+            if (exception is TException)
+                return true;
+            exception = exception.InnerException;
+        }
+        return false;
     }
 
     private static void AlternativeDiskAndMemoryContracts()

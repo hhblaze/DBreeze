@@ -126,6 +126,7 @@
     <Compile Include="Transactions\ITransactable.cs" />
     <Compile Include="Transactions\Transaction.cs" />
     <Compile Include="Transactions\TransactionsCoordinator.cs" />
+    <Compile Include="Transactions\TransactionJournalPayloadCodec.cs" />
     <Compile Include="Transactions\TransactionsJournal.cs" />
     <Compile Include="Transactions\TransactionUnit.cs" />
     <Compile Include="Tries\ITrie.cs" />

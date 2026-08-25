@@ -283,6 +283,39 @@ internal static class ReleaseAuditOrchestrator
                 ? RunProcess("dotnet", new[] { runner, "--storage-contracts" }, options.CurrentRepository, log, deadline)
                 : RunProcess(runner, new[] { "--storage-contracts" }, options.CurrentRepository, log, deadline);
             AddPrerequisite(report, "current-storage-contracts-" + framework, result);
+
+            string durabilityLibraryRoot = Path.Combine(layout.ScratchDirectory, "build", "durability-library-" + framework);
+            var durabilityLibraryProps = new Dictionary<string, string>
+            {
+                ["DBreezeDurabilityTestHooks"] = "true"
+            };
+            string durabilityLibrary = framework == "net8"
+                ? BuildDotNet(Path.Combine(options.CurrentRepository, "DBreeze.Net8", "DBreeze.Net8.csproj"),
+                    durabilityLibraryRoot, "DBreeze.dll", durabilityLibraryProps,
+                    options.CurrentRepository, log, deadline, out warnings)
+                : BuildFramework(Path.Combine(options.CurrentRepository, "DBreeze", "DBreeze.csproj"),
+                    durabilityLibraryRoot, "DBreeze.dll", durabilityLibraryProps,
+                    options.CurrentRepository, log, deadline, out warnings);
+
+            string durabilityContractsRoot = Path.Combine(layout.ScratchDirectory, "build", "durability-contracts-" + framework);
+            var durabilityContractsProps = new Dictionary<string, string>
+            {
+                ["DBreezeAssemblyReference"] = durabilityLibrary,
+                ["StorageTarget"] = framework == "net8" ? "Net8" : "NetFramework"
+            };
+            string durabilityRunner = framework == "net8"
+                ? BuildDotNet(Path.Combine(options.CurrentRepository, "DBreeze.Storage.Contracts", "DBreeze.Storage.Contracts.csproj"),
+                    durabilityContractsRoot, "DBreeze.Storage.Contracts.dll", durabilityContractsProps,
+                    options.CurrentRepository, log, deadline, out warnings)
+                : BuildFramework(Path.Combine(options.CurrentRepository, "DBreeze.Storage.Contracts", "DBreeze.Storage.Contracts.csproj"),
+                    durabilityContractsRoot, "DBreeze.Storage.Contracts.exe", durabilityContractsProps,
+                    options.CurrentRepository, log, deadline, out warnings);
+            ProcessResult durabilityResult = framework == "net8"
+                ? RunProcess("dotnet", new[] { durabilityRunner, "--durability-crash-contracts" },
+                    options.CurrentRepository, log, deadline)
+                : RunProcess(durabilityRunner, new[] { "--durability-crash-contracts" },
+                    options.CurrentRepository, log, deadline);
+            AddPrerequisite(report, "current-durability-crash-contracts-" + framework, durabilityResult);
         }
     }
 
@@ -372,6 +405,7 @@ internal static class ReleaseAuditOrchestrator
             AddFlow(report, "journal-" + suffix, "journal", producer, consumer, Merge(journal, recovered, journalReopen), journalRoot);
         }
         report.Warnings.Add("SHA-256 differences between independently created physical files are informational; cross-reader immutability and logical oracles are gates.");
+        report.Warnings.Add("Journal cross-baseline compatibility is limited to table names without XML text metacharacters (&, <, >, CR/LF/TAB); current-to-current payloads preserve them by escaping.");
     }
 
     private static void RunPerformance(ReleaseAuditOptions options, AuditRunLayout layout, ReleaseBuildSet builds,

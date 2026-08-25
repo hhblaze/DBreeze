@@ -74,9 +74,27 @@ namespace DBreeze.Transactions
             }
             catch (Exception)
             {
-                //CASCADE
+                DisposeStorageAfterFailedInitialization();
                 throw;
             }
+        }
+
+        private void DisposeStorageAfterFailedInitialization()
+        {
+            try
+            {
+                if (LTrie != null)
+                    LTrie.Dispose();
+                else if (Storage != null)
+                    Storage.Table_Dispose();
+            }
+            catch
+            {
+                // Preserve the startup/recovery exception.
+            }
+
+            LTrie = null;
+            Storage = null;
         }
 
 
@@ -130,7 +148,8 @@ namespace DBreeze.Transactions
                 {
                     btCommittedTablesNames = row.GetFullValue(true);
 
-                    committedTablesNames = System.Text.Encoding.UTF8.GetString(btCommittedTablesNames).DeserializeXml_List<List<string>>();
+                    committedTablesNames = TransactionJournalPayloadCodec.Deserialize(
+                        System.Text.Encoding.UTF8.GetString(btCommittedTablesNames));
 
                     foreach (var fn in committedTablesNames)
                     {                       
@@ -157,13 +176,14 @@ namespace DBreeze.Transactions
             //    //We don'T make DBisOperable = false;                         
             //    throw ex;
             //}
-            catch (Exception)
+            catch (Exception ex)
             {
                 //BRINGS TO DB NOT OPERATABLE
                 this.Engine.DBisOperable = false;
                 this.Engine.DBisOperableReason = "TransactionsCoordinator.RestoreNotFinishedTransaction";
                 //NOT CASCADE ADD EXCEPTION
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.CLEAN_ROLLBACK_FILES_FOR_FINISHED_TRANSACTIONS_FAILED);
+                throw DBreezeException.Throw(
+                    DBreezeException.eDBreezeExceptions.CLEAN_ROLLBACK_FILES_FOR_FINISHED_TRANSACTIONS_FAILED, ex);
             }
             
         }
@@ -225,9 +245,9 @@ namespace DBreeze.Transactions
             if (transactionTables == null)
                 return;
 
-            // Keep the historical XML payload and table enumeration order byte-for-byte.
+            // Preserve participant enumeration order in the canonical cross-version payload.
             List<string> committedTablesNames = new List<string>(transactionTables.Keys);
-            string serTbls = committedTablesNames.SerializeXml_List();
+            string serTbls = TransactionJournalPayloadCodec.Serialize(committedTablesNames);
             byte[] btSerTbls = Encoding.UTF8.GetBytes(serTbls);
             byte[] key = tranNumber.To_8_bytes_array_BigEndian();
 

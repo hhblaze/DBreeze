@@ -202,6 +202,9 @@
     <Compile Include="Storage\RemoteInstance\RemoteTablesHandler.cs" />
     <Compile Include="TextSearch\WabiStreamCrypto.cs" />
     <Compile Include="Transactions\ITransactable.cs" />
+    <Compile Include="..\DBreeze\Transactions\TransactionJournalPayloadCodec.cs">
+      <Link>Transactions\TransactionJournalPayloadCodec.cs</Link>
+    </Compile>
     <Compile Include="Transactions\TransactionsJournal.cs" />
     <Compile Include="Transactions\TransactionTablesLocker.cs" />
     <Compile Include="Transactions\TransactionUnit.cs" />

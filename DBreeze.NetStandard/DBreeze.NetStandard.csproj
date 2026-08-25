@@ -43,6 +43,7 @@
     <Compile Include="..\DBreeze\Storage\FSR.cs" Link="Storage\FSR.cs" />
     <Compile Include="..\DBreeze\Storage\BufferedWriteSet.cs" Link="Storage\BufferedWriteSet.cs" />
     <Compile Include="..\DBreeze\Storage\DurabilityTestHooks.cs" Link="Storage\DurabilityTestHooks.cs" />
+    <Compile Include="..\DBreeze\Transactions\TransactionJournalPayloadCodec.cs" Link="Transactions\TransactionJournalPayloadCodec.cs" />
     <Compile Include="..\DBreeze\Storage\Backup\Backup.cs" Link="Storage\Backup\Backup.cs" />
     <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
     <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />

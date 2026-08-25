@@ -71,11 +71,29 @@ namespace DBreeze.Transactions
 
                  this.RestoreNotFinishedTransactions();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //CASCADE
-                throw ex;
+                DisposeStorageAfterFailedInitialization();
+                throw;
             }
+        }
+
+        private void DisposeStorageAfterFailedInitialization()
+        {
+            try
+            {
+                if (LTrie != null)
+                    LTrie.Dispose();
+                else if (Storage != null)
+                    Storage.Table_Dispose();
+            }
+            catch
+            {
+                // Preserve the startup/recovery exception.
+            }
+
+            LTrie = null;
+            Storage = null;
         }
 
 
@@ -130,7 +148,8 @@ namespace DBreeze.Transactions
                 {
                     btCommittedTablesNames = row.GetFullValue(true);
 
-                    committedTablesNames = System.Text.Encoding.UTF8.GetString(btCommittedTablesNames).DeserializeXml_List<List<string>>();
+                    committedTablesNames = TransactionJournalPayloadCodec.Deserialize(
+                        System.Text.Encoding.UTF8.GetString(btCommittedTablesNames));
 
                     foreach (var fn in committedTablesNames)
                     {                       
@@ -148,9 +167,9 @@ namespace DBreeze.Transactions
                 RecreateJournalStorage();
                 DurabilityTestHooks.Hit("journal.removed");
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                throw ex;
+                throw;
             }
             //catch (System.Threading.ThreadAbortException ex)
             //{
@@ -163,7 +182,8 @@ namespace DBreeze.Transactions
                 this.Engine.DBisOperable = false;
                 this.Engine.DBisOperableReason = "TransactionsCoordinator.RestoreNotFinishedTransaction";
                 //NOT CASCADE ADD EXCEPTION
-                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.CLEAN_ROLLBACK_FILES_FOR_FINISHED_TRANSACTIONS_FAILED);
+                throw DBreezeException.Throw(
+                    DBreezeException.eDBreezeExceptions.CLEAN_ROLLBACK_FILES_FOR_FINISHED_TRANSACTIONS_FAILED, ex);
             }
             
         }
@@ -195,10 +215,10 @@ namespace DBreeze.Transactions
                         tbls.Add(table.TableName, table);
                 }
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 //Called from TransactionCoordinator.Commit
-                throw ex;
+                throw;
             }
             finally
             {
@@ -231,7 +251,7 @@ namespace DBreeze.Transactions
                     }
 
 
-                    string serTbls = committedTablesNames.SerializeXml_List();
+                    string serTbls = TransactionJournalPayloadCodec.Serialize(committedTablesNames);
                     byte[] btSerTbls = System.Text.Encoding.UTF8.GetBytes(serTbls);
 
                     byte[] key = tranNumber.To_8_bytes_array_BigEndian();
@@ -250,10 +270,10 @@ namespace DBreeze.Transactions
                             DurabilityTestHooks.Hit("journal.participant-finalized");
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         //CASCADE from ITRCommitFinished, brings to NON-OPERATABLE
-                        throw ex;
+                        throw;
                     }
 
                     //3. Deleting Record in Journal
@@ -279,10 +299,10 @@ namespace DBreeze.Transactions
                 }
 
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                //CASCADE 
-                throw ex;
+                //CASCADE
+                throw;
             }
             finally
             {

@@ -10,6 +10,9 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length == 2 && String.Equals(args[0], "--journal-invalid-recover", StringComparison.OrdinalIgnoreCase))
+            return RunInvalidJournalRecoveryChild(args[1]);
+
         if (args.Any(static arg => String.Equals(arg, "--coordinator", StringComparison.OrdinalIgnoreCase)))
             return RunCoordinatorTests();
 
@@ -46,11 +49,24 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--journal", StringComparison.OrdinalIgnoreCase)))
+        {
+            TransactionJournalPayloadCodecSupportsAllPersistedFormats();
+            Console.WriteLine($"PASS {nameof(TransactionJournalPayloadCodecSupportsAllPersistedFormats)}");
+            JournalPayloadAndCrashRecoveryRemainCompatible();
+            Console.WriteLine($"PASS {nameof(JournalPayloadAndCrashRecoveryRemainCompatible)}");
+            MalformedTransactionJournalPayloadFailsClosed();
+            Console.WriteLine($"PASS {nameof(MalformedTransactionJournalPayloadFailsClosed)}");
+            return 0;
+        }
+
         (string Name, Action Test)[] tests =
         {
+            (nameof(TransactionJournalPayloadCodecSupportsAllPersistedFormats), TransactionJournalPayloadCodecSupportsAllPersistedFormats),
             // This test injects a durable journal marker directly and therefore must run before
             // the legacy process-global in-memory journal has been created and disposed.
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
+            (nameof(MalformedTransactionJournalPayloadFailsClosed), MalformedTransactionJournalPayloadFailsClosed),
             (nameof(ParallelMultiTableCommitsRemainDurable), ParallelMultiTableCommitsRemainDurable),
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
             (nameof(RemoteInitializationFailureIsTerminal), RemoteInitializationFailureIsTerminal),
@@ -2354,7 +2370,8 @@ internal static class Program
             byte[][] payloads = ReadJournalPayloads(folder, configuration);
             AssertEqual(1, payloads.Length, "Persisted crash-recovery marker count.");
             AssertSequenceEqual(
-                System.Text.Encoding.UTF8.GetBytes("<string>journal-a</string>\n<string>journal-b</string>\n"),
+                System.Text.Encoding.UTF8.GetBytes(
+                    "<ArrayOfString>\n<string>journal-a</string>\n<string>journal-b</string>\n</ArrayOfString>"),
                 payloads[0],
                 "Journal payload changed.");
 
@@ -2375,6 +2392,163 @@ internal static class Program
             if (Directory.Exists(folder))
                 Directory.Delete(folder, true);
         }
+    }
+
+    private static void TransactionJournalPayloadCodecSupportsAllPersistedFormats()
+    {
+        const string compact = "<string>journal-a</string>\n<string>journal-b</string>\n";
+        const string framework =
+            "<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n" +
+            "<ArrayOfString xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+            "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n" +
+            "  <string>journal-a</string>\r\n" +
+            "  <string>journal-b</string>\r\n" +
+            "</ArrayOfString>";
+        const string canonical =
+            "<ArrayOfString>\n<string>journal-a</string>\n<string>journal-b</string>\n</ArrayOfString>";
+
+        AssertEqual(54, System.Text.Encoding.UTF8.GetByteCount(compact), "Legacy compact fixture length.");
+        AssertEqual(233, System.Text.Encoding.UTF8.GetByteCount(framework), "Legacy Framework fixture length.");
+        AssertSequenceEqual(new[] { "journal-a", "journal-b" }, DeserializeJournalPayload(compact),
+            "Legacy compact journal payload.");
+        AssertSequenceEqual(new[] { "journal-a", "journal-b" }, DeserializeJournalPayload(framework),
+            "Legacy Framework journal payload.");
+
+        string serialized = SerializeJournalPayload(new[] { "journal-a", "journal-b" });
+        AssertEqual(canonical, serialized, "Canonical transaction journal payload.");
+
+        string[] escapedNames = { "journal-&-<tag>", "journal-line\r\nbreak", "journal-😀" };
+        AssertSequenceEqual(escapedNames, DeserializeJournalPayload(SerializeJournalPayload(escapedNames)),
+            "Canonical journal escaping.");
+
+        AssertJournalPayloadRejected(String.Empty);
+        AssertJournalPayloadRejected("<unknown />");
+        AssertJournalPayloadRejected("<string>journal-a");
+        AssertJournalPayloadRejected("<ArrayOfString><string>journal-a</ArrayOfString>");
+        AssertJournalPayloadRejected("<ArrayOfString />");
+        AssertJournalPayloadRejected("<!DOCTYPE ArrayOfString [<!ENTITY x 'journal-a'>]><ArrayOfString><string>&x;</string></ArrayOfString>");
+    }
+
+    private static void MalformedTransactionJournalPayloadFailsClosed()
+    {
+        string folder = CreateDatabaseFolder(nameof(MalformedTransactionJournalPayloadFailsClosed));
+        var configuration = new DBreezeConfiguration
+        {
+            DBreezeDataFolderName = folder,
+            NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+        };
+        byte[] malformedPayload = System.Text.Encoding.UTF8.GetBytes(
+            "<ArrayOfString><string>journal-a</ArrayOfString>");
+
+        try
+        {
+            using (var engine = new DBreezeEngine(configuration))
+            using (var transaction = engine.GetTransaction())
+            {
+                transaction.Insert("journal-a", 1, "a");
+                transaction.Commit();
+            }
+
+            WriteJournalPayload(folder, configuration, malformedPayload);
+
+            string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            using var child = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "dotnet",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                },
+            };
+            child.StartInfo.ArgumentList.Add(assemblyPath);
+            child.StartInfo.ArgumentList.Add("--journal-invalid-recover");
+            child.StartInfo.ArgumentList.Add(folder);
+            Assert(child.Start(), "Malformed journal recovery child did not start.");
+            Assert(child.WaitForExit(30_000), "Malformed journal recovery child timed out.");
+            string childOutput = child.StandardOutput.ReadToEnd() + child.StandardError.ReadToEnd();
+            AssertEqual(42, child.ExitCode,
+                "Malformed journal recovery did not preserve InvalidDataException. " + childOutput);
+
+            byte[][] payloads = ReadJournalPayloads(folder, configuration);
+            AssertEqual(1, payloads.Length, "Malformed journal marker was cleared.");
+            AssertSequenceEqual(malformedPayload, payloads[0], "Malformed journal marker was modified.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static int RunInvalidJournalRecoveryChild(string folder)
+    {
+        try
+        {
+            using var unexpected = new DBreezeEngine(new DBreezeConfiguration
+            {
+                DBreezeDataFolderName = folder,
+                NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+            });
+            Console.Error.WriteLine("Malformed transaction journal payload was accepted.");
+            return 1;
+        }
+        catch (DBreeze.Exceptions.DBreezeException exception)
+        {
+            if (ContainsException<InvalidDataException>(exception))
+            {
+                var configuration = new DBreezeConfiguration
+                {
+                    DBreezeDataFolderName = folder,
+                    NotifyAhead_WhenWriteTablePossibleDeadlock = false,
+                };
+                byte[][] payloads = ReadJournalPayloads(folder, configuration);
+                if (payloads.Length != 1)
+                {
+                    Console.Error.WriteLine("Malformed transaction journal marker changed after failed startup.");
+                    return 3;
+                }
+                return 42;
+            }
+            Console.Error.WriteLine(exception);
+            return 2;
+        }
+    }
+
+    private static string SerializeJournalPayload(IList<string> tableNames)
+    {
+        Type codec = typeof(DBreezeEngine).Assembly.GetType(
+            "DBreeze.Transactions.TransactionJournalPayloadCodec", throwOnError: true);
+        var method = codec.GetMethod("Serialize",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        Assert(method != null, "Transaction journal Serialize codec was not found.");
+        return (string)method.Invoke(null, new object[] { tableNames });
+    }
+
+    private static string[] DeserializeJournalPayload(string payload)
+    {
+        Type codec = typeof(DBreezeEngine).Assembly.GetType(
+            "DBreeze.Transactions.TransactionJournalPayloadCodec", throwOnError: true);
+        var method = codec.GetMethod("Deserialize",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        Assert(method != null, "Transaction journal Deserialize codec was not found.");
+        return ((IEnumerable<string>)method.Invoke(null, new object[] { payload })).ToArray();
+    }
+
+    private static void AssertJournalPayloadRejected(string payload)
+    {
+        try
+        {
+            DeserializeJournalPayload(payload);
+        }
+        catch (System.Reflection.TargetInvocationException exception)
+            when (exception.InnerException is InvalidDataException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException("An invalid transaction journal payload was accepted.");
     }
 
     private static void ParallelMultiTableCommitsRemainDurable()
@@ -2444,6 +2618,33 @@ internal static class Program
         return journal.IterateForward(true, false)
             .Select(static row => row.GetFullValue(true))
             .ToArray();
+    }
+
+    private static void WriteJournalPayload(
+        string folder, DBreezeConfiguration configuration, byte[] payload)
+    {
+        var storage = new DBreeze.Storage.StorageLayer(
+            Path.Combine(folder, "_DBreezeTranJrnl"),
+            new DBreeze.Storage.TrieSettings(),
+            configuration);
+        using var journal = new DBreeze.LianaTrie.LTrie(storage)
+        {
+            TableName = "DBreeze.TranJournal",
+        };
+        byte[] key = { 0, 0, 0, 0, 0, 0, 0, 1 };
+        journal.Add(ref key, ref payload);
+        journal.Commit();
+    }
+
+    private static bool ContainsException<TException>(Exception exception) where TException : Exception
+    {
+        while (exception != null)
+        {
+            if (exception is TException)
+                return true;
+            exception = exception.InnerException;
+        }
+        return false;
     }
 
     private static object GetDeferredIndexer(DBreezeEngine engine)
@@ -2691,6 +2892,16 @@ internal static class Program
     {
         if (expected == null || actual == null || !expected.AsSpan().SequenceEqual(actual))
             throw new InvalidOperationException($"{message} Expected: {Format(expected)}; actual: {Format(actual)}.");
+    }
+
+    private static void AssertSequenceEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, string message)
+    {
+        T[] expectedArray = expected == null ? null : expected.ToArray();
+        T[] actualArray = actual == null ? null : actual.ToArray();
+        if (expectedArray == null || actualArray == null || !expectedArray.SequenceEqual(actualArray))
+            throw new InvalidOperationException(
+                $"{message} Expected: {String.Join(",", expectedArray ?? Array.Empty<T>())}; " +
+                $"actual: {String.Join(",", actualArray ?? Array.Empty<T>())}.");
     }
 
     private static void AssertKeys(IEnumerable<byte[]> expected, IEnumerable<byte[]> actual, string message)

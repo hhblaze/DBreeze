@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -51,7 +52,7 @@ namespace DBreeze.ReleaseAudit.Worker
                         semantic = RestoreBackup(options.Root);
                         break;
                     case "journal-prepare":
-                        semantic = PrepareJournal(options.Root);
+                        semantic = PrepareJournal(options.Root, options.Variant, options.Framework);
                         break;
                     case "journal-recover":
                         semantic = RecoverJournal(options.Root);
@@ -261,7 +262,7 @@ namespace DBreeze.ReleaseAudit.Worker
             return Validate(restored, false);
         }
 
-        private static string PrepareJournal(string root)
+        private static string PrepareJournal(string root, string variant, string framework)
         {
             RefuseExisting(root);
             var configuration = new DBreezeConfiguration { DBreezeDataFolderName = root, NotifyAhead_WhenWriteTablePossibleDeadlock = false };
@@ -279,8 +280,54 @@ namespace DBreeze.ReleaseAudit.Worker
                 try { journal.FinishTransaction(number); throw new InvalidDataException("Injected journal failure did not fail."); }
                 catch (InvalidOperationException) { }
             }
-            Ensure(ReadJournal(root, configuration).Length == 1, "Pending journal marker was not persisted.");
-            return "pending=1";
+            byte[][] payloads = ReadJournal(root, configuration);
+            Ensure(payloads.Length == 1, "Pending journal marker was not persisted.");
+            string payload = Encoding.UTF8.GetString(payloads[0]);
+            string payloadFormat = ClassifyJournalPayload(payload);
+            if (String.Equals(variant, "current", StringComparison.Ordinal))
+            {
+                Ensure(String.Equals(payload, CanonicalJournalPayload(), StringComparison.Ordinal),
+                    "Current journal writer did not persist the canonical compatibility envelope.");
+            }
+            else if (String.Equals(framework, "net8", StringComparison.Ordinal))
+            {
+                Ensure(String.Equals(payload, LegacyCompactJournalPayload(), StringComparison.Ordinal),
+                    "Baseline Net8 journal fixture changed.");
+            }
+            else
+            {
+                Ensure(String.Equals(payload, LegacyFrameworkJournalPayload(), StringComparison.Ordinal),
+                    "Baseline Net472 journal fixture changed.");
+            }
+            return "pending=1;payload=" + payloadFormat + ";bytes=" + payloads[0].Length.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string ClassifyJournalPayload(string payload)
+        {
+            if (String.Equals(payload, CanonicalJournalPayload(), StringComparison.Ordinal)) return "canonical-rooted";
+            if (String.Equals(payload, LegacyCompactJournalPayload(), StringComparison.Ordinal)) return "legacy-compact";
+            if (String.Equals(payload, LegacyFrameworkJournalPayload(), StringComparison.Ordinal)) return "legacy-framework";
+            throw new InvalidDataException("Unknown transaction journal payload fixture.");
+        }
+
+        private static string CanonicalJournalPayload()
+        {
+            return "<ArrayOfString>\n<string>journal-a</string>\n<string>journal-b</string>\n</ArrayOfString>";
+        }
+
+        private static string LegacyCompactJournalPayload()
+        {
+            return "<string>journal-a</string>\n<string>journal-b</string>\n";
+        }
+
+        private static string LegacyFrameworkJournalPayload()
+        {
+            return "<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n" +
+                "<ArrayOfString xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n" +
+                "  <string>journal-a</string>\r\n" +
+                "  <string>journal-b</string>\r\n" +
+                "</ArrayOfString>";
         }
 
         private static string RecoverJournal(string root)

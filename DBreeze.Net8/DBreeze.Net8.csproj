@@ -40,6 +40,7 @@
     <Compile Include="..\DBreeze\Storage\Backup\BackupRestorer.cs" Link="Storage\Backup\BackupRestorer.cs" />
     <Compile Include="..\DBreeze\Storage\RemoteInstance\*.cs" Link="Storage\RemoteInstance\%(Filename)%(Extension)" />
     <Compile Include="..\DBreeze\Storage\DurabilityTestHooks.cs" Link="Storage\DurabilityTestHooks.cs" />
+    <Compile Include="..\DBreeze\Transactions\TransactionJournalPayloadCodec.cs" Link="Transactions\TransactionJournalPayloadCodec.cs" />
     <Compile Remove="Utils\AsyncOperations.cs" />
     <Compile Remove="Utils\BytesProcessing_old.cs" />
     <Compile Remove="VectorLayer\VectorMath.cs" />
