@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -563,22 +564,29 @@ namespace DBreeze.HNSW
                 _lock.EnterReadLock();
                 try
                 {
-                    // Scan all entries in the external ID index (key prefix 4)
+                    // Scan only the external ID index (key prefix 4). The same table also contains
+                    // nodes, buckets and vector payloads under prefixes 2, 3 and 5..7.
                     // Key format: 4.ToIndex(externalId) -> Value: bucketId (4 bytes) + nodeId (4 bytes)
-                    foreach (var row in this._parameters.Storage.tran.SelectForward<byte[], byte[]>(
-                        this._parameters.Storage.TableName))
+                    foreach (var row in this._parameters.Storage.tran.SelectForwardFromTo<byte[], byte[]>(
+                        this._parameters.Storage.TableName, 4.ToIndex(), true, 5.ToIndex(), false))
                     {
-                        // Extract external ID from key (skip the first byte which is the prefix)
                         byte[] keyBytes = row.Key;
-                        if (keyBytes.Length < 9) // 1 byte prefix + 8 bytes for long
-                            continue;
+                        byte[] valueBytes = row.Value;
+                        if (keyBytes == null || keyBytes.Length != 9 || keyBytes[0] != 4 ||
+                            valueBytes == null || valueBytes.Length != 8)
+                        {
+                            throw new InvalidDataException(String.Format(
+                                "DBreeze.VectorLayer: malformed external ID index entry in table '{0}'; key prefix/length={1}/{2}, value length={3}.",
+                                this._parameters.Storage.TableName,
+                                keyBytes == null || keyBytes.Length == 0 ? -1 : keyBytes[0],
+                                keyBytes == null ? -1 : keyBytes.Length,
+                                valueBytes == null ? -1 : valueBytes.Length));
+                        }
 
-                        // Parse external ID from key (bytes 1-8)
-                        long externalId = keyBytes.Substring(1, 8).To_Int64_BigEndian();
-
-                        // Parse bucket and node IDs from value
-                        var bucketId = row.Value.Substring(0, 4).To_Int32_BigEndian();
-                        var nodeId = row.Value.Substring(4, 4).To_Int32_BigEndian();
+                        // Decode in-place to avoid three short-lived arrays per returned vector.
+                        long externalId = ReadSortableInt64BigEndian(keyBytes, 1);
+                        int bucketId = ReadSortableInt32BigEndian(valueBytes, 0);
+                        int nodeId = ReadSortableInt32BigEndian(valueBytes, 4);
 
                         // Get the bucket and load the node
                         var bucket = this.BucketManager.GetSearchBucket(bucketId);
@@ -595,6 +603,28 @@ namespace DBreeze.HNSW
                 {
                     _lock.ExitReadLock();
                 }
+            }
+
+            private static int ReadSortableInt32BigEndian(byte[] value, int offset)
+            {
+                uint encoded = ((uint)value[offset] << 24) |
+                               ((uint)value[offset + 1] << 16) |
+                               ((uint)value[offset + 2] << 8) |
+                               value[offset + 3];
+                return unchecked((int)(encoded ^ 0x80000000U));
+            }
+
+            private static long ReadSortableInt64BigEndian(byte[] value, int offset)
+            {
+                ulong encoded = ((ulong)value[offset] << 56) |
+                                ((ulong)value[offset + 1] << 48) |
+                                ((ulong)value[offset + 2] << 40) |
+                                ((ulong)value[offset + 3] << 32) |
+                                ((ulong)value[offset + 4] << 24) |
+                                ((ulong)value[offset + 5] << 16) |
+                                ((ulong)value[offset + 6] << 8) |
+                                value[offset + 7];
+                return unchecked((long)(encoded ^ 0x8000000000000000UL));
             }
 
             //public IEnumerable<SmallWorld<TItem, TDistance>.KNNSearchResult> KNNSearch(TItem item, int k, bool clearDistanceCache = true)

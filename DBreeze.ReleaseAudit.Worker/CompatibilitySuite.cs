@@ -32,24 +32,24 @@ namespace DBreeze.ReleaseAudit.Worker
                     case "fixture-create":
                         RefuseExisting(options.Root);
                         Populate(options.Root, false, null);
-                        semantic = Validate(options.Root, false);
+                        semantic = Validate(options.Root, false, options.Variant == "current");
                         break;
                     case "fixture-verify":
-                        semantic = VerifyReadOnly(options.Root, false);
+                        semantic = VerifyReadOnly(options.Root, false, options.Variant == "current");
                         break;
                     case "fixture-extend":
-                        Validate(options.Root, false);
+                        Validate(options.Root, false, options.Variant == "current");
                         Extend(options.Root);
-                        semantic = Validate(options.Root, true);
+                        semantic = Validate(options.Root, true, options.Variant == "current");
                         break;
                     case "fixture-verify-extended":
-                        semantic = VerifyReadOnly(options.Root, true);
+                        semantic = VerifyReadOnly(options.Root, true, options.Variant == "current");
                         break;
                     case "backup-create":
-                        semantic = CreateBackup(options.Root);
+                        semantic = CreateBackup(options.Root, options.Variant == "current");
                         break;
                     case "backup-restore":
-                        semantic = RestoreBackup(options.Root);
+                        semantic = RestoreBackup(options.Root, options.Variant == "current");
                         break;
                     case "journal-prepare":
                         semantic = PrepareJournal(options.Root, options.Variant, options.Framework);
@@ -171,7 +171,7 @@ namespace DBreeze.ReleaseAudit.Worker
             }
         }
 
-        private static string Validate(string database, bool extended)
+        private static string Validate(string database, bool extended, bool verifyVectorsGetAll)
         {
             var checksum = new Checksum();
             long rows = 0;
@@ -217,6 +217,13 @@ namespace DBreeze.ReleaseAudit.Worker
                     Ensure(vf == (extended ? 4 : 3) && vd == (extended ? 4 : 3), "Vector fixture count mismatch.");
                     Ensure(t.VectorsSearchSimilar("compat-vf", new float[] { 1, 0, 0 }, 1).Any(), "Float vector search failed.");
                     Ensure(t.VectorsSearchSimilar("compat-vd", new double[] { 1, 0, 0 }, 1).Any(), "Double vector search failed.");
+                    if (verifyVectorsGetAll)
+                    {
+                        long[] expectedFloat = extended ? new long[] { 1, 2, 3, 99 } : new long[] { 1, 2, 3 };
+                        long[] expectedDouble = extended ? new long[] { 11, 12, 13, 199 } : new long[] { 11, 12, 13 };
+                        Ensure(t.VectorsGetAll<float[]>("compat-vf").Select(delegate((long, float[]) item) { return item.Item1; }).OrderBy(delegate(long id) { return id; }).SequenceEqual(expectedFloat), "Float VectorsGetAll fixture mismatch.");
+                        Ensure(t.VectorsGetAll<double[]>("compat-vd").Select(delegate((long, double[]) item) { return item.Item1; }).OrderBy(delegate(long id) { return id; }).SequenceEqual(expectedDouble), "Double VectorsGetAll fixture mismatch.");
+                    }
                     checksum.Add(vf); checksum.Add(vd); rows += vf + vd;
                     Ensure(t.Select<string, bool>("compat-state", "extended").Exists == extended, "Extended state marker mismatch.");
                 }
@@ -232,26 +239,26 @@ namespace DBreeze.ReleaseAudit.Worker
             return "state=" + (extended ? "extended" : "base") + ";rows=" + rows + ";checksum=" + checksum.Value;
         }
 
-        private static string VerifyReadOnly(string database, bool extended)
+        private static string VerifyReadOnly(string database, bool extended, bool verifyVectorsGetAll)
         {
             List<FileEntry> before = Files(database);
-            string semantic = Validate(database, extended);
+            string semantic = Validate(database, extended, verifyVectorsGetAll);
             List<FileEntry> after = Files(database);
             Ensure(EqualFiles(before, after), "Read-only consumer changed database file length or SHA-256.");
             return semantic + ";readonly-files=" + before.Count;
         }
 
-        private static string CreateBackup(string root)
+        private static string CreateBackup(string root, bool verifyVectorsGetAll)
         {
             RefuseExisting(root);
             Directory.CreateDirectory(root);
             string database = Path.Combine(root, "database");
             string backup = Path.Combine(root, "backup");
             Populate(database, false, backup);
-            return Validate(database, false) + ";backup-files=" + Files(backup).Count;
+            return Validate(database, false, verifyVectorsGetAll) + ";backup-files=" + Files(backup).Count;
         }
 
-        private static string RestoreBackup(string root)
+        private static string RestoreBackup(string root, bool verifyVectorsGetAll)
         {
             string backup = Path.Combine(root, "backup");
             string restored = Path.Combine(root, "restored");
@@ -259,7 +266,7 @@ namespace DBreeze.ReleaseAudit.Worker
             var restorer = new BackupRestorer { BackupFolder = backup, DataBaseFolder = restored };
             restorer.OnRestore += delegate { };
             restorer.StartRestoration();
-            return Validate(restored, false);
+            return Validate(restored, false, verifyVectorsGetAll);
         }
 
         private static string PrepareJournal(string root, string variant, string framework)

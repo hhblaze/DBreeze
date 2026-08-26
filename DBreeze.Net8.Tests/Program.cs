@@ -60,6 +60,17 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--vectors-get-all", StringComparison.OrdinalIgnoreCase)))
+        {
+            VectorRegressionTests.GetAllEnumeratesOnlyExternalIndex();
+            Console.WriteLine($"PASS {nameof(VectorRegressionTests.GetAllEnumeratesOnlyExternalIndex)}");
+            VectorRegressionTests.GetAllSupportsExternalAndQuantizedStorage();
+            Console.WriteLine($"PASS {nameof(VectorRegressionTests.GetAllSupportsExternalAndQuantizedStorage)}");
+            VectorRegressionTests.GetAllFailsClosedAndReleasesEnumerationLock();
+            Console.WriteLine($"PASS {nameof(VectorRegressionTests.GetAllFailsClosedAndReleasesEnumerationLock)}");
+            return 0;
+        }
+
         (string Name, Action Test)[] tests =
         {
             (nameof(TransactionJournalPayloadCodecSupportsAllPersistedFormats), TransactionJournalPayloadCodecSupportsAllPersistedFormats),
@@ -67,6 +78,9 @@ internal static class Program
             // the legacy process-global in-memory journal has been created and disposed.
             (nameof(JournalPayloadAndCrashRecoveryRemainCompatible), JournalPayloadAndCrashRecoveryRemainCompatible),
             (nameof(MalformedTransactionJournalPayloadFailsClosed), MalformedTransactionJournalPayloadFailsClosed),
+            (nameof(VectorRegressionTests.GetAllEnumeratesOnlyExternalIndex), VectorRegressionTests.GetAllEnumeratesOnlyExternalIndex),
+            (nameof(VectorRegressionTests.GetAllSupportsExternalAndQuantizedStorage), VectorRegressionTests.GetAllSupportsExternalAndQuantizedStorage),
+            (nameof(VectorRegressionTests.GetAllFailsClosedAndReleasesEnumerationLock), VectorRegressionTests.GetAllFailsClosedAndReleasesEnumerationLock),
             (nameof(ParallelMultiTableCommitsRemainDurable), ParallelMultiTableCommitsRemainDurable),
             (nameof(EngineLifecycleIsSafe), EngineLifecycleIsSafe),
             (nameof(RemoteInitializationFailureIsTerminal), RemoteInitializationFailureIsTerminal),

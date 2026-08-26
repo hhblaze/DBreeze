@@ -199,14 +199,13 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// Gets all vectors from storage useful for graph compaction and batch processing.
-        /// Returns nested enumerables where each inner enumerable contains up to chunkSize items.
+        /// Gets all vectors from storage, useful for graph compaction and batch processing.
         /// </summary>
         /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
         /// <param name="tableName">Table name where vectors are stored</param>        
         /// <param name="vectorTableParameters">Optional vector table configuration parameters</param>
         /// <param name="ignoreDeleted">If true (default), only returns non-soft-deleted vectors</param>
-        /// <returns>Nested enumerables: IEnumerable<IEnumerable<(long, TVector)>> for chunk-based processing</returns>
+        /// <returns>A lazy sequence of stored external identifiers and their vectors.</returns>
         /// <exception cref="NotSupportedException"></exception>
         public IEnumerable<(long, TVector)> VectorsGetAll<TVector>(string tableName, VectorTableParameters<TVector> vectorTableParameters = null, 
             bool ignoreDeleted = true)

@@ -147,8 +147,11 @@ internal static class ReleaseAuditArtifacts
                 maps.TryGetValue(worker, out Dictionary<string, CoverageEntry> map);
                 CoverageEntry entry = null;
                 if (map != null) map.TryGetValue(method + "\n" + mode, out entry);
-                string text = entry == null || entry.Attempts == 0 ? "MISSING" : entry.Successes == 0 ? "EXEC/FAIL" : "PASS " + entry.Successes + "/" + entry.Attempts;
-                string css = entry == null || entry.Attempts == 0 || entry.Successes == 0 ? "fail" : "pass";
+                bool accepted = worker.StartsWith("baseline-", StringComparison.Ordinal) &&
+                                method == ReleaseAuditEvaluator.VectorsGetAllMemberId && entry?.Attempts > 0 && entry.Successes == 0 &&
+                                ReleaseAuditEvaluator.IsAcceptedVectorsGetAllHistoricalFix(report, report.Metadata.BaselineCommit, worker.Substring("baseline-".Length));
+                string text = entry == null || entry.Attempts == 0 ? "MISSING" : accepted ? "ACCEPTED " + entry.Successes + "/" + entry.Attempts : entry.Successes == 0 ? "EXEC/FAIL" : "PASS " + entry.Successes + "/" + entry.Attempts;
+                string css = accepted ? "warn" : entry == null || entry.Attempts == 0 || entry.Successes == 0 ? "fail" : "pass";
                 b.Append("<td class=\"").Append(css).Append("\">").Append(text).Append("</td>");
             }
             b.Append("</tr>");

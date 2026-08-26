@@ -4,6 +4,10 @@ namespace DBreeze.Net8.Benchmarks;
 
 internal static class ReleaseAuditEvaluator
 {
+    internal const string VectorsGetAllMemberId = "M public DBreeze.Transactions.Transaction.VectorsGetAll<TVector>(System.String,DBreeze.Transactions.Transaction+VectorTableParameters<`TVector>=null,System.Boolean=true):System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int64,`TVector>>";
+    private const string VectorsGetAllBaselineOutcome = "float=fail:System.ArgumentOutOfRangeException;double=fail:System.ArgumentOutOfRangeException";
+    private const string VectorsGetAllCurrentOutcome = "float=active:1,2,3|all:1,2,3,4;double=active:11,12,13|all:11,12,13,14";
+
     internal static void EvaluateApi(ReleaseAuditReport report)
     {
         foreach (string framework in new[] { "net8", "net472" })
@@ -23,14 +27,22 @@ internal static class ReleaseAuditEvaluator
     {
         foreach (WorkerReport worker in report.CorrectnessWorkers)
         {
+            bool acceptedVectorsGetAll = worker.Variant == "baseline" &&
+                                         IsAcceptedVectorsGetAllHistoricalFix(report, baselineSha, worker.Framework);
             int entries = worker.Coverage.Count;
             int missing = worker.Coverage.Count(static entry => entry.Attempts == 0);
             if (entries != 170 || missing != 0)
                 report.GateViolations.Add($"Coverage incomplete for {worker.Variant}-{worker.Framework}: entries={entries}, missing={missing}.");
             foreach (CoverageEntry failed in worker.Coverage.Where(static entry => entry.Attempts != 0 && entry.Successes == 0))
+            {
+                if (acceptedVectorsGetAll && failed.MemberId == VectorsGetAllMemberId) continue;
                 report.GateViolations.Add($"Executed public method failed for {worker.Variant}-{worker.Framework}/{failed.Mode}: {failed.MemberId}");
+            }
             foreach (CaseResult failed in worker.Cases.Where(static item => !item.Succeeded && item.Id != "coverage-85x2"))
+            {
+                if (acceptedVectorsGetAll && failed.Id == "all-public-methods" && (failed.Mode == "single" || failed.Mode == "parallel")) continue;
                 report.GateViolations.Add($"Correctness failed for {worker.Variant}-{worker.Framework}: {failed.Id}/{failed.Mode}.");
+            }
         }
 
         foreach (string framework in new[] { "net8", "net472" })
@@ -45,7 +57,15 @@ internal static class ReleaseAuditEvaluator
                 newCases.TryGetValue(key, out CaseResult newValue);
                 string oldSemantic = Format(oldValue), newSemantic = Format(newValue);
                 if (String.Equals(oldSemantic, newSemantic, StringComparison.Ordinal)) continue;
-                bool accepted = IsAcceptedTextRemove(baselineSha, framework, oldValue, newValue);
+                bool acceptedTextRemove = IsAcceptedTextRemove(baselineSha, framework, oldValue, newValue);
+                bool acceptedVectorsGetAll = IsAcceptedVectorsGetAllHistoricalFix(report, baselineSha, framework) &&
+                                             IsVectorsGetAllDelta(oldValue, newValue);
+                bool accepted = acceptedTextRemove || acceptedVectorsGetAll;
+                string policy = acceptedTextRemove
+                    ? "historical-fix: TextRemove preserves unrelated alpha token; exact old/new oracle"
+                    : acceptedVectorsGetAll
+                        ? "historical-fix: VectorsGetAll scans only prefix 4; exact baseline failure/current oracle"
+                        : "exact-parity";
                 var delta = new ReleaseCorrectnessDelta
                 {
                     Framework = framework,
@@ -54,7 +74,7 @@ internal static class ReleaseAuditEvaluator
                     Baseline = oldSemantic,
                     Current = newSemantic,
                     Verdict = accepted ? "ACCEPTED" : "FAIL",
-                    Policy = accepted ? "historical-fix: TextRemove preserves unrelated alpha token; exact old/new oracle" : "exact-parity"
+                    Policy = policy
                 };
                 report.CorrectnessDeltas.Add(delta);
                 if (!accepted) report.GateViolations.Add($"Unexpected semantic delta: {framework}/{delta.Case}/{delta.Mode}.");
@@ -140,6 +160,15 @@ internal static class ReleaseAuditEvaluator
             IsAcceptedTextRemove(ReleaseAuditOptions.DefaultBaselineCommit, "net8", acceptedOld,
                 new CaseResult { Id = acceptedNew.Id, Mode = acceptedNew.Mode, Succeeded = true, SemanticValue = "or=1,2,3" }))
             failures.Add("Exact allowlist matching failed.");
+        ReleaseAuditReport vectorsFix = VectorsGetAllSelfTestReport();
+        if (!IsAcceptedVectorsGetAllHistoricalFix(vectorsFix, ReleaseAuditOptions.DefaultBaselineCommit, "net8"))
+            failures.Add("Exact VectorsGetAll allowlist matching failed.");
+        vectorsFix.CorrectnessWorkers.Single(static worker => worker.Variant == "current")
+            .Cases.Single(static item => item.Id == "vectors-get-all-known-delta" && item.Mode == "single").SemanticValue += ",unexpected";
+        if (IsAcceptedVectorsGetAllHistoricalFix(vectorsFix, ReleaseAuditOptions.DefaultBaselineCommit, "net8") ||
+            IsAcceptedVectorsGetAllHistoricalFix(VectorsGetAllSelfTestReport(), "wrong-sha", "net8") ||
+            IsAcceptedVectorsGetAllHistoricalFix(VectorsGetAllSelfTestReport(), ReleaseAuditOptions.DefaultBaselineCommit, "other"))
+            failures.Add("VectorsGetAll allowlist accepted an inexact identity or outcome.");
         try { ReleaseAuditOptions.Parse(new[] { "--release-audit", "--max-records", "1000001" }); failures.Add("Record limit accepted 1,000,001."); }
         catch (ArgumentOutOfRangeException) { }
         if (new ReleaseDeadline(TimeSpan.Zero).Remaining > TimeSpan.Zero) failures.Add("Expired deadline was not detected.");
@@ -180,6 +209,74 @@ internal static class ReleaseAuditEvaluator
                framework is "net8" or "net472" && baseline?.Id == "text-remove-known-delta" && current?.Id == baseline.Id &&
                baseline.Mode == "single" && current.Mode == "single" && baseline.Succeeded && current.Succeeded &&
                baseline.SemanticValue == "or=1" && current.SemanticValue == "or=1,3";
+    }
+
+    internal static bool IsAcceptedVectorsGetAllHistoricalFix(ReleaseAuditReport report, string sha, string framework)
+    {
+        if (!String.Equals(sha, ReleaseAuditOptions.DefaultBaselineCommit, StringComparison.OrdinalIgnoreCase) ||
+            framework is not ("net8" or "net472"))
+            return false;
+
+        WorkerReport baseline = Worker(report.CorrectnessWorkers, "baseline", framework);
+        WorkerReport current = Worker(report.CorrectnessWorkers, "current", framework);
+        if (baseline == null || current == null) return false;
+
+        CoverageEntry[] failedBaseline = baseline.Coverage.Where(static entry => entry.Attempts != 0 && entry.Successes == 0).ToArray();
+        if (failedBaseline.Length != 2 || failedBaseline.Any(static entry => entry.MemberId != VectorsGetAllMemberId) ||
+            !failedBaseline.Select(static entry => entry.Mode).OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(new[] { "parallel", "single" }))
+            return false;
+
+        foreach (string mode in new[] { "single", "parallel" })
+        {
+            CoverageEntry currentEntry = current.Coverage.SingleOrDefault(entry => entry.MemberId == VectorsGetAllMemberId && entry.Mode == mode);
+            if (currentEntry == null || currentEntry.Attempts == 0 || currentEntry.Successes != currentEntry.Attempts) return false;
+            CaseResult oldProbe = baseline.Cases.SingleOrDefault(item => item.Id == "vectors-get-all-known-delta" && item.Mode == mode);
+            CaseResult newProbe = current.Cases.SingleOrDefault(item => item.Id == "vectors-get-all-known-delta" && item.Mode == mode);
+            if (oldProbe?.Succeeded != true || newProbe?.Succeeded != true ||
+                oldProbe.SemanticValue != VectorsGetAllBaselineOutcome || newProbe.SemanticValue != VectorsGetAllCurrentOutcome)
+                return false;
+            CaseResult oldAll = baseline.Cases.SingleOrDefault(item => item.Id == "all-public-methods" && item.Mode == mode);
+            CaseResult newAll = current.Cases.SingleOrDefault(item => item.Id == "all-public-methods" && item.Mode == mode);
+            if (oldAll == null || oldAll.Succeeded || newAll?.Succeeded != true) return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsVectorsGetAllDelta(CaseResult baseline, CaseResult current)
+    {
+        if (baseline == null || current == null || baseline.Id != current.Id || baseline.Mode != current.Mode) return false;
+        return baseline.Id == "vectors-get-all-known-delta" || baseline.Id == "coverage-85x2" ||
+               baseline.Id == "all-public-methods" && (baseline.Mode == "single" || baseline.Mode == "parallel");
+    }
+
+    private static ReleaseAuditReport VectorsGetAllSelfTestReport()
+    {
+        var report = new ReleaseAuditReport();
+        foreach (string variant in new[] { "baseline", "current" })
+        {
+            var worker = new WorkerReport { Variant = variant, Framework = "net8" };
+            foreach (string mode in new[] { "single", "parallel" })
+            {
+                worker.Coverage.Add(new CoverageEntry
+                {
+                    MemberId = VectorsGetAllMemberId, Mode = mode, Attempts = 1,
+                    Successes = variant == "baseline" ? 0 : 1
+                });
+                worker.Cases.Add(new CaseResult
+                {
+                    Id = "all-public-methods", Mode = mode, Succeeded = variant == "current",
+                    SemanticValue = variant == "current" ? "current" : null
+                });
+                worker.Cases.Add(new CaseResult
+                {
+                    Id = "vectors-get-all-known-delta", Mode = mode, Succeeded = true,
+                    SemanticValue = variant == "baseline" ? VectorsGetAllBaselineOutcome : VectorsGetAllCurrentOutcome
+                });
+            }
+            report.CorrectnessWorkers.Add(worker);
+        }
+        return report;
     }
 
     private static WorkerReport Worker(IEnumerable<WorkerReport> reports, string variant, string framework) =>

@@ -67,6 +67,30 @@ namespace DBreeze.ReleaseAudit.Worker
             {
                 return RunTextRemoveProbe(Path.Combine(options.Root, "text-remove-probe"));
             });
+            RunCase(report, "vectors-get-all-known-delta", "correctness", "single", delegate
+            {
+                return RunVectorsGetAllProbe(Path.Combine(options.Root, "vectors-get-all-probe-single"));
+            });
+            RunCase(report, "vectors-get-all-known-delta", "correctness", "parallel", delegate
+            {
+                string[] values = new string[2];
+                var start = new ManualResetEventSlim(false);
+                Task[] tasks = new Task[2];
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    int worker = i;
+                    tasks[i] = Task.Factory.StartNew(delegate
+                    {
+                        start.Wait();
+                        values[worker] = RunVectorsGetAllProbe(Path.Combine(options.Root, "vectors-get-all-probe-parallel-" + worker));
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }
+                start.Set();
+                if (!Task.WaitAll(tasks, TimeSpan.FromSeconds(60)))
+                    throw new TimeoutException("Parallel VectorsGetAll probe timed out.");
+                Ensure(String.Equals(values[0], values[1], StringComparison.Ordinal), "Parallel VectorsGetAll probes diverged.");
+                return values[0];
+            });
 
             report.Coverage = coverage.Snapshot();
             int missing = report.Coverage.Count(delegate(CoverageEntry item) { return item.Attempts == 0; });
@@ -418,18 +442,122 @@ namespace DBreeze.ReleaseAudit.Worker
                 t.Commit();
             }
             long count = 0;
-            int all = 0, byId = 0, similarF = 0, similarD = 0;
+            List<(long, float[])> allF = null;
+            List<(long, double[])> allD = null;
+            int byId = 0, similarF = 0, similarD = 0;
             var failures = new List<Exception>();
             Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) count = c.Execute(mode, M(c, TransactionType, "VectorsCount", 3, null), "VectorsCount<TVector>", delegate { return t.VectorsCount<float[]>("vectors-f", null, false); }); });
-            Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) all = c.Execute(mode, M(c, TransactionType, "VectorsGetAll", 3, null), "VectorsGetAll<TVector>", delegate { return t.VectorsGetAll<float[]>("vectors-f", null, true).Count(); }); });
+            Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) allF = c.Execute(mode, M(c, TransactionType, "VectorsGetAll", 3, null), "VectorsGetAll<float[]>", delegate { return t.VectorsGetAll<float[]>("vectors-f", null, true).ToList(); }); });
+            Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) allD = c.Execute(mode, M(c, TransactionType, "VectorsGetAll", 3, null), "VectorsGetAll<double[]>", delegate { return t.VectorsGetAll<double[]>("vectors-d", null, true).ToList(); }); });
             Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) byId = c.Execute(mode, M(c, TransactionType, "VectorsGetByExternalId", 4, null), "VectorsGetByExternalId<TVector>", delegate { return t.VectorsGetByExternalId<double[]>("vectors-d", new List<long> { 11, 14 }, null, true).Count(); }); });
             Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) similarF = c.Execute(mode, M(c, TransactionType, "VectorsSearchSimilar", 5, "System.Single[]"), "VectorsSearchSimilar(float)", delegate { return t.VectorsSearchSimilar("vectors-f", new float[] { 1f, 0f, 0f }, 2, null, true).Count(); }); });
             Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) similarD = c.Execute(mode, M(c, TransactionType, "VectorsSearchSimilar", 5, "System.Double[]"), "VectorsSearchSimilar(double)", delegate { return t.VectorsSearchSimilar("vectors-d", new double[] { 1d, 0d, 0d }, 2, null, true).Count(); }); });
             Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) { c.Execute(mode, M(c, TransactionType, "VectorsRemove", 3, null), "VectorsRemove<TVector>", delegate { t.VectorsRemove<float[]>("vectors-f", new List<long> { 4 }, null); }); t.Commit(); } });
-            if (count != 4 || byId != 2 || similarF == 0 || similarD == 0)
-                failures.Add(new InvalidDataException("Vector contract mismatch: count=" + count + ", all=" + all + ", byId=" + byId + ", search=" + similarF + "/" + similarD));
-            sum.Add(count); sum.Add(all); sum.Add(byId); sum.Add(similarF); sum.Add(similarD);
+            Attempt(failures, delegate { using (Transaction t = engine.GetTransaction()) { c.Execute(mode, M(c, TransactionType, "VectorsRemove", 3, null), "VectorsRemove<TVector>/double", delegate { t.VectorsRemove<double[]>("vectors-d", new List<long> { 14 }, null); }); t.Commit(); } });
+            Attempt(failures, delegate
+            {
+                EnsureVectorItems(floats, allF, "float");
+                EnsureVectorItems(doubles, allD, "double");
+                using (Transaction t = engine.GetTransaction())
+                {
+                    EnsureIds(new long[] { 1, 2, 3 }, t.VectorsGetAll<float[]>("vectors-f", null, true).Select(delegate((long, float[]) item) { return item.Item1; }), "float active");
+                    EnsureIds(new long[] { 1, 2, 3, 4 }, t.VectorsGetAll<float[]>("vectors-f", null, false).Select(delegate((long, float[]) item) { return item.Item1; }), "float all");
+                    EnsureIds(new long[] { 11, 12, 13 }, t.VectorsGetAll<double[]>("vectors-d", null, true).Select(delegate((long, double[]) item) { return item.Item1; }), "double active");
+                    EnsureIds(new long[] { 11, 12, 13, 14 }, t.VectorsGetAll<double[]>("vectors-d", null, false).Select(delegate((long, double[]) item) { return item.Item1; }), "double all");
+                }
+            });
+            if (count != 4 || allF == null || allF.Count != 4 || allD == null || allD.Count != 4 || byId != 2 || similarF == 0 || similarD == 0)
+                failures.Add(new InvalidDataException("Vector contract mismatch: count=" + count + ", all=" + (allF == null ? -1 : allF.Count) + "/" + (allD == null ? -1 : allD.Count) + ", byId=" + byId + ", search=" + similarF + "/" + similarD));
+            sum.Add(count); sum.Add(allF == null ? -1 : allF.Count); sum.Add(allD == null ? -1 : allD.Count); sum.Add(byId); sum.Add(similarF); sum.Add(similarD);
             if (failures.Count != 0) throw new AggregateException("One or more vector public contracts failed.", failures);
+        }
+
+        private static string RunVectorsGetAllProbe(string root)
+        {
+            Directory.CreateDirectory(root);
+            using (var engine = new DBreezeEngine(Path.Combine(root, "db")))
+            {
+                using (Transaction seed = engine.GetTransaction())
+                {
+                    seed.SynchronizeTables("probe-vf", "probe-vd");
+                    seed.VectorsInsert("probe-vf", new List<(long, float[])>
+                    {
+                        (1, new float[] { 1, 0, 0 }), (2, new float[] { 0, 1, 0 }),
+                        (3, new float[] { 0, 0, 1 }), (4, new float[] { 1, 1, 0 })
+                    });
+                    seed.VectorsInsert("probe-vd", new List<(long, double[])>
+                    {
+                        (11, new double[] { 1, 0, 0 }), (12, new double[] { 0, 1, 0 }),
+                        (13, new double[] { 0, 0, 1 }), (14, new double[] { 1, 1, 0 })
+                    });
+                    seed.Commit();
+                }
+                using (Transaction remove = engine.GetTransaction())
+                {
+                    remove.SynchronizeTables("probe-vf", "probe-vd");
+                    remove.VectorsRemove<float[]>("probe-vf", new List<long> { 4 });
+                    remove.VectorsRemove<double[]>("probe-vd", new List<long> { 14 });
+                    remove.Commit();
+                }
+
+                return ProbeFloatVectorsGetAll(engine) + ";" + ProbeDoubleVectorsGetAll(engine);
+            }
+        }
+
+        private static string ProbeFloatVectorsGetAll(DBreezeEngine engine)
+        {
+            try
+            {
+                using (Transaction t = engine.GetTransaction())
+                    return "float=active:" + IdList(t.VectorsGetAll<float[]>("probe-vf", null, true).Select(delegate((long, float[]) item) { return item.Item1; })) +
+                           "|all:" + IdList(t.VectorsGetAll<float[]>("probe-vf", null, false).Select(delegate((long, float[]) item) { return item.Item1; }));
+            }
+            catch (Exception error)
+            {
+                return "float=fail:" + RootException(error).GetType().FullName;
+            }
+        }
+
+        private static string ProbeDoubleVectorsGetAll(DBreezeEngine engine)
+        {
+            try
+            {
+                using (Transaction t = engine.GetTransaction())
+                    return "double=active:" + IdList(t.VectorsGetAll<double[]>("probe-vd", null, true).Select(delegate((long, double[]) item) { return item.Item1; })) +
+                           "|all:" + IdList(t.VectorsGetAll<double[]>("probe-vd", null, false).Select(delegate((long, double[]) item) { return item.Item1; }));
+            }
+            catch (Exception error)
+            {
+                return "double=fail:" + RootException(error).GetType().FullName;
+            }
+        }
+
+        private static Exception RootException(Exception error)
+        {
+            while (error.InnerException != null) error = error.InnerException;
+            return error;
+        }
+
+        private static string IdList(IEnumerable<long> ids)
+        {
+            return String.Join(",", ids.OrderBy(delegate(long value) { return value; }).Select(delegate(long value) { return value.ToString(System.Globalization.CultureInfo.InvariantCulture); }));
+        }
+
+        private static void EnsureIds(IEnumerable<long> expected, IEnumerable<long> actual, string label)
+        {
+            string expectedValue = IdList(expected), actualValue = IdList(actual);
+            Ensure(String.Equals(expectedValue, actualValue, StringComparison.Ordinal), label + " IDs mismatch: " + expectedValue + " != " + actualValue);
+        }
+
+        private static void EnsureVectorItems<T>(IEnumerable<(long, T[])> expected, IEnumerable<(long, T[])> actual, string label)
+            where T : IEquatable<T>
+        {
+            if (actual == null) return;
+            Dictionary<long, T[]> expectedById = expected.ToDictionary(delegate((long, T[]) item) { return item.Item1; }, delegate((long, T[]) item) { return item.Item2; });
+            Dictionary<long, T[]> actualById = actual.ToDictionary(delegate((long, T[]) item) { return item.Item1; }, delegate((long, T[]) item) { return item.Item2; });
+            EnsureIds(expectedById.Keys, actualById.Keys, label);
+            foreach (KeyValuePair<long, T[]> item in expectedById)
+                Ensure(item.Value.SequenceEqual(actualById[item.Key]), label + " vector mismatch for external ID " + item.Key);
         }
 
         private static void Attempt(ICollection<Exception> failures, Action action)

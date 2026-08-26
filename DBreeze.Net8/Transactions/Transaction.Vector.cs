@@ -209,8 +209,7 @@ namespace DBreeze.Transactions
         }
 
         /// <summary>
-        /// Gets all vectors from storage useful for graph compaction and batch processing.
-        /// Returns nested enumerables where each inner enumerable contains up to chunkSize items.
+        /// Gets all vectors from storage, useful for graph compaction and batch processing.
         /// </summary>
         /// <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
         /// <param name="tableName">Table name where vectors are stored</param>        
