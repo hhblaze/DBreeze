@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using DBreeze.Utils;
 using DBreeze.Exceptions;
@@ -238,6 +239,13 @@ namespace DBreeze.DataTypes
             if (data == null)
                 return null;
 
+            // The common point-read keys avoid a Type dictionary lookup, delegate dispatch and
+            // value-type boxing.  Encoding remains the same helpers used by the legacy map.
+            if (typeof(TData) == typeof(long))
+                return Unsafe.As<TData, long>(ref data).To_8_bytes_array_BigEndian();
+            if (typeof(TData) == typeof(byte[]))
+                return Unsafe.As<TData, byte[]>(ref data);
+
             Type td = typeof(TData);
 
             Func<object, byte[]> f = null;
@@ -267,6 +275,9 @@ namespace DBreeze.DataTypes
         {
             if (dt == null)
                 return default(TData);
+
+            if (typeof(TData) == typeof(byte[]))
+                return Unsafe.As<byte[], TData>(ref dt);
 
             Type td = typeof(TData);
 

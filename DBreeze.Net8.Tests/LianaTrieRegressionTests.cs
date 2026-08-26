@@ -42,6 +42,96 @@ internal static class LianaTrieRegressionTests
         RunReadOnlyPointLookups(storageOnDisk: true);
     }
 
+    internal static void DiskPointReadFastPathPreservesBoundariesAndEagerRows()
+    {
+        const string longTable = "point-fast-long";
+        const string byteTable = "point-fast-bytes";
+        const string stringTable = "point-fast-strings";
+        string folder = Path.Combine(DatabaseTestRoot,
+            nameof(DiskPointReadFastPathPreservesBoundariesAndEagerRows), Guid.NewGuid().ToString("N"));
+        DBreezeEngine engine = null;
+        try
+        {
+            engine = new DBreezeEngine(folder);
+            long[] longKeys = { Int64.MinValue, -1, 0, 1, Int64.MaxValue };
+            byte[][] longValues =
+            {
+                null,
+                Array.Empty<byte>(),
+                Enumerable.Repeat((byte)0x10, 16).ToArray(),
+                Enumerable.Repeat((byte)0x20, 256).ToArray(),
+                Enumerable.Repeat((byte)0x30, 4 * 1024).ToArray(),
+            };
+            byte[][] byteKeys =
+            {
+                Array.Empty<byte>(), new byte[] { 0 }, new byte[] { 0, 0 },
+                new byte[] { 0, 1 }, new byte[] { 255 },
+            };
+            string[] stringKeys = { String.Empty, "a", "aa", "a/b", "\uFFFF" };
+
+            using (var write = engine.GetTransaction())
+            {
+                write.SynchronizeTables(longTable, byteTable, stringTable);
+                for (int index = 0; index < longKeys.Length; index++)
+                {
+                    write.Insert<long, byte[]>(longTable, longKeys[index], longValues[index]);
+                    write.Insert<byte[], byte[]>(byteTable, byteKeys[index], longValues[index]);
+                    write.Insert<string, byte[]>(stringTable, stringKeys[index], longValues[index]);
+                }
+                write.Commit();
+            }
+
+            Row<long, byte[]>[] eagerLong;
+            Row<byte[], byte[]>[] eagerBytes;
+            Row<string, byte[]>[] eagerStrings;
+            using (var eager = engine.GetTransaction())
+            {
+                eager.ValuesLazyLoadingIsOn = false;
+                eagerLong = longKeys.Select(key => eager.Select<long, byte[]>(longTable, key)).ToArray();
+                eagerBytes = byteKeys.Select(key => eager.Select<byte[], byte[]>(byteTable, key)).ToArray();
+                eagerStrings = stringKeys.Select(key => eager.Select<string, byte[]>(stringTable, key)).ToArray();
+            }
+
+            for (int index = 0; index < longKeys.Length; index++)
+            {
+                AssertNullableSequenceEqual(longValues[index], eagerLong[index].Value,
+                    $"Eager long boundary {index} after transaction dispose.");
+                AssertNullableSequenceEqual(longValues[index], eagerBytes[index].Value,
+                    $"Eager byte prefix {index} after transaction dispose.");
+                AssertNullableSequenceEqual(longValues[index], eagerStrings[index].Value,
+                    $"Eager string prefix {index} after transaction dispose.");
+            }
+
+            using (var lazy = engine.GetTransaction())
+            {
+                lazy.ValuesLazyLoadingIsOn = true;
+                for (int index = 0; index < longKeys.Length; index++)
+                {
+                    AssertNullableSequenceEqual(longValues[index],
+                        lazy.Select<long, byte[]>(longTable, longKeys[index]).Value,
+                        $"Lazy long boundary {index}.");
+                    AssertNullableSequenceEqual(longValues[index],
+                        lazy.Select<byte[], byte[]>(byteTable, byteKeys[index]).Value,
+                        $"Lazy byte prefix {index}.");
+                    AssertNullableSequenceEqual(longValues[index],
+                        lazy.Select<string, byte[]>(stringTable, stringKeys[index]).Value,
+                        $"Lazy string prefix {index}.");
+                }
+                Assert(!lazy.Select<long, byte[]>(longTable, 2).Exists, "Missing long key exists.");
+                Assert(!lazy.Select<byte[], byte[]>(byteTable, new byte[] { 0, 0, 0 }).Exists,
+                    "Missing prefix-collision key exists.");
+                Assert(!lazy.Select<string, byte[]>(stringTable, "aaa").Exists,
+                    "Missing string prefix-collision key exists.");
+            }
+        }
+        finally
+        {
+            engine?.Dispose();
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
     internal static void TraversalContractMatchesReferenceModel()
     {
         AssertEmptyTraversalContract();
@@ -1941,6 +2031,13 @@ internal static class LianaTrieRegressionTests
     {
         if (expected == null || actual == null || !expected.AsSpan().SequenceEqual(actual))
             throw new InvalidOperationException($"{message} Expected: {Format(expected)}; actual: {Format(actual)}.");
+    }
+
+    private static void AssertNullableSequenceEqual(byte[] expected, byte[] actual, string message)
+    {
+        if (expected == null && actual == null)
+            return;
+        AssertSequenceEqual(expected, actual, message);
     }
 
     private static string Format(byte[] value) => value == null ? "<null>" : Convert.ToHexString(value);

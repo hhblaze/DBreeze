@@ -365,10 +365,10 @@ namespace DBreeze.DataTypes
                         return DataTypesConvertor.ConvertBack<TValue>(_row.Value); ;
                     }
 
-                    long valueStartPointer = 0;
-                    uint valueFullLength = 0;
-                    //Console.WriteLine("UseCache " + this._useCache);
-                    byte[] res = this._row.Root.Tree.Cache.ReadValue(this._row.LinkToValue, this._useCache, out valueStartPointer, out valueFullLength);
+                    // LTrieRow can retain the exact value extent discovered while the key record
+                    // was parsed.  Net8 uses it to avoid reading and parsing the record header a
+                    // second time; older targets retain their historical implementation here.
+                    byte[] res = this._row.GetFullValue(this._useCache);
                     //Console.WriteLine("Res " + res.ToBytesString(""));
 
                     //Remembering once read out result

@@ -49,6 +49,13 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--point-read-fast-path", StringComparison.OrdinalIgnoreCase)))
+        {
+            LianaTrieRegressionTests.DiskPointReadFastPathPreservesBoundariesAndEagerRows();
+            Console.WriteLine($"PASS {nameof(LianaTrieRegressionTests.DiskPointReadFastPathPreservesBoundariesAndEagerRows)}");
+            return 0;
+        }
+
         if (args.Any(static arg => String.Equals(arg, "--journal", StringComparison.OrdinalIgnoreCase)))
         {
             TransactionJournalPayloadCodecSupportsAllPersistedFormats();
@@ -129,6 +136,7 @@ internal static class Program
             (nameof(LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles), LianaTrieRegressionTests.OpenNestedTableSupportsRepeatedCommitCycles),
             (nameof(LianaTrieRegressionTests.TraversalContractMatchesReferenceModel), LianaTrieRegressionTests.TraversalContractMatchesReferenceModel),
             (nameof(LianaTrieRegressionTests.ReadOnlyPointLookupsPreserveGenerationMapsAndFiles), LianaTrieRegressionTests.ReadOnlyPointLookupsPreserveGenerationMapsAndFiles),
+            (nameof(LianaTrieRegressionTests.DiskPointReadFastPathPreservesBoundariesAndEagerRows), LianaTrieRegressionTests.DiskPointReadFastPathPreservesBoundariesAndEagerRows),
             (nameof(LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated), LianaTrieRegressionTests.AlternativeTraversalsAreIterativeAndIsolated),
             (nameof(LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative), LianaTrieRegressionTests.RecursiveNestedTraversalsAreIterative),
             (nameof(LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches), LianaTrieRegressionTests.ChangeKeyPreservesDirtySiblingBranches),

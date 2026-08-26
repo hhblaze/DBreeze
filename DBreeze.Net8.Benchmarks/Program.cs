@@ -1,6 +1,20 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Any(static arg => string.Equals(arg, "--point-read-audit", StringComparison.OrdinalIgnoreCase)))
+    return PointReadAudit.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--sqlite-compare-self-test", StringComparison.OrdinalIgnoreCase)))
+    return SqliteComparisonSelfTests.Run();
+
+if (args.Any(static arg =>
+        string.Equals(arg, "--sqlite-compare-augment-rks-update", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--sqlite-compare-augment-rks-no-overwrite-update", StringComparison.OrdinalIgnoreCase)))
+    return SqliteComparisonSuite.RunAugment(args);
+
+if (args.Any(static arg => string.Equals(arg, "--sqlite-compare", StringComparison.OrdinalIgnoreCase)))
+    return SqliteComparisonSuite.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--render-audit", StringComparison.OrdinalIgnoreCase)))
     return AuditArtifactRenderer.Run(args);
 

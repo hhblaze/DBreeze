@@ -183,7 +183,21 @@ namespace DBreeze.LianaTrie
             }
 
             if (Exists)
-                return this._root.Tree.Cache.ReadValue(this.LinkToValue, useCache, out ValueStartPointer, out ValueFullLength);
+            {
+                if (ValueStartPointer >= 0 && ValueFullLength <= Int32.MaxValue)
+                {
+                    if (ValueIsNull)
+                        return null;
+                    if (ValueFullLength == 0)
+                        return Array.Empty<byte>();
+
+                    return _root.Tree.Storage.Table_Read(useCache,
+                        ValueStartPointer, checked((int)ValueFullLength));
+                }
+
+                return this._root.Tree.Cache.ReadValue(this.LinkToValue, useCache,
+                    out ValueStartPointer, out ValueFullLength);
+            }
             
             return null;
         }

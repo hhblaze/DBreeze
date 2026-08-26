@@ -80,6 +80,7 @@ namespace DBreeze.Storage
         const int SharedReadBufferSize = 8 * 1024;
         const int SingleReaderReadAheadSize = 4 * 1024;
         const int ReadPageSize = 32 * 1024;
+        const int ContendedReadWindowSize = 512;
         const int SmallReadThreshold = 256;
         readonly object _sharedReadLane = new object();
         byte[] _sharedReadBuffer;
@@ -93,6 +94,8 @@ namespace DBreeze.Storage
 
         [ThreadStatic]
         static ReadPageCache _threadReadPageCache;
+        [ThreadStatic]
+        static ReadPageCache _threadContendedReadWindow;
 
         sealed class ReadPageCache
         {
@@ -1196,14 +1199,29 @@ namespace DBreeze.Storage
             // retaining positioned IO for writes, large reads, and reads of different tables.
             if (useCache && count > 0 && count < SharedReadBufferSize)
             {
-                lock (_sharedReadLane)
-                    return Table_ReadCore(useCache, offset, count, useSharedReadLane: true);
+                if (Monitor.TryEnter(_sharedReadLane))
+                {
+                    try
+                    {
+                        return Table_ReadCore(useCache, offset, count,
+                            useSharedReadLane: true, useContendedReadWindow: false);
+                    }
+                    finally
+                    {
+                        Monitor.Exit(_sharedReadLane);
+                    }
+                }
+
+                return Table_ReadCore(useCache, offset, count,
+                    useSharedReadLane: false, useContendedReadWindow: true);
             }
 
-            return Table_ReadCore(useCache, offset, count, useSharedReadLane: false);
+            return Table_ReadCore(useCache, offset, count,
+                useSharedReadLane: false, useContendedReadWindow: false);
         }
 
-        private byte[] Table_ReadCore(bool useCache, long offset, int count, bool useSharedReadLane)
+        private byte[] Table_ReadCore(bool useCache, long offset, int count,
+            bool useSharedReadLane, bool useContendedReadWindow)
         {
             // Small committed reads already own _sharedReadLane. Writers take the same gate before
             // their write lock, so a second per-read ReaderWriterLockSlim acquisition is redundant.
@@ -1257,7 +1275,10 @@ namespace DBreeze.Storage
                     if (canUseCommittedCache)
                         return committed;
                 }
-                else if (canUseCommittedCache && TryReadCommittedPage(offset, committed, visibleLength))
+                else if (canUseCommittedCache &&
+                    (useContendedReadWindow
+                        ? TryReadContendedWindow(offset, committed, visibleLength)
+                        : TryReadCommittedPage(offset, committed, visibleLength)))
                 {
                     return committed;
                 }
@@ -1355,6 +1376,34 @@ namespace DBreeze.Storage
             }
 
             Buffer.BlockCopy(cache.Buffer, offsetInPage, result, 0, count);
+            return true;
+        }
+
+        private bool TryReadContendedWindow(long offset, byte[] result, long visibleLength)
+        {
+            ReadPageCache cache = _threadContendedReadWindow ??= new ReadPageCache();
+            long mutationVersion = _mutationVersion;
+            long relativeOffset = offset - cache.PageOffset;
+            bool hit = cache.OwnerId == _instanceId && cache.MutationVersion == mutationVersion &&
+                cache.IsPopulated && relativeOffset >= 0 &&
+                relativeOffset <= cache.PageLength && result.Length <= cache.PageLength - relativeOffset;
+            if (!hit)
+            {
+                int windowLength = (int)Math.Min(
+                    Math.Max(result.Length, ContendedReadWindowSize), visibleLength - offset);
+                cache.Buffer ??= GC.AllocateUninitializedArray<byte>(ContendedReadWindowSize);
+                if (cache.Buffer.Length < windowLength)
+                    cache.Buffer = GC.AllocateUninitializedArray<byte>(windowLength);
+                ReadExactlyAt(_fsData, cache.Buffer, 0, windowLength, offset);
+                cache.OwnerId = _instanceId;
+                cache.MutationVersion = mutationVersion;
+                cache.PageOffset = offset;
+                cache.PageLength = windowLength;
+                cache.IsPopulated = true;
+                relativeOffset = 0;
+            }
+
+            Buffer.BlockCopy(cache.Buffer, (int)relativeOffset, result, 0, result.Length);
             return true;
         }
 
