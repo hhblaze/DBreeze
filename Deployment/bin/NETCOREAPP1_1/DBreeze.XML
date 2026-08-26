@@ -2031,6 +2031,12 @@
             <param name="ValuesLazyLoadingIsOn">if true reads key only</param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.GetKeyReadOnly(System.Byte[],System.Boolean)">
+            <summary>
+            Reads through a snapshot root. Snapshot generation nodes are never dirty, so changing
+            branches only evicts the inapplicable cached suffix.
+            </summary>
+        </member>
         <member name="T:DBreeze.SchemeInternal.CachedTableNames">
             <summary>
             serves, cache of physical file names and corresponding virtual user table names
@@ -2258,6 +2264,19 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="T:DBreeze.Transactions.TransactionJournalPayloadCodec">
+             <summary>
+             Encodes the transaction participant list stored in _DBreezeTranJrnl.
+            
+             Historical .NET Framework builds wrote a rooted ArrayOfString document,
+             while .NET Standard and later .NET builds wrote a sequence of rootless
+             string elements. New payloads use the smallest rooted representation that
+             both historical readers accept. The reader remains compatible with both
+             historical representations. Cross-baseline compatibility is necessarily
+             limited to names without XML text metacharacters because the historical
+             rootless reader did not decode entities; current readers round-trip them.
+             </summary>
         </member>
         <member name="F:DBreeze.Transactions.TransactionsCoordinator._transactions">
             <summary>
@@ -5706,11 +5725,6 @@
             
             </summary>
         </member>
-        <member name="M:DBreeze.Storage.FSR.RestoreInitRollback">
-            <summary>
-            
-            </summary>
-        </member>
         <member name="M:DBreeze.Storage.FSR.RestoreTableFromTheOtherTable(System.String)">
             <summary>
             
@@ -5799,6 +5813,19 @@
         <member name="M:DBreeze.Storage.FSR.Rollback">
             <summary>
             Standard and transactional rollback
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.BufferedWriteSet">
+            <summary>
+            A sorted, non-overlapping last-write-wins view of pending random writes.
+            Segment slices keep overlap handling allocation-free on the hot path.
+            The owning storage serializes access to this type.
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.DurabilityTestHooks">
+            <summary>
+            Compile-time-only durability checkpoints. Calls to Hit are removed by the
+            compiler unless DBREEZE_DURABILITY_TEST_HOOKS is defined.
             </summary>
         </member>
         <member name="T:DBreeze.Storage.IStorage">
@@ -6181,11 +6208,6 @@
             
             </summary>
         </member>
-        <member name="M:DBreeze.Storage.RISR.RestoreInitRollback">
-            <summary>
-            
-            </summary>
-        </member>
         <member name="M:DBreeze.Storage.RISR.RestoreTableFromTheOtherTable(System.String)">
             <summary>
             
@@ -6308,6 +6330,13 @@
         <member name="F:DBreeze.Storage.TrieSettings.AlternativeTableStorageFolder">
             <summary>
             Next 3 concern alternative table storage pathes.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.TrieSettings.RollbackRecovery">
+            <summary>
+            Startup-only recovery mode. A durable transaction-journal row is the
+            commit point, therefore its participants must keep the already flushed
+            data and only clear their rollback marker.
             </summary>
         </member>
         <member name="P:DBreeze.DBreezeConfiguration.Backup">
@@ -6468,7 +6497,7 @@
             <param name="userTableName"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Scheme.OpenTableForRollbackRecovery(System.String)">
+        <member name="M:DBreeze.Scheme.OpenTableForCommittedRecovery(System.String)">
             <summary>
             Opens an existing user table only to let its storage restore a committed rollback.
             Uses the same storage override decision as the normal table-opening path.

@@ -1407,7 +1407,7 @@
             <param name="userTableName"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Scheme.OpenTableForRollbackRecovery(System.String)">
+        <member name="M:DBreeze.Scheme.OpenTableForCommittedRecovery(System.String)">
             <summary>
             Opens an existing user table only to let its storage restore a committed rollback.
             Uses the same storage override decision as the normal table-opening path.
@@ -2214,6 +2214,12 @@
             <param name="ValuesLazyLoadingIsOn">if true reads key only</param>
             <returns></returns>
         </member>
+        <member name="M:DBreeze.LianaTrie.LTrieRootNode.GetKeyReadOnly(System.Byte[],System.Boolean)">
+            <summary>
+            Reads through a snapshot root. Snapshot generation nodes are never dirty, so changing
+            branches only evicts the inapplicable cached suffix.
+            </summary>
+        </member>
         <member name="T:DBreeze.SchemeInternal.CachedTableNames">
             <summary>
             serves, cache of physical file names and corresponding virtual user table names
@@ -2300,6 +2306,11 @@
             <param name="p1">pattern 1</param>
             <param name="p2">pattern 2</param>
         </member>
+        <member name="T:DBreeze.Storage.BufferedWriteSet">
+            <summary>
+            .NET 8 sorted, non-overlapping last-write-wins pending-write view.
+            </summary>
+        </member>
         <member name="T:DBreeze.Storage.FSR">
             <summary>
             DBreeze random and sequential disk IO buffers implementation.
@@ -2353,7 +2364,7 @@
             Pointer to the end of file, before current commit
             </summary>
         </member>
-        <member name="F:DBreeze.Storage.FSR._storageFixTime">
+        <member name="F:DBreeze.Storage.FSR._storageFixTimeTicks">
             <summary>
             DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
             If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
@@ -2386,11 +2397,6 @@
              </summary>
         </member>
         <member name="M:DBreeze.Storage.FSR.Table_Dispose">
-             <summary>
-            
-             </summary>
-        </member>
-        <member name="M:DBreeze.Storage.FSR.RestoreInitRollback">
              <summary>
             
              </summary>
@@ -2621,7 +2627,7 @@
             Pointer to the end of file
             </summary>
         </member>
-        <member name="F:DBreeze.Storage.MSR._storageFixTime">
+        <member name="F:DBreeze.Storage.MSR._storageFixTimeTicks">
             <summary>
             DateTime when file was initialized. Is remembered by LTrieRow, based on this file.
             If file is change after RestoreTableFromTheOtherTable or RecreateFiles,
@@ -3132,6 +3138,12 @@
             <param name="protocol"></param>
             <returns></returns>
         </member>
+        <member name="T:DBreeze.Storage.DurabilityTestHooks">
+            <summary>
+            Compile-time-only durability checkpoints. Calls to Hit are removed by the
+            compiler unless DBREEZE_DURABILITY_TEST_HOOKS is defined.
+            </summary>
+        </member>
         <member name="T:DBreeze.Storage.IStorage">
             <summary>
             Storage interface
@@ -3261,11 +3273,6 @@
             
             </summary>
         </member>
-        <member name="M:DBreeze.Storage.RISR.RestoreInitRollback">
-            <summary>
-            
-            </summary>
-        </member>
         <member name="M:DBreeze.Storage.RISR.RestoreTableFromTheOtherTable(System.String)">
             <summary>
             
@@ -3388,6 +3395,13 @@
         <member name="F:DBreeze.Storage.TrieSettings.AlternativeTableStorageFolder">
             <summary>
             Next 3 concern alternative table storage pathes.
+            </summary>
+        </member>
+        <member name="F:DBreeze.Storage.TrieSettings.RollbackRecovery">
+            <summary>
+            Startup-only recovery mode. A durable transaction-journal row is the
+            commit point, therefore its participants must keep the already flushed
+            data and only clear their rollback marker.
             </summary>
         </member>
         <member name="T:DBreeze.TextSearch.TextDeferredIndexer">
@@ -5212,8 +5226,7 @@
         </member>
         <member name="M:DBreeze.Transactions.Transaction.VectorsGetAll``1(System.String,DBreeze.Transactions.Transaction.VectorTableParameters{``0},System.Boolean)">
             <summary>
-            Gets all vectors from storage useful for graph compaction and batch processing.
-            Returns nested enumerables where each inner enumerable contains up to chunkSize items.
+            Gets all vectors from storage, useful for graph compaction and batch processing.
             </summary>
             <typeparam name="TVector">Can be float[] or double[], Please note that it is preferable to use float[] for the vector database - precision is acceptable.</typeparam>
             <param name="tableName">Table name where vectors are stored</param>        
@@ -5483,6 +5496,19 @@
             <summary>
             
             </summary>
+        </member>
+        <member name="T:DBreeze.Transactions.TransactionJournalPayloadCodec">
+             <summary>
+             Encodes the transaction participant list stored in _DBreezeTranJrnl.
+            
+             Historical .NET Framework builds wrote a rooted ArrayOfString document,
+             while .NET Standard and later .NET builds wrote a sequence of rootless
+             string elements. New payloads use the smallest rooted representation that
+             both historical readers accept. The reader remains compatible with both
+             historical representations. Cross-baseline compatibility is necessarily
+             limited to names without XML text metacharacters because the historical
+             rootless reader did not decode entities; current readers round-trip them.
+             </summary>
         </member>
         <member name="M:DBreeze.TransactionTablesLocker.AddSession(DBreeze.eTransactionTablesLockTypes,System.String[])">
             <summary>

@@ -61,7 +61,7 @@ namespace DBreeze.Transactions
 
         internal static List<string> Deserialize(string payload)
         {
-            if (String.IsNullOrWhiteSpace(payload))
+            if (IsNullOrWhiteSpace(payload))
                 throw new InvalidDataException("The transaction journal payload is empty.");
 
             int offset = SkipWhitespace(payload, 0);
@@ -77,7 +77,11 @@ namespace DBreeze.Transactions
         {
             List<string> tableNames = new List<string>();
             XmlReaderSettings settings = new XmlReaderSettings();
+#if NET35
+            settings.ProhibitDtd = true;
+#else
             settings.DtdProcessing = DtdProcessing.Prohibit;
+#endif
 #if !NETPORTABLE
             settings.XmlResolver = null;
 #endif
@@ -204,6 +208,20 @@ namespace DBreeze.Transactions
         {
             if (String.IsNullOrEmpty(tableName))
                 throw new InvalidDataException("A transaction journal table name is empty.");
+        }
+
+        private static bool IsNullOrWhiteSpace(string value)
+        {
+            if (value == null)
+                return true;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (!Char.IsWhiteSpace(value[i]))
+                    return false;
+            }
+
+            return true;
         }
 
         private static int SkipWhitespace(string value, int offset)
