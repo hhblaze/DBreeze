@@ -2,7 +2,7 @@
 
 Standalone, high-density usage reference. The API snapshot contains **79 public `Transaction` methods** (71 core/text methods plus 8 vector methods) and **6 public `Scheme` methods**.
 
-Quick map: [engine initialization](#2-engine-initialization-and-lifetime) · [transaction rules](#3-transaction-lifetime-threading-and-locking) · [exact API index](#4-exact-public-transaction-api-79-methods) · [Scheme](#6-scheme-api-6-methods) · [text search](#9-text-search) · [vectors](#10-hnsw-vectors-net472--net6func)
+Quick map: [engine initialization](#2-engine-initialization-and-lifetime) · [transaction rules](#3-transaction-lifetime-threading-and-locking) · [exact API index](#4-exact-public-transaction-api-79-methods) · [ordered bulk mutations](#55-ordered-bulk-insert-update-and-delete) · [Scheme](#6-scheme-api-6-methods) · [text search](#9-text-search) · [vectors](#10-hnsw-vectors-net472--net6func) · [high-load checklist](#12-high-load-checklist)
 
 Common namespaces:
 
@@ -687,26 +687,108 @@ using (var tran = engine.GetTransaction())
 }
 ```
 
-### 5.5 Random-key batches
+### 5.5 Ordered bulk insert, update, and delete
 
-`RandomKeySorter` buffers operations in transaction memory, sorts each table by key, then applies removals followed by inserts. `Commit()` calls `Flush()` automatically; explicit flush is useful to bound memory.
+The order of **keys**, not values, is important for high-volume mutations. DBreeze orders serialized key bytes. A monotonically ascending key stream lets LTrie reuse its current generation-map path for longer and reduces branch switching, node I/O, and generation-map churn. On a large disk table this can be drastically faster than applying the same keys in random order; the benefit depends on the storage, key distribution, payload, and batch size and must be measured for the application.
+
+Prefer the lowest-overhead strategy that produces ascending serialized keys:
+
+| Input/workload | Preferred strategy | Important trade-off |
+|:---------------|:-------------------|:--------------------|
+| Ascending insert | Direct `Insert` in one transaction | Fast path; no RKS buffering or sorting cost. |
+| Random insert | Pre-sort and call `Insert`, or use RKS | Pre-sort is leaner when the complete batch already fits application memory; RKS also coalesces duplicate keys. |
+| Ascending update | Direct `Insert` for the existing keys | An update uses the same `Insert` API and benefits from the same ordering. |
+| Random update | Pre-sort or use RKS | Consider `Technical_SetTable_OverwriteIsNotAllowed` only when measured speed justifies file growth. |
+| Random delete | Sort ascending, then call `RemoveKey` | Usually avoids the branch churn of random direct deletes; RKS Remove is the buffered alternative. |
+| Mixed insert/remove | RKS with explicit bounded `Flush` | RKS preserves one final operation per serialized key and flushes remaining removes before inserts. |
+
+For built-in ordered numeric key types, normal ascending numeric order matches their DBreeze order-preserving key encoding. Normalize the batch first: upserts and deletes below are duplicate-free and disjoint, so sorting cannot change the intended final state.
 
 ```csharp
+List<KeyValuePair<long, byte[]>> upserts = LoadFinalUpserts();
+List<long> deletes = LoadFinalDeletes();
+
+upserts.Sort(delegate(KeyValuePair<long, byte[]> x,
+                      KeyValuePair<long, byte[]> y)
+{
+    return x.Key.CompareTo(y.Key);
+});
+deletes.Sort();
+
 using (var tran = engine.GetTransaction())
 {
     tran.SynchronizeTables("events");
-    for (int i = 0; i < 100000; i++)
-        tran.InsertRandomKeySorter<int, string>("events", GetRandomKey(), "value");
 
-    tran.RemoveRandomKeySorter<int>("events", obsoleteKey);
+    // Insert creates a missing key and updates an existing key.
+    foreach (KeyValuePair<long, byte[]> item in upserts)
+        tran.Insert<long, byte[]>("events", item.Key, item.Value);
+
+    foreach (long key in deletes)
+        tran.RemoveKey<long>("events", key);
+
+    tran.Commit();
+}
+```
+
+Do not sort order-dependent operations blindly. If one key occurs several times, first reduce it to the required final mutation while preserving application semantics. An unstable sort can otherwise reorder same-key updates or an insert/remove pair.
+
+`RandomKeySorter` is the safer convenience for random or mixed batches. It serializes keys, keeps only the last buffered operation for each serialized key, sorts by exact byte-lexicographic DBreeze order, then applies the remaining removals followed by inserts. `Commit()` flushes it automatically; explicit flushes bound retained memory:
+
+```csharp
+const int flushEvery = 100000;
+IList<PendingChange> changes = LoadRandomChanges();
+
+using (var tran = engine.GetTransaction())
+{
+    tran.SynchronizeTables("events");
+
+    for (int i = 0; i < changes.Count; i++)
+    {
+        PendingChange change = changes[i];
+        if (change.Remove)
+            tran.RemoveRandomKeySorter<long>("events", change.Key);
+        else
+            tran.InsertRandomKeySorter<long, byte[]>(
+                "events", change.Key, change.Value);
+
+        if ((i + 1) % flushEvery == 0)
+            tran.RandomKeySorter.Flush("events");
+    }
+
     tran.RandomKeySorter.Flush("events");
     tran.Commit();
 }
 ```
 
-The equivalent field API is `tran.RandomKeySorter.Insert(...)`, `.Remove(...)`, `.Flush(table)`, and `.Flush()`. Do not rely on `AutomaticFlushLimitQuantityPerTable`; it is retained for compatibility but current batching is flushed explicitly or by commit.
+The equivalent field API is `tran.RandomKeySorter.Insert(...)`, `.Remove(...)`, `.Flush(table)`, and `.Flush()`. Do not rely on `AutomaticFlushLimitQuantityPerTable`; it is retained for compatibility but is not an active automatic limit. Smaller explicit chunks retain less memory, but each chunk is sorted independently and therefore shortens the globally ordered run. RKS retains serialized keys and values until flush; do not mutate a supplied mutable `byte[]` value before that flush or commit.
 
-For large random updates, `Technical_SetTable_OverwriteIsNotAllowed(table)` can trade temporary file growth for sequential appends. Call it before modifying that table; it lasts only for the transaction. Ascending input keys still provide the best storage behavior.
+For a large random update workload, append-oriented mutation can be combined with RKS:
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    tran.SynchronizeTables("events");
+    tran.Technical_SetTable_OverwriteIsNotAllowed("events"); // before first write
+
+    for (int i = 0; i < updates.Count; i++)
+    {
+        KeyValuePair<long, byte[]> item = updates[i];
+        tran.RandomKeySorter.Insert<long, byte[]>(
+            "events", item.Key, item.Value);
+
+        if ((i + 1) % 100000 == 0)
+            tran.RandomKeySorter.Flush("events");
+    }
+
+    tran.Commit(); // flushes any remaining RKS operations
+}
+```
+
+`Technical_SetTable_OverwriteIsNotAllowed` is transaction-local and must be set before the first modification of that table. It can make random updates much more sequential, but may substantially increase the table file; treat that as an explicit speed/space trade-off. Benchmark it with representative data. It is not a default recommendation for every insert or delete workload.
+
+If keys are already in serialized ascending order and same-key coalescing is unnecessary, direct CRUD is normally preferable to RKS: RKS would add a dictionary, retained buffers, and another sort. Small batches and memory tables may show little or no ordering benefit.
+
+Composite and `byte[]` keys must be sorted by the exact byte-lexicographic order described in [Ordered Bytes and Composite Keys](#7-ordered-bytes-and-composite-keys), not by a culture-sensitive string comparer or an arbitrary domain-object comparer. When that ordering is inconvenient, let RKS serialize and sort the keys.
 
 ### 5.6 Traversal selection guide
 
@@ -1195,7 +1277,9 @@ Use Resources for small shared state/configuration, not as a substitute for high
 - Keep `NotifyAhead_WhenWriteTablePossibleDeadlock = true`.
 - Use ordered composite keys and bounded/prefix traversal instead of table scans.
 - Enumerate lazy results inside the transaction; dispose nested/vector enumerators early.
-- Use `RandomKeySorter` for large random-key batches; explicitly flush to bound memory.
+- Generate or pre-sort large mutation batches by ascending serialized key whenever semantics allow; use direct CRUD for an already ordered stream.
+- Use `RandomKeySorter` for random/mixed batches or same-key coalescing; explicitly flush to bound memory, and do not add RKS overhead to an already ordered stream without a reason.
+- Treat `Technical_SetTable_OverwriteIsNotAllowed` as a measured update speed/file-size trade-off, not as a general-purpose default.
 - Use `ValuesLazyLoadingIsOn = true` when many values are skipped, `false` when nearly all are consumed.
 - Keep serializer, text encryption, and vector table parameters stable as persistent format contracts.
 - Treat `RemoveAllKeys(..., true)`, `Scheme.DeleteTable`, table replacement, restore, and text-table swaps as coordinated maintenance.

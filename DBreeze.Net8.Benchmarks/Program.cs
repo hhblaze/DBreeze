@@ -15,7 +15,9 @@ if (args.Any(static arg => string.Equals(arg, "--sqlite-compare-self-test", Stri
 
 if (args.Any(static arg =>
         string.Equals(arg, "--sqlite-compare-augment-rks-update", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(arg, "--sqlite-compare-augment-rks-no-overwrite-update", StringComparison.OrdinalIgnoreCase)))
+        string.Equals(arg, "--sqlite-compare-augment-rks-no-overwrite-update", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--sqlite-compare-augment-sorted-delete", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--sqlite-compare-augment-delete-fallbacks", StringComparison.OrdinalIgnoreCase)))
     return SqliteComparisonSuite.RunAugment(args);
 
 if (args.Any(static arg => string.Equals(arg, "--sqlite-compare", StringComparison.OrdinalIgnoreCase)))

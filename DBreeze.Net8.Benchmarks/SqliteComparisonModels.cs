@@ -143,6 +143,8 @@ internal enum SqliteComparisonAugmentKind
 {
     RksUpdate,
     RksNoOverwriteUpdate,
+    SortedDelete,
+    DeleteFallbacks,
 }
 
 internal sealed class SqliteComparisonAugmentOptions
@@ -153,6 +155,16 @@ internal sealed class SqliteComparisonAugmentOptions
     internal string RunId { get; private set; }
     internal bool KeepDatabases { get; private set; }
     internal SqliteComparisonAugmentKind Kind { get; private set; }
+
+    internal SqliteComparisonAugmentOptions CreateDeleteFallback(string sourceReportPath) => new()
+    {
+        RootPath = RootPath,
+        ReportPath = ReportPath,
+        SourceReportPath = Path.GetFullPath(sourceReportPath),
+        RunId = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + "-sqlite-delete-fallbacks",
+        KeepDatabases = KeepDatabases,
+        Kind = SqliteComparisonAugmentKind.DeleteFallbacks,
+    };
 
     internal static SqliteComparisonAugmentOptions Parse(string[] args)
     {
@@ -168,6 +180,12 @@ internal sealed class SqliteComparisonAugmentOptions
                     break;
                 case "--sqlite-compare-augment-rks-no-overwrite-update":
                     SetKind(options, SqliteComparisonAugmentKind.RksNoOverwriteUpdate, ref kindSupplied);
+                    break;
+                case "--sqlite-compare-augment-sorted-delete":
+                    SetKind(options, SqliteComparisonAugmentKind.SortedDelete, ref kindSupplied);
+                    break;
+                case "--sqlite-compare-augment-delete-fallbacks":
+                    SetKind(options, SqliteComparisonAugmentKind.DeleteFallbacks, ref kindSupplied);
                     break;
                 case "--keep-databases":
                     options.KeepDatabases = true;
@@ -185,7 +203,7 @@ internal sealed class SqliteComparisonAugmentOptions
                     options.RunId = ReadValue(args, ref i, arg);
                     break;
                 default:
-                    throw new ArgumentException($"Unknown SQLite RKS augmentation option: {args[i]}", nameof(args));
+                    throw new ArgumentException($"Unknown SQLite comparison augmentation option: {args[i]}", nameof(args));
             }
         }
 
@@ -203,9 +221,14 @@ internal sealed class SqliteComparisonAugmentOptions
             Path.Combine(options.RootPath, "DBreeze_vs_SQLite.html"));
         AuditRunLayout.EnsureUnderRoot(options.ReportPath, options.RootPath);
         options.RunId ??= DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
-            + (options.Kind == SqliteComparisonAugmentKind.RksUpdate
-                ? "-sqlite-rks-update"
-                : "-sqlite-rks-no-overwrite-update");
+            + options.Kind switch
+            {
+                SqliteComparisonAugmentKind.RksUpdate => "-sqlite-rks-update",
+                SqliteComparisonAugmentKind.RksNoOverwriteUpdate => "-sqlite-rks-no-overwrite-update",
+                SqliteComparisonAugmentKind.SortedDelete => "-sqlite-sorted-delete",
+                SqliteComparisonAugmentKind.DeleteFallbacks => "-sqlite-delete-fallbacks",
+                _ => throw new ArgumentOutOfRangeException(nameof(options.Kind)),
+            };
         AuditRunLayout.ValidateLeafName(options.RunId, "--run-id");
         return options;
     }
@@ -234,6 +257,7 @@ internal sealed class SqliteComparisonReport
     public List<SqliteComparisonMeasurement> Measurements { get; set; } = new();
     public List<SqliteComparisonSummary> Summaries { get; set; } = new();
     public List<string> Failures { get; set; } = new();
+    public List<string> Findings { get; set; } = new();
     public bool Succeeded { get; set; }
 }
 
@@ -320,6 +344,8 @@ internal sealed class SqliteComparisonMeasurement
     public long ReturnedCount { get; set; }
     public long Checksum { get; set; }
     public double ElapsedMilliseconds { get; set; }
+    public double? PreparationMilliseconds { get; set; }
+    public double? MutationMilliseconds { get; set; }
     public double OperationsPerSecond { get; set; }
     public long DatabaseBytes { get; set; }
     public string DatabasePath { get; set; }
@@ -334,6 +360,8 @@ internal sealed class SqliteComparisonSummary
     public int Rounds { get; set; }
     public long Operations { get; set; }
     public double MedianMilliseconds { get; set; }
+    public double? MedianPreparationMilliseconds { get; set; }
+    public double? MedianMutationMilliseconds { get; set; }
     public double MinimumMilliseconds { get; set; }
     public double MaximumMilliseconds { get; set; }
     public double MedianOperationsPerSecond { get; set; }
@@ -346,4 +374,6 @@ internal readonly record struct SqliteMeasuredOutcome(
     long Operations,
     long ReturnedCount,
     long Checksum,
-    double ElapsedMilliseconds);
+    double ElapsedMilliseconds,
+    double? PreparationMilliseconds = null,
+    double? MutationMilliseconds = null);

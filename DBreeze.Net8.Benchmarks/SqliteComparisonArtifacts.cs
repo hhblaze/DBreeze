@@ -32,6 +32,8 @@ internal static class SqliteComparisonArtifacts
                     Rounds = values.Length,
                     Operations = values[0].Operations,
                     MedianMilliseconds = Median(values.Select(static value => value.ElapsedMilliseconds)),
+                    MedianPreparationMilliseconds = NullableMedian(values.Select(static value => value.PreparationMilliseconds)),
+                    MedianMutationMilliseconds = NullableMedian(values.Select(static value => value.MutationMilliseconds)),
                     MinimumMilliseconds = values.Min(static value => value.ElapsedMilliseconds),
                     MaximumMilliseconds = values.Max(static value => value.ElapsedMilliseconds),
                     MedianOperationsPerSecond = Median(values.Select(static value => value.OperationsPerSecond)),
@@ -71,6 +73,13 @@ internal static class SqliteComparisonArtifacts
             : ordered[middle];
     }
 
+    private static double? NullableMedian(IEnumerable<double?> values)
+    {
+        double[] present = values.Where(static value => value.HasValue)
+            .Select(static value => value.Value).ToArray();
+        return present.Length == 0 ? null : Median(present);
+    }
+
     internal static string ClassifyRatio(double ratio, string provider)
     {
         if (ratio >= 0.97 && ratio <= 1.03)
@@ -83,12 +92,13 @@ internal static class SqliteComparisonArtifacts
     private static string BuildCsv(IEnumerable<SqliteComparisonMeasurement> measurements)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("Scenario,Provider,Round,Operations,ReturnedCount,Checksum,ElapsedMilliseconds,OperationsPerSecond,DatabaseBytes,Succeeded,DatabasePath,Error");
+        builder.AppendLine("Scenario,Provider,Round,Operations,ReturnedCount,Checksum,ElapsedMilliseconds,PreparationMilliseconds,MutationMilliseconds,OperationsPerSecond,DatabaseBytes,Succeeded,DatabasePath,Error");
         foreach (SqliteComparisonMeasurement value in measurements)
         {
             Csv(builder, value.Scenario); Csv(builder, value.Provider); Csv(builder, value.Round);
             Csv(builder, value.Operations); Csv(builder, value.ReturnedCount); Csv(builder, value.Checksum);
-            Csv(builder, value.ElapsedMilliseconds); Csv(builder, value.OperationsPerSecond);
+            Csv(builder, value.ElapsedMilliseconds); Csv(builder, value.PreparationMilliseconds); Csv(builder, value.MutationMilliseconds);
+            Csv(builder, value.OperationsPerSecond);
             Csv(builder, value.DatabaseBytes); Csv(builder, value.Succeeded);
             Csv(builder, value.DatabasePath); Csv(builder, value.Error, true);
         }
@@ -102,7 +112,7 @@ internal static class SqliteComparisonArtifacts
         var builder = new StringBuilder(96_000);
         builder.Append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
             .Append("<title>DBreeze vs SQLite Performance Comparison</title><style>")
-            .Append("body{font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;margin:0;background:#f5f7fa;color:#17202a}main{max-width:1500px;margin:auto;padding:28px}h1{margin-bottom:4px}h2{margin-top:32px}code,.mono{font-family:Cascadia Mono,Consolas,monospace}.card{background:#fff;border:1px solid #dce3ea;border-radius:10px;padding:18px;margin:14px 0;box-shadow:0 1px 2px #0001}.ok{color:#08783e;font-weight:700}.fail{color:#b42318;font-weight:700}.warn{color:#9a6700;font-weight:700}table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid #dce3ea;padding:7px 9px;text-align:left;vertical-align:top}th{background:#eef3f8;position:sticky;top:0}.num{text-align:right;font-variant-numeric:tabular-nums}.small{font-size:12px;color:#536273}.bar{height:7px;background:#d5e7fa;border-radius:5px;overflow:hidden;min-width:80px}.bar>i{display:block;height:100%;background:#2878bd}.db{border-left:4px solid #2878bd}.sqlite{border-left:4px solid #d97a18}.rks{border-left:4px solid #6f42c1}.rksno{border-left:4px solid #15847b}details{margin-top:16px}ul{margin-top:6px}</style></head><body><main>")
+            .Append("body{font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;margin:0;background:#f5f7fa;color:#17202a}main{max-width:1650px;margin:auto;padding:28px}h1{margin-bottom:4px}h2{margin-top:32px}code,.mono{font-family:Cascadia Mono,Consolas,monospace}.card{background:#fff;border:1px solid #dce3ea;border-radius:10px;padding:18px;margin:14px 0;box-shadow:0 1px 2px #0001}.ok{color:#08783e;font-weight:700}.fail{color:#b42318;font-weight:700}.warn{color:#9a6700;font-weight:700}table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid #dce3ea;padding:7px 9px;text-align:left;vertical-align:top}th{background:#eef3f8;position:sticky;top:0}.num{text-align:right;font-variant-numeric:tabular-nums}.small{font-size:12px;color:#536273}.bar{height:7px;background:#d5e7fa;border-radius:5px;overflow:hidden;min-width:80px}.bar>i{display:block;height:100%;background:#2878bd}.db{border-left:4px solid #2878bd}.sqlite{border-left:4px solid #d97a18}.rks{border-left:4px solid #6f42c1}.rksno{border-left:4px solid #15847b}.sorted{border-left:4px solid #b75c9d}.fallback{border-left:4px solid #67758a}details{margin-top:16px}ul{margin-top:6px}</style></head><body><main>")
             .Append("<h1>DBreeze vs SQLite Performance Comparison</h1><p class=\"small\">Generated ")
             .Append(Html((metadata.CompletedUtc ?? DateTime.UtcNow).ToString("O", CultureInfo.InvariantCulture)))
             .Append(" · descriptive benchmark, not a release gate</p>");
@@ -128,7 +138,7 @@ internal static class SqliteComparisonArtifacts
         builder.Append("</tbody></table></div>");
 
         builder.Append("<h2>Headline medians</h2><p class=\"small\">Ratio = provider median ops/s ÷ SQLite median ops/s. Values within ±3% are labeled approximate parity.</p>")
-            .Append("<table><thead><tr><th>Scenario</th><th>Provider</th><th class=\"num\">Operations</th><th class=\"num\">Median ms</th><th class=\"num\">Min–max ms</th><th class=\"num\">Median ops/s</th><th>Relative throughput</th><th class=\"num\">Ratio</th><th>Comparison</th><th class=\"num\">DB MB</th></tr></thead><tbody>");
+            .Append("<table><thead><tr><th>Scenario</th><th>Provider</th><th class=\"num\">Operations</th><th class=\"num\">Median ms</th><th class=\"num\">Sort/prep ms</th><th class=\"num\">Delete+commit ms</th><th class=\"num\">Min–max ms</th><th class=\"num\">Median ops/s</th><th>Relative throughput</th><th class=\"num\">Ratio</th><th>Comparison</th><th class=\"num\">DB MB</th></tr></thead><tbody>");
         foreach (IGrouping<string, SqliteComparisonSummary> scenario in report.Summaries.GroupBy(static value => value.Scenario))
         {
             double maximum = scenario.Max(static value => value.MedianOperationsPerSecond);
@@ -139,12 +149,18 @@ internal static class SqliteComparisonArtifacts
                     "SQLite" => "sqlite",
                     "DBreeze RKS + NoOverwrite" => "rksno",
                     "DBreeze RKS" => "rks",
+                    "DBreeze Sorted" => "sorted",
+                    "DBreeze Sorted + NoOverwrite" => "sorted",
+                    "DBreeze RKS Remove" => "fallback",
+                    "DBreeze RKS Remove + NoOverwrite" => "fallback",
                     _ => "db",
                 };
                 double width = maximum > 0 ? Math.Max(2, value.MedianOperationsPerSecond / maximum * 100) : 0;
                 builder.Append("<tr class=\"").Append(css).Append("\"><td>").Append(Html(value.Scenario))
                     .Append("</td><td>").Append(Html(value.Provider)).Append("</td><td class=\"num\">").Append(N(value.Operations))
                     .Append("</td><td class=\"num\">").Append(F(value.MedianMilliseconds))
+                    .Append("</td><td class=\"num\">").Append(F(value.MedianPreparationMilliseconds))
+                    .Append("</td><td class=\"num\">").Append(F(value.MedianMutationMilliseconds))
                     .Append("</td><td class=\"num\">").Append(F(value.MinimumMilliseconds)).Append("–").Append(F(value.MaximumMilliseconds))
                     .Append("</td><td class=\"num\">").Append(N(value.MedianOperationsPerSecond))
                     .Append("</td><td><div class=\"bar\"><i style=\"width:").Append(width.ToString("F1", CultureInfo.InvariantCulture)).Append("%\"></i></div></td><td class=\"num\">")
@@ -165,13 +181,22 @@ internal static class SqliteComparisonArtifacts
                 builder.Append("<li class=\"fail\">").Append(Html(failure)).Append("</li>");
             builder.Append("</ul>");
         }
+        if (report.Findings != null && report.Findings.Count > 0)
+        {
+            builder.Append("<h3>Performance findings</h3><ul>");
+            foreach (string finding in report.Findings)
+                builder.Append("<li>").Append(Html(finding)).Append("</li>");
+            builder.Append("</ul>");
+        }
         builder.Append("</div>");
 
-        builder.Append("<details><summary><strong>Per-round measurements</strong></summary><table><thead><tr><th>Scenario</th><th>Provider</th><th class=\"num\">Round</th><th class=\"num\">ms</th><th class=\"num\">ops/s</th><th class=\"num\">Returned</th><th class=\"num\">Checksum</th><th>Status</th><th>Database</th></tr></thead><tbody>");
+        builder.Append("<details><summary><strong>Per-round measurements</strong></summary><table><thead><tr><th>Scenario</th><th>Provider</th><th class=\"num\">Round</th><th class=\"num\">total ms</th><th class=\"num\">sort/prep ms</th><th class=\"num\">mutation ms</th><th class=\"num\">ops/s</th><th class=\"num\">Returned</th><th class=\"num\">Checksum</th><th>Status</th><th>Database</th></tr></thead><tbody>");
         foreach (SqliteComparisonMeasurement value in report.Measurements)
         {
             builder.Append("<tr><td>").Append(Html(value.Scenario)).Append("</td><td>").Append(Html(value.Provider))
                 .Append("</td><td class=\"num\">").Append(value.Round).Append("</td><td class=\"num\">").Append(F(value.ElapsedMilliseconds))
+                .Append("</td><td class=\"num\">").Append(F(value.PreparationMilliseconds))
+                .Append("</td><td class=\"num\">").Append(F(value.MutationMilliseconds))
                 .Append("</td><td class=\"num\">").Append(N(value.OperationsPerSecond)).Append("</td><td class=\"num\">").Append(N(value.ReturnedCount))
                 .Append("</td><td class=\"num mono\">").Append(value.Checksum).Append("</td><td class=\"").Append(value.Succeeded ? "ok\">PASS" : "fail\">FAIL")
                 .Append(value.Succeeded ? String.Empty : ": " + Html(value.Error)).Append("</td><td class=\"small mono\">").Append(Html(value.DatabasePath)).Append("</td></tr>");
@@ -198,6 +223,8 @@ internal static class SqliteComparisonArtifacts
             .Append("<li>Operating-system cache is deliberately not flushed. Provider order alternates across rounds to reduce systematic warm-cache bias.</li>")
             .Append("<li>SQLite uses prepared commands and WAL/FULL. DBreeze uses normal transactions; random insertion and random update additionally show RandomKeySorter with bounded flushes.</li>")
             .Append("<li>DBreeze RKS + NoOverwrite calls Technical_SetTable_OverwriteIsNotAllowed before the first update. The transaction-local mode appends changed data instead of overwriting it and can trade a larger database file for speed.</li>")
+            .Append("<li>DBreeze Sorted random delete clones keys outside measurement, then includes in its headline time the in-memory ascending sort, transaction creation, all RemoveKey calls and commit. Split sort and delete+commit times are diagnostic.</li>")
+            .Append("<li>Delete fallbacks use one RandomKeySorter.Remove flush after 100K operations and/or the transaction-local NoOverwrite flag. SQLite is imported once per round and shared as their reference; database growth is informational.</li>")
             .Append("<li>Engine/connection opening, fixture construction, file copying and SQLite WAL checkpoint are outside measured bodies.</li>")
             .Append("</ul></div></main></body></html>");
         return builder.ToString();
@@ -208,8 +235,12 @@ internal static class SqliteComparisonArtifacts
         "DBreeze" => 0,
         "DBreeze RKS" => 1,
         "DBreeze RKS + NoOverwrite" => 2,
-        "SQLite" => 3,
-        _ => 4,
+        "DBreeze Sorted" => 3,
+        "DBreeze RKS Remove" => 4,
+        "DBreeze Sorted + NoOverwrite" => 5,
+        "DBreeze RKS Remove + NoOverwrite" => 6,
+        "SQLite" => 7,
+        _ => 8,
     };
 
     private static void Row(StringBuilder builder, string name, string value) => builder
@@ -217,6 +248,7 @@ internal static class SqliteComparisonArtifacts
         .Append(Html(value)).Append("</td></tr>");
 
     private static string F(double value) => value.ToString("N3", CultureInfo.InvariantCulture);
+    private static string F(double? value) => value.HasValue ? F(value.Value) : "—";
     private static string N(double value) => value.ToString("N0", CultureInfo.InvariantCulture);
     private static string N(long value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
@@ -256,6 +288,22 @@ internal static class SqliteComparisonSelfTests
             ExpectFailure(failures, "Report containment", () => SqliteComparisonOptions.Parse(new[] { "--sqlite-compare", "--root", root, "--report", Path.Combine(Path.GetTempPath(), "outside.html") }));
             ExpectFailure(failures, "Path containment", () => AuditRunLayout.EnsureUnderRoot(Path.Combine(Path.GetTempPath(), "outside"), root));
 
+            string augmentSource = Path.Combine(root, "source.json");
+            Directory.CreateDirectory(root);
+            File.WriteAllText(augmentSource, "{}");
+            SqliteComparisonAugmentOptions sortedOptions = SqliteComparisonAugmentOptions.Parse(new[]
+            {
+                "--sqlite-compare-augment-sorted-delete", "--source-report", augmentSource,
+                "--root", root, "--run-id", "sorted-options",
+            });
+            SqliteComparisonAugmentOptions fallbackOptions = SqliteComparisonAugmentOptions.Parse(new[]
+            {
+                "--sqlite-compare-augment-delete-fallbacks", "--source-report", augmentSource,
+                "--root", root, "--run-id", "fallback-options",
+            });
+            Check(failures, sortedOptions.Kind == SqliteComparisonAugmentKind.SortedDelete, "Sorted augment option");
+            Check(failures, fallbackOptions.Kind == SqliteComparisonAugmentKind.DeleteFallbacks, "Fallback augment option");
+
             var layout = new AuditRunLayout(root, "owner-test");
             layout.Create();
             File.WriteAllText(layout.MarkerPath, "forged");
@@ -266,15 +314,23 @@ internal static class SqliteComparisonSelfTests
 
             var values = new[]
             {
-                new SqliteComparisonMeasurement { Scenario = "x", Provider = "DBreeze", Round = 1, Operations = 1, ElapsedMilliseconds = 5, OperationsPerSecond = 200, Succeeded = true },
+                new SqliteComparisonMeasurement { Scenario = "x", Provider = "DBreeze", Round = 1, Operations = 1, ElapsedMilliseconds = 5, PreparationMilliseconds = 1, MutationMilliseconds = 4, OperationsPerSecond = 200, Succeeded = true },
                 new SqliteComparisonMeasurement { Scenario = "x", Provider = "DBreeze RKS", Round = 1, Operations = 1, ElapsedMilliseconds = 2, OperationsPerSecond = 500, Succeeded = true },
                 new SqliteComparisonMeasurement { Scenario = "x", Provider = "DBreeze RKS + NoOverwrite", Round = 1, Operations = 1, ElapsedMilliseconds = 1, OperationsPerSecond = 1000, Succeeded = true },
+                new SqliteComparisonMeasurement { Scenario = "x", Provider = "DBreeze Sorted", Round = 1, Operations = 1, ElapsedMilliseconds = 1.25, OperationsPerSecond = 800, Succeeded = true },
                 new SqliteComparisonMeasurement { Scenario = "x", Provider = "SQLite", Round = 1, Operations = 1, ElapsedMilliseconds = 10, OperationsPerSecond = 100, Succeeded = true },
             };
             List<SqliteComparisonSummary> summaries = SqliteComparisonArtifacts.BuildSummaries(values);
             Check(failures, summaries.Single(value => value.Provider == "DBreeze").RatioVsSqlite == 2, "Ratio calculation");
             Check(failures, summaries.Single(value => value.Provider == "DBreeze RKS").RatioVsSqlite == 5, "Shared SQLite ratio calculation");
             Check(failures, summaries.Single(value => value.Provider == "DBreeze RKS + NoOverwrite").RatioVsSqlite == 10, "NoOverwrite shared SQLite ratio calculation");
+            Check(failures, summaries.Single(value => value.Provider == "DBreeze Sorted").RatioVsSqlite == 8, "Sorted shared SQLite ratio calculation");
+            Check(failures, summaries.Single(value => value.Provider == "DBreeze").MedianPreparationMilliseconds == 1 &&
+                summaries.Single(value => value.Provider == "DBreeze").MedianMutationMilliseconds == 4, "Split timing summaries");
+
+            long[] sortedKeys = { 4, -2, 9, 0, 4, Int64.MinValue, Int64.MaxValue };
+            SqliteComparisonSuite.SortAscending(sortedKeys);
+            Check(failures, sortedKeys.SequenceEqual(sortedKeys.OrderBy(static value => value)), "Ascending delete-key order");
 
             SqliteComparisonReport validSource = CreateAugmentationSource();
             SqliteComparisonSuite.ValidateAugmentationSource(validSource, "same-sha");
@@ -314,6 +370,31 @@ internal static class SqliteComparisonSelfTests
                 SqliteComparisonSuite.ValidateNoOverwriteAugmentationSource(incompleteNoOverwriteSource, "same-sha"));
             ExpectFailure(failures, "NoOverwrite incompatible SHA", () =>
                 SqliteComparisonSuite.ValidateNoOverwriteAugmentationSource(validNoOverwriteSource, "different-sha"));
+
+            SqliteComparisonReport validSortedDeleteSource = CreateSortedDeleteAugmentationSource();
+            SqliteComparisonSuite.ValidateSortedDeleteAugmentationSource(validSortedDeleteSource, "same-sha");
+            SqliteComparisonReport duplicateSortedDelete = CreateSortedDeleteAugmentationSource();
+            duplicateSortedDelete.Measurements.Add(DeleteMeasurement("DBreeze Sorted", 1, 110));
+            ExpectFailure(failures, "Repeated sorted delete augmentation", () =>
+                SqliteComparisonSuite.ValidateSortedDeleteAugmentationSource(duplicateSortedDelete, "same-sha"));
+            SqliteComparisonReport changedDeleteOracle = CreateSortedDeleteAugmentationSource();
+            changedDeleteOracle.Measurements.Single(value =>
+                value.Scenario == "Random delete" && value.Provider == "DBreeze" && value.Round == 2).Checksum++;
+            ExpectFailure(failures, "Sorted delete source oracle", () =>
+                SqliteComparisonSuite.ValidateSortedDeleteAugmentationSource(changedDeleteOracle, "same-sha"));
+
+            SqliteComparisonReport validFallbackSource = CreateDeleteFallbackAugmentationSource();
+            SqliteComparisonSuite.ValidateDeleteFallbackAugmentationSource(validFallbackSource, "same-sha");
+            Check(failures, !SqliteComparisonSuite.SortedDeleteMeetsTarget(validFallbackSource, out _), "Fallback trigger threshold");
+            SqliteComparisonReport duplicateFallback = CreateDeleteFallbackAugmentationSource();
+            duplicateFallback.Measurements.Add(DeleteMeasurement("DBreeze RKS Remove", 1, 300));
+            ExpectFailure(failures, "Repeated delete fallback augmentation", () =>
+                SqliteComparisonSuite.ValidateDeleteFallbackAugmentationSource(duplicateFallback, "same-sha"));
+            SqliteComparisonReport unnecessaryFallback = CreateDeleteFallbackAugmentationSource();
+            foreach (SqliteComparisonMeasurement value in unnecessaryFallback.Measurements.Where(static value => value.Provider == "DBreeze Sorted"))
+                value.OperationsPerSecond = 220;
+            ExpectFailure(failures, "Unnecessary delete fallback", () =>
+                SqliteComparisonSuite.ValidateDeleteFallbackAugmentationSource(unnecessaryFallback, "same-sha"));
         }
         catch (Exception exception)
         {
@@ -403,5 +484,74 @@ internal static class SqliteComparisonSelfTests
         for (int index = 0; index < 26; index++)
             report.Summaries.Add(new SqliteComparisonSummary { Scenario = "source-summary-" + index });
         return report;
+    }
+
+    private static SqliteComparisonReport CreateSortedDeleteAugmentationSource()
+    {
+        var report = new SqliteComparisonReport
+        {
+            Succeeded = true,
+            Metadata = new SqliteComparisonMetadata { DBreezeSha256 = "same-sha" },
+            Configuration = new SqliteComparisonConfiguration
+            {
+                Records = 1_000_000,
+                PayloadBytes = 256,
+                Repetitions = 3,
+                Parallelism = 4,
+                SqliteSynchronous = "FULL",
+            },
+        };
+        for (int round = 1; round <= 3; round++)
+        {
+            report.Measurements.Add(DeleteMeasurement("DBreeze", round, 100));
+            report.Measurements.Add(DeleteMeasurement("SQLite", round, 200));
+        }
+        FillSource(report, 81, 27);
+        return report;
+    }
+
+    private static SqliteComparisonReport CreateDeleteFallbackAugmentationSource()
+    {
+        SqliteComparisonReport report = CreateSortedDeleteAugmentationSource();
+        for (int round = 1; round <= 3; round++)
+            report.Measurements.Add(DeleteMeasurement("DBreeze Sorted", round, 110));
+        report.Summaries.Add(new SqliteComparisonSummary { Scenario = "Random delete", Provider = "DBreeze Sorted" });
+        return report;
+    }
+
+    private static SqliteComparisonMeasurement DeleteMeasurement(string provider, int round, double operationsPerSecond) => new()
+    {
+        Scenario = "Random delete",
+        Provider = provider,
+        Round = round,
+        Operations = 100_000,
+        ReturnedCount = 100_000,
+        Checksum = 42,
+        ElapsedMilliseconds = 100_000 * 1000.0 / operationsPerSecond,
+        OperationsPerSecond = operationsPerSecond,
+        DatabaseBytes = 1000,
+        Succeeded = true,
+    };
+
+    private static void FillSource(SqliteComparisonReport report, int measurementCount, int summaryCount)
+    {
+        while (report.Measurements.Count < measurementCount)
+        {
+            int index = report.Measurements.Count;
+            report.Measurements.Add(new SqliteComparisonMeasurement
+            {
+                Scenario = "source-fixture-" + index,
+                Provider = "DBreeze",
+                Round = 1,
+                Operations = 1,
+                ReturnedCount = 1,
+                Checksum = index,
+                ElapsedMilliseconds = 1,
+                OperationsPerSecond = 1,
+                Succeeded = true,
+            });
+        }
+        while (report.Summaries.Count < summaryCount)
+            report.Summaries.Add(new SqliteComparisonSummary { Scenario = "source-summary-" + report.Summaries.Count });
     }
 }

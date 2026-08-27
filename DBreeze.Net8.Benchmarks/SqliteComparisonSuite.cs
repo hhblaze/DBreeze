@@ -15,6 +15,10 @@ internal sealed class SqliteComparisonSuite
     private const string DBreezeProvider = "DBreeze";
     private const string DBreezeRksProvider = "DBreeze RKS";
     private const string DBreezeRksNoOverwriteProvider = "DBreeze RKS + NoOverwrite";
+    private const string DBreezeSortedProvider = "DBreeze Sorted";
+    private const string DBreezeRksRemoveProvider = "DBreeze RKS Remove";
+    private const string DBreezeSortedNoOverwriteProvider = "DBreeze Sorted + NoOverwrite";
+    private const string DBreezeRksRemoveNoOverwriteProvider = "DBreeze RKS Remove + NoOverwrite";
     private const string SqliteProvider = "SQLite";
     private const string MainTable = "kv";
     private const string PrefixTable = "prefix";
@@ -23,6 +27,15 @@ internal sealed class SqliteComparisonSuite
     {
         Direct,
         Rks,
+        RksNoOverwrite,
+    }
+
+    private enum DbreezeDeleteStrategy
+    {
+        Direct,
+        Sorted,
+        Rks,
+        SortedNoOverwrite,
         RksNoOverwrite,
     }
 
@@ -93,12 +106,23 @@ internal sealed class SqliteComparisonSuite
             SqliteComparisonAugmentOptions augment = SqliteComparisonAugmentOptions.Parse(args);
             SqliteComparisonReport source = AuditPersistence.ReadJson<SqliteComparisonReport>(augment.SourceReportPath);
             SqliteComparisonOptions options = SqliteComparisonOptions.CreateForAugment(augment, source.Configuration);
-            return new SqliteComparisonSuite(options).ExecuteAugment(
-                source, augment.SourceReportPath, augment.Kind);
+            var suite = new SqliteComparisonSuite(options);
+            int result = suite.ExecuteAugment(source, augment.SourceReportPath, augment.Kind);
+            if (result == 0 && augment.Kind == SqliteComparisonAugmentKind.SortedDelete &&
+                !SortedDeleteMeetsTarget(suite._report, out string reason))
+            {
+                suite.Log("Sorted delete missed the target; starting a separate safe-variant fallback augmentation. " + reason);
+                SqliteComparisonAugmentOptions fallback = augment.CreateDeleteFallback(suite._report.Metadata.RawJson);
+                SqliteComparisonOptions fallbackOptions = SqliteComparisonOptions.CreateForAugment(fallback, suite._report.Configuration);
+                var fallbackSuite = new SqliteComparisonSuite(fallbackOptions);
+                return fallbackSuite.ExecuteAugment(suite._report, suite._report.Metadata.RawJson,
+                    SqliteComparisonAugmentKind.DeleteFallbacks);
+            }
+            return result;
         }
         catch (Exception exception)
         {
-            Console.Error.WriteLine("SQLite RKS augmentation configuration error: " + exception.Message);
+            Console.Error.WriteLine("SQLite comparison augmentation configuration error: " + exception.Message);
             return 2;
         }
     }
@@ -145,38 +169,108 @@ internal sealed class SqliteComparisonSuite
         try
         {
             InitializeMetadata();
-            bool noOverwrite = kind == SqliteComparisonAugmentKind.RksNoOverwriteUpdate;
-            if (noOverwrite)
-                ValidateNoOverwriteAugmentationSource(source, _report.Metadata.DBreezeSha256);
-            else
-                ValidateAugmentationSource(source, _report.Metadata.DBreezeSha256);
-            PrepareInput();
-            _report.Measurements = source.Measurements.ToList();
-            _report.Metadata.AugmentedFromRunId = source.Metadata.RunId;
-            _report.Metadata.AugmentedFromJson = sourcePath;
-            _report.Metadata.ImportedMeasurementCount = source.Measurements.Count;
-            string provider = noOverwrite ? DBreezeRksNoOverwriteProvider : DBreezeRksProvider;
-            DbreezeUpdateStrategy strategy = noOverwrite
-                ? DbreezeUpdateStrategy.RksNoOverwrite
-                : DbreezeUpdateStrategy.Rks;
-            Log($"Started targeted {provider} update augmentation from {source.Metadata.RunId}; imported {source.Measurements.Count} measurements.");
-            Persist();
-
-            string fixture = Path.Combine(_layout.ScratchDirectory, "fixture-dbreeze-main");
-            Log($"Building unmeasured DBreeze fixture for {provider} update augmentation.");
-            DbreezeInsert(fixture, _sequentialKeys, false, 0);
-            for (int round = 1; round <= _options.Repetitions; round++)
+            switch (kind)
             {
-                MeasureFresh("Random update", provider, round,
-                    path => { CopyDirectory(fixture, path); return DbreezeUpdate(path, strategy); });
+                case SqliteComparisonAugmentKind.RksUpdate:
+                case SqliteComparisonAugmentKind.RksNoOverwriteUpdate:
+                    ExecuteUpdateAugment(source, sourcePath, kind);
+                    break;
+                case SqliteComparisonAugmentKind.SortedDelete:
+                    ExecuteSortedDeleteAugment(source, sourcePath);
+                    break;
+                case SqliteComparisonAugmentKind.DeleteFallbacks:
+                    ExecuteDeleteFallbackAugment(source, sourcePath);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
             }
-            ValidateCompleteness(includeNoOverwrite: noOverwrite);
         }
         catch (Exception exception)
         {
-            Fail("Fatal RKS augmentation failure: " + exception);
+            Fail("Fatal comparison augmentation failure: " + exception);
         }
         return CompleteAndCleanup(publishCanonicalHtml);
+    }
+
+    private void ExecuteUpdateAugment(SqliteComparisonReport source, string sourcePath,
+        SqliteComparisonAugmentKind kind)
+    {
+        bool noOverwrite = kind == SqliteComparisonAugmentKind.RksNoOverwriteUpdate;
+        if (noOverwrite)
+            ValidateNoOverwriteAugmentationSource(source, _report.Metadata.DBreezeSha256);
+        else
+            ValidateAugmentationSource(source, _report.Metadata.DBreezeSha256);
+        PrepareImportedAugmentation(source, sourcePath);
+        string provider = noOverwrite ? DBreezeRksNoOverwriteProvider : DBreezeRksProvider;
+        DbreezeUpdateStrategy strategy = noOverwrite
+            ? DbreezeUpdateStrategy.RksNoOverwrite
+            : DbreezeUpdateStrategy.Rks;
+        Log($"Started targeted {provider} update augmentation from {source.Metadata.RunId}; imported {source.Measurements.Count} measurements.");
+        Persist();
+
+        string fixture = BuildAugmentationFixture(provider + " update");
+        for (int round = 1; round <= _options.Repetitions; round++)
+            MeasureFresh("Random update", provider, round,
+                path => { CopyDirectory(fixture, path); return DbreezeUpdate(path, strategy); });
+        ValidateCompleteness(includeNoOverwrite: noOverwrite, includeSortedDelete: false);
+    }
+
+    private void ExecuteSortedDeleteAugment(SqliteComparisonReport source, string sourcePath)
+    {
+        ValidateSortedDeleteAugmentationSource(source, _report.Metadata.DBreezeSha256);
+        PrepareImportedAugmentation(source, sourcePath);
+        Log($"Started targeted {DBreezeSortedProvider} delete augmentation from {source.Metadata.RunId}; imported {source.Measurements.Count} measurements.");
+        Persist();
+
+        string fixture = BuildAugmentationFixture(DBreezeSortedProvider + " delete");
+        for (int round = 1; round <= _options.Repetitions; round++)
+            MeasureFresh("Random delete", DBreezeSortedProvider, round,
+                path => { CopyDirectory(fixture, path); return DbreezeDelete(path, DbreezeDeleteStrategy.Sorted); });
+        ValidateCompleteness(includeSortedDelete: true);
+        RecordSortedDeleteFinding();
+    }
+
+    private void ExecuteDeleteFallbackAugment(SqliteComparisonReport source, string sourcePath)
+    {
+        ValidateDeleteFallbackAugmentationSource(source, _report.Metadata.DBreezeSha256);
+        PrepareImportedAugmentation(source, sourcePath);
+        Log($"Started safe delete fallback augmentation from {source.Metadata.RunId}; imported {source.Measurements.Count} measurements.");
+        Persist();
+
+        string fixture = BuildAugmentationFixture("safe delete fallbacks");
+        var variants = new[]
+        {
+            (DBreezeRksRemoveProvider, DbreezeDeleteStrategy.Rks),
+            (DBreezeSortedNoOverwriteProvider, DbreezeDeleteStrategy.SortedNoOverwrite),
+            (DBreezeRksRemoveNoOverwriteProvider, DbreezeDeleteStrategy.RksNoOverwrite),
+        };
+        for (int round = 1; round <= _options.Repetitions; round++)
+        {
+            int rotation = (round - 1) % variants.Length;
+            foreach ((string provider, DbreezeDeleteStrategy strategy) in variants.Skip(rotation).Concat(variants.Take(rotation)))
+                MeasureFresh("Random delete", provider, round,
+                    path => { CopyDirectory(fixture, path); return DbreezeDelete(path, strategy); });
+        }
+        ValidateCompleteness(includeSortedDelete: true, includeDeleteFallbacks: true);
+        RecordDeleteFallbackFinding();
+    }
+
+    private void PrepareImportedAugmentation(SqliteComparisonReport source, string sourcePath)
+    {
+        PrepareInput();
+        _report.Measurements = source.Measurements.ToList();
+        _report.Findings = source.Findings?.ToList() ?? new List<string>();
+        _report.Metadata.AugmentedFromRunId = source.Metadata.RunId;
+        _report.Metadata.AugmentedFromJson = sourcePath;
+        _report.Metadata.ImportedMeasurementCount = source.Measurements.Count;
+    }
+
+    private string BuildAugmentationFixture(string description)
+    {
+        string fixture = Path.Combine(_layout.ScratchDirectory, "fixture-dbreeze-main");
+        Log($"Building unmeasured DBreeze fixture for {description} augmentation.");
+        DbreezeInsert(fixture, _sequentialKeys, false, 0);
+        return fixture;
     }
 
     private int CompleteAndCleanup(string publishCanonicalHtml = null)
@@ -199,10 +293,29 @@ internal sealed class SqliteComparisonSuite
             }
         }
 
+        string augmentationStagingHtml = null;
         if (_report.Succeeded && !string.IsNullOrEmpty(publishCanonicalHtml))
+        {
+            augmentationStagingHtml = _report.Metadata.CanonicalHtml;
             _report.Metadata.CanonicalHtml = publishCanonicalHtml;
+        }
 
         Persist();
+        if (_report.Succeeded && !String.IsNullOrEmpty(augmentationStagingHtml) &&
+            !String.Equals(augmentationStagingHtml, _report.Metadata.CanonicalHtml, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                AuditRunLayout.EnsureUnderRoot(augmentationStagingHtml, _layout.ReportsDirectory);
+                File.Delete(augmentationStagingHtml);
+            }
+            catch (Exception exception)
+            {
+                Fail("Augmentation staging HTML cleanup failed: " + exception.Message);
+                _report.Succeeded = false;
+                Persist();
+            }
+        }
         Console.WriteLine($"SQLite comparison {(_report.Succeeded ? "COMPLETE" : "INCOMPLETE")}: {_report.Metadata.CanonicalHtml}");
         return _report.Succeeded ? 0 : 1;
     }
@@ -220,6 +333,27 @@ internal sealed class SqliteComparisonSuite
         if (source.Measurements.Count != 78 || source.Summaries == null || source.Summaries.Count != 26)
             throw new InvalidDataException("Source report must contain exactly 78 measurements and 26 summaries.");
         ValidateRandomUpdateProviders(source, DBreezeProvider, DBreezeRksProvider, SqliteProvider);
+    }
+
+    internal static void ValidateSortedDeleteAugmentationSource(
+        SqliteComparisonReport source, string currentDBreezeSha256)
+    {
+        ValidateAugmentationSourceCore(source, currentDBreezeSha256);
+        if (source.Measurements.Count != 81 || source.Summaries == null || source.Summaries.Count != 27)
+            throw new InvalidDataException("Source report must contain exactly 81 measurements and 27 summaries.");
+        ValidateScenarioProviders(source, "Random delete", DBreezeProvider, SqliteProvider);
+    }
+
+    internal static void ValidateDeleteFallbackAugmentationSource(
+        SqliteComparisonReport source, string currentDBreezeSha256)
+    {
+        ValidateAugmentationSourceCore(source, currentDBreezeSha256);
+        if (source.Measurements.Count != 84 || source.Summaries == null || source.Summaries.Count != 28)
+            throw new InvalidDataException("Fallback source report must contain exactly 84 measurements and 28 summaries.");
+        ValidateScenarioProviders(source, "Random delete",
+            DBreezeProvider, DBreezeSortedProvider, SqliteProvider);
+        if (SortedDeleteMeetsTarget(source, out _))
+            throw new InvalidDataException("Sorted delete already meets both targets; fallback augmentation is not required.");
     }
 
     private static void ValidateAugmentationSourceCore(
@@ -254,31 +388,89 @@ internal sealed class SqliteComparisonSuite
 
     private static void ValidateRandomUpdateProviders(
         SqliteComparisonReport source, params string[] expectedProviders)
+        => ValidateScenarioProviders(source, "Random update", expectedProviders);
+
+    private static void ValidateScenarioProviders(
+        SqliteComparisonReport source, string scenario, params string[] expectedProviders)
     {
-        SqliteComparisonMeasurement[] updates = source.Measurements
-            .Where(static value => value.Scenario == "Random update").ToArray();
+        SqliteComparisonMeasurement[] valuesForScenario = source.Measurements
+            .Where(value => value.Scenario == scenario).ToArray();
         var expected = new HashSet<string>(expectedProviders, StringComparer.Ordinal);
-        var actual = new HashSet<string>(updates.Select(static value => value.Provider), StringComparer.Ordinal);
+        var actual = new HashSet<string>(valuesForScenario.Select(static value => value.Provider), StringComparer.Ordinal);
         if (!actual.SetEquals(expected))
-            throw new InvalidDataException("Source report has unexpected random-update providers.");
+            throw new InvalidDataException($"Source report has unexpected {scenario} providers.");
 
         int repetitions = source.Configuration.Repetitions;
         int[] expectedRounds = Enumerable.Range(1, repetitions).ToArray();
         foreach (string provider in expectedProviders)
         {
-            SqliteComparisonMeasurement[] values = updates
+            SqliteComparisonMeasurement[] values = valuesForScenario
                 .Where(value => value.Provider == provider)
                 .OrderBy(static value => value.Round).ToArray();
             if (values.Length != repetitions ||
                 !values.Select(static value => value.Round).SequenceEqual(expectedRounds))
-                throw new InvalidDataException($"Source report has missing or duplicate {provider} random-update rounds.");
+                throw new InvalidDataException($"Source report has missing or duplicate {provider} {scenario} rounds.");
         }
 
-        long[] operations = updates.Select(static value => value.Operations).Distinct().ToArray();
-        long[] returned = updates.Select(static value => value.ReturnedCount).Distinct().ToArray();
-        long[] checksums = updates.Select(static value => value.Checksum).Distinct().ToArray();
+        long[] operations = valuesForScenario.Select(static value => value.Operations).Distinct().ToArray();
+        long[] returned = valuesForScenario.Select(static value => value.ReturnedCount).Distinct().ToArray();
+        long[] checksums = valuesForScenario.Select(static value => value.Checksum).Distinct().ToArray();
         if (operations.Length != 1 || returned.Length != 1 || checksums.Length != 1)
-            throw new InvalidDataException("Source report random-update oracles differ.");
+            throw new InvalidDataException($"Source report {scenario} oracles differ.");
+    }
+
+    internal static bool SortedDeleteMeetsTarget(SqliteComparisonReport report, out string reason)
+    {
+        List<SqliteComparisonSummary> summaries = SqliteComparisonArtifacts.BuildSummaries(report.Measurements);
+        SqliteComparisonSummary direct = summaries.SingleOrDefault(static value =>
+            value.Scenario == "Random delete" && value.Provider == DBreezeProvider);
+        SqliteComparisonSummary sorted = summaries.SingleOrDefault(static value =>
+            value.Scenario == "Random delete" && value.Provider == DBreezeSortedProvider);
+        SqliteComparisonSummary sqlite = summaries.SingleOrDefault(static value =>
+            value.Scenario == "Random delete" && value.Provider == SqliteProvider);
+        if (direct == null || sorted == null || sqlite == null ||
+            direct.MedianOperationsPerSecond <= 0 || sqlite.MedianOperationsPerSecond <= 0)
+        {
+            reason = "Required direct, sorted or SQLite median is missing.";
+            return false;
+        }
+
+        double sqliteRatio = sorted.MedianOperationsPerSecond / sqlite.MedianOperationsPerSecond;
+        double directRatio = sorted.MedianOperationsPerSecond / direct.MedianOperationsPerSecond;
+        reason = $"SQLite ratio={sqliteRatio:F3}× (target ≥0.850×); speedup vs direct={directRatio:F3}× (target ≥1.050×).";
+        return sqliteRatio >= 0.85 && directRatio >= 1.05;
+    }
+
+    private void RecordSortedDeleteFinding()
+    {
+        bool passed = SortedDeleteMeetsTarget(_report, out string reason);
+        _report.Findings.Add("DBreeze Sorted random delete " + (passed ? "met" : "missed") + " the primary target. " + reason);
+        Log(_report.Findings[^1]);
+    }
+
+    private void RecordDeleteFallbackFinding()
+    {
+        List<SqliteComparisonSummary> summaries = SqliteComparisonArtifacts.BuildSummaries(_report.Measurements);
+        SqliteComparisonSummary sqlite = summaries.Single(value =>
+            value.Scenario == "Random delete" && value.Provider == SqliteProvider);
+        SqliteComparisonSummary[] candidates = summaries.Where(value =>
+                value.Scenario == "Random delete" && value.Provider != SqliteProvider)
+            .OrderByDescending(static value => value.MedianOperationsPerSecond)
+            .ToArray();
+        SqliteComparisonSummary fastest = candidates[0];
+        SqliteComparisonSummary recommended = candidates
+            .Where(value => value.MedianOperationsPerSecond >= fastest.MedianOperationsPerSecond * 0.97)
+            .OrderBy(static value => value.MedianDatabaseBytes)
+            .First();
+        double ratio = recommended.MedianOperationsPerSecond / sqlite.MedianOperationsPerSecond;
+        string finding = $"Recommended random-delete provider: {recommended.Provider}; {recommended.MedianOperationsPerSecond:N0} ops/s, " +
+            $"{ratio:F3}× SQLite, median DB {recommended.MedianDatabaseBytes / 1048576.0:F2} MiB.";
+        if (candidates.All(value => value.MedianOperationsPerSecond < sqlite.MedianOperationsPerSecond * 0.85))
+        {
+            finding += " No safe variant reached 85% of SQLite; next core investigation should instrument LTrie generation-map eviction/save, node reads/writes and rollback bytes.";
+        }
+        _report.Findings.Add(finding);
+        Log(finding);
     }
 
     private void InitializeMetadata()
@@ -415,9 +607,16 @@ internal sealed class SqliteComparisonSuite
             int rotation = (round - 1) % updates.Count;
             foreach ((string provider, Func<string, SqliteMeasuredOutcome> action) in updates.Skip(rotation).Concat(updates.Take(rotation)))
                 MeasureFresh("Random update", provider, round, action);
-            RunAlternatingFresh("Random delete", round,
-                path => { CopyDirectory(dbreezeFixture, path); return DbreezeDelete(path); },
-                path => { CopyDirectory(sqliteFixture, path); return SqliteDelete(path); });
+
+            var deletes = new List<(string Provider, Func<string, SqliteMeasuredOutcome> Action)>
+            {
+                (DBreezeProvider, path => { CopyDirectory(dbreezeFixture, path); return DbreezeDelete(path, DbreezeDeleteStrategy.Direct); }),
+                (DBreezeSortedProvider, path => { CopyDirectory(dbreezeFixture, path); return DbreezeDelete(path, DbreezeDeleteStrategy.Sorted); }),
+                (SqliteProvider, path => { CopyDirectory(sqliteFixture, path); return SqliteDelete(path); }),
+            };
+            rotation = (round - 1) % deletes.Count;
+            foreach ((string provider, Func<string, SqliteMeasuredOutcome> action) in deletes.Skip(rotation).Concat(deletes.Take(rotation)))
+                MeasureFresh("Random delete", provider, round, action);
         }
     }
 
@@ -489,6 +688,8 @@ internal sealed class SqliteComparisonSuite
             measurement.ReturnedCount = outcome.ReturnedCount;
             measurement.Checksum = outcome.Checksum;
             measurement.ElapsedMilliseconds = outcome.ElapsedMilliseconds;
+            measurement.PreparationMilliseconds = outcome.PreparationMilliseconds;
+            measurement.MutationMilliseconds = outcome.MutationMilliseconds;
             measurement.OperationsPerSecond = outcome.ElapsedMilliseconds > 0
                 ? outcome.Operations * 1000.0 / outcome.ElapsedMilliseconds
                 : 0;
@@ -975,23 +1176,51 @@ internal sealed class SqliteComparisonSuite
         return new SqliteMeasuredOutcome(_updateKeys.Length, _updateKeys.Length, ExpectedUpdatedChecksum(), elapsed);
     }
 
-    private SqliteMeasuredOutcome DbreezeDelete(string path)
+    private SqliteMeasuredOutcome DbreezeDelete(string path, DbreezeDeleteStrategy strategy)
     {
+        bool sorted = strategy is DbreezeDeleteStrategy.Sorted or DbreezeDeleteStrategy.SortedNoOverwrite;
+        bool randomKeySorter = strategy is DbreezeDeleteStrategy.Rks or DbreezeDeleteStrategy.RksNoOverwrite;
+        bool noOverwrite = strategy is DbreezeDeleteStrategy.SortedNoOverwrite or DbreezeDeleteStrategy.RksNoOverwrite;
+        long[] keys = sorted ? (long[])_deleteKeys.Clone() : _deleteKeys;
         double elapsed;
+        double? preparation = null;
+        double? mutation = null;
         using (var engine = new DBreezeEngine(path))
         {
-            var stopwatch = Stopwatch.StartNew();
+            var totalStopwatch = Stopwatch.StartNew();
+            if (sorted)
+            {
+                var sortStopwatch = Stopwatch.StartNew();
+                SortAscending(keys);
+                sortStopwatch.Stop();
+                preparation = sortStopwatch.Elapsed.TotalMilliseconds;
+            }
+
+            var mutationStopwatch = Stopwatch.StartNew();
             using (var transaction = engine.GetTransaction())
             {
-                foreach (long key in _deleteKeys)
-                    transaction.RemoveKey<long>(MainTable, key);
+                if (noOverwrite)
+                    transaction.Technical_SetTable_OverwriteIsNotAllowed(MainTable);
+                foreach (long key in keys)
+                {
+                    if (randomKeySorter)
+                        transaction.RandomKeySorter.Remove(MainTable, key);
+                    else
+                        transaction.RemoveKey<long>(MainTable, key);
+                }
+                if (randomKeySorter)
+                    transaction.RandomKeySorter.Flush(MainTable);
                 transaction.Commit();
             }
-            stopwatch.Stop();
-            elapsed = stopwatch.Elapsed.TotalMilliseconds;
-            VerifyDbreezeDeleted(engine);
+            mutationStopwatch.Stop();
+            totalStopwatch.Stop();
+            elapsed = totalStopwatch.Elapsed.TotalMilliseconds;
+            if (sorted)
+                mutation = mutationStopwatch.Elapsed.TotalMilliseconds;
+            VerifyDbreezeDeleted(engine, exhaustive: strategy != DbreezeDeleteStrategy.Direct);
         }
-        return new SqliteMeasuredOutcome(_deleteKeys.Length, _deleteKeys.Length, ExpectedKeyChecksum(_deleteKeys), elapsed);
+        return new SqliteMeasuredOutcome(_deleteKeys.Length, _deleteKeys.Length,
+            ExpectedKeyChecksum(_deleteKeys), elapsed, preparation, mutation);
     }
 
     private SqliteMeasuredOutcome SqliteDelete(string path)
@@ -1164,12 +1393,13 @@ internal sealed class SqliteComparisonSuite
             VerifySqliteSample(connection, key, updated: true);
     }
 
-    private void VerifyDbreezeDeleted(DBreezeEngine engine)
+    private void VerifyDbreezeDeleted(DBreezeEngine engine, bool exhaustive)
     {
         using var transaction = engine.GetTransaction();
         if (transaction.Count(MainTable) != (ulong)(_options.Records - _deleteKeys.Length))
             throw new InvalidDataException("DBreeze delete final count mismatch.");
-        foreach (long key in SampleKeys(_deleteKeys))
+        IEnumerable<long> keys = exhaustive ? _deleteKeys : SampleKeys(_deleteKeys);
+        foreach (long key in keys)
             if (transaction.Select<long, byte[]>(MainTable, key).Exists)
                 throw new InvalidDataException("DBreeze deleted key still exists.");
     }
@@ -1278,11 +1508,22 @@ internal sealed class SqliteComparisonSuite
             throw new InvalidDataException("Parallel-read oracle mismatch.");
     }
 
-    private void ValidateCompleteness(bool includeNoOverwrite = true)
+    private void ValidateCompleteness(bool includeNoOverwrite = true,
+        bool includeSortedDelete = true, bool includeDeleteFallbacks = false)
     {
         string[] updateProviders = includeNoOverwrite
             ? new[] { DBreezeProvider, DBreezeRksProvider, DBreezeRksNoOverwriteProvider, SqliteProvider }
             : new[] { DBreezeProvider, DBreezeRksProvider, SqliteProvider };
+        var deleteProviders = new List<string> { DBreezeProvider };
+        if (includeSortedDelete)
+            deleteProviders.Add(DBreezeSortedProvider);
+        if (includeDeleteFallbacks)
+        {
+            deleteProviders.Add(DBreezeRksRemoveProvider);
+            deleteProviders.Add(DBreezeSortedNoOverwriteProvider);
+            deleteProviders.Add(DBreezeRksRemoveNoOverwriteProvider);
+        }
+        deleteProviders.Add(SqliteProvider);
         var expected = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
             ["Sequential bulk insert"] = new[] { DBreezeProvider, SqliteProvider },
@@ -1291,7 +1532,7 @@ internal sealed class SqliteComparisonSuite
             ["Random point reads (hits)"] = new[] { DBreezeProvider, SqliteProvider },
             ["Mixed point reads (90% hits)"] = new[] { DBreezeProvider, SqliteProvider },
             ["Random update"] = updateProviders,
-            ["Random delete"] = new[] { DBreezeProvider, SqliteProvider },
+            ["Random delete"] = deleteProviders.ToArray(),
             ["Full forward traversal"] = new[] { DBreezeProvider, SqliteProvider },
             ["Full backward traversal"] = new[] { DBreezeProvider, SqliteProvider },
             ["Bounded ranges"] = new[] { DBreezeProvider, SqliteProvider },
@@ -1315,6 +1556,19 @@ internal sealed class SqliteComparisonSuite
             long[] checksums = scenario.Select(static value => value.Checksum).Distinct().ToArray();
             if (counts.Length != 1 || checksums.Length != 1)
                 Fail($"Cross-provider oracle differs for {scenario}.");
+        }
+
+
+        foreach (SqliteComparisonMeasurement value in _report.Measurements.Where(static value =>
+            value.Succeeded && value.Scenario == "Random delete" &&
+            (value.Provider == DBreezeSortedProvider || value.Provider == DBreezeSortedNoOverwriteProvider)))
+        {
+            if (!value.PreparationMilliseconds.HasValue || !value.MutationMilliseconds.HasValue ||
+                value.PreparationMilliseconds < 0 || value.MutationMilliseconds <= 0 ||
+                value.PreparationMilliseconds.Value + value.MutationMilliseconds.Value > value.ElapsedMilliseconds + 1.0)
+            {
+                Fail($"Invalid split timings: {value.Scenario} / {value.Provider} / round {value.Round}.");
+            }
         }
     }
 
@@ -1458,6 +1712,13 @@ internal sealed class SqliteComparisonSuite
             yield return keys[keys.Count / 2];
         if (keys.Count > 1)
             yield return keys[keys.Count - 1];
+    }
+
+    internal static void SortAscending(long[] keys)
+    {
+        if (keys == null)
+            throw new ArgumentNullException(nameof(keys));
+        Array.Sort(keys);
     }
 
     private static void CreateEmptyDirectory(string path)
