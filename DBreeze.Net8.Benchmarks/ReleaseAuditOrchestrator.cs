@@ -261,8 +261,18 @@ internal static class ReleaseAuditOrchestrator
         string tests = BuildDotNet(Path.Combine(options.CurrentRepository, "DBreeze.Net8.Tests", "DBreeze.Net8.Tests.csproj"),
             Path.Combine(layout.ScratchDirectory, "build", "current-net8-tests"), "DBreeze.Net8.Tests.dll",
             new Dictionary<string, string> { ["DBreezeAssemblyReference"] = net8.Build.Library }, options.CurrentRepository, log, deadline, out warnings);
+
+        ProcessResult isolationResult = RunProcess("dotnet",
+            new[] { tests, "--source-isolation", "--repository-root", options.CurrentRepository },
+            options.CurrentRepository, log, deadline);
+        AddPrerequisite(report, "current-modern-source-isolation", isolationResult);
+
         ProcessResult testsResult = RunProcess("dotnet", new[] { tests }, options.CurrentRepository, log, deadline,
-            new Dictionary<string, string> { ["DBREEZE_TEST_ROOT"] = Path.Combine(layout.ScratchDirectory, "prerequisites", "net8-tests") });
+            new Dictionary<string, string>
+            {
+                ["DBREEZE_TEST_ROOT"] = Path.Combine(layout.ScratchDirectory, "prerequisites", "net8-tests"),
+                ["DBREEZE_REPOSITORY_ROOT"] = options.CurrentRepository
+            });
         AddPrerequisite(report, "current-net8-regressions", testsResult);
 
         foreach (string framework in new[] { "net8", "net472" })

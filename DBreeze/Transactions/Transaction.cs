@@ -329,12 +329,6 @@ namespace DBreeze.Transactions
         /// Small buffer for the tables, we are going to read from.
         /// </summary>
         Dictionary<string, Rtbe> transactionReadTables = new Dictionary<string, Rtbe>();
-#if NET8_0_OR_GREATER
-        // Owner-thread Select commonly targets one table repeatedly.  Keep a single exact-name
-        // slot so the hot path avoids hashing the table name on every point lookup.
-        private string _lastReadTableName;
-        private Rtbe _lastReadTable;
-#endif
 
         /// <summary>
         /// Technical class, who holds reference to the table and its last modification dts
@@ -528,29 +522,6 @@ namespace DBreeze.Transactions
             }
             //////////////////////////////////////////////////////////////////////////// END READ VISIBILITY SCOPE MODIFIER
 
-#if NET8_0_OR_GREATER
-            if (!ignoreThreadIdCheck && _lastReadTable != null &&
-                (ReferenceEquals(tableName, _lastReadTableName) ||
-                 String.Equals(tableName, _lastReadTableName, StringComparison.Ordinal)))
-            {
-                rtbe = _lastReadTable;
-                if (IsTableReservedForWrite(tableName) && !AsForRead)
-                    return rtbe.Ltrie;
-
-                if (rtbe.dtTableFixed != rtbe.Ltrie.DtTableFixed)
-                {
-                    root = rtbe.Ltrie.GetTrieReadNode(out dtTableFixed);
-                    rtbe.dtTableFixed = dtTableFixed;
-                    rtbe.ReadRoot = root;
-                }
-                else
-                {
-                    root = rtbe.ReadRoot;
-                }
-                return rtbe.Ltrie;
-            }
-#endif
-
             transactionReadTables.TryGetValue(tableName, out rtbe);
 
             if (rtbe == null)
@@ -564,7 +535,7 @@ namespace DBreeze.Transactions
                 AddOpenTable(tableName);
 
                 //Checking READ_SYNCHRO
-                if (IsTableReservedForWrite(tableName))
+                if (this._transactionUnit.If_TableIsReservedForWrite(tableName))
                 {
                     if (!AsForRead)
                     {
@@ -577,15 +548,7 @@ namespace DBreeze.Transactions
                 //NO, we want to read, getting new read node, remembering when table was fixed (Committed or Rollbacked)
                 root = table.GetTrieReadNode(out dtTableFixed);               
 
-                rtbe = new Rtbe() { Ltrie = table, dtTableFixed = dtTableFixed, ReadRoot = root };
-                transactionReadTables.Add(tableName, rtbe);
-#if NET8_0_OR_GREATER
-                if (!ignoreThreadIdCheck)
-                {
-                    _lastReadTableName = tableName;
-                    _lastReadTable = rtbe;
-                }
-#endif
+                transactionReadTables.Add(tableName, new Rtbe() { Ltrie = table, dtTableFixed = dtTableFixed, ReadRoot = root });
 
                 return table;
             }
@@ -594,7 +557,7 @@ namespace DBreeze.Transactions
                 //Table was found in the cache
 
                 //Checking READ_SYNCHRO
-                if (IsTableReservedForWrite(tableName))
+                if (this._transactionUnit.If_TableIsReservedForWrite(tableName))
                 {
                     if (!AsForRead)
                     {
@@ -631,26 +594,11 @@ namespace DBreeze.Transactions
                     root = rtbe.ReadRoot;                   
                 }
 
-                #if NET8_0_OR_GREATER
-                if (!ignoreThreadIdCheck)
-                {
-                    _lastReadTableName = tableName;
-                    _lastReadTable = rtbe;
-                }
-                #endif
                 return rtbe.Ltrie;
             }
 
         }
 
-        private bool IsTableReservedForWrite(string tableName)
-        {
-#if NET8_0_OR_GREATER
-            if (_transactionUnit.TransactionWriteTablesCount == 0)
-                return false;
-#endif
-            return _transactionUnit.If_TableIsReservedForWrite(tableName);
-        }
         #endregion
 
         #region "Commit Rollback"

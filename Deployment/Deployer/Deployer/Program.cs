@@ -135,7 +135,7 @@ namespace Deployer
                 ////.NET
                 exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net5\DBreeze.Net5.csproj", "net6.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;NET6_0", @"DBreeze.Net5\bin\Release\net6.0", "NET6_0");
                 if (exitCode != 0) { Console.ReadKey(); return; }
-                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net8\DBreeze.Net8.csproj", "net8.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;NET6_0;NET8_0", @"DBreeze.Net8\bin\Release\net8.0", "NET8_0");
+                exitCode = Utils.Compile(msbldpathV2, targetFramework, @"DBreeze.Net8\DBreeze.Net8.csproj", "net8.0", "TRACE;RELEASE;" + "NETCOREAPP1_0;NET40;NETCOREAPP2_0;NET50;NET6FUNC;NET6_0", @"DBreeze.Net8\bin\Release\net8.0", "NET8_0");
                 if (exitCode != 0) { Console.ReadKey(); return; } 
 
                 ////.NET STANDARD

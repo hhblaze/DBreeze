@@ -14,12 +14,14 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\net5.0\DBreeze.xml</DocumentationFile>
-    <DefineConstants>$(DefineConstants);NET40;NET50;NET6FUNC;NET6_0;NETCOREAPP;NETCOREAPP1_0;NETCOREAPP2_0;NET8_0</DefineConstants>
+    <DBreezeCompatibilityConstants>NET40;NET50;NET6FUNC;NET6_0;NETCOREAPP;NETCOREAPP1_0;NETCOREAPP2_0</DBreezeCompatibilityConstants>
+    <DefineConstants>$(DefineConstants);$(DBreezeCompatibilityConstants)</DefineConstants>
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);NET40;NET6FUNC;NET8_0;NETCOREAPP1_0;NETCOREAPP2_0</DefineConstants>
+    <DBreezeCompatibilityConstants>NET40;NET6FUNC;NETCOREAPP1_0;NETCOREAPP2_0</DBreezeCompatibilityConstants>
+    <DefineConstants>$(DefineConstants);$(DBreezeCompatibilityConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DBreezeDurabilityTestHooks)' == 'true'">
@@ -62,12 +64,6 @@
     <Compile Include="..\DBreeze\LianaTrie\Iterations\Forward.cs">
       <Link>LianaTrie\Iterations\Forward.cs</Link>
     </Compile>
-    <Compile Include="..\DBreeze\LianaTrie\LianaTrie.cs">
-      <Link>LianaTrie\LianaTrie.cs</Link>
-    </Compile>
-    <Compile Include="..\DBreeze\LianaTrie\LTrieRootNode.cs">
-      <Link>LianaTrie\LTrieRootNode.cs</Link>
-    </Compile>
     <Compile Include="..\DBreeze\LianaTrie\NestedTables\NestedTable.cs">
       <Link>LianaTrie\NestedTables\NestedTable.cs</Link>
     </Compile>
@@ -85,9 +81,6 @@
     </Compile>
     <Compile Include="..\DBreeze\Storage\RISR.cs">
       <Link>Storage\RISR.cs</Link>
-    </Compile>
-    <Compile Include="..\DBreeze\Storage\StorageLayer.cs">
-      <Link>Storage\StorageLayer.cs</Link>
     </Compile>
     <Compile Include="..\DBreeze\Storage\TrieSettings.cs">
       <Link>Storage\TrieSettings.cs</Link>
@@ -125,5 +118,20 @@
   <ItemGroup>
     <Folder Include="VectorLayer\HNSW\" />
   </ItemGroup>
+
+  <Target Name="ValidateModernSourceIsolation" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_ForbiddenModernLegacyLink Include="@(Compile)"
+        Condition="'%(Compile.Link)' == 'LianaTrie\LianaTrie.cs' Or
+                   '%(Compile.Link)' == 'LianaTrie\LTrieRootNode.cs' Or
+                   '%(Compile.Link)' == 'Storage\StorageLayer.cs'" />
+    </ItemGroup>
+    <Error
+      Condition="$([System.Text.RegularExpressions.Regex]::IsMatch(';$(DBreezeCompatibilityConstants);', ';NET8(_0(_OR_GREATER)?|_OR_GREATER);'))"
+      Text="DBreezeCompatibilityConstants must not contain an exact NET8 target-framework symbol." />
+    <Error
+      Condition="'@(_ForbiddenModernLegacyLink)' != ''"
+      Text="Modern-specific sources must be owned by DBreeze.Net8, not linked from the legacy DBreeze project: @(_ForbiddenModernLegacyLink, ', ')." />
+  </Target>
 
 </Project>

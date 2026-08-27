@@ -152,16 +152,6 @@ namespace DBreeze.Storage
             return _tableStorage.Table_Read(useCache, offset, quantity);
         }
 
-#if NET8_0
-        internal byte[] Table_ReadRecordContinuation(bool useCache, long recordOffset, long offset, int quantity)
-        {
-            if (useCache && _tableStorage is FSR fsr)
-                return fsr.Table_ReadRecordContinuation(true, recordOffset, offset, quantity);
-            return _tableStorage.Table_Read(useCache, offset, quantity);
-        }
-#endif
-
-
         public void RestoreTableFromTheOtherTable(string newTableFullPath)
         {
             _tableStorage.RestoreTableFromTheOtherTable(newTableFullPath);

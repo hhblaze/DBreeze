@@ -35,9 +35,6 @@ namespace DBreeze.LianaTrie
         /// Cache for overwriting nodes and values
         /// </summary>
         internal LTrieWriteCache Cache = null;
-#if NET8_0_OR_GREATER
-        internal CommittedReadNodeTableCache CommittedReadNodeCache = null;
-#endif
 
         //Indicates that table is operatable
         private bool TableIsOperable = true;
@@ -99,10 +96,6 @@ namespace DBreeze.LianaTrie
                 //Will instantiate also RollerBack
                 Cache = new LTrieWriteCache(this);
 
-#if NET8_0_OR_GREATER
-                CommittedReadNodeCache = CommittedReadNodeCacheRegistry.Attach(this);
-#endif
-
                 //If first reading or writing of root node fails also bring to exception
                 rn = new LTrieRootNode(this);
 
@@ -122,14 +115,7 @@ namespace DBreeze.LianaTrie
         {
             TableIsOperable = false;
 
-#if NET8_0_OR_GREATER
-            if (CommittedReadNodeCache != null)
-            {
-                CommittedReadNodeCache.Dispose();
-                CommittedReadNodeCache = null;
-            }
-#endif
-                       
+
             this.NestedTablesCoordinator.Dispose();
 
             if (!NestedTable)

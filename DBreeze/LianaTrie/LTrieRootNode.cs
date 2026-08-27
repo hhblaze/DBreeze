@@ -22,13 +22,6 @@ namespace DBreeze.LianaTrie
         ushort DefaultPointerLen = 0;
         ushort DefaultRootSize = 0;
         public byte[] EmptyPointer = null;
-#if NET8_0_OR_GREATER
-        private readonly long _committedReadEpoch;
-        private CommittedReadNode[] _committedReadPathNodes;
-        private ulong[] _committedReadPathPointers;
-        private byte[] _committedReadPathKey;
-        private int _committedReadPathCount;
-#endif
       
 
         /// <summary>
@@ -46,10 +39,6 @@ namespace DBreeze.LianaTrie
             LinkToZeroNode = new byte[DefaultPointerLen];
 
             this.EmptyPointer = new byte[DefaultPointerLen];
-
-#if NET8_0_OR_GREATER
-            _committedReadEpoch = tree.DtTableFixed;
-#endif
 
             //Reading Root Node
             this.ReadRootNode();
@@ -944,137 +933,10 @@ namespace DBreeze.LianaTrie
         /// </summary>
         internal LTrieRow GetKeyReadOnly(byte[] key, bool ValuesLazyLoadingIsOn)
         {
-#if NET8_0_OR_GREATER
-            if (Tree.CommittedReadNodeCache != null)
-                return GetKeyReadOnlyFast(key, ValuesLazyLoadingIsOn);
-#endif
             return GetKeyCore(key, useCache: true, ValuesLazyLoadingIsOn,
                 preserveDirtySuffix: false);
         }
 
-#if NET8_0_OR_GREATER
-        private LTrieRow GetKeyReadOnlyFast(byte[] key, bool valuesLazyLoadingIsOn)
-        {
-            var row = new LTrieRow(this) { Key = key };
-            if (key == null)
-                return row;
-
-            int commonPrefix = 0;
-            if (_committedReadPathKey != null)
-            {
-                int commonLimit = Math.Min(key.Length, _committedReadPathKey.Length);
-                while (commonPrefix < commonLimit &&
-                    key[commonPrefix] == _committedReadPathKey[commonPrefix])
-                    commonPrefix++;
-            }
-
-            EnsureCommittedReadPathCapacity(key.Length + 1);
-            int retainedPathCount = Math.Min(_committedReadPathCount, commonPrefix + 1);
-            if (_committedReadPathKey == null || _committedReadPathKey.Length != key.Length)
-                _committedReadPathKey = new byte[key.Length];
-            if (key.Length != 0)
-                Buffer.BlockCopy(key, 0, _committedReadPathKey, 0, key.Length);
-            _committedReadPathCount = retainedPathCount;
-
-            ulong nodePointer = CommittedReadNode.ReadPointer(LinkToZeroNode, 0, DefaultPointerLen);
-            CommittedReadNode node = GetCommittedReadNode(0, nodePointer, retainedPathCount);
-
-            if (key.Length == 0)
-            {
-                if (node.TryGet(256, out ulong emptyValuePointer, out _))
-                    return ReadCommittedValueRow(row, key, emptyValuePointer,
-                        valuesLazyLoadingIsOn);
-                return row;
-            }
-
-            for (int depth = 0; depth < key.Length; depth++)
-            {
-                if (!node.TryGet(key[depth], out ulong pointer, out bool linkToNode))
-                    return row;
-
-                if (!linkToNode)
-                    return ReadCommittedValueRow(row, key, pointer, valuesLazyLoadingIsOn);
-
-                node = GetCommittedReadNode(depth + 1, pointer, retainedPathCount);
-            }
-
-            if (node.TryGet(256, out ulong valuePointer, out _))
-                return ReadCommittedValueRow(row, key, valuePointer,
-                    valuesLazyLoadingIsOn);
-            return row;
-        }
-
-        private CommittedReadNode GetCommittedReadNode(int depth, ulong pointer, int retainedPathCount)
-        {
-            CommittedReadNode node;
-            if (depth < retainedPathCount &&
-                _committedReadPathPointers[depth] == pointer &&
-                (node = _committedReadPathNodes[depth]) != null)
-                return node;
-
-            node = Tree.CommittedReadNodeCache.GetOrLoad(_committedReadEpoch, pointer);
-            _committedReadPathNodes[depth] = node;
-            _committedReadPathPointers[depth] = pointer;
-            if (_committedReadPathCount <= depth)
-                _committedReadPathCount = depth + 1;
-            return node;
-        }
-
-        private LTrieRow ReadCommittedValueRow(LTrieRow row, byte[] requestedKey,
-            ulong valuePointer, bool valuesLazyLoadingIsOn)
-        {
-            long valueStartPointer;
-            uint valueLength;
-            byte[] storedKey;
-            byte[] value = null;
-            bool valueIsNull = false;
-            byte[] pointerBytes = null;
-
-            if (valuesLazyLoadingIsOn)
-            {
-                if (!Tree.Cache.ReadKeyMatches(true, valuePointer, requestedKey,
-                    out valueStartPointer, out valueLength, out valueIsNull))
-                    return row;
-                storedKey = requestedKey;
-            }
-            else
-            {
-                pointerBytes = CommittedReadNode.PointerToBytes(valuePointer, DefaultPointerLen);
-                Tree.Cache.ReadKeyValue(true, pointerBytes, out valueStartPointer,
-                    out valueLength, out storedKey, out value);
-            }
-
-            if (requestedKey.Length != storedKey.Length || !requestedKey._ByteArrayEquals(storedKey))
-                return row;
-
-            if (!valuesLazyLoadingIsOn)
-            {
-                row.ValueStartPointer = valueStartPointer;
-                row.ValueFullLength = valueLength;
-                row.Value = value;
-                row.ValueIsReadOut = true;
-            }
-            else
-            {
-                row.ValueStartPointer = valueStartPointer;
-                row.ValueFullLength = valueLength;
-                row.ValueIsNull = valueIsNull;
-            }
-
-            row.LinkToValue = pointerBytes ??
-                CommittedReadNode.PointerToBytes(valuePointer, DefaultPointerLen);
-            return row;
-        }
-
-        private void EnsureCommittedReadPathCapacity(int required)
-        {
-            if (_committedReadPathNodes != null && _committedReadPathNodes.Length >= required)
-                return;
-            int capacity = Math.Max(16, required);
-            Array.Resize(ref _committedReadPathNodes, capacity);
-            Array.Resize(ref _committedReadPathPointers, capacity);
-        }
-#endif
 
         private LTrieRow GetKeyCore(byte[] key, bool useCache, bool ValuesLazyLoadingIsOn,
             bool preserveDirtySuffix)
@@ -1183,9 +1045,6 @@ namespace DBreeze.LianaTrie
                         //byte[] storedKey = _generationMap[i].ReadKidKeyFromValPtr(kidDef.Ptr);                                                
                         long valueStartPtr = 0;
                         uint valueLength = 0;
-#if NET8_0_OR_GREATER
-                        bool valueIsNull = false;
-#endif
                         byte[] xValue = null;
                         byte[] storedKey = null;
 
@@ -1195,12 +1054,7 @@ namespace DBreeze.LianaTrie
                         }
                         else
                         {
-#if NET8_0_OR_GREATER
-                            storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr,
-                                out valueStartPtr, out valueLength, out valueIsNull);
-#else
                             storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
-#endif
                         }
 
                        // byte[] storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
@@ -1215,14 +1069,6 @@ namespace DBreeze.LianaTrie
                             kv.Value = xValue;                           
                             kv.ValueIsReadOut = true;
                         }
-#if NET8_0_OR_GREATER
-                        else
-                        {
-                            kv.ValueStartPointer = valueStartPtr;
-                            kv.ValueFullLength = valueLength;
-                            kv.ValueIsNull = valueIsNull;
-                        }
-#endif
                         kv.LinkToValue = kidDef.Ptr;
                         return kv;
                     }

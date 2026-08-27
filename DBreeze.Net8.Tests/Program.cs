@@ -13,6 +13,18 @@ internal static class Program
         if (args.Length == 2 && String.Equals(args[0], "--journal-invalid-recover", StringComparison.OrdinalIgnoreCase))
             return RunInvalidJournalRecoveryChild(args[1]);
 
+        if (args.Any(static arg => String.Equals(arg, "--source-isolation", StringComparison.OrdinalIgnoreCase)))
+        {
+            int rootIndex = Array.FindIndex(args,
+                static arg => String.Equals(arg, "--repository-root", StringComparison.OrdinalIgnoreCase));
+            string repositoryRoot = rootIndex >= 0 && rootIndex + 1 < args.Length
+                ? args[rootIndex + 1]
+                : ModernSourceIsolationTests.ResolveRepositoryRoot(null);
+            ModernSourceIsolationTests.Validate(repositoryRoot);
+            Console.WriteLine("PASS modern-source-isolation");
+            return 0;
+        }
+
         if (args.Any(static arg => String.Equals(arg, "--coordinator", StringComparison.OrdinalIgnoreCase)))
             return RunCoordinatorTests();
 
@@ -87,6 +99,7 @@ internal static class Program
 
         (string Name, Action Test)[] tests =
         {
+            (nameof(ModernSourceIsolationTests.ValidateCurrentRepository), ModernSourceIsolationTests.ValidateCurrentRepository),
             (nameof(TransactionJournalPayloadCodecSupportsAllPersistedFormats), TransactionJournalPayloadCodecSupportsAllPersistedFormats),
             // This test injects a durable journal marker directly and therefore must run before
             // the legacy process-global in-memory journal has been created and disposed.
