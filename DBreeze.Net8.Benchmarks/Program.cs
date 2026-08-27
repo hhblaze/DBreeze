@@ -1,6 +1,12 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Any(static arg => string.Equals(arg, "--traversal-read-audit-self-test", StringComparison.OrdinalIgnoreCase)))
+    return TraversalReadAuditSelfTests.Run();
+
+if (args.Any(static arg => string.Equals(arg, "--traversal-read-audit", StringComparison.OrdinalIgnoreCase)))
+    return TraversalReadAudit.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--backward-read-audit-self-test", StringComparison.OrdinalIgnoreCase)))
     return BackwardReadAuditSelfTests.Run();
 

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 
 using DBreeze.Utils;
+using DBreeze.Storage;
 using DBreeze.Exceptions;
 
 namespace DBreeze.LianaTrie
@@ -159,7 +160,8 @@ namespace DBreeze.LianaTrie
                     if (length == 0)
                         return Array.Empty<byte>();
 
-                    return _root.Tree.Storage.Table_Read(useCache,
+                    return _root.Tree.Storage.Table_ReadRecordContinuation(useCache,
+                        checked((long)LinkToValue.DynamicLength_To_UInt64_BigEndian()),
                         checked(ValueStartPointer + startIndex), (int)length);
                 }
 
@@ -191,7 +193,8 @@ namespace DBreeze.LianaTrie
                     if (ValueFullLength == 0)
                         return Array.Empty<byte>();
 
-                    return _root.Tree.Storage.Table_Read(useCache,
+                    return _root.Tree.Storage.Table_ReadRecordContinuation(useCache,
+                        checked((long)LinkToValue.DynamicLength_To_UInt64_BigEndian()),
                         ValueStartPointer, checked((int)ValueFullLength));
                 }
 

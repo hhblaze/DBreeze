@@ -265,10 +265,21 @@ internal static class StorageRegressionTests
                    GetSharedReadBufferLength(storage) == sharedReadBufferSize,
                 "Adjacent backward miss did not place the 8 KiB window before the request.");
 
+            long backwardTailOffset = backwardOffset + 16;
+            const int backwardTailLength = 256;
+            AssertStorageContinuationRead(storage, payload, start, backwardOffset,
+                backwardTailOffset, backwardTailLength,
+                "Backward shared record-tail continuation returned incorrect bytes.");
+            long expectedTailWindow = Math.Max(0,
+                backwardTailOffset + backwardTailLength - sharedReadBufferSize);
+            Assert(GetSharedReadBufferOffset(storage) == expectedTailWindow &&
+                   GetSharedReadBufferLength(storage) == sharedReadBufferSize,
+                "Backward shared record-tail continuation lost reverse window direction.");
+
             long bufferedBackwardOffset = backwardOffset - 1024;
             AssertStorageRead(storage, payload, start, bufferedBackwardOffset, 64,
                 "Buffered backward shared read returned incorrect bytes.");
-            Assert(GetSharedReadBufferOffset(storage) == expectedBackwardWindow,
+            Assert(GetSharedReadBufferOffset(storage) == expectedTailWindow,
                 "A backward shared-buffer hit unexpectedly refilled the window.");
 
             long farOffset = firstOffset + 40 * 1024;
@@ -334,6 +345,17 @@ internal static class StorageRegressionTests
                 Assert(backward.Offset == expectedOffset && backward.Length == sharedReadBufferSize &&
                        backward.Buffer.Length == sharedReadBufferSize,
                     "Adjacent backward contended miss did not promote to a reverse 8 KiB window.");
+
+                long contendedTailOffset = contendedBackwardOffset + 16;
+                AssertStorageContinuationRead(storage, payload, start, contendedBackwardOffset,
+                    contendedTailOffset, backwardTailLength,
+                    "Backward contended record-tail continuation returned incorrect bytes.");
+                (byte[] Buffer, long Offset, int Length) tail = GetThreadContendedReadWindow(fsrType);
+                long expectedTailOffset = Math.Max(0,
+                    contendedTailOffset + backwardTailLength - sharedReadBufferSize);
+                Assert(tail.Offset == expectedTailOffset && tail.Length == sharedReadBufferSize &&
+                       tail.Buffer.Length == sharedReadBufferSize,
+                    "Backward contended record-tail continuation lost reverse window direction.");
 
                 long contendedFarOffset = contendedOffset - 32 * 1024;
                 AssertStorageRead(storage, payload, start, contendedFarOffset, 64,
@@ -1051,6 +1073,18 @@ internal static class StorageRegressionTests
         int expectedLength = Math.Min(count, payload.Length - payloadOffset);
         AssertBytes(payload.AsSpan(payloadOffset, expectedLength).ToArray(),
             storage.Table_Read(true, offset, count), message);
+    }
+
+    private static void AssertStorageContinuationRead(StorageLayer storage, byte[] payload,
+        long payloadStart, long recordOffset, long offset, int count, string message)
+    {
+        MethodInfo method = typeof(StorageLayer).GetMethod("Table_ReadRecordContinuation",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("StorageLayer.Table_ReadRecordContinuation was not found.");
+        byte[] actual = (byte[])method.Invoke(storage, new object[] { true, recordOffset, offset, count });
+        int payloadOffset = checked((int)(offset - payloadStart));
+        int expectedLength = Math.Min(count, payload.Length - payloadOffset);
+        AssertBytes(payload.AsSpan(payloadOffset, expectedLength).ToArray(), actual, message);
     }
 
     private static void WithSharedReadLaneHeld(StorageLayer storage, Action action)

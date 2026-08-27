@@ -1138,8 +1138,12 @@ namespace DBreeze.LianaTrie
             //Changing format:
             //1byte - protocol, FullKeyLen (2 bytes), FullValueLen (4 bytes),[Reserved Space For Update- 4 bytes],FullKey,FullValue
             //1 + 2 + 4 + 4 + 100 = 111
-            //int initRead = 111; //Where 100 is standard max size of the key in case of words (even 50 must be enough), in case of sentences can be much longer, probably we can setup it later
-            int initRead = 4096;
+            // Positioned committed reads already use the FSR read-ahead window. Allocating and
+            // copying a separate 4 KiB result for every eager row only adds memory traffic; read a
+            // compact header/key probe and expand to the exact record size when required. Writer
+            // reads keep the historical 4 KiB probe because update/delete paths commonly consume
+            // the complete record and can benefit from a single read.
+            int initRead = useCache ? 111 : 4096;
 
             //DONT NEED TO EnlargeByteArray_BigEndian(8) ptr, because it's automatically done in TrieDisk Storage etc..
 
@@ -1177,7 +1181,7 @@ namespace DBreeze.LianaTrie
                     if ((keySize + valueSize + 7) > initRead)
                     {
                         initRead = keySize + valueSize + 7;
-                        data = Trie.Storage.Table_Read(useCache, pointer, initRead);
+                        data = Trie.Storage.Table_ReadRecordContinuation(useCache, lPtr, lPtr, initRead);
                     }
 
                     key = data.Substring(7, keySize);
@@ -1195,7 +1199,7 @@ namespace DBreeze.LianaTrie
                     if ((keySize + valueSize + 11) > initRead)
                     {
                         initRead = keySize + valueSize + 11;
-                        data = Trie.Storage.Table_Read(useCache, pointer, initRead);
+                        data = Trie.Storage.Table_ReadRecordContinuation(useCache, lPtr, lPtr, initRead);
                     }  
 
                     key = data.Substring(11, keySize);
@@ -1399,7 +1403,8 @@ namespace DBreeze.LianaTrie
                     {
                         lPtr += 7 + keySize;
                         valueStartPtr = lPtr;
-                        val = Trie.Storage.Table_Read(useCache, lPtr, valueSize);
+                        val = Trie.Storage.Table_ReadRecordContinuation(useCache,
+                            (long)pointer.DynamicLength_To_UInt64_BigEndian(), lPtr, valueSize);
                     }
                     else
                     {
@@ -1415,7 +1420,8 @@ namespace DBreeze.LianaTrie
                     {
                         lPtr += 11 + keySize;
                         valueStartPtr = lPtr;
-                        val = Trie.Storage.Table_Read(useCache, lPtr, valueSize);
+                        val = Trie.Storage.Table_ReadRecordContinuation(useCache,
+                            (long)pointer.DynamicLength_To_UInt64_BigEndian(), lPtr, valueSize);
                     }
                     else
                     {

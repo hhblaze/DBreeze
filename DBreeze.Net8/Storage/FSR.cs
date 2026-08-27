@@ -87,6 +87,7 @@ namespace DBreeze.Storage
         long _sharedReadBufferOffset;
         int _sharedReadBufferLength;
         long _sharedReadBufferMutationVersion;
+        bool _sharedReadBufferIsBackward;
         static long _nextInstanceId;
         readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
         long _mutationVersion = 1;
@@ -106,6 +107,7 @@ namespace DBreeze.Storage
             public int PageLength;
             public byte CandidateAccessCount;
             public bool IsPopulated;
+            public bool IsBackward;
         }
 
         /// <summary>
@@ -654,6 +656,7 @@ namespace DBreeze.Storage
 
             _sharedReadBufferLength = 0;
             _sharedReadBufferMutationVersion = 0;
+            _sharedReadBufferIsBackward = false;
         }
 
         private static void ReadExactlyAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
@@ -1194,6 +1197,17 @@ namespace DBreeze.Storage
         /// <returns></returns>
         public byte[] Table_Read(bool useCache, long offset, int count)
         {
+            return Table_Read(useCache, offset, count, false, 0);
+        }
+
+        internal byte[] Table_ReadRecordContinuation(bool useCache, long recordOffset, long offset, int count)
+        {
+            return Table_Read(useCache, offset, count, useCache, recordOffset);
+        }
+
+        private byte[] Table_Read(bool useCache, long offset, int count,
+            bool recordContinuation, long recordOffset)
+        {
             // The historical FSR used one buffered FileStream cursor guarded by a table-wide
             // monitor. Keep that locality and admission behavior for small committed reads while
             // retaining positioned IO for writes, large reads, and reads of different tables.
@@ -1204,7 +1218,8 @@ namespace DBreeze.Storage
                     try
                     {
                         return Table_ReadCore(useCache, offset, count,
-                            useSharedReadLane: true, useContendedReadWindow: false);
+                            useSharedReadLane: true, useContendedReadWindow: false,
+                            recordContinuation, recordOffset);
                     }
                     finally
                     {
@@ -1213,15 +1228,18 @@ namespace DBreeze.Storage
                 }
 
                 return Table_ReadCore(useCache, offset, count,
-                    useSharedReadLane: false, useContendedReadWindow: true);
+                    useSharedReadLane: false, useContendedReadWindow: true,
+                    recordContinuation, recordOffset);
             }
 
             return Table_ReadCore(useCache, offset, count,
-                useSharedReadLane: false, useContendedReadWindow: false);
+                useSharedReadLane: false, useContendedReadWindow: false,
+                recordContinuation, recordOffset);
         }
 
         private byte[] Table_ReadCore(bool useCache, long offset, int count,
-            bool useSharedReadLane, bool useContendedReadWindow)
+            bool useSharedReadLane, bool useContendedReadWindow,
+            bool recordContinuation, long recordOffset)
         {
             // Small committed reads already own _sharedReadLane. Writers take the same gate before
             // their write lock, so a second per-read ReaderWriterLockSlim acquisition is redundant.
@@ -1271,13 +1289,15 @@ namespace DBreeze.Storage
                 bool canUseCommittedCache = _rollbackCache.Count == 0 && !TransactionalCommitIsStarted;
                 if (useSharedReadLane)
                 {
-                    ReadFromSharedBuffer(offset, committed, visibleLength);
+                    ReadFromSharedBuffer(offset, committed, visibleLength,
+                        recordContinuation, recordOffset);
                     if (canUseCommittedCache)
                         return committed;
                 }
                 else if (canUseCommittedCache &&
                     (useContendedReadWindow
-                        ? TryReadContendedWindow(offset, committed, visibleLength)
+                        ? TryReadContendedWindow(offset, committed, visibleLength,
+                            recordContinuation, recordOffset)
                         : TryReadCommittedPage(offset, committed, visibleLength)))
                 {
                     return committed;
@@ -1303,7 +1323,8 @@ namespace DBreeze.Storage
             }
         }
 
-        private void ReadFromSharedBuffer(long offset, byte[] result, long visibleLength)
+        private void ReadFromSharedBuffer(long offset, byte[] result, long visibleLength,
+            bool recordContinuation, long recordOffset)
         {
             long relativeOffset = offset - _sharedReadBufferOffset;
             bool cacheHit = _sharedReadBuffer != null &&
@@ -1319,23 +1340,37 @@ namespace DBreeze.Storage
                 long previousBufferEnd = _sharedReadBufferOffset + _sharedReadBufferLength;
                 bool hasCurrentWindow = _sharedReadBufferMutationVersion == _mutationVersion &&
                     _sharedReadBufferLength != 0;
+                long requestEnd = checked(offset + result.Length);
                 bool continuesBackwardRead = hasCurrentWindow &&
                     offset < previousBufferOffset &&
                     previousBufferOffset - offset <= SharedReadBufferSize;
-                bool continuesForwardRead = hasCurrentWindow &&
+                // A compact record probe in a reverse window is intentionally placed at the
+                // right edge. The following key/value read starts inside that probe but can extend
+                // past the edge. Keep the reverse direction while moving the window just enough
+                // to contain that tail; otherwise every row alternates reverse and forward fills.
+                bool continuesBackwardTail = hasCurrentWindow && _sharedReadBufferIsBackward &&
+                    recordContinuation && recordOffset >= previousBufferOffset &&
+                    recordOffset < previousBufferEnd && offset >= recordOffset &&
+                    offset >= previousBufferOffset && offset < previousBufferEnd &&
+                    requestEnd > previousBufferEnd && requestEnd - previousBufferEnd <= SharedReadBufferSize;
+                bool continuesBackward = continuesBackwardRead || continuesBackwardTail;
+                bool continuesForwardRead = !continuesBackward && hasCurrentWindow &&
                     offset >= previousBufferEnd - result.Length &&
                     offset <= previousBufferEnd + SharedReadBufferSize;
-                int readAheadLength = continuesBackwardRead || continuesForwardRead
+                int readAheadLength = continuesBackward || continuesForwardRead
                     ? SharedReadBufferSize
                     : Math.Max(result.Length, SingleReaderReadAheadSize);
-                long bufferOffset = continuesBackwardRead
-                    ? Math.Max(0, offset - (SharedReadBufferSize - result.Length))
-                    : offset;
+                long bufferOffset = continuesBackwardTail
+                    ? Math.Max(0, requestEnd - SharedReadBufferSize)
+                    : continuesBackwardRead
+                        ? Math.Max(0, offset - (SharedReadBufferSize - result.Length))
+                        : offset;
                 int bufferLength = (int)Math.Min(readAheadLength, visibleLength - bufferOffset);
                 ReadExactlySequential(_fsData, _sharedReadBuffer, 0, bufferLength, bufferOffset);
                 _sharedReadBufferOffset = bufferOffset;
                 _sharedReadBufferLength = bufferLength;
                 _sharedReadBufferMutationVersion = _mutationVersion;
+                _sharedReadBufferIsBackward = continuesBackward;
                 relativeOffset = offset - bufferOffset;
             }
             new ReadOnlySpan<byte>(_sharedReadBuffer, (int)relativeOffset, result.Length).CopyTo(result);
@@ -1388,7 +1423,8 @@ namespace DBreeze.Storage
             return true;
         }
 
-        private bool TryReadContendedWindow(long offset, byte[] result, long visibleLength)
+        private bool TryReadContendedWindow(long offset, byte[] result, long visibleLength,
+            bool recordContinuation, long recordOffset)
         {
             ReadPageCache cache = _threadContendedReadWindow ??= new ReadPageCache();
             long mutationVersion = _mutationVersion;
@@ -1398,14 +1434,25 @@ namespace DBreeze.Storage
                 relativeOffset <= cache.PageLength && result.Length <= cache.PageLength - relativeOffset;
             if (!hit)
             {
-                bool continuesBackwardRead = cache.OwnerId == _instanceId &&
-                    cache.MutationVersion == mutationVersion && cache.IsPopulated &&
+                bool hasCurrentWindow = cache.OwnerId == _instanceId &&
+                    cache.MutationVersion == mutationVersion && cache.IsPopulated;
+                long previousWindowEnd = cache.PageOffset + cache.PageLength;
+                long requestEnd = checked(offset + result.Length);
+                bool continuesBackwardRead = hasCurrentWindow &&
                     offset < cache.PageOffset && cache.PageOffset - offset <= SharedReadBufferSize;
-                long windowOffset = continuesBackwardRead
-                    ? Math.Max(0, offset - (SharedReadBufferSize - result.Length))
-                    : offset;
+                bool continuesBackwardTail = hasCurrentWindow && cache.IsBackward &&
+                    recordContinuation && recordOffset >= cache.PageOffset &&
+                    recordOffset < previousWindowEnd && offset >= recordOffset &&
+                    offset >= cache.PageOffset && offset < previousWindowEnd &&
+                    requestEnd > previousWindowEnd && requestEnd - previousWindowEnd <= SharedReadBufferSize;
+                bool continuesBackward = continuesBackwardRead || continuesBackwardTail;
+                long windowOffset = continuesBackwardTail
+                    ? Math.Max(0, requestEnd - SharedReadBufferSize)
+                    : continuesBackwardRead
+                        ? Math.Max(0, offset - (SharedReadBufferSize - result.Length))
+                        : offset;
                 int windowLength = (int)Math.Min(
-                    continuesBackwardRead
+                    continuesBackward
                         ? SharedReadBufferSize
                         : Math.Max(result.Length, ContendedReadWindowSize),
                     visibleLength - windowOffset);
@@ -1418,6 +1465,7 @@ namespace DBreeze.Storage
                 cache.PageOffset = windowOffset;
                 cache.PageLength = windowLength;
                 cache.IsPopulated = true;
+                cache.IsBackward = continuesBackward;
                 relativeOffset = offset - windowOffset;
             }
 
