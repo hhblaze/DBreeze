@@ -56,6 +56,13 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--storage-bidirectional-read-ahead", StringComparison.OrdinalIgnoreCase)))
+        {
+            StorageRegressionTests.CommittedReadAheadSupportsBothDirections();
+            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedReadAheadSupportsBothDirections)}");
+            return 0;
+        }
+
         if (args.Any(static arg => String.Equals(arg, "--journal", StringComparison.OrdinalIgnoreCase)))
         {
             TransactionJournalPayloadCodecSupportsAllPersistedFormats();
@@ -94,6 +101,7 @@ internal static class Program
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
             (nameof(StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle), StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle),
             (nameof(StorageRegressionTests.CommittedReadCacheAdmissionIsLazy), StorageRegressionTests.CommittedReadCacheAdmissionIsLazy),
+            (nameof(StorageRegressionTests.CommittedReadAheadSupportsBothDirections), StorageRegressionTests.CommittedReadAheadSupportsBothDirections),
             (nameof(StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits),
             (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
             (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),

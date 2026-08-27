@@ -1315,19 +1315,28 @@ namespace DBreeze.Storage
             if (!cacheHit)
             {
                 _sharedReadBuffer ??= GC.AllocateUninitializedArray<byte>(SharedReadBufferSize);
+                long previousBufferOffset = _sharedReadBufferOffset;
                 long previousBufferEnd = _sharedReadBufferOffset + _sharedReadBufferLength;
-                bool continuesSequentialRead = _sharedReadBufferMutationVersion == _mutationVersion &&
+                bool hasCurrentWindow = _sharedReadBufferMutationVersion == _mutationVersion &&
+                    _sharedReadBufferLength != 0;
+                bool continuesBackwardRead = hasCurrentWindow &&
+                    offset < previousBufferOffset &&
+                    previousBufferOffset - offset <= SharedReadBufferSize;
+                bool continuesForwardRead = hasCurrentWindow &&
                     offset >= previousBufferEnd - result.Length &&
                     offset <= previousBufferEnd + SharedReadBufferSize;
-                int readAheadLength = continuesSequentialRead
+                int readAheadLength = continuesBackwardRead || continuesForwardRead
                     ? SharedReadBufferSize
                     : Math.Max(result.Length, SingleReaderReadAheadSize);
-                int bufferLength = (int)Math.Min(readAheadLength, visibleLength - offset);
-                ReadExactlySequential(_fsData, _sharedReadBuffer, 0, bufferLength, offset);
-                _sharedReadBufferOffset = offset;
+                long bufferOffset = continuesBackwardRead
+                    ? Math.Max(0, offset - (SharedReadBufferSize - result.Length))
+                    : offset;
+                int bufferLength = (int)Math.Min(readAheadLength, visibleLength - bufferOffset);
+                ReadExactlySequential(_fsData, _sharedReadBuffer, 0, bufferLength, bufferOffset);
+                _sharedReadBufferOffset = bufferOffset;
                 _sharedReadBufferLength = bufferLength;
                 _sharedReadBufferMutationVersion = _mutationVersion;
-                relativeOffset = 0;
+                relativeOffset = offset - bufferOffset;
             }
             new ReadOnlySpan<byte>(_sharedReadBuffer, (int)relativeOffset, result.Length).CopyTo(result);
         }
@@ -1389,18 +1398,27 @@ namespace DBreeze.Storage
                 relativeOffset <= cache.PageLength && result.Length <= cache.PageLength - relativeOffset;
             if (!hit)
             {
+                bool continuesBackwardRead = cache.OwnerId == _instanceId &&
+                    cache.MutationVersion == mutationVersion && cache.IsPopulated &&
+                    offset < cache.PageOffset && cache.PageOffset - offset <= SharedReadBufferSize;
+                long windowOffset = continuesBackwardRead
+                    ? Math.Max(0, offset - (SharedReadBufferSize - result.Length))
+                    : offset;
                 int windowLength = (int)Math.Min(
-                    Math.Max(result.Length, ContendedReadWindowSize), visibleLength - offset);
+                    continuesBackwardRead
+                        ? SharedReadBufferSize
+                        : Math.Max(result.Length, ContendedReadWindowSize),
+                    visibleLength - windowOffset);
                 cache.Buffer ??= GC.AllocateUninitializedArray<byte>(ContendedReadWindowSize);
                 if (cache.Buffer.Length < windowLength)
                     cache.Buffer = GC.AllocateUninitializedArray<byte>(windowLength);
-                ReadExactlyAt(_fsData, cache.Buffer, 0, windowLength, offset);
+                ReadExactlyAt(_fsData, cache.Buffer, 0, windowLength, windowOffset);
                 cache.OwnerId = _instanceId;
                 cache.MutationVersion = mutationVersion;
-                cache.PageOffset = offset;
+                cache.PageOffset = windowOffset;
                 cache.PageLength = windowLength;
                 cache.IsPopulated = true;
-                relativeOffset = 0;
+                relativeOffset = offset - windowOffset;
             }
 
             Buffer.BlockCopy(cache.Buffer, (int)relativeOffset, result, 0, result.Length);

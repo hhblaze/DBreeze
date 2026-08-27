@@ -235,6 +235,122 @@ internal static class StorageRegressionTests
         }
     }
 
+    public static void CommittedReadAheadSupportsBothDirections()
+    {
+        const int sharedReadBufferSize = 8 * 1024;
+        const int initialReadAheadSize = 4 * 1024;
+        const int contendedReadWindowSize = 512;
+        string root = CreateFolder(nameof(CommittedReadAheadSupportsBothDirections));
+        try
+        {
+            using var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            var storage = new StorageLayer(Path.Combine(root, "1"), new TrieSettings(), configuration);
+            byte[] payload = new byte[128 * 1024];
+            new Random(240817).NextBytes(payload);
+            long start = DecodePointer(storage.Table_WriteToTheEnd(payload));
+            storage.Commit();
+
+            long firstOffset = start + 64 * 1024;
+            AssertStorageRead(storage, payload, start, firstOffset, 64,
+                "Initial shared read returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == firstOffset &&
+                   GetSharedReadBufferLength(storage) == initialReadAheadSize,
+                "Initial shared miss did not retain the bounded 4 KiB forward window.");
+
+            long backwardOffset = firstOffset - 127;
+            AssertStorageRead(storage, payload, start, backwardOffset, 64,
+                "Adjacent backward shared read returned incorrect bytes.");
+            long expectedBackwardWindow = Math.Max(0, backwardOffset - (sharedReadBufferSize - 64));
+            Assert(GetSharedReadBufferOffset(storage) == expectedBackwardWindow &&
+                   GetSharedReadBufferLength(storage) == sharedReadBufferSize,
+                "Adjacent backward miss did not place the 8 KiB window before the request.");
+
+            long bufferedBackwardOffset = backwardOffset - 1024;
+            AssertStorageRead(storage, payload, start, bufferedBackwardOffset, 64,
+                "Buffered backward shared read returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == expectedBackwardWindow,
+                "A backward shared-buffer hit unexpectedly refilled the window.");
+
+            long farOffset = firstOffset + 40 * 1024;
+            AssertStorageRead(storage, payload, start, farOffset, 64,
+                "Far random shared read returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == farOffset &&
+                   GetSharedReadBufferLength(storage) == initialReadAheadSize,
+                "A far random miss was incorrectly promoted to an 8 KiB sequential window.");
+
+            long farBackwardOffset = firstOffset;
+            AssertStorageRead(storage, payload, start, farBackwardOffset, 64,
+                "Far backward random shared read returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == farBackwardOffset &&
+                   GetSharedReadBufferLength(storage) == initialReadAheadSize,
+                "A far backward random miss was incorrectly classified as sequential.");
+
+            long maximalOffset = farBackwardOffset - 1;
+            AssertStorageRead(storage, payload, start, maximalOffset, sharedReadBufferSize - 1,
+                "Maximum cached backward read returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == maximalOffset - 1 &&
+                   GetSharedReadBufferLength(storage) == sharedReadBufferSize,
+                "Maximum cached backward read used an invalid window boundary.");
+
+            long nearEofOffset = start + payload.Length - 31;
+            AssertStorageRead(storage, payload, start, nearEofOffset, 64,
+                "Shared read near EOF returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == nearEofOffset &&
+                   GetSharedReadBufferLength(storage) == 31,
+                "Shared read-ahead was not truncated at EOF.");
+
+            long nearStartOffset = start + 100;
+            AssertStorageRead(storage, payload, start, nearStartOffset, 64,
+                "Shared read near the beginning returned incorrect bytes.");
+            long earlierOffset = start + 50;
+            AssertStorageRead(storage, payload, start, earlierOffset, 64,
+                "Backward shared read near the beginning returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == Math.Max(0, earlierOffset - (sharedReadBufferSize - 64)),
+                "Backward read-ahead crossed the physical beginning of the file.");
+
+            storage.Table_WriteByOffset(start + 50, new[] { payload[50] });
+            storage.Commit();
+            AssertStorageRead(storage, payload, start, firstOffset, 64,
+                "Committed shared read after invalidation returned incorrect bytes.");
+            Assert(GetSharedReadBufferOffset(storage) == firstOffset &&
+                   GetSharedReadBufferLength(storage) == initialReadAheadSize,
+                "Commit did not reset backward read-ahead admission state.");
+
+            Type fsrType = GetTableStorage(storage).GetType();
+            WithSharedReadLaneHeld(storage, () => RunOnFreshThread(() =>
+            {
+                long contendedOffset = start + 96 * 1024;
+                AssertStorageRead(storage, payload, start, contendedOffset, 64,
+                    "Initial contended read returned incorrect bytes.");
+                (byte[] Buffer, long Offset, int Length) first = GetThreadContendedReadWindow(fsrType);
+                Assert(first.Offset == contendedOffset && first.Length == contendedReadWindowSize,
+                    "Initial contended miss did not retain the bounded 512-byte window.");
+
+                long contendedBackwardOffset = contendedOffset - 127;
+                AssertStorageRead(storage, payload, start, contendedBackwardOffset, 64,
+                    "Adjacent backward contended read returned incorrect bytes.");
+                (byte[] Buffer, long Offset, int Length) backward = GetThreadContendedReadWindow(fsrType);
+                long expectedOffset = Math.Max(0, contendedBackwardOffset - (sharedReadBufferSize - 64));
+                Assert(backward.Offset == expectedOffset && backward.Length == sharedReadBufferSize &&
+                       backward.Buffer.Length == sharedReadBufferSize,
+                    "Adjacent backward contended miss did not promote to a reverse 8 KiB window.");
+
+                long contendedFarOffset = contendedOffset - 32 * 1024;
+                AssertStorageRead(storage, payload, start, contendedFarOffset, 64,
+                    "Far contended read returned incorrect bytes.");
+                (byte[] Buffer, long Offset, int Length) far = GetThreadContendedReadWindow(fsrType);
+                Assert(far.Offset == contendedFarOffset && far.Length == contendedReadWindowSize,
+                    "A far contended miss was incorrectly promoted as sequential backward IO.");
+            }));
+
+            storage.Table_Dispose();
+        }
+        finally
+        {
+            DeleteFolder(root);
+        }
+    }
+
     public static void CommittedReadCacheIsSafeDuringConcurrentCommits()
     {
         string root = CreateFolder(nameof(CommittedReadCacheIsSafeDuringConcurrentCommits));
@@ -898,6 +1014,81 @@ internal static class StorageRegressionTests
             BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("FSR._sharedReadBufferLength was not found.");
         return (int)lengthField.GetValue(tableStorage);
+    }
+
+    private static long GetSharedReadBufferOffset(StorageLayer storage)
+    {
+        object tableStorage = GetTableStorage(storage);
+        FieldInfo offsetField = tableStorage.GetType().GetField(
+            "_sharedReadBufferOffset",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FSR._sharedReadBufferOffset was not found.");
+        return (long)offsetField.GetValue(tableStorage);
+    }
+
+    private static (byte[] Buffer, long Offset, int Length) GetThreadContendedReadWindow(Type fsrType)
+    {
+        FieldInfo cacheField = fsrType.GetField(
+            "_threadContendedReadWindow",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FSR._threadContendedReadWindow was not found.");
+        object cache = cacheField.GetValue(null)
+            ?? throw new InvalidOperationException("Contended read-window metadata was not created.");
+        Type cacheType = cache.GetType();
+        byte[] buffer = (byte[])(cacheType.GetField("Buffer")?.GetValue(cache)
+            ?? throw new InvalidOperationException("FSR.ReadPageCache.Buffer was not found."));
+        long offset = (long)(cacheType.GetField("PageOffset")?.GetValue(cache)
+            ?? throw new InvalidOperationException("FSR.ReadPageCache.PageOffset was not found."));
+        int length = (int)(cacheType.GetField("PageLength")?.GetValue(cache)
+            ?? throw new InvalidOperationException("FSR.ReadPageCache.PageLength was not found."));
+        return (buffer, offset, length);
+    }
+
+    private static void AssertStorageRead(StorageLayer storage, byte[] payload, long payloadStart,
+        long offset, int count, string message)
+    {
+        int payloadOffset = checked((int)(offset - payloadStart));
+        int expectedLength = Math.Min(count, payload.Length - payloadOffset);
+        AssertBytes(payload.AsSpan(payloadOffset, expectedLength).ToArray(),
+            storage.Table_Read(true, offset, count), message);
+    }
+
+    private static void WithSharedReadLaneHeld(StorageLayer storage, Action action)
+    {
+        object tableStorage = GetTableStorage(storage);
+        object gate = tableStorage.GetType().GetField(
+            "_sharedReadLane",
+            BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(tableStorage)
+            ?? throw new InvalidOperationException("FSR._sharedReadLane was not found.");
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        Task owner = Task.Run(() =>
+        {
+            Monitor.Enter(gate);
+            try
+            {
+                entered.Set();
+                if (!release.Wait(TimeSpan.FromSeconds(30)))
+                    throw new TimeoutException("Timed out waiting to release the shared read lane.");
+            }
+            finally
+            {
+                Monitor.Exit(gate);
+            }
+        });
+
+        Assert(entered.Wait(TimeSpan.FromSeconds(30)), "Timed out acquiring the shared read lane.");
+        try
+        {
+            action();
+        }
+        finally
+        {
+            release.Set();
+        }
+        Assert(owner.Wait(TimeSpan.FromSeconds(30)), "Shared read-lane owner did not finish.");
+        if (owner.IsFaulted)
+            throw new InvalidOperationException("Shared read-lane owner failed.", owner.Exception);
     }
 
     private static void AssertThreadPageCacheBuffer(Type fsrType, bool expectedAllocated, string message)

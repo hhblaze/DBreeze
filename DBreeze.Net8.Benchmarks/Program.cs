@@ -1,6 +1,12 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Any(static arg => string.Equals(arg, "--backward-read-audit-self-test", StringComparison.OrdinalIgnoreCase)))
+    return BackwardReadAuditSelfTests.Run();
+
+if (args.Any(static arg => string.Equals(arg, "--backward-read-audit", StringComparison.OrdinalIgnoreCase)))
+    return BackwardReadAudit.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--point-read-audit", StringComparison.OrdinalIgnoreCase)))
     return PointReadAudit.Run(args);
 
