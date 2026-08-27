@@ -195,7 +195,7 @@ namespace DBreeze.Transactions
                 {
                     this._transactionWriteTables.Add(tableName, table);
 
-                    transactionWriteTablesCount++;
+                    System.Threading.Interlocked.Increment(ref transactionWriteTablesCount);
                 }
                 else
                 {
@@ -251,7 +251,7 @@ namespace DBreeze.Transactions
         {
             get
             {
-                return transactionWriteTablesCount;
+                return System.Threading.Volatile.Read(ref transactionWriteTablesCount);
             }
         }
 

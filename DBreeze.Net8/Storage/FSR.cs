@@ -7,6 +7,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -92,6 +93,12 @@ namespace DBreeze.Storage
         readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
         long _mutationVersion = 1;
         long _physicalDataLength;
+        readonly CommittedMappedReadBudgetRegistry.Budget _mappedReadBudget;
+        MemoryMappedFile _committedMappedFile;
+        MemoryMappedViewAccessor _committedMappedView;
+        long _committedMappedLength;
+        long _committedMappedReservation;
+        bool _committedMappingDisabledForTesting;
 
         [ThreadStatic]
         static ReadPageCache _threadReadPageCache;
@@ -184,6 +191,7 @@ namespace DBreeze.Storage
         {
             this._fileName = fileName;
             this._configuration = configuration;
+            _mappedReadBudget = CommittedMappedReadBudgetRegistry.Get(configuration);
             this._trieSettings = trieSettings;
             DefaultPointerLen = this._trieSettings.POINTER_LENGTH;
 
@@ -244,6 +252,7 @@ namespace DBreeze.Storage
             {
                 if (_fsData != null)
                 {
+                    DisposeCommittedMappedView();
                     _fsData.Dispose();
                     _fsData = null;
                 }
@@ -324,6 +333,7 @@ namespace DBreeze.Storage
 
 
                 Volatile.Write(ref _storageFixTimeTicks, DateTime.UtcNow.Ticks);
+                RefreshCommittedMappedView();
             }
             catch (Exception ex)
             {
@@ -628,6 +638,125 @@ namespace DBreeze.Storage
 
         private static long GetLength(FileStream stream) => RandomAccess.GetLength(stream.SafeFileHandle);
 
+        private void RefreshCommittedMappedView()
+        {
+            DisposeCommittedMappedView();
+
+            long length = eofData;
+            if (_committedMappingDisabledForTesting || !Environment.Is64BitProcess ||
+                _fsData == null || length <= 0 ||
+                !_mappedReadBudget.TryReserve(length))
+                return;
+
+            _committedMappedReservation = length;
+            try
+            {
+                _committedMappedFile = MemoryMappedFile.CreateFromFile(_fsData, null, 0,
+                    MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+                _committedMappedView = _committedMappedFile.CreateViewAccessor(0, length,
+                    MemoryMappedFileAccess.Read);
+                _committedMappedLength = length;
+            }
+            catch (Exception exception) when (exception is IOException ||
+                exception is UnauthorizedAccessException ||
+                exception is PlatformNotSupportedException ||
+                exception is NotSupportedException ||
+                exception is ArgumentException ||
+                exception is OutOfMemoryException)
+            {
+                CommittedReadDiagnostics.MappedCreateFailure();
+                DisposeCommittedMappedView();
+            }
+        }
+
+        private void DisposeCommittedMappedView()
+        {
+            _committedMappedView?.Dispose();
+            _committedMappedView = null;
+            _committedMappedFile?.Dispose();
+            _committedMappedFile = null;
+            _committedMappedLength = 0;
+            if (_committedMappedReservation != 0)
+            {
+                _mappedReadBudget.Release(_committedMappedReservation);
+                _committedMappedReservation = 0;
+            }
+        }
+
+        private void DisableCommittedMappingForTesting()
+        {
+            _committedMappingDisabledForTesting = true;
+            DisposeCommittedMappedView();
+        }
+
+        private bool TryReadCommittedMapped(long offset, int count, out byte[] result)
+        {
+            result = null;
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
+
+            using (AcquireReadLock())
+            {
+                if (_committedMappedView == null || _rollbackCache.Count != 0 ||
+                    TransactionalCommitIsStarted)
+                {
+                    CommittedReadDiagnostics.MappedFallback();
+                    return false;
+                }
+
+                int length = GetReadLength(offset, count, eofData);
+                if (length == 0)
+                {
+                    result = Array.Empty<byte>();
+                    return true;
+                }
+                if (offset > _committedMappedLength - length)
+                {
+                    CommittedReadDiagnostics.MappedFallback();
+                    return false;
+                }
+
+                result = GC.AllocateUninitializedArray<byte>(length);
+                ReadCommittedMappedCore(offset, result);
+                return true;
+            }
+        }
+
+        internal byte[] TableReadCommittedPoint(long offset, int count)
+        {
+            if (TryReadCommittedMapped(offset, count, out byte[] result))
+                return result;
+            return Table_Read(useCache: true, offset, count,
+                recordContinuation: false, recordOffset: 0);
+        }
+
+        private bool TryReadCommittedMapped(long offset, scoped Span<byte> destination)
+        {
+            using (AcquireReadLock())
+            {
+                if (_committedMappedView == null || _rollbackCache.Count != 0 ||
+                    TransactionalCommitIsStarted || offset < 0 ||
+                    offset > eofData - destination.Length ||
+                    offset > _committedMappedLength - destination.Length)
+                {
+                    CommittedReadDiagnostics.MappedFallback();
+                    return false;
+                }
+
+                ReadCommittedMappedCore(offset, destination);
+                return true;
+            }
+        }
+
+        private void ReadCommittedMappedCore(long offset, scoped Span<byte> destination)
+        {
+            ulong viewOffset = checked((ulong)(_committedMappedView.PointerOffset + offset));
+            _committedMappedView.SafeMemoryMappedViewHandle.ReadSpan(viewOffset, destination);
+            CommittedReadDiagnostics.MappedRead(destination.Length);
+        }
+
         private static void WriteAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
         {
             RandomAccess.Write(stream.SafeFileHandle, new ReadOnlySpan<byte>(buffer, bufferOffset, count), fileOffset);
@@ -661,12 +790,17 @@ namespace DBreeze.Storage
 
         private static void ReadExactlyAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
         {
-            Span<byte> destination = new Span<byte>(buffer, bufferOffset, count);
+            ReadExactlyAt(stream, new Span<byte>(buffer, bufferOffset, count), fileOffset);
+        }
+
+        private static void ReadExactlyAt(FileStream stream, Span<byte> destination, long fileOffset)
+        {
             while (!destination.IsEmpty)
             {
                 int read = RandomAccess.Read(stream.SafeFileHandle, destination, fileOffset);
                 if (read == 0)
                     throw new EndOfStreamException("Unexpected end of storage stream.");
+                CommittedReadDiagnostics.RandomAccessRead(read);
                 destination = destination.Slice(read);
                 fileOffset += read;
             }
@@ -776,6 +910,7 @@ namespace DBreeze.Storage
 
         private void CloseStorageStreams()
         {
+            DisposeCommittedMappedView();
             _fsData?.Dispose();
             _fsData = null;
             _fsRollback?.Dispose();
@@ -807,6 +942,7 @@ namespace DBreeze.Storage
         {
             using (AcquireWriteLock())
             {
+                DisposeCommittedMappedView();
                 if (_fsData != null)
                 {
                     _fsData.Dispose();
@@ -1205,6 +1341,49 @@ namespace DBreeze.Storage
             return Table_Read(useCache, offset, count, useCache, recordOffset);
         }
 
+        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination)
+        {
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (destination.IsEmpty)
+                return true;
+
+            if (TryReadCommittedMapped(offset, destination))
+                return true;
+
+            if (Monitor.TryEnter(_sharedReadLane))
+            {
+                CommittedReadDiagnostics.SharedRead();
+                try
+                {
+                    if (_rollbackCache.Count != 0 || TransactionalCommitIsStarted ||
+                        offset > eofData - destination.Length)
+                        return false;
+
+                    ReadFromSharedBuffer(offset, destination, eofData,
+                        recordContinuation: false, recordOffset: 0);
+                    return true;
+                }
+                finally
+                {
+                    Monitor.Exit(_sharedReadLane);
+                }
+            }
+
+            CommittedReadDiagnostics.ContendedRead();
+            using (AcquireReadLock())
+            {
+                if (_rollbackCache.Count != 0 || TransactionalCommitIsStarted ||
+                    offset > eofData - destination.Length)
+                    return false;
+
+                if (!TryReadContendedWindow(offset, destination, eofData,
+                    recordContinuation: false, recordOffset: 0))
+                    ReadExactlyAt(_fsData, destination, offset);
+                return true;
+            }
+        }
+
         private byte[] Table_Read(bool useCache, long offset, int count,
             bool recordContinuation, long recordOffset)
         {
@@ -1215,6 +1394,7 @@ namespace DBreeze.Storage
             {
                 if (Monitor.TryEnter(_sharedReadLane))
                 {
+                    CommittedReadDiagnostics.SharedRead();
                     try
                     {
                         return Table_ReadCore(useCache, offset, count,
@@ -1227,6 +1407,7 @@ namespace DBreeze.Storage
                     }
                 }
 
+                CommittedReadDiagnostics.ContendedRead();
                 return Table_ReadCore(useCache, offset, count,
                     useSharedReadLane: false, useContendedReadWindow: true,
                     recordContinuation, recordOffset);
@@ -1323,7 +1504,7 @@ namespace DBreeze.Storage
             }
         }
 
-        private void ReadFromSharedBuffer(long offset, byte[] result, long visibleLength,
+        private void ReadFromSharedBuffer(long offset, Span<byte> result, long visibleLength,
             bool recordContinuation, long recordOffset)
         {
             long relativeOffset = offset - _sharedReadBufferOffset;
@@ -1332,6 +1513,9 @@ namespace DBreeze.Storage
                 relativeOffset >= 0 &&
                 relativeOffset <= _sharedReadBufferLength &&
                 result.Length <= _sharedReadBufferLength - relativeOffset;
+
+            if (cacheHit)
+                CommittedReadDiagnostics.WindowHit();
 
             if (!cacheHit)
             {
@@ -1376,7 +1560,7 @@ namespace DBreeze.Storage
             new ReadOnlySpan<byte>(_sharedReadBuffer, (int)relativeOffset, result.Length).CopyTo(result);
         }
 
-        private bool TryReadCommittedPage(long offset, byte[] result, long visibleLength)
+        private bool TryReadCommittedPage(long offset, Span<byte> result, long visibleLength)
         {
             int offsetInPage = (int)(offset & (ReadPageSize - 1));
             int count = result.Length;
@@ -1419,11 +1603,11 @@ namespace DBreeze.Storage
                 cache.IsPopulated = true;
             }
 
-            Buffer.BlockCopy(cache.Buffer, offsetInPage, result, 0, count);
+            new ReadOnlySpan<byte>(cache.Buffer, offsetInPage, count).CopyTo(result);
             return true;
         }
 
-        private bool TryReadContendedWindow(long offset, byte[] result, long visibleLength,
+        private bool TryReadContendedWindow(long offset, Span<byte> result, long visibleLength,
             bool recordContinuation, long recordOffset)
         {
             ReadPageCache cache = _threadContendedReadWindow ??= new ReadPageCache();
@@ -1432,6 +1616,8 @@ namespace DBreeze.Storage
             bool hit = cache.OwnerId == _instanceId && cache.MutationVersion == mutationVersion &&
                 cache.IsPopulated && relativeOffset >= 0 &&
                 relativeOffset <= cache.PageLength && result.Length <= cache.PageLength - relativeOffset;
+            if (hit)
+                CommittedReadDiagnostics.WindowHit();
             if (!hit)
             {
                 bool hasCurrentWindow = cache.OwnerId == _instanceId &&
@@ -1469,7 +1655,7 @@ namespace DBreeze.Storage
                 relativeOffset = offset - windowOffset;
             }
 
-            Buffer.BlockCopy(cache.Buffer, (int)relativeOffset, result, 0, result.Length);
+            new ReadOnlySpan<byte>(cache.Buffer, (int)relativeOffset, result.Length).CopyTo(result);
             return true;
         }
 
@@ -1778,6 +1964,7 @@ namespace DBreeze.Storage
                 _rollbackCache.Clear();
 
                 eofData = _physicalDataLength;
+                RefreshCommittedMappedView();
 
             }
         }
@@ -1841,6 +2028,7 @@ namespace DBreeze.Storage
                 eofData = _physicalDataLength;
 
                 TransactionalCommitIsStarted = false;
+                RefreshCommittedMappedView();
             }
         }
 
@@ -1855,6 +2043,7 @@ namespace DBreeze.Storage
                 {
                     RollbackCore();
                     TransactionalCommitIsStarted = false;
+                    RefreshCommittedMappedView();
                 }
             }
             catch (Exception ex)
@@ -1874,6 +2063,7 @@ namespace DBreeze.Storage
                 using (AcquireWriteLock())
                 {
                     RollbackCore();
+                    RefreshCommittedMappedView();
                 }
             }
             catch (Exception ex)

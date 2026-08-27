@@ -158,6 +158,19 @@ namespace DBreeze.Storage
                 return fsr.Table_ReadRecordContinuation(true, recordOffset, offset, quantity);
             return _tableStorage.Table_Read(useCache, offset, quantity);
         }
+
+        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination)
+        {
+            return _tableStorage is FSR fsr &&
+                fsr.TryTableReadCommittedInto(offset, destination);
+        }
+
+        internal byte[] TableReadCommittedPoint(long offset, int quantity)
+        {
+            if (_tableStorage is FSR fsr)
+                return fsr.TableReadCommittedPoint(offset, quantity);
+            return _tableStorage.Table_Read(true, offset, quantity);
+        }
         public void RestoreTableFromTheOtherTable(string newTableFullPath)
         {
             _tableStorage.RestoreTableFromTheOtherTable(newTableFullPath);

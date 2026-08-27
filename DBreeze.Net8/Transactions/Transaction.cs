@@ -135,6 +135,8 @@ namespace DBreeze.Transactions
             RandomKeySorter.Reset();
             transactionWriteTables.Clear();
             transactionReadTables.Clear();
+            _lastReadTableName = null;
+            _lastReadTable = null;
 
             try
             {
@@ -328,7 +330,9 @@ namespace DBreeze.Transactions
         /// <summary>
         /// Small buffer for the tables, we are going to read from.
         /// </summary>
-        Dictionary<string, Rtbe> transactionReadTables = new Dictionary<string, Rtbe>();        
+        Dictionary<string, Rtbe> transactionReadTables = new Dictionary<string, Rtbe>();
+        string _lastReadTableName;
+        Rtbe _lastReadTable;
 
         /// <summary>
         /// Technical class, who holds reference to the table and its last modification dts
@@ -339,6 +343,16 @@ namespace DBreeze.Transactions
             public LTrie Ltrie { get; set; }
             public long dtTableFixed { get; set; }
             public ITrieRootNode ReadRoot { get; set; }
+        }
+
+        private bool IsTableReservedForWrite(string tableName)
+        {
+            if (this._transactionUnit.TransactionWriteTablesCount == 0)
+            {
+                DBreeze.Storage.CommittedReadDiagnostics.ReservationBypass();
+                return false;
+            }
+            return this._transactionUnit.If_TableIsReservedForWrite(tableName);
         }
 
         /// <summary>
@@ -522,7 +536,20 @@ namespace DBreeze.Transactions
             }
             //////////////////////////////////////////////////////////////////////////// END READ VISIBILITY SCOPE MODIFIER            
 
-            transactionReadTables.TryGetValue(tableName, out rtbe);
+            bool ownerThread = Environment.CurrentManagedThreadId == this.ManagedThreadId;
+            if (ownerThread && _lastReadTable != null &&
+                (ReferenceEquals(_lastReadTableName, tableName) ||
+                 String.Equals(_lastReadTableName, tableName, StringComparison.Ordinal)))
+            {
+                rtbe = _lastReadTable;
+                DBreeze.Storage.CommittedReadDiagnostics.TransactionFastHit();
+            }
+            else
+            {
+                if (ownerThread)
+                    DBreeze.Storage.CommittedReadDiagnostics.TransactionFastMiss();
+                transactionReadTables.TryGetValue(tableName, out rtbe);
+            }
 
             if (rtbe == null)
             {
@@ -535,7 +562,7 @@ namespace DBreeze.Transactions
                 AddOpenTable(tableName);
 
                 //Checking READ_SYNCHRO
-                if (this._transactionUnit.If_TableIsReservedForWrite(tableName))
+                if (IsTableReservedForWrite(tableName))
                 {
                     if (!AsForRead)
                     {
@@ -548,7 +575,13 @@ namespace DBreeze.Transactions
                 //NO, we want to read, getting new read node, remembering when table was fixed (Committed or Rollbacked)
                 root = table.GetTrieReadNode(out dtTableFixed);               
 
-                transactionReadTables.Add(tableName, new Rtbe() { Ltrie = table, dtTableFixed = dtTableFixed, ReadRoot = root });
+                rtbe = new Rtbe() { Ltrie = table, dtTableFixed = dtTableFixed, ReadRoot = root };
+                transactionReadTables.Add(tableName, rtbe);
+                if (ownerThread)
+                {
+                    _lastReadTableName = tableName;
+                    _lastReadTable = rtbe;
+                }
 
                 return table;
             }
@@ -557,7 +590,7 @@ namespace DBreeze.Transactions
                 //Table was found in the cache
 
                 //Checking READ_SYNCHRO
-                if (this._transactionUnit.If_TableIsReservedForWrite(tableName))
+                if (IsTableReservedForWrite(tableName))
                 {
                     if (!AsForRead)
                     {
@@ -582,8 +615,8 @@ namespace DBreeze.Transactions
                     root = rtbe.Ltrie.GetTrieReadNode(out dtTableFixed);                   
 
                     //Refreshing cache data.
-                    transactionReadTables[tableName].dtTableFixed = dtTableFixed;
-                    transactionReadTables[tableName].ReadRoot = root;
+                    rtbe.dtTableFixed = dtTableFixed;
+                    rtbe.ReadRoot = root;
 
                     if (root == null)
                         return null;    //Table is not operable
@@ -592,6 +625,12 @@ namespace DBreeze.Transactions
                 {
                     //old read-root can be used
                     root = rtbe.ReadRoot;                   
+                }
+
+                if (ownerThread)
+                {
+                    _lastReadTableName = tableName;
+                    _lastReadTable = rtbe;
                 }
 
                 return rtbe.Ltrie;

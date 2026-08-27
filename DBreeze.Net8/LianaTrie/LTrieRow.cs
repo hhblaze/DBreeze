@@ -42,6 +42,9 @@ namespace DBreeze.LianaTrie
         /// </summary>
         public uint ValueFullLength = 0;
         internal bool ValueIsNull;
+        // Set only by the committed direct-key fast path. Traversal rows must keep using FSR's
+        // directional windows; routing them through mmap loses forward/backward read-ahead.
+        internal bool PreferCommittedPointRead;
 
         DateTime TableFixTime = DateTime.UtcNow;
 
@@ -160,9 +163,14 @@ namespace DBreeze.LianaTrie
                     if (length == 0)
                         return Array.Empty<byte>();
 
+                    long valueOffset = checked(ValueStartPointer + startIndex);
+                    if (useCache && PreferCommittedPointRead &&
+                        _root.Tree.Storage is StorageLayer pointStorage)
+                        return pointStorage.TableReadCommittedPoint(valueOffset, (int)length);
+
                     return _root.Tree.Storage.Table_ReadRecordContinuation(useCache,
                         checked((long)LinkToValue.DynamicLength_To_UInt64_BigEndian()),
-                        checked(ValueStartPointer + startIndex), (int)length);
+                        valueOffset, (int)length);
                 }
 
                 return this._root.Tree.Cache.ReadValuePartially(this.LinkToValue, startIndex, length, useCache, out ValueStartPointer, out ValueFullLength);
@@ -192,6 +200,11 @@ namespace DBreeze.LianaTrie
                         return null;
                     if (ValueFullLength == 0)
                         return Array.Empty<byte>();
+
+                    if (useCache && PreferCommittedPointRead &&
+                        _root.Tree.Storage is StorageLayer pointStorage)
+                        return pointStorage.TableReadCommittedPoint(ValueStartPointer,
+                            checked((int)ValueFullLength));
 
                     return _root.Tree.Storage.Table_ReadRecordContinuation(useCache,
                         checked((long)LinkToValue.DynamicLength_To_UInt64_BigEndian()),

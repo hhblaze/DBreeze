@@ -75,6 +75,17 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--committed-mapping", StringComparison.OrdinalIgnoreCase)))
+        {
+            StorageRegressionTests.CommittedMappedReadsPreserveVisibilityAndLifecycle();
+            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedMappedReadsPreserveVisibilityAndLifecycle)}");
+            StorageRegressionTests.CommittedMappedReadBudgetEnforcesLimits();
+            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedMappedReadBudgetEnforcesLimits)}");
+            StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits();
+            Console.WriteLine($"PASS {nameof(StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits)}");
+            return 0;
+        }
+
         if (args.Any(static arg => String.Equals(arg, "--journal", StringComparison.OrdinalIgnoreCase)))
         {
             TransactionJournalPayloadCodecSupportsAllPersistedFormats();
@@ -116,6 +127,8 @@ internal static class Program
             (nameof(StorageRegressionTests.CommittedReadCacheAdmissionIsLazy), StorageRegressionTests.CommittedReadCacheAdmissionIsLazy),
             (nameof(StorageRegressionTests.CommittedReadAheadSupportsBothDirections), StorageRegressionTests.CommittedReadAheadSupportsBothDirections),
             (nameof(StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits),
+            (nameof(StorageRegressionTests.CommittedMappedReadsPreserveVisibilityAndLifecycle), StorageRegressionTests.CommittedMappedReadsPreserveVisibilityAndLifecycle),
+            (nameof(StorageRegressionTests.CommittedMappedReadBudgetEnforcesLimits), StorageRegressionTests.CommittedMappedReadBudgetEnforcesLimits),
             (nameof(StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation), StorageRegressionTests.BackupRestoreStreamsAndRejectsTruncation),
             (nameof(StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets), StorageRegressionTests.RemoteStorageKeepsSharedTablesAliveAndHonorsOffsets),
             (nameof(StorageRegressionTests.RemoteStorageChunksLargeIoAndFinalFlush), StorageRegressionTests.RemoteStorageChunksLargeIoAndFinalFlush),

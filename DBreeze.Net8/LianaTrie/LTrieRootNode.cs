@@ -1033,7 +1033,7 @@ namespace DBreeze.LianaTrie
             else
             {
                 pointerBytes = CommittedReadNode.PointerToBytes(valuePointer, DefaultPointerLen);
-                Tree.Cache.ReadKeyValue(true, pointerBytes, out valueStartPointer,
+                Tree.Cache.ReadKeyValueCommittedPoint(pointerBytes, out valueStartPointer,
                     out valueLength, out storedKey, out value);
             }
 
@@ -1056,6 +1056,7 @@ namespace DBreeze.LianaTrie
 
             row.LinkToValue = pointerBytes ??
                 CommittedReadNode.PointerToBytes(valuePointer, DefaultPointerLen);
+            row.PreferCommittedPointRead = true;
             return row;
         }
 

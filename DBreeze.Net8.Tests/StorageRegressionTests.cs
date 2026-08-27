@@ -26,6 +26,7 @@ internal static class StorageRegressionTests
             using (var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
             {
                 var storage = new StorageLayer(tablePath, new TrieSettings(), configuration);
+                DisableCommittedMapping(storage);
                 start = DecodePointer(storage.Table_WriteToTheEnd(payload));
                 storage.Commit();
 
@@ -97,6 +98,7 @@ internal static class StorageRegressionTests
             using (var reopenedConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
             {
                 var reopened = new StorageLayer(tablePath, new TrieSettings(), reopenedConfiguration);
+                DisableCommittedMapping(reopened);
                 AssertBytes(Enumerable.Repeat((byte)0xA5, 64).ToArray(), reopened.Table_Read(true, start + 97, 64),
                     "Reopen used a page from the previous FSR instance.");
                 reopened.Table_Read(true, start + 97, 64);
@@ -147,6 +149,7 @@ internal static class StorageRegressionTests
             byte[] payload = new byte[10 * readPageSize];
             new Random(9827).NextBytes(payload);
             var storage = new StorageLayer(Path.Combine(root, "10"), new TrieSettings(), configuration);
+            DisableCommittedMapping(storage);
             long start = DecodePointer(storage.Table_WriteToTheEnd(payload));
             storage.Commit();
             long firstFullPage = AlignUp(start, readPageSize);
@@ -205,6 +208,7 @@ internal static class StorageRegressionTests
             for (int i = 0; i < mixedStorages.Length; i++)
             {
                 mixedStorages[i] = new StorageLayer(Path.Combine(root, (20 + i).ToString()), new TrieSettings(), configuration);
+                DisableCommittedMapping(mixedStorages[i]);
                 long mixedStart = DecodePointer(mixedStorages[i].Table_WriteToTheEnd(mixedPayload));
                 mixedStorages[i].Commit();
                 mixedPayloadStarts[i] = mixedStart;
@@ -245,6 +249,7 @@ internal static class StorageRegressionTests
         {
             using var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
             var storage = new StorageLayer(Path.Combine(root, "1"), new TrieSettings(), configuration);
+            DisableCommittedMapping(storage);
             byte[] payload = new byte[128 * 1024];
             new Random(240817).NextBytes(payload);
             long start = DecodePointer(storage.Table_WriteToTheEnd(payload));
@@ -411,7 +416,7 @@ internal static class StorageRegressionTests
                     startBarrier.SignalAndWait();
                     while (Volatile.Read(ref finished) == 0)
                     {
-                        byte[] value = storage.Table_Read(true, start, 64);
+                        byte[] value = ReadCommittedPoint(storage, start, 64);
                         byte generation = value[0];
                         if (value.AsSpan().IndexOfAnyExcept(generation) >= 0)
                             throw new InvalidOperationException("Concurrent committed read observed torn buffer contents.");
@@ -421,7 +426,7 @@ internal static class StorageRegressionTests
                 Task[] participants = readers.Append(writer).ToArray();
                 Assert(Task.WaitAll(participants, TimeSpan.FromSeconds(60)),
                     $"Concurrent committed read test timed out with {readerCount} readers.");
-                AssertBytes(Enumerable.Repeat((byte)100, 64).ToArray(), storage.Table_Read(true, start, 64),
+                AssertBytes(Enumerable.Repeat((byte)100, 64).ToArray(), ReadCommittedPoint(storage, start, 64),
                     "Concurrent commit did not publish its final generation.");
                 storage.Table_Dispose();
             }
@@ -430,6 +435,114 @@ internal static class StorageRegressionTests
         {
             DeleteFolder(root);
         }
+    }
+
+    public static void CommittedMappedReadsPreserveVisibilityAndLifecycle()
+    {
+        string root = CreateFolder(nameof(CommittedMappedReadsPreserveVisibilityAndLifecycle));
+        string tablePath = Path.Combine(root, "1");
+        try
+        {
+            using var configuration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK };
+            var storage = new StorageLayer(tablePath, new TrieSettings(), configuration);
+            byte[] initial = new byte[64 * 1024 + 37];
+            new Random(260827).NextBytes(initial);
+            long start = DecodePointer(storage.Table_WriteToTheEnd(initial));
+            storage.Commit();
+
+            if (Environment.Is64BitProcess)
+                Assert(GetCommittedMappedLength(storage) == storage.Length,
+                    "Committed mapping did not cover the committed file after commit.");
+            AssertBytes(initial.AsSpan(31 * 1024 - 17, 4096).ToArray(),
+                ReadCommittedPoint(storage, start + 31 * 1024 - 17, 4096),
+                "Mapped cross-boundary read returned incorrect bytes.");
+
+            byte[] appended = Enumerable.Repeat((byte)0xA7, 521).ToArray();
+            long appendOffset = DecodePointer(storage.Table_WriteToTheEnd(appended));
+            Assert(ReadCommittedPoint(storage, appendOffset, appended.Length).Length == 0,
+                "Mapped committed view exposed an uncommitted append.");
+            storage.Commit();
+            AssertBytes(appended, ReadCommittedPoint(storage, appendOffset, appended.Length),
+                "Mapped view was not extended after commit.");
+
+            byte[] original = initial.AsSpan(123, 257).ToArray();
+            byte[] committedReplacement = Enumerable.Repeat((byte)0x5C, original.Length).ToArray();
+            storage.Table_WriteByOffset(start + 123, committedReplacement);
+            AssertBytes(original, ReadCommittedPoint(storage, start + 123, original.Length),
+                "Mapped view exposed an uncommitted overwrite.");
+            storage.TransactionalCommit();
+            AssertBytes(original, ReadCommittedPoint(storage, start + 123, original.Length),
+                "Mapped view exposed a prepared transaction before commit-finished.");
+            storage.TransactionalCommitIsFinished();
+            AssertBytes(committedReplacement, ReadCommittedPoint(storage, start + 123, original.Length),
+                "Mapped view did not publish commit-finished bytes.");
+
+            byte[] rolledBack = Enumerable.Repeat((byte)0xE3, original.Length).ToArray();
+            storage.Table_WriteByOffset(start + 123, rolledBack);
+            storage.TransactionalCommit();
+            storage.TransactionalRollback();
+            AssertBytes(committedReplacement, ReadCommittedPoint(storage, start + 123, original.Length),
+                "Mapped view retained rolled-back bytes.");
+
+            string sourcePath = Path.Combine(root, "2");
+            byte[] restored = Enumerable.Repeat((byte)0x39, initial.Length).ToArray();
+            using (var sourceConfiguration = new DBreezeConfiguration { Storage = DBreezeConfiguration.eStorage.DISK })
+            {
+                var source = new StorageLayer(sourcePath, new TrieSettings(), sourceConfiguration);
+                source.Table_WriteToTheEnd(restored);
+                source.Commit();
+                source.Table_Dispose();
+            }
+            storage.RestoreTableFromTheOtherTable(sourcePath);
+            AssertBytes(restored.AsSpan(123, 257).ToArray(),
+                ReadCommittedPoint(storage, start + 123, 257),
+                "Restore retained the previous mapped file.");
+
+            storage.RecreateFiles();
+            byte[] recreated = { 1, 3, 5, 7, 9 };
+            long recreatedStart = DecodePointer(storage.Table_WriteToTheEnd(recreated));
+            storage.Commit();
+            AssertBytes(recreated, ReadCommittedPoint(storage, recreatedStart, recreated.Length),
+                "Recreate retained the previous mapped file.");
+
+            DisableCommittedMapping(storage);
+            AssertBytes(recreated, ReadCommittedPoint(storage, recreatedStart, recreated.Length),
+                "RandomAccess fallback changed committed-read semantics.");
+            storage.Table_Dispose();
+            Assert(GetCommittedMappedLength(storage) == 0,
+                "Disposed storage retained a committed mapping.");
+        }
+        finally
+        {
+            DeleteFolder(root);
+        }
+    }
+
+    public static void CommittedMappedReadBudgetEnforcesLimits()
+    {
+        Type registry = typeof(StorageLayer).Assembly.GetType(
+            "DBreeze.Storage.CommittedMappedReadBudgetRegistry", throwOnError: true);
+        Type budgetType = registry.GetNestedType("Budget", BindingFlags.NonPublic);
+        object budget = Activator.CreateInstance(budgetType, nonPublic: true);
+        MethodInfo tryReserve = budgetType.GetMethod("TryReserve", BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo release = budgetType.GetMethod("Release", BindingFlags.Instance | BindingFlags.NonPublic);
+        long tableLimit = (long)registry.GetField("TableLimitBytes",
+            BindingFlags.Static | BindingFlags.NonPublic).GetRawConstantValue();
+        bool Reserve(long bytes) => (bool)tryReserve.Invoke(budget, new object[] { bytes });
+        void Release(long bytes) => release.Invoke(budget, new object[] { bytes });
+
+        Assert(!Reserve(tableLimit + 1),
+            "Committed mapping accepted a table larger than the 64 GiB limit.");
+        for (int index = 0; index < 4; index++)
+            Assert(Reserve(tableLimit),
+                $"Committed mapping rejected configuration reservation {index + 1}/4.");
+        Assert(!Reserve(1),
+            "Committed mapping exceeded the 256 GiB configuration limit.");
+        for (int index = 0; index < 4; index++)
+            Release(tableLimit);
+        Assert(Reserve(4096),
+            "Committed mapping budget did not release a disposed reservation.");
+        Release(4096);
     }
 
     public static void BackupRestoreStreamsAndRejectsTruncation()
@@ -1009,6 +1122,40 @@ internal static class StorageRegressionTests
         typeof(StorageLayer).GetField("_tableStorage", BindingFlags.Instance | BindingFlags.NonPublic)
             ?.GetValue(storage)
         ?? throw new InvalidOperationException("StorageLayer._tableStorage was not found.");
+
+    private static void DisableCommittedMapping(StorageLayer storage)
+    {
+        object tableStorage = GetTableStorage(storage);
+        Type type = tableStorage.GetType();
+        MethodInfo disable = type.GetMethod("DisableCommittedMappingForTesting",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FSR mapping test hook was not found.");
+        disable.Invoke(tableStorage, null);
+    }
+
+    private static long GetCommittedMappedLength(StorageLayer storage)
+    {
+        object tableStorage = GetTableStorage(storage);
+        return (long)(tableStorage.GetType().GetField("_committedMappedLength",
+            BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(tableStorage)
+            ?? throw new InvalidOperationException("FSR mapped length was not found."));
+    }
+
+    private static byte[] ReadCommittedPoint(StorageLayer storage, long offset, int count)
+    {
+        MethodInfo method = typeof(StorageLayer).GetMethod("TableReadCommittedPoint",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("StorageLayer point-read fast path was not found.");
+        try
+        {
+            return (byte[])method.Invoke(storage, new object[] { offset, count });
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            throw;
+        }
+    }
 
     private static void AssertSharedReadBuffer(StorageLayer storage, bool expectedAllocated, string message)
     {

@@ -1130,6 +1130,25 @@ namespace DBreeze.LianaTrie
         /// <param name="val"></param>
         public void ReadKeyValue(bool useCache, byte[] pointer, out long valueStartPtr, out uint valueLength, out byte[] key, out byte[] val)
         {
+            ReadKeyValueCore(useCache, pointer, preferCommittedPointRead: false,
+                out valueStartPtr, out valueLength, out key, out val);
+        }
+
+        /// <summary>
+        /// Point-lookup variant.  A direct committed lookup has no sequential successor, so the
+        /// disk implementation may use its memory-mapped view without disrupting traversal
+        /// read-ahead.  Iterators deliberately continue to use <see cref="ReadKeyValue"/>.
+        /// </summary>
+        internal void ReadKeyValueCommittedPoint(byte[] pointer, out long valueStartPtr,
+            out uint valueLength, out byte[] key, out byte[] val)
+        {
+            ReadKeyValueCore(useCache: true, pointer, preferCommittedPointRead: true,
+                out valueStartPtr, out valueLength, out key, out val);
+        }
+
+        private void ReadKeyValueCore(bool useCache, byte[] pointer, bool preferCommittedPointRead,
+            out long valueStartPtr, out uint valueLength, out byte[] key, out byte[] val)
+        {
             key = null;
             val = null;
             valueStartPtr = 0;  //If valueLength=0 then valueStartPtr = 0
@@ -1144,15 +1163,21 @@ namespace DBreeze.LianaTrie
             // reads keep the historical 4 KiB probe because update/delete paths commonly consume
             // the complete record and can benefit from a single read.
             int initRead = useCache ? 111 : 4096;
+            StorageLayer pointStorage = preferCommittedPointRead
+                ? Trie.Storage as StorageLayer
+                : null;
 
             //DONT NEED TO EnlargeByteArray_BigEndian(8) ptr, because it's automatically done in TrieDisk Storage etc..
 
+            long lPtr = (long)pointer.DynamicLength_To_UInt64_BigEndian();
+
             //byte[] data = this._root.Tree.Storage.Read(ptr.EnlargeByteArray_BigEndian(8), initRead);
-            byte[] data = Trie.Storage.Table_Read(useCache, pointer, initRead);
+            byte[] data = pointStorage != null
+                ? pointStorage.TableReadCommittedPoint(lPtr, initRead)
+                : Trie.Storage.Table_Read(useCache, pointer, initRead);
             byte protocol = data[0];
             ushort keySize = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(1, 2));
             int valueSize = 0;
-            long lPtr = (long)pointer.DynamicLength_To_UInt64_BigEndian();
             
             /*VALUE SIZE COMPUTATION and NULL SUPPORT*/
             if ((data[3] & 0x80) > 0)
@@ -1181,7 +1206,9 @@ namespace DBreeze.LianaTrie
                     if ((keySize + valueSize + 7) > initRead)
                     {
                         initRead = keySize + valueSize + 7;
-                        data = Trie.Storage.Table_ReadRecordContinuation(useCache, lPtr, lPtr, initRead);
+                        data = pointStorage != null
+                            ? pointStorage.TableReadCommittedPoint(lPtr, initRead)
+                            : Trie.Storage.Table_ReadRecordContinuation(useCache, lPtr, lPtr, initRead);
                     }
 
                     key = data.Substring(7, keySize);
@@ -1199,7 +1226,9 @@ namespace DBreeze.LianaTrie
                     if ((keySize + valueSize + 11) > initRead)
                     {
                         initRead = keySize + valueSize + 11;
-                        data = Trie.Storage.Table_ReadRecordContinuation(useCache, lPtr, lPtr, initRead);
+                        data = pointStorage != null
+                            ? pointStorage.TableReadCommittedPoint(lPtr, initRead)
+                            : Trie.Storage.Table_ReadRecordContinuation(useCache, lPtr, lPtr, initRead);
                     }  
 
                     key = data.Substring(11, keySize);
@@ -1305,15 +1334,23 @@ namespace DBreeze.LianaTrie
             valueIsNull = false;
             const int initialRead = 111;
             long recordPointer = checked((long)pointer);
-            byte[] data = Trie.Storage.Table_Read(useCache, recordPointer, initialRead);
+            Span<byte> probe = stackalloc byte[initialRead];
+            byte[] allocatedData = null;
+            ReadOnlySpan<byte> data = probe;
+            if (!(useCache && Trie.Storage is StorageLayer storage &&
+                storage.TryTableReadCommittedInto(recordPointer, probe)))
+            {
+                allocatedData = Trie.Storage.Table_Read(useCache, recordPointer, initialRead);
+                data = allocatedData;
+            }
             if (data.Length < 7)
                 return false;
 
             byte protocol = data[0];
-            ushort keySize = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(1, 2));
+            ushort keySize = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(1, 2));
             valueIsNull = (data[3] & 0x80) != 0;
             if (!valueIsNull)
-                valueLength = BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(3, 4));
+                valueLength = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(3, 4));
 
             int headerSize;
             switch (protocol)
@@ -1326,8 +1363,11 @@ namespace DBreeze.LianaTrie
             if (keySize != expectedKey.Length)
                 return false;
             if (headerSize + keySize > data.Length)
-                data = Trie.Storage.Table_Read(useCache, recordPointer, headerSize + keySize);
-            if (!data.AsSpan(headerSize, keySize).SequenceEqual(expectedKey))
+            {
+                allocatedData = Trie.Storage.Table_Read(useCache, recordPointer, headerSize + keySize);
+                data = allocatedData;
+            }
+            if (!data.Slice(headerSize, keySize).SequenceEqual(expectedKey))
                 return false;
 
             valueStartPtr = recordPointer + headerSize + keySize;
