@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
-using Microsoft.Win32.SafeHandles;
+//using Microsoft.Win32.SafeHandles;
 
 using DBreeze.Utils;
 using DBreeze.Exceptions;
