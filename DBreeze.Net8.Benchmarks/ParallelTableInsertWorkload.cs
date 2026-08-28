@@ -99,22 +99,10 @@ internal static class ParallelTableInsertWorkload
         ParallelTableInsertSpec spec,
         byte[][] payloads)
     {
-        // DBreeze has no schema-only table creation API. A committed sentinel lifecycle
-        // materializes each empty table before timing, matching SQLite CREATE TABLE setup
-        // and keeping concurrent physical-file allocation outside the measured workload.
-        for (int table = 0; table < spec.TableCount; table++)
-        {
-            using (var transaction = engine.GetTransaction())
-            {
-                transaction.Insert(TableName(table), Int64.MinValue, payloads[0]);
-                transaction.Commit();
-            }
-            using (var transaction = engine.GetTransaction())
-            {
-                transaction.RemoveKey<long>(TableName(table), Int64.MinValue);
-                transaction.Commit();
-            }
-        }
+        // DBreeze has no schema-only table creation API. Concurrent committed sentinel
+        // lifecycles materialize the empty tables before timing, matching SQLite's schema
+        // setup while continuously exercising Scheme's create/idle-close/reacquire contract.
+        RunWorkers(spec, table => new DbreezePreparationWorker(engine, payloads[0], table));
     }
 
     internal static ParallelTableInsertResult RunSqlite(
@@ -450,6 +438,40 @@ internal static class ParallelTableInsertWorkload
     private interface IWorker : IDisposable
     {
         WorkerMetrics Execute(CancellationToken cancellationToken);
+    }
+
+    private sealed class DbreezePreparationWorker : IWorker
+    {
+        private readonly DBreezeEngine _engine;
+        private readonly byte[] _payload;
+        private readonly int _table;
+
+        internal DbreezePreparationWorker(DBreezeEngine engine, byte[] payload, int table)
+        {
+            _engine = engine;
+            _payload = payload;
+            _table = table;
+        }
+
+        public WorkerMetrics Execute(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string tableName = TableName(_table);
+            using (var transaction = _engine.GetTransaction())
+            {
+                transaction.Insert(tableName, Int64.MinValue, _payload);
+                transaction.Commit();
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            using (var transaction = _engine.GetTransaction())
+            {
+                transaction.RemoveKey<long>(tableName, Int64.MinValue);
+                transaction.Commit();
+            }
+            return new WorkerMetrics { Operations = 2, Transactions = 2 };
+        }
+
+        public void Dispose() { }
     }
 
     private sealed class DbreezeWorker : IWorker

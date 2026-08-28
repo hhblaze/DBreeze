@@ -61,9 +61,26 @@ namespace DBreeze
             internal LinkedListNode<string> OrderNode;
         }
 
+        enum DiskTableCloseState
+        {
+            Closing,
+            Failed
+        }
+
+        sealed class DiskTableClose
+        {
+            internal string TableName;
+            internal OpenTable Table;
+            internal string Reason;
+            internal DiskTableCloseState State;
+            internal Exception Failure;
+        }
+
         readonly Dictionary<string, IdleDiskTable> _idleDiskTables =
             new Dictionary<string, IdleDiskTable>(StringComparer.Ordinal);
         readonly LinkedList<string> _idleDiskTableOrder = new LinkedList<string>();
+        readonly Dictionary<string, DiskTableClose> _closingDiskTables =
+            new Dictionary<string, DiskTableClose>(StringComparer.Ordinal);
         Timer _idleDiskTableTimer;
 
         int _disposed;
@@ -84,8 +101,19 @@ namespace DBreeze
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
-            Interlocked.Exchange(ref _idleDiskTableTimer, null)?.Dispose();
+            Timer idleTimer = Interlocked.Exchange(ref _idleDiskTableTimer, null);
             SignalTableUsageChanged();
+
+            if (idleTimer != null)
+            {
+                using (var timerDisposed = new ManualResetEvent(false))
+                {
+                    if (idleTimer.Dispose(timerDisposed))
+                        timerDisposed.WaitOne();
+                }
+            }
+
+            WaitForClosingDiskTables();
 
             List<Exception> errors = null;
             List<OpenTable> tablesToDispose = new List<OpenTable>();
@@ -99,6 +127,12 @@ namespace DBreeze
                 _openTablesHolder.Clear();
                 _idleDiskTables.Clear();
                 _idleDiskTableOrder.Clear();
+                foreach (DiskTableClose close in _closingDiskTables.Values)
+                {
+                    if (close.State == DiskTableCloseState.Failed && close.Failure != null)
+                        (errors ??= new List<Exception>()).Add(close.Failure);
+                }
+                _closingDiskTables.Clear();
                 schemaToDispose = LTrie;
                 LTrie = null;
             }
@@ -157,7 +191,7 @@ namespace DBreeze
             if (Volatile.Read(ref _disposed) != 0)
                 return;
 
-            List<OpenTable> tablesToDispose = null;
+            List<DiskTableClose> tablesToDispose = null;
             bool scheduleAgain = false;
             long now = IdleNow();
 
@@ -194,8 +228,7 @@ namespace DBreeze
                     if (_openTablesHolder.TryGetValue(tableName, out OpenTable current) &&
                         ReferenceEquals(current, idle.Table) && current.UsageCount == 0)
                     {
-                        _openTablesHolder.Remove(tableName);
-                        (tablesToDispose ??= new List<OpenTable>()).Add(current);
+                        BeginDiskTableClose(tableName, current, "timer", ref tablesToDispose);
                     }
                     node = next;
                 }
@@ -206,17 +239,7 @@ namespace DBreeze
             }
 
             if (tablesToDispose != null)
-            {
-                foreach (OpenTable table in tablesToDispose)
-                {
-                    try { table.Dispose(); }
-                    catch (Exception exception)
-                    {
-                        Engine.BackgroundNotify("SchemeIdleTableDisposeFailed", exception);
-                    }
-                }
-                SignalTableUsageChanged();
-            }
+                CloseDiskTables(tablesToDispose, false);
 
             if (scheduleAgain && Volatile.Read(ref _disposed) == 0)
                 _idleDiskTableTimer?.Change(IdleDiskTableMilliseconds, Timeout.Infinite);
@@ -233,12 +256,163 @@ namespace DBreeze
         {
             lock (_tableUsageChanged)
             {
-                if (Volatile.Read(ref _disposed) == 0 &&
-                    Volatile.Read(ref _tableUsageVersion) == observedVersion)
-                {
+                if (Volatile.Read(ref _tableUsageVersion) == observedVersion)
                     Monitor.Wait(_tableUsageChanged);
-                }
             }
+        }
+
+        private void WaitForClosingDiskTables()
+        {
+            for (;;)
+            {
+                long observedVersion = Volatile.Read(ref _tableUsageVersion);
+                bool hasClosing = false;
+
+                _sync_openTablesHolder.EnterReadLock();
+                try
+                {
+                    foreach (DiskTableClose close in _closingDiskTables.Values)
+                    {
+                        if (close.State == DiskTableCloseState.Closing)
+                        {
+                            hasClosing = true;
+                            break;
+                        }
+                    }
+                }
+                finally
+                {
+                    _sync_openTablesHolder.ExitReadLock();
+                }
+
+                if (!hasClosing)
+                    return;
+
+                WaitForTableUsageChange(observedVersion);
+            }
+        }
+
+        private enum OpenTableLookup
+        {
+            Missing,
+            Acquired,
+            Closing,
+            Failed
+        }
+
+        private sealed class RetryDiskTableCloseException : Exception
+        {
+        }
+
+        private OpenTableLookup TryAcquireOpenTable(string tableName, out OpenTable table,
+            out Exception failure)
+        {
+            failure = null;
+            if (!_openTablesHolder.TryGetValue(tableName, out table))
+                return OpenTableLookup.Missing;
+
+            if (_closingDiskTables.TryGetValue(tableName, out DiskTableClose close) &&
+                ReferenceEquals(close.Table, table))
+            {
+                if (close.State == DiskTableCloseState.Failed)
+                {
+                    failure = close.Failure;
+                    return OpenTableLookup.Failed;
+                }
+
+                return OpenTableLookup.Closing;
+            }
+
+            table.Add();
+            return OpenTableLookup.Acquired;
+        }
+
+        private void BeginDiskTableClose(string tableName, OpenTable table, string reason,
+            ref List<DiskTableClose> tablesToDispose)
+        {
+            if (_closingDiskTables.ContainsKey(tableName))
+                return;
+
+            var close = new DiskTableClose
+            {
+                TableName = tableName,
+                Table = table,
+                Reason = reason,
+                State = DiskTableCloseState.Closing
+            };
+            _closingDiskTables.Add(tableName, close);
+            (tablesToDispose ??= new List<DiskTableClose>()).Add(close);
+        }
+
+        private void CloseDiskTables(List<DiskTableClose> tablesToDispose, bool throwOnFailure)
+        {
+            List<Exception> failures = null;
+            foreach (DiskTableClose close in tablesToDispose)
+            {
+                Exception failure = null;
+                try
+                {
+                    DurabilityTestHooks.Hit("scheme.idle-close.before-dispose|" + close.Reason + "|" + close.TableName);
+                    close.Table.Dispose();
+                    DurabilityTestHooks.Hit("scheme.idle-close.after-dispose|" + close.Reason + "|" + close.TableName);
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+
+                if (failure != null)
+                {
+                    Engine.DBisOperableReason = "Scheme.CloseDiskTable: " + close.TableName;
+                    Engine.DBisOperable = false;
+                }
+
+                _sync_openTablesHolder.EnterWriteLock();
+                try
+                {
+                    if (!_closingDiskTables.TryGetValue(close.TableName, out DiskTableClose currentClose) ||
+                        !ReferenceEquals(currentClose, close))
+                    {
+                        failure ??= new InvalidOperationException(
+                            "The disk-table close tombstone disappeared before close completion.");
+                    }
+
+                    if (failure == null)
+                    {
+                        if (_openTablesHolder.TryGetValue(close.TableName, out OpenTable currentTable) &&
+                            ReferenceEquals(currentTable, close.Table))
+                        {
+                            _openTablesHolder.Remove(close.TableName);
+                        }
+                        _closingDiskTables.Remove(close.TableName);
+                    }
+                    else
+                    {
+                        close.Failure = failure;
+                        close.State = DiskTableCloseState.Failed;
+                    }
+                }
+                finally
+                {
+                    _sync_openTablesHolder.ExitWriteLock();
+                }
+
+                if (failure != null)
+                {
+                    Engine.BackgroundNotify("SchemeIdleTableDisposeFailed", failure);
+                    (failures ??= new List<Exception>()).Add(failure);
+                }
+
+                SignalTableUsageChanged();
+            }
+
+            if (!throwOnFailure || failures == null)
+                return;
+
+            if (failures.Count == 1)
+                ExceptionDispatchInfo.Capture(failures[0]).Throw();
+
+            throw new AggregateException("One or more idle DBreeze tables failed to close.", failures);
         }
 
         /*          TODO
@@ -481,6 +655,25 @@ namespace DBreeze
         /// <returns></returns>
         internal LTrie GetTable(string userTableName)
         {
+            for (;;)
+            {
+                if (Volatile.Read(ref _disposed) != 0)
+                    throw new ObjectDisposedException(nameof(Scheme));
+
+                long observedVersion = Volatile.Read(ref _tableUsageVersion);
+                try
+                {
+                    return GetTableOnce(userTableName);
+                }
+                catch (RetryDiskTableCloseException)
+                {
+                    WaitForTableUsageChange(observedVersion);
+                }
+            }
+        }
+
+        private LTrie GetTableOnce(string userTableName)
+        {
             string tableName = GetUserTableNameAsString(userTableName);
 
             //TODO pattern based mapping If table doesn't exist we create it with properties which could be supplied after db init as regex theme.
@@ -500,10 +693,15 @@ namespace DBreeze
             _sync_openTablesHolder.EnterReadLock();
             try
             {
-                if (_openTablesHolder.TryGetValue(tableName, out otl))
-                {
-                    otl.Add();
+                OpenTableLookup lookup = TryAcquireOpenTable(tableName, out otl, out Exception closeFailure);
+                if (lookup == OpenTableLookup.Acquired)
                     return otl.Trie;
+                if (lookup == OpenTableLookup.Closing)
+                    throw new RetryDiskTableCloseException();
+                if (lookup == OpenTableLookup.Failed)
+                {
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,
+                        "Closing table " + tableName + " failed.", closeFailure);
                 }
             }
             finally
@@ -516,13 +714,15 @@ namespace DBreeze
             try
             {
 
-                _openTablesHolder.TryGetValue(tableName, out otl);
-
-                if (otl != null)
-                {
-                    //Try to increase usage and return LTrie
-                    otl.Add();
+                OpenTableLookup lookup = TryAcquireOpenTable(tableName, out otl, out Exception closeFailure);
+                if (lookup == OpenTableLookup.Acquired)
                     return otl.Trie;
+                if (lookup == OpenTableLookup.Closing)
+                    throw new RetryDiskTableCloseException();
+                if (lookup == OpenTableLookup.Failed)
+                {
+                    throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,
+                        "Closing table " + tableName + " failed.", closeFailure);
                 }
 
 
@@ -532,13 +732,15 @@ namespace DBreeze
                 try
                 {
                     //UpgradeableRead recheck
-                    _openTablesHolder.TryGetValue(tableName, out otl);
-
-                    if (otl != null)
-                    {
-                        //Try to increase usage and return LTrie
-                        otl.Add();
+                    lookup = TryAcquireOpenTable(tableName, out otl, out closeFailure);
+                    if (lookup == OpenTableLookup.Acquired)
                         return otl.Trie;
+                    if (lookup == OpenTableLookup.Closing)
+                        throw new RetryDiskTableCloseException();
+                    if (lookup == OpenTableLookup.Failed)
+                    {
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,
+                            "Closing table " + tableName + " failed.", closeFailure);
                     }
 
 
@@ -684,6 +886,10 @@ namespace DBreeze
                     _sync_openTablesHolder.ExitWriteLock();
                 }
             }
+            catch (RetryDiskTableCloseException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.SCHEME_GET_TABLE_WRITE_FAILED, tableName, ex);
@@ -726,7 +932,7 @@ namespace DBreeze
         /// </summary>
         /// <param name="closeOpenTables"></param>
         private void KeepIdleDiskTable(string tableName, OpenTable table,
-            ref List<OpenTable> tablesToDispose)
+            ref List<DiskTableClose> tablesToDispose)
         {
             long now = IdleNow();
             if (_idleDiskTables.TryGetValue(tableName, out IdleDiskTable existing))
@@ -760,8 +966,7 @@ namespace DBreeze
                 if (_openTablesHolder.TryGetValue(oldestName, out OpenTable current) &&
                     ReferenceEquals(current, oldest.Table) && current.UsageCount == 0)
                 {
-                    _openTablesHolder.Remove(oldestName);
-                    (tablesToDispose ??= new List<OpenTable>()).Add(current);
+                    BeginDiskTableClose(oldestName, current, "limit", ref tablesToDispose);
                 }
             }
         }
@@ -775,7 +980,7 @@ namespace DBreeze
             OpenTable ot = null;
             bool toClose = false;
             bool hasIdleTables = false;
-            List<OpenTable> tablesToDispose = null;
+            List<DiskTableClose> tablesToDispose = null;
 
             string alternativeTableLocation = String.Empty;
 
@@ -837,16 +1042,18 @@ namespace DBreeze
                 _sync_openTablesHolder.ExitWriteLock();
             }
 
-            if (tablesToDispose != null)
+            try
             {
-                foreach (OpenTable table in tablesToDispose)
-                    table.Dispose();
+                if (tablesToDispose != null)
+                    CloseDiskTables(tablesToDispose, true);
             }
+            finally
+            {
+                if (hasIdleTables)
+                    ScheduleIdleDiskTableSweep();
 
-            if (hasIdleTables)
-                ScheduleIdleDiskTableSweep();
-
-            SignalTableUsageChanged();
+                SignalTableUsageChanged();
+            }
         }
 
 
@@ -982,10 +1189,37 @@ namespace DBreeze
         /// <param name="userTableName"></param>
         public void DeleteTable(string userTableName)
         {
+            for (;;)
+            {
+                if (Volatile.Read(ref _disposed) != 0)
+                    return;
+
+                long observedVersion = Volatile.Read(ref _tableUsageVersion);
+                if (DeleteTableInternal(userTableName))
+                    return;
+
+                WaitForTableUsageChange(observedVersion);
+            }
+        }
+
+        private bool DeleteTableInternal(string userTableName)
+        {
             string tableName = GetUserTableNameAsString(userTableName);
+            bool completed = false;
             _sync_openTablesHolder.EnterWriteLock();
             try
             {
+                if (_closingDiskTables.TryGetValue(tableName, out DiskTableClose close))
+                {
+                    if (close.State == DiskTableCloseState.Failed)
+                    {
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,
+                            "Closing table " + tableName + " failed.", close.Failure);
+                    }
+
+                    return false;
+                }
+
                 cachedTableNames.Remove(tableName);
 
                 if (_openTablesHolder.TryGetValue(tableName, out OpenTable openTable))
@@ -996,15 +1230,17 @@ namespace DBreeze
                 }
 
                 string physicalDbFileName = GetPhysicalPathToTheUserTable(userTableName);
-                if (physicalDbFileName == String.Empty)
-                    return;
+                if (physicalDbFileName != String.Empty)
+                {
+                    byte[] btTableName = GetUserTableNameAsByte(userTableName);
+                    LTrie.Remove(ref btTableName);
+                    LTrie.Commit();
 
-                byte[] btTableName = GetUserTableNameAsByte(userTableName);
-                LTrie.Remove(ref btTableName);
-                LTrie.Commit();
+                    if (physicalDbFileName != "MEMORY")
+                        DeleteAllReleatedTableFiles(physicalDbFileName);
+                }
 
-                if (physicalDbFileName != "MEMORY")
-                    DeleteAllReleatedTableFiles(physicalDbFileName);
+                completed = true;
             }
             catch (Exception ex)
             {
@@ -1016,8 +1252,11 @@ namespace DBreeze
             finally
             {
                 _sync_openTablesHolder.ExitWriteLock();
-                SignalTableUsageChanged();
             }
+
+            if (completed)
+                SignalTableUsageChanged();
+            return completed;
         }
 
 
@@ -1064,6 +1303,26 @@ namespace DBreeze
                 string newTableName = GetUserTableNameAsString(newUserTableName);
                 byte[] btOldTableName = GetUserTableNameAsByte(oldUserTableName);
                 byte[] btNewTableName = GetUserTableNameAsByte(newUserTableName);
+
+                if (_closingDiskTables.TryGetValue(oldTableName, out DiskTableClose sourceClose))
+                {
+                    if (sourceClose.State == DiskTableCloseState.Failed)
+                    {
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,
+                            "Closing table " + oldTableName + " failed.", sourceClose.Failure);
+                    }
+                    return false;
+                }
+
+                if (_closingDiskTables.TryGetValue(newTableName, out DiskTableClose destinationClose))
+                {
+                    if (destinationClose.State == DiskTableCloseState.Failed)
+                    {
+                        throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.DB_IS_NOT_OPERABLE,
+                            "Closing table " + newTableName + " failed.", destinationClose.Failure);
+                    }
+                    return false;
+                }
 
                 LTrieRow sourceRow = LTrie.GetKey(btOldTableName, false, false);
                 if (!sourceRow.Exists)

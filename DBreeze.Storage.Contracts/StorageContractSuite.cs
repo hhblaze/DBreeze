@@ -24,8 +24,9 @@ internal static class StorageContractSuite
         Run("AlternativeDiskAndMemoryContracts", AlternativeDiskAndMemoryContracts);
         Run("RemoteInstanceLoopbackContract", RemoteInstanceLoopbackContract);
         Run("ConcurrentReadersAndWriter2", delegate { ConcurrentReadersAndWriter(2); });
-        Run("ConcurrentReadersAndWriter8", delegate { ConcurrentReadersAndWriter(8); });
-        Console.WriteLine("PASS StorageContracts target=" + StorageTestSupport.TargetName);
+            Run("ConcurrentReadersAndWriter8", delegate { ConcurrentReadersAndWriter(8); });
+            SchemeConcurrencyContracts.RunAll();
+            Console.WriteLine("PASS StorageContracts target=" + StorageTestSupport.TargetName);
     }
 
     private static void TransactionJournalPayloadCodec()

@@ -90,6 +90,16 @@ internal static class Program
         {
             SchemeIdleDiskTableCacheIsBoundedAndSafe();
             Console.WriteLine($"PASS {nameof(SchemeIdleDiskTableCacheIsBoundedAndSafe)}");
+            SchemeIdleCacheRaceTests.LimitEvictionWaitsForPhysicalClose();
+            Console.WriteLine($"PASS {nameof(SchemeIdleCacheRaceTests.LimitEvictionWaitsForPhysicalClose)}");
+            SchemeIdleCacheRaceTests.TimerEvictionWaitsForPhysicalClose();
+            Console.WriteLine($"PASS {nameof(SchemeIdleCacheRaceTests.TimerEvictionWaitsForPhysicalClose)}");
+            SchemeIdleCacheRaceTests.AlternativeStorageEvictionWaitsForPhysicalClose();
+            Console.WriteLine($"PASS {nameof(SchemeIdleCacheRaceTests.AlternativeStorageEvictionWaitsForPhysicalClose)}");
+            SchemeIdleCacheRaceTests.DeleteRenameAndEngineDisposeWaitForPhysicalClose();
+            Console.WriteLine($"PASS {nameof(SchemeIdleCacheRaceTests.DeleteRenameAndEngineDisposeWaitForPhysicalClose)}");
+            SchemeIdleCacheRaceTests.CloseFailureFailsClosedAndPreservesCause();
+            Console.WriteLine($"PASS {nameof(SchemeIdleCacheRaceTests.CloseFailureFailsClosedAndPreservesCause)}");
             return 0;
         }
 
@@ -172,6 +182,11 @@ internal static class Program
             (nameof(SchemeRenameRejectsStorageRouteChanges), SchemeRenameRejectsStorageRouteChanges),
             (nameof(SchemeRenameWaitsForActiveTable), SchemeRenameWaitsForActiveTable),
             (nameof(SchemeIdleDiskTableCacheIsBoundedAndSafe), SchemeIdleDiskTableCacheIsBoundedAndSafe),
+            (nameof(SchemeIdleCacheRaceTests.LimitEvictionWaitsForPhysicalClose), SchemeIdleCacheRaceTests.LimitEvictionWaitsForPhysicalClose),
+            (nameof(SchemeIdleCacheRaceTests.TimerEvictionWaitsForPhysicalClose), SchemeIdleCacheRaceTests.TimerEvictionWaitsForPhysicalClose),
+            (nameof(SchemeIdleCacheRaceTests.AlternativeStorageEvictionWaitsForPhysicalClose), SchemeIdleCacheRaceTests.AlternativeStorageEvictionWaitsForPhysicalClose),
+            (nameof(SchemeIdleCacheRaceTests.DeleteRenameAndEngineDisposeWaitForPhysicalClose), SchemeIdleCacheRaceTests.DeleteRenameAndEngineDisposeWaitForPhysicalClose),
+            (nameof(SchemeIdleCacheRaceTests.CloseFailureFailsClosedAndPreservesCause), SchemeIdleCacheRaceTests.CloseFailureFailsClosedAndPreservesCause),
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
             (nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable), LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable),
             (nameof(LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction), LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction),

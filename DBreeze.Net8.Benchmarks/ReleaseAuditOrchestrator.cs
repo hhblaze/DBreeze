@@ -256,11 +256,16 @@ internal static class ReleaseAuditOrchestrator
             if (!selfTest.Succeeded)
                 report.GateViolations.Add("Worker self-test failed: " + build.Build.Key + ".");
         }
-        BuiltWorker net8 = builds["current-net8"];
         int warnings;
+        string regressionLibrary = BuildDotNet(
+            Path.Combine(options.CurrentRepository, "DBreeze.Net8", "DBreeze.Net8.csproj"),
+            Path.Combine(layout.ScratchDirectory, "build", "current-net8-regression-library"),
+            "DBreeze.dll",
+            new Dictionary<string, string> { ["DBreezeDurabilityTestHooks"] = "true" },
+            options.CurrentRepository, log, deadline, out warnings);
         string tests = BuildDotNet(Path.Combine(options.CurrentRepository, "DBreeze.Net8.Tests", "DBreeze.Net8.Tests.csproj"),
             Path.Combine(layout.ScratchDirectory, "build", "current-net8-tests"), "DBreeze.Net8.Tests.dll",
-            new Dictionary<string, string> { ["DBreezeAssemblyReference"] = net8.Build.Library }, options.CurrentRepository, log, deadline, out warnings);
+            new Dictionary<string, string> { ["DBreezeAssemblyReference"] = regressionLibrary }, options.CurrentRepository, log, deadline, out warnings);
 
         ProcessResult isolationResult = RunProcess("dotnet",
             new[] { tests, "--source-isolation", "--repository-root", options.CurrentRepository },

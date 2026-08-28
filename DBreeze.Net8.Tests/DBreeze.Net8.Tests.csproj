@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DBreezeAssemblyReference)' == ''">
-    <ProjectReference Include="..\DBreeze.Net8\DBreeze.Net8.csproj" />
+    <ProjectReference Include="..\DBreeze.Net8\DBreeze.Net8.csproj"
+                      AdditionalProperties="DBreezeDurabilityTestHooks=true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DBreezeAssemblyReference)' != ''">

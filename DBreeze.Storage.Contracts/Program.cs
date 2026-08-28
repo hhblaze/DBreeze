@@ -83,6 +83,12 @@ internal static class Program
                 return 0;
             }
 
+            if (EqualsArgument(args[0], "--scheme-concurrency-contracts"))
+            {
+                SchemeConcurrencyContracts.RunAll();
+                return 0;
+            }
+
             if (EqualsArgument(args[0], "--durability-crash-worker"))
             {
                 RequireArguments(args, 5);
