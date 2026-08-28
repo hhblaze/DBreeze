@@ -1446,7 +1446,7 @@
             <param name="alternativePath"></param>
             <returns></returns>
         </member>
-        <member name="M:DBreeze.Scheme.CloseTables(System.Collections.Generic.Dictionary{System.String,System.Nullable{System.UInt64}})">
+        <member name="M:DBreeze.Scheme.KeepIdleDiskTable(System.String,DBreeze.SchemeInternal.OpenTable,System.Collections.Generic.List{DBreeze.Scheme.DiskTableClose}@)">
             <summary>
             Called by Transaction, when it's time to be Disposed and close tables.
             Tables will be closed only in case of other threads don't use it.
@@ -2747,6 +2747,12 @@
         <member name="T:DBreeze.Storage.StorageLayer">
             <summary>
             Storage layer
+            </summary>
+        </member>
+        <member name="T:DBreeze.Storage.WritePathDiagnostics">
+            <summary>
+            Disabled-by-default counters used by the release performance audit. They are deliberately
+            internal and do not participate in the storage or public API contract.
             </summary>
         </member>
         <member name="M:DBreeze.Storage.Backup.#ctor(System.String)">
