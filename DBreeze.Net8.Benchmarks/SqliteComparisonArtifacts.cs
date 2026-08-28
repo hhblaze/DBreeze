@@ -92,12 +92,14 @@ internal static class SqliteComparisonArtifacts
     private static string BuildCsv(IEnumerable<SqliteComparisonMeasurement> measurements)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("Scenario,Provider,Round,Operations,ReturnedCount,Checksum,ElapsedMilliseconds,PreparationMilliseconds,MutationMilliseconds,OperationsPerSecond,DatabaseBytes,Succeeded,DatabasePath,Error");
+        builder.AppendLine("Scenario,Provider,Round,Operations,ReturnedCount,Checksum,ElapsedMilliseconds,PreparationMilliseconds,MutationMilliseconds,TransactionCreateMilliseconds,CommitMilliseconds,DisposeMilliseconds,TransactionCount,WorkerCount,AllocatedBytes,OperationsPerSecond,DatabaseBytes,Succeeded,DatabasePath,Error");
         foreach (SqliteComparisonMeasurement value in measurements)
         {
             Csv(builder, value.Scenario); Csv(builder, value.Provider); Csv(builder, value.Round);
             Csv(builder, value.Operations); Csv(builder, value.ReturnedCount); Csv(builder, value.Checksum);
             Csv(builder, value.ElapsedMilliseconds); Csv(builder, value.PreparationMilliseconds); Csv(builder, value.MutationMilliseconds);
+            Csv(builder, value.TransactionCreateMilliseconds); Csv(builder, value.CommitMilliseconds); Csv(builder, value.DisposeMilliseconds);
+            Csv(builder, value.TransactionCount); Csv(builder, value.WorkerCount); Csv(builder, value.AllocatedBytes);
             Csv(builder, value.OperationsPerSecond);
             Csv(builder, value.DatabaseBytes); Csv(builder, value.Succeeded);
             Csv(builder, value.DatabasePath); Csv(builder, value.Error, true);
@@ -130,6 +132,7 @@ internal static class SqliteComparisonArtifacts
         Row(builder, "Payload", configuration.PayloadBytes.ToString(CultureInfo.InvariantCulture) + " bytes; deterministic pool of " + configuration.PayloadPoolSize);
         Row(builder, "Measured rounds", configuration.Repetitions.ToString(CultureInfo.InvariantCulture));
         Row(builder, "Parallel readers", configuration.Parallelism.ToString(CultureInfo.InvariantCulture));
+        Row(builder, "Parallel table insert", $"{configuration.MultiTableRecords:N0} rows; {configuration.MultiTableCount} dedicated workers/tables; {configuration.MultiTableBatchSize} rows/transaction; SQLite busy_timeout={configuration.MultiTableSqliteBusyTimeoutMilliseconds} ms");
         Row(builder, "SQLite durability", $"journal_mode={configuration.SqliteJournalMode}; synchronous={configuration.SqliteSynchronous}; busy_timeout={configuration.SqliteBusyTimeoutMilliseconds} ms");
         Row(builder, "Main schema", configuration.MainSchema);
         Row(builder, "Prefix schema", configuration.PrefixSchema);
@@ -190,13 +193,19 @@ internal static class SqliteComparisonArtifacts
         }
         builder.Append("</div>");
 
-        builder.Append("<details><summary><strong>Per-round measurements</strong></summary><table><thead><tr><th>Scenario</th><th>Provider</th><th class=\"num\">Round</th><th class=\"num\">total ms</th><th class=\"num\">sort/prep ms</th><th class=\"num\">mutation ms</th><th class=\"num\">ops/s</th><th class=\"num\">Returned</th><th class=\"num\">Checksum</th><th>Status</th><th>Database</th></tr></thead><tbody>");
+        builder.Append("<details><summary><strong>Per-round measurements</strong></summary><table><thead><tr><th>Scenario</th><th>Provider</th><th class=\"num\">Round</th><th class=\"num\">total ms</th><th class=\"num\">sort/prep ms</th><th class=\"num\">mutation ms</th><th class=\"num\">tx create ms</th><th class=\"num\">commit ms</th><th class=\"num\">dispose ms</th><th class=\"num\">transactions</th><th class=\"num\">workers</th><th class=\"num\">allocated</th><th class=\"num\">ops/s</th><th class=\"num\">Returned</th><th class=\"num\">Checksum</th><th>Status</th><th>Database</th></tr></thead><tbody>");
         foreach (SqliteComparisonMeasurement value in report.Measurements)
         {
             builder.Append("<tr><td>").Append(Html(value.Scenario)).Append("</td><td>").Append(Html(value.Provider))
                 .Append("</td><td class=\"num\">").Append(value.Round).Append("</td><td class=\"num\">").Append(F(value.ElapsedMilliseconds))
                 .Append("</td><td class=\"num\">").Append(F(value.PreparationMilliseconds))
                 .Append("</td><td class=\"num\">").Append(F(value.MutationMilliseconds))
+                .Append("</td><td class=\"num\">").Append(F(value.TransactionCreateMilliseconds))
+                .Append("</td><td class=\"num\">").Append(F(value.CommitMilliseconds))
+                .Append("</td><td class=\"num\">").Append(F(value.DisposeMilliseconds))
+                .Append("</td><td class=\"num\">").Append(value.TransactionCount == 0 ? "—" : N(value.TransactionCount))
+                .Append("</td><td class=\"num\">").Append(value.WorkerCount == 0 ? "—" : value.WorkerCount.ToString(CultureInfo.InvariantCulture))
+                .Append("</td><td class=\"num\">").Append(value.AllocatedBytes == 0 ? "—" : N(value.AllocatedBytes))
                 .Append("</td><td class=\"num\">").Append(N(value.OperationsPerSecond)).Append("</td><td class=\"num\">").Append(N(value.ReturnedCount))
                 .Append("</td><td class=\"num mono\">").Append(value.Checksum).Append("</td><td class=\"").Append(value.Succeeded ? "ok\">PASS" : "fail\">FAIL")
                 .Append(value.Succeeded ? String.Empty : ": " + Html(value.Error)).Append("</td><td class=\"small mono\">").Append(Html(value.DatabasePath)).Append("</td></tr>");
@@ -225,6 +234,10 @@ internal static class SqliteComparisonArtifacts
             .Append("<li>DBreeze RKS + NoOverwrite calls Technical_SetTable_OverwriteIsNotAllowed before the first update. The transaction-local mode appends changed data instead of overwriting it and can trade a larger database file for speed.</li>")
             .Append("<li>DBreeze Sorted random delete clones keys outside measurement, then includes in its headline time the in-memory ascending sort, transaction creation, all RemoveKey calls and commit. Split sort and delete+commit times are diagnostic.</li>")
             .Append("<li>Delete fallbacks use one RandomKeySorter.Remove flush after 100K operations and/or the transaction-local NoOverwrite flag. SQLite is imported once per round and shared as their reference; database growth is informational.</li>")
+            .Append("<li>The parallel per-table insert uses one physical database per provider and 20 dedicated workers. Each worker owns one table and commits 50 monotonically ascending local keys per transaction. SQLite uses one prepared connection per worker and a 60-second busy timeout; lock waiting remains measured.</li>")
+            .Append("<li>SQLite schemas and empty DBreeze tables are materialized before timing. DBreeze uses a committed insert/remove sentinel lifecycle because it has no schema-only table creation API; no sentinel remains in the measured fixture.</li>")
+            .Append("<li>Every DBreeze transaction in the parallel per-table insert touches one table, so it uses table-local .rol/.rhp recovery and does not enlist the global _DBreezeTranJrnl.</li>")
+            .Append("<li>Parallel phase timings and allocations are sums across worker threads and may exceed wall-clock elapsed time.</li>")
             .Append("<li>Engine/connection opening, fixture construction, file copying and SQLite WAL checkpoint are outside measured bodies.</li>")
             .Append("</ul></div></main></body></html>");
         return builder.ToString();
@@ -279,11 +292,23 @@ internal static class SqliteComparisonSelfTests
             {
                 "--sqlite-compare", "--smoke", "--root", root, "--run-id", "valid-run",
             });
-            Check(failures, parsed.Records == 10_000 && parsed.Repetitions == 1, "Smoke limits");
+            Check(failures, parsed.Records == 10_000 && parsed.MultiTableRecords == 10_000 &&
+                parsed.MultiTableCount == 20 && parsed.MultiTableBatchSize == 50 &&
+                parsed.Repetitions == 1, "Smoke limits");
             Check(failures, parsed.ReportPath.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase), "Default report containment");
+
+            SqliteComparisonOptions multi = SqliteComparisonOptions.Parse(new[]
+            {
+                "--sqlite-compare", "--root", root, "--run-id", "multi-options",
+                "--multi-table-records", "1001", "--multi-table-count", "20",
+                "--multi-table-batch-size", "50",
+            });
+            Check(failures, multi.MultiTableRecords == 1001 && multi.MultiTableCount == 20 &&
+                multi.MultiTableBatchSize == 50, "Multi-table option parsing");
 
             ExpectFailure(failures, "Record limit", () => SqliteComparisonOptions.Parse(new[] { "--sqlite-compare", "--records", "1000001" }));
             ExpectFailure(failures, "Synchronous validation", () => SqliteComparisonOptions.Parse(new[] { "--sqlite-compare", "--sqlite-synchronous", "OFF" }));
+            ExpectFailure(failures, "Multi-table count limit", () => SqliteComparisonOptions.Parse(new[] { "--sqlite-compare", "--multi-table-count", "65" }));
             ExpectFailure(failures, "Run-id validation", () => SqliteComparisonOptions.Parse(new[] { "--sqlite-compare", "--run-id", "../escape" }));
             ExpectFailure(failures, "Report containment", () => SqliteComparisonOptions.Parse(new[] { "--sqlite-compare", "--root", root, "--report", Path.Combine(Path.GetTempPath(), "outside.html") }));
             ExpectFailure(failures, "Path containment", () => AuditRunLayout.EnsureUnderRoot(Path.Combine(Path.GetTempPath(), "outside"), root));
@@ -331,6 +356,19 @@ internal static class SqliteComparisonSelfTests
             long[] sortedKeys = { 4, -2, 9, 0, 4, Int64.MinValue, Int64.MaxValue };
             SqliteComparisonSuite.SortAscending(sortedKeys);
             Check(failures, sortedKeys.SequenceEqual(sortedKeys.OrderBy(static value => value)), "Ascending delete-key order");
+
+            var canonicalMulti = new ParallelTableInsertSpec(200_000, 20, 50, 256, "FULL");
+            Check(failures, Enumerable.Range(0, 20).All(table => canonicalMulti.RecordsForTable(table) == 10_000),
+                "Canonical multi-table distribution");
+            Check(failures, canonicalMulti.ExpectedTransactions() == 4_000,
+                "Canonical multi-table transaction count");
+            var unevenMulti = new ParallelTableInsertSpec(1001, 20, 50, 256, "FULL");
+            Check(failures, Enumerable.Range(0, 20).Sum(unevenMulti.RecordsForTable) == 1001 &&
+                unevenMulti.ExpectedTransactions() == 21, "Uneven multi-table distribution");
+            byte[][] multiPayloads = ParallelTableInsertWorkload.CreatePayloadPool(256);
+            long multiChecksum = ParallelTableInsertWorkload.ExpectedChecksum(canonicalMulti, multiPayloads);
+            Check(failures, multiChecksum == ParallelTableInsertWorkload.ExpectedChecksum(canonicalMulti, multiPayloads),
+                "Deterministic multi-table oracle");
 
             SqliteComparisonReport validSource = CreateAugmentationSource();
             SqliteComparisonSuite.ValidateAugmentationSource(validSource, "same-sha");

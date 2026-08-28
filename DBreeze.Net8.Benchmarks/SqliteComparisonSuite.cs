@@ -68,6 +68,9 @@ internal sealed class SqliteComparisonSuite
                 PayloadBytes = options.PayloadBytes,
                 Repetitions = options.Repetitions,
                 Parallelism = options.Parallelism,
+                MultiTableRecords = options.MultiTableRecords,
+                MultiTableCount = options.MultiTableCount,
+                MultiTableBatchSize = options.MultiTableBatchSize,
                 Smoke = options.Smoke,
                 KeepDatabases = options.KeepDatabases,
                 SqliteSynchronous = options.SqliteSynchronous,
@@ -558,6 +561,16 @@ internal sealed class SqliteComparisonSuite
                 batchedActions.Skip(batchedRotation).Concat(batchedActions.Take(batchedRotation)))
                 MeasureFresh(batchedScenario, provider, round, action);
 
+            var parallelTableActions = new List<(string Provider, Func<string, SqliteMeasuredOutcome> Action)>
+            {
+                (DBreezeSortedProvider, DbreezeParallelTableInsert),
+                (SqliteProvider, SqliteParallelTableInsert),
+            };
+            int parallelTableRotation = (round - 1) % parallelTableActions.Count;
+            foreach ((string provider, Func<string, SqliteMeasuredOutcome> action) in
+                parallelTableActions.Skip(parallelTableRotation).Concat(parallelTableActions.Take(parallelTableRotation)))
+                MeasureFresh(ParallelTableInsertWorkload.Scenario, provider, round, action);
+
             var actions = new List<(string Provider, Func<string, SqliteMeasuredOutcome> Action)>
             {
                 (DBreezeProvider, path => DbreezeInsert(path, _randomKeys, false, 0)),
@@ -698,6 +711,12 @@ internal sealed class SqliteComparisonSuite
             measurement.ElapsedMilliseconds = outcome.ElapsedMilliseconds;
             measurement.PreparationMilliseconds = outcome.PreparationMilliseconds;
             measurement.MutationMilliseconds = outcome.MutationMilliseconds;
+            measurement.TransactionCreateMilliseconds = outcome.TransactionCreateMilliseconds;
+            measurement.CommitMilliseconds = outcome.CommitMilliseconds;
+            measurement.DisposeMilliseconds = outcome.DisposeMilliseconds;
+            measurement.TransactionCount = outcome.TransactionCount;
+            measurement.WorkerCount = outcome.WorkerCount;
+            measurement.AllocatedBytes = outcome.AllocatedBytes;
             measurement.OperationsPerSecond = outcome.ElapsedMilliseconds > 0
                 ? outcome.Operations * 1000.0 / outcome.ElapsedMilliseconds
                 : 0;
@@ -788,6 +807,29 @@ internal sealed class SqliteComparisonSuite
         }
         return new SqliteMeasuredOutcome(keys.Count, keys.Count, ExpectedMainChecksum(keys), elapsed);
     }
+
+    private ParallelTableInsertSpec ParallelTableSpec() => new(
+        _options.MultiTableRecords,
+        _options.MultiTableCount,
+        _options.MultiTableBatchSize,
+        _options.PayloadBytes,
+        _options.SqliteSynchronous);
+
+    private SqliteMeasuredOutcome DbreezeParallelTableInsert(string path) =>
+        ToSqliteOutcome(ParallelTableInsertWorkload.RunDbreeze(path, ParallelTableSpec(), _payloads));
+
+    private SqliteMeasuredOutcome SqliteParallelTableInsert(string path) =>
+        ToSqliteOutcome(ParallelTableInsertWorkload.RunSqlite(path, ParallelTableSpec(), _payloads));
+
+    private static SqliteMeasuredOutcome ToSqliteOutcome(ParallelTableInsertResult result) =>
+        new(result.Operations, result.Operations, result.Checksum, result.ElapsedMilliseconds,
+            MutationMilliseconds: result.MutationMilliseconds,
+            TransactionCount: result.Transactions,
+            WorkerCount: result.WorkerCount,
+            TransactionCreateMilliseconds: result.TransactionCreateMilliseconds,
+            CommitMilliseconds: result.CommitMilliseconds,
+            DisposeMilliseconds: result.DisposeMilliseconds,
+            AllocatedBytes: result.AllocatedBytes);
 
     private SqliteMeasuredOutcome SqliteInsert(string path, IReadOnlyList<long> keys, int commitBatch)
     {
@@ -1568,6 +1610,7 @@ internal sealed class SqliteComparisonSuite
             {
                 DBreezeSortedProvider, DBreezeSortedNoOverwriteProvider, SqliteProvider
             },
+            [ParallelTableInsertWorkload.Scenario] = new[] { DBreezeSortedProvider, SqliteProvider },
             ["Random bulk insert"] = new[] { DBreezeProvider, DBreezeRksProvider, SqliteProvider },
             ["Random point reads (hits)"] = new[] { DBreezeProvider, SqliteProvider },
             ["Mixed point reads (90% hits)"] = new[] { DBreezeProvider, SqliteProvider },
@@ -1588,6 +1631,19 @@ internal sealed class SqliteComparisonSuite
                 .ToArray();
             if (values.Length != _options.Repetitions)
                 Fail($"Missing measurement pair: {scenario} / {provider}; expected {_options.Repetitions}, got {values.Length}.");
+        }
+
+        int expectedParallelTransactions = ParallelTableSpec().ExpectedTransactions();
+        foreach (SqliteComparisonMeasurement value in _report.Measurements.Where(static value =>
+            value.Succeeded && value.Scenario == ParallelTableInsertWorkload.Scenario))
+        {
+            if (value.Operations != _options.MultiTableRecords ||
+                value.ReturnedCount != _options.MultiTableRecords ||
+                value.TransactionCount != expectedParallelTransactions ||
+                value.WorkerCount != _options.MultiTableCount)
+            {
+                Fail($"Parallel table lifecycle oracle differs for {value.Provider} / round {value.Round}.");
+            }
         }
 
         foreach (IGrouping<string, SqliteComparisonMeasurement> scenario in _report.Measurements.Where(static value => value.Succeeded).GroupBy(static value => value.Scenario))

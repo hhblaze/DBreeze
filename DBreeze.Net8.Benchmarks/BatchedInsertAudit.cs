@@ -18,6 +18,7 @@ internal static class BatchedInsertAudit
     private const string Sqlite = "SQLite";
     private const string Canonical = "1000 rows / transaction";
     private const string Reused = "reused transaction / 1000 rows per commit";
+    private const string ParallelTables = ParallelTableInsertWorkload.Scenario;
 
     internal static int Run(string[] args)
     {
@@ -40,6 +41,8 @@ internal static class BatchedInsertAudit
         private readonly BatchedInsertAuditReport _report;
         private readonly byte[][] _payloads;
         private readonly long _expectedChecksum;
+        private readonly ParallelTableInsertSpec _parallelSpec;
+        private readonly long _parallelExpectedChecksum;
         private readonly StringBuilder _log = new();
 
         internal Runner(BatchedInsertAuditOptions options)
@@ -48,6 +51,9 @@ internal static class BatchedInsertAudit
             _layout = new AuditRunLayout(options.RootPath, options.RunId);
             _payloads = CreatePayloadPool(options.PayloadBytes);
             _expectedChecksum = ExpectedChecksum(options.Records);
+            _parallelSpec = new ParallelTableInsertSpec(options.MultiTableRecords,
+                options.MultiTableCount, options.MultiTableBatchSize, options.PayloadBytes, "FULL");
+            _parallelExpectedChecksum = ParallelTableInsertWorkload.ExpectedChecksum(_parallelSpec, _payloads);
             _report = new BatchedInsertAuditReport
             {
                 RunId = options.RunId,
@@ -55,6 +61,10 @@ internal static class BatchedInsertAudit
                 Records = options.Records,
                 PayloadBytes = options.PayloadBytes,
                 BatchSize = options.BatchSize,
+                MultiTableRecords = options.MultiTableRecords,
+                MultiTableCount = options.MultiTableCount,
+                MultiTableBatchSize = options.MultiTableBatchSize,
+                MultiTableBusyTimeoutMilliseconds = _parallelSpec.SqliteBusyTimeoutMilliseconds,
                 Rounds = options.Rounds,
                 ControlOnly = options.ControlOnly,
                 ControlJson = options.ControlJson,
@@ -89,6 +99,13 @@ internal static class BatchedInsertAudit
                         (SortedNoOverwrite, path => MeasureDbreeze(path, manyTransactions: false, noOverwrite: true)),
                     };
                     RunRotated(Reused, round, reused);
+
+                    var parallelTables = new List<(string Provider, Func<string, BatchedOutcome> Action)>
+                    {
+                        (Sorted, MeasureParallelDbreeze),
+                        (Sqlite, MeasureParallelSqlite),
+                    };
+                    RunRotated(ParallelTables, round, parallelTables);
                 }
 
                 RunTwoTableJournalControl();
@@ -167,8 +184,8 @@ internal static class BatchedInsertAudit
                 measurement.Checksum = outcome.Checksum;
                 measurement.OperationsPerSecond = outcome.Operations * 1000.0 / outcome.ElapsedMilliseconds;
                 ApplyWriteDiagnostics(measurement, outcome.StorageDiagnostics);
-                measurement.Succeeded = outcome.Operations == _options.Records &&
-                    outcome.Checksum == _expectedChecksum &&
+                measurement.Succeeded = outcome.Operations == ExpectedOperations(scenario) &&
+                    outcome.Checksum == ExpectedChecksumFor(scenario) &&
                     outcome.Transactions == ExpectedTransactions(scenario);
                 if (!measurement.Succeeded)
                     throw new InvalidDataException("Batched insert oracle mismatch.");
@@ -191,9 +208,22 @@ internal static class BatchedInsertAudit
                 AuditRunLayout.DeleteOwnedChild(path, _layout.ScratchDirectory);
         }
 
-        private int ExpectedTransactions(string scenario) => scenario == Reused
-            ? 1
-            : (_options.Records + _options.BatchSize - 1) / _options.BatchSize;
+        private int ExpectedOperations(string scenario) => scenario == ParallelTables
+            ? _options.MultiTableRecords
+            : _options.Records;
+
+        private long ExpectedChecksumFor(string scenario) => scenario == ParallelTables
+            ? _parallelExpectedChecksum
+            : _expectedChecksum;
+
+        private int ExpectedTransactions(string scenario)
+        {
+            if (scenario == Reused)
+                return 1;
+            if (scenario == ParallelTables)
+                return _parallelSpec.ExpectedTransactions();
+            return (_options.Records + _options.BatchSize - 1) / _options.BatchSize;
+        }
 
         private BatchedOutcome MeasureDbreeze(string path, bool manyTransactions,
             bool noOverwrite, int? recordOverride = null)
@@ -281,6 +311,24 @@ internal static class BatchedInsertAudit
         }
 
         private BatchedOutcome MeasureSqlite(string path) => MeasureSqlite(path, _options.Records);
+
+        private BatchedOutcome MeasureParallelDbreeze(string path)
+        {
+            long[] storageBefore = Array.Empty<long>();
+            using IDisposable diagnostics = EnableWriteDiagnostics();
+            ParallelTableInsertResult result = ParallelTableInsertWorkload.RunDbreeze(path, _parallelSpec,
+                _payloads, () => storageBefore = ReadWriteDiagnostics());
+            return ToBatchedOutcome(result, Delta(storageBefore, ReadWriteDiagnostics()));
+        }
+
+        private BatchedOutcome MeasureParallelSqlite(string path) =>
+            ToBatchedOutcome(ParallelTableInsertWorkload.RunSqlite(path, _parallelSpec, _payloads), Array.Empty<long>());
+
+        private static BatchedOutcome ToBatchedOutcome(ParallelTableInsertResult result, long[] diagnostics) =>
+            new(checked((int)result.Operations), result.Transactions, result.Checksum,
+                result.ElapsedMilliseconds, result.TransactionCreateMilliseconds,
+                result.MutationMilliseconds, result.CommitMilliseconds, result.DisposeMilliseconds,
+                result.AllocatedBytes, diagnostics);
 
         private BatchedOutcome MeasureSqlite(string path, int records)
         {
@@ -414,10 +462,13 @@ internal static class BatchedInsertAudit
                     MedianDatabaseBytes = (long)Median(group.Select(static value => (double)value.DatabaseBytes)),
                 }).OrderBy(static value => value.Scenario).ThenBy(static value => value.Provider).ToList();
 
-            BatchedInsertSummary sqlite = FindSummary(Canonical, Sqlite);
             foreach (BatchedInsertSummary summary in _report.Summaries.Where(static value => value.Provider != Sqlite))
+            {
+                string sqliteScenario = summary.Scenario == Reused ? Canonical : summary.Scenario;
+                BatchedInsertSummary sqlite = FindSummary(sqliteScenario, Sqlite);
                 summary.RatioVsSqlite = sqlite == null ? Double.NaN :
                     summary.MedianOperationsPerSecond / sqlite.MedianOperationsPerSecond;
+            }
 
             if (!String.IsNullOrEmpty(_options.ControlJson))
             {
@@ -460,6 +511,17 @@ internal static class BatchedInsertAudit
                     value.Scenario == Reused && value.Provider == provider && value.Transactions == 1);
                 if (count != _options.Rounds)
                     _report.GateViolations.Add($"Reused {provider}: expected {_options.Rounds} successful rounds, got {count}.");
+            }
+            int parallelTransactions = _parallelSpec.ExpectedTransactions();
+            foreach (string provider in new[] { Sorted, Sqlite })
+            {
+                int count = _report.Measurements.Count(value => value.Succeeded &&
+                    value.Scenario == ParallelTables && value.Provider == provider &&
+                    value.Operations == _options.MultiTableRecords &&
+                    value.Transactions == parallelTransactions);
+                if (count != _options.Rounds)
+                    _report.GateViolations.Add(
+                        $"Parallel tables {provider}: expected {_options.Rounds} successful descriptive rounds, got {count}.");
             }
             if (!_report.TwoTableJournalControlPassed)
                 _report.GateViolations.Add("Two-table transaction journal control failed.");
@@ -547,11 +609,16 @@ internal static class BatchedInsertAudit
                 .Append("body{font:14px/1.45 system-ui,Segoe UI,sans-serif;margin:0;background:#0d1117;color:#d8dee9}main{max-width:1500px;margin:auto;padding:28px}h1{margin-bottom:4px}h2{margin-top:30px}code{font-family:Consolas,monospace}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #30363d;padding:7px;text-align:left}th{background:#21262d}.pass{color:#3fb950}.fail{color:#f85149}.warn{color:#d29922}.num{text-align:right;font-variant-numeric:tabular-nums}.card{background:#161b22;border:1px solid #30363d;border-radius:9px;padding:14px;margin:12px 0}pre{white-space:pre-wrap}</style></head><body><main>")
                 .Append("<h1>DBreeze Sorted Batched Insert: <span class=\"").Append(_report.PerformancePassed ? "pass" : "fail").Append("\">").Append(H(verdict)).Append("</span></h1>")
                 .Append("<p>Ascending long keys · ").Append(_report.Records.ToString("N0")).Append(" rows · ").Append(_report.BatchSize).Append(" rows/transaction · SQLite WAL/FULL.</p>")
+                .Append("<p>Parallel descriptive control: ").Append(_report.MultiTableRecords.ToString("N0"))
+                .Append(" rows · ").Append(_report.MultiTableCount).Append(" dedicated workers/tables · ")
+                .Append(_report.MultiTableBatchSize).Append(" rows/transaction · one physical database per provider.</p>")
+                .Append("<p>SQLite schemas and empty DBreeze tables are materialized before timing; DBreeze uses an insert/remove sentinel lifecycle because tables are otherwise created on first write.</p>")
                 .Append("<div class=\"card\"><b>Protocol note.</b> Single-table measurements touch table-local <code>.rol/.rhp</code>, not global <code>_DBreezeTranJrnl</code>. A separate two-table control exercises the global journal: ")
                 .Append(_report.TwoTableJournalControlPassed ? "<span class=\"pass\">PASS</span>" : "<span class=\"fail\">FAIL</span>")
                 .Append("; journal flushes: ").Append(_report.TwoTableJournalFlushes.ToString("N0"))
                 .Append(", all durable flushes: ").Append(_report.TwoTableDurableFlushes.ToString("N0"))
-                .Append(" / ").Append(_report.TwoTableDurableFlushMilliseconds.ToString("N2")).Append(" ms.</div>");
+                .Append(" / ").Append(_report.TwoTableDurableFlushMilliseconds.ToString("N2"))
+                .Append(" ms. Each parallel-table transaction also owns one table only, so it uses table-local <code>.rol/.rhp</code>; the global journal is not involved.</div>");
             if (canonicalSorted != null && canonicalNoOverwrite != null && canonicalSqlite != null)
             {
                 b.Append("<div class=\"card\"><b>Durability result.</b> The normal sorted path is ")
@@ -728,6 +795,9 @@ internal sealed class BatchedInsertAuditOptions
     internal int Records { get; private set; } = 1_000_000;
     internal int PayloadBytes { get; private set; } = 256;
     internal int BatchSize { get; private set; } = 1000;
+    internal int MultiTableRecords { get; private set; } = 200_000;
+    internal int MultiTableCount { get; private set; } = 20;
+    internal int MultiTableBatchSize { get; private set; } = 50;
     internal int Rounds { get; private set; } = 5;
     internal bool KeepDatabases { get; private set; }
     internal bool ControlOnly { get; private set; }
@@ -748,10 +818,13 @@ internal sealed class BatchedInsertAuditOptions
                 case "--records": result.Records = Positive(Need(args, ref i, arg), arg); break;
                 case "--payload-bytes": result.PayloadBytes = Positive(Need(args, ref i, arg), arg); break;
                 case "--batch-size": result.BatchSize = Positive(Need(args, ref i, arg), arg); break;
+                case "--multi-table-records": result.MultiTableRecords = Positive(Need(args, ref i, arg), arg); break;
+                case "--multi-table-count": result.MultiTableCount = Positive(Need(args, ref i, arg), arg); break;
+                case "--multi-table-batch-size": result.MultiTableBatchSize = Positive(Need(args, ref i, arg), arg); break;
                 case "--rounds": result.Rounds = Positive(Need(args, ref i, arg), arg); break;
                 case "--keep-databases": result.KeepDatabases = true; break;
                 case "--control-only": result.ControlOnly = true; break;
-                case "--smoke": result.Records = 10_000; result.Rounds = 1; break;
+                case "--smoke": result.Records = 10_000; result.MultiTableRecords = 10_000; result.Rounds = 1; break;
                 default: throw new ArgumentException("Unknown batched insert audit option: " + arg, nameof(args));
             }
         }
@@ -759,8 +832,13 @@ internal sealed class BatchedInsertAuditOptions
         AuditRunLayout.ValidateLeafName(result.RunId, nameof(result.RunId));
         result.ReportPath ??= Path.Combine(result.RootPath, "DBreeze_Batched_Insert_Audit.html");
         result.ReportPath = Path.GetFullPath(result.ReportPath);
-        if (result.Records > 1_000_000 || result.PayloadBytes > 64 * 1024 || result.BatchSize > result.Records || result.Rounds > 9)
+        if (result.Records > 1_000_000 || result.MultiTableRecords > 1_000_000 ||
+            result.PayloadBytes > 64 * 1024 || result.BatchSize > result.Records ||
+            result.MultiTableCount > 64 || result.MultiTableCount > result.MultiTableRecords ||
+            result.MultiTableBatchSize > result.MultiTableRecords || result.Rounds > 9)
             throw new ArgumentOutOfRangeException(nameof(args), "Audit limits exceeded.");
+        new ParallelTableInsertSpec(result.MultiTableRecords, result.MultiTableCount,
+            result.MultiTableBatchSize, result.PayloadBytes, "FULL").Validate();
         if (!String.IsNullOrEmpty(result.ControlJson) && !File.Exists(result.ControlJson))
             throw new FileNotFoundException("Control JSON was not found.", result.ControlJson);
         return result;
@@ -778,6 +856,10 @@ internal sealed class BatchedInsertAuditReport
     public int Records { get; set; }
     public int PayloadBytes { get; set; }
     public int BatchSize { get; set; }
+    public int MultiTableRecords { get; set; }
+    public int MultiTableCount { get; set; }
+    public int MultiTableBatchSize { get; set; }
+    public int MultiTableBusyTimeoutMilliseconds { get; set; }
     public int Rounds { get; set; }
     public bool ControlOnly { get; set; }
     public string ControlJson { get; set; }
@@ -864,11 +946,25 @@ internal static class BatchedInsertAuditSelfTests
         try
         {
             BatchedInsertAuditOptions options = BatchedInsertAuditOptions.Parse(new[]
-            { "--batched-insert-audit", "--root", root, "--run-id", "self", "--records", "1000", "--batch-size", "100", "--rounds", "3" });
-            if (options.Records != 1000 || options.BatchSize != 100 || options.Rounds != 3) failures.Add("Option parsing");
+            { "--batched-insert-audit", "--root", root, "--run-id", "self", "--records", "1000", "--batch-size", "100", "--rounds", "3",
+              "--multi-table-records", "1001", "--multi-table-count", "20", "--multi-table-batch-size", "50" });
+            if (options.Records != 1000 || options.BatchSize != 100 || options.Rounds != 3 ||
+                options.MultiTableRecords != 1001 || options.MultiTableCount != 20 ||
+                options.MultiTableBatchSize != 50) failures.Add("Option parsing");
             try { BatchedInsertAuditOptions.Parse(new[] { "--batched-insert-audit", "--records", "1000001" }); failures.Add("Record limit"); } catch (ArgumentOutOfRangeException) { }
+            try { BatchedInsertAuditOptions.Parse(new[] { "--batched-insert-audit", "--multi-table-count", "65" }); failures.Add("Table limit"); } catch (ArgumentOutOfRangeException) { }
             try { AuditRunLayout.EnsureUnderRoot(Path.Combine(root, "..", "escape"), root); failures.Add("Path containment"); } catch (InvalidOperationException) { }
             if (!System.Net.WebUtility.HtmlEncode("<&").Contains("&lt;")) failures.Add("HTML escaping");
+            var even = new ParallelTableInsertSpec(200_000, 20, 50, 256, "FULL");
+            if (Enumerable.Range(0, 20).Any(table => even.RecordsForTable(table) != 10_000) ||
+                even.ExpectedTransactions() != 4_000) failures.Add("Canonical distribution");
+            var uneven = new ParallelTableInsertSpec(1001, 20, 50, 256, "FULL");
+            if (Enumerable.Range(0, 20).Sum(uneven.RecordsForTable) != 1001 ||
+                uneven.RecordsForTable(0) != 51 || uneven.RecordsForTable(1) != 50 ||
+                uneven.ExpectedTransactions() != 21) failures.Add("Uneven distribution");
+            byte[][] payloads = ParallelTableInsertWorkload.CreatePayloadPool(256);
+            if (ParallelTableInsertWorkload.ExpectedChecksum(even, payloads) !=
+                ParallelTableInsertWorkload.ExpectedChecksum(even, payloads)) failures.Add("Deterministic oracle");
         }
         finally { Directory.Delete(root, true); }
         foreach (string failure in failures) Console.Error.WriteLine("FAIL " + failure);

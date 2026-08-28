@@ -15,6 +15,9 @@ internal sealed class SqliteComparisonOptions
     internal int PayloadBytes { get; private set; } = 256;
     internal int Repetitions { get; private set; } = 3;
     internal int Parallelism { get; private set; } = 4;
+    internal int MultiTableRecords { get; private set; } = 200_000;
+    internal int MultiTableCount { get; private set; } = 20;
+    internal int MultiTableBatchSize { get; private set; } = 50;
     internal string SqliteSynchronous { get; private set; } = "FULL";
     internal bool Smoke { get; private set; }
     internal bool KeepDatabases { get; private set; }
@@ -59,6 +62,15 @@ internal sealed class SqliteComparisonOptions
                 case "--parallelism":
                     options.Parallelism = ReadInt(args, ref i, arg, 1, 64);
                     break;
+                case "--multi-table-records":
+                    options.MultiTableRecords = ReadInt(args, ref i, arg, 1_000, MaximumRecords);
+                    break;
+                case "--multi-table-count":
+                    options.MultiTableCount = ReadInt(args, ref i, arg, 1, 64);
+                    break;
+                case "--multi-table-batch-size":
+                    options.MultiTableBatchSize = ReadInt(args, ref i, arg, 1, MaximumRecords);
+                    break;
                 case "--sqlite-synchronous":
                     options.SqliteSynchronous = ReadValue(args, ref i, arg).ToUpperInvariant();
                     if (options.SqliteSynchronous is not ("FULL" or "NORMAL"))
@@ -73,8 +85,12 @@ internal sealed class SqliteComparisonOptions
         if (options.Smoke)
         {
             options.Records = Math.Min(options.Records, 10_000);
+            options.MultiTableRecords = Math.Min(options.MultiTableRecords, 10_000);
             options.Repetitions = 1;
         }
+
+        new ParallelTableInsertSpec(options.MultiTableRecords, options.MultiTableCount,
+            options.MultiTableBatchSize, options.PayloadBytes, options.SqliteSynchronous).Validate();
 
         options.RunId ??= DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
             + (options.Smoke ? "-sqlite-smoke" : "-sqlite-full");
@@ -113,6 +129,9 @@ internal sealed class SqliteComparisonOptions
             PayloadBytes = source.PayloadBytes,
             Repetitions = source.Repetitions,
             Parallelism = source.Parallelism,
+            MultiTableRecords = source.MultiTableRecords > 0 ? source.MultiTableRecords : 200_000,
+            MultiTableCount = source.MultiTableCount > 0 ? source.MultiTableCount : 20,
+            MultiTableBatchSize = source.MultiTableBatchSize > 0 ? source.MultiTableBatchSize : 50,
             SqliteSynchronous = source.SqliteSynchronous,
             Smoke = source.Smoke,
             KeepDatabases = augment.KeepDatabases,
@@ -323,6 +342,10 @@ internal sealed class SqliteComparisonConfiguration
     public int PayloadPoolSize { get; set; } = 1024;
     public int Repetitions { get; set; }
     public int Parallelism { get; set; }
+    public int MultiTableRecords { get; set; } = 200_000;
+    public int MultiTableCount { get; set; } = 20;
+    public int MultiTableBatchSize { get; set; } = 50;
+    public int MultiTableSqliteBusyTimeoutMilliseconds { get; set; } = 60_000;
     public int RandomSeed { get; set; } = 20260826;
     public bool Smoke { get; set; }
     public bool KeepDatabases { get; set; }
@@ -346,6 +369,12 @@ internal sealed class SqliteComparisonMeasurement
     public double ElapsedMilliseconds { get; set; }
     public double? PreparationMilliseconds { get; set; }
     public double? MutationMilliseconds { get; set; }
+    public double? TransactionCreateMilliseconds { get; set; }
+    public double? CommitMilliseconds { get; set; }
+    public double? DisposeMilliseconds { get; set; }
+    public long TransactionCount { get; set; }
+    public int WorkerCount { get; set; }
+    public long AllocatedBytes { get; set; }
     public double OperationsPerSecond { get; set; }
     public long DatabaseBytes { get; set; }
     public string DatabasePath { get; set; }
@@ -376,4 +405,10 @@ internal readonly record struct SqliteMeasuredOutcome(
     long Checksum,
     double ElapsedMilliseconds,
     double? PreparationMilliseconds = null,
-    double? MutationMilliseconds = null);
+    double? MutationMilliseconds = null,
+    long TransactionCount = 0,
+    int WorkerCount = 0,
+    double? TransactionCreateMilliseconds = null,
+    double? CommitMilliseconds = null,
+    double? DisposeMilliseconds = null,
+    long AllocatedBytes = 0);
