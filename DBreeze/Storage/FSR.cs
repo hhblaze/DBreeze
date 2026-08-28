@@ -536,6 +536,7 @@ namespace DBreeze.Storage
         public static void NET_Flush(FileStream mfs)
         {
             mfs.Flush(true);
+            CaptureDurableShadow(mfs);
 
             //VolumeInfo.GetVolumes()[0].FlushAll();  
         }
@@ -551,8 +552,40 @@ namespace DBreeze.Storage
 
             if (!FlushFileBuffers(handle))
                 throw new System.ComponentModel.Win32Exception();
+            CaptureDurableShadow(mfs);
         }
 #endif
+
+        private static void CaptureDurableShadow(FileStream mfs)
+        {
+#if DBREEZE_DURABILITY_TEST_HOOKS
+            Action<string, byte[]> handler = DurabilityTestHooks.DurableFileHandler;
+            if (handler == null)
+                return;
+            if (mfs.Length > Int32.MaxValue)
+                throw new InvalidOperationException("Durability shadow fixture exceeds 2 GiB.");
+
+            long position = mfs.Position;
+            try
+            {
+                mfs.Position = 0;
+                byte[] bytes = new byte[(int)mfs.Length];
+                int read = 0;
+                while (read < bytes.Length)
+                {
+                    int current = mfs.Read(bytes, read, bytes.Length - read);
+                    if (current == 0)
+                        throw new EndOfStreamException("Unable to capture durable shadow.");
+                    read += current;
+                }
+                handler(mfs.Name, bytes);
+            }
+            finally
+            {
+                mfs.Position = position;
+            }
+#endif
+        }
         #endregion
 
         #region "RestoreTableFromTheOtherTable"

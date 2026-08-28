@@ -86,6 +86,13 @@ internal static class Program
             return 0;
         }
 
+        if (args.Any(static arg => String.Equals(arg, "--idle-table-cache", StringComparison.OrdinalIgnoreCase)))
+        {
+            SchemeIdleDiskTableCacheIsBoundedAndSafe();
+            Console.WriteLine($"PASS {nameof(SchemeIdleDiskTableCacheIsBoundedAndSafe)}");
+            return 0;
+        }
+
         if (args.Any(static arg => String.Equals(arg, "--journal", StringComparison.OrdinalIgnoreCase)))
         {
             TransactionJournalPayloadCodecSupportsAllPersistedFormats();
@@ -164,6 +171,7 @@ internal static class Program
             (nameof(SchemeRenameReplacesDiskDestination), SchemeRenameReplacesDiskDestination),
             (nameof(SchemeRenameRejectsStorageRouteChanges), SchemeRenameRejectsStorageRouteChanges),
             (nameof(SchemeRenameWaitsForActiveTable), SchemeRenameWaitsForActiveTable),
+            (nameof(SchemeIdleDiskTableCacheIsBoundedAndSafe), SchemeIdleDiskTableCacheIsBoundedAndSafe),
             (nameof(RemoveAllResetsEmptyKeyState), RemoveAllResetsEmptyKeyState),
             (nameof(LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable), LianaTrieRegressionTests.RemoveAllWithFileRecreationKeepsTableReusable),
             (nameof(LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction), LianaTrieRegressionTests.EarlyDisposedNestedTablesFollowMasterTransaction),
@@ -1210,6 +1218,73 @@ internal static class Program
             if (Directory.Exists(folder))
                 Directory.Delete(folder, true);
         }
+    }
+
+    private static void SchemeIdleDiskTableCacheIsBoundedAndSafe()
+    {
+        string folder = CreateDatabaseFolder(nameof(SchemeIdleDiskTableCacheIsBoundedAndSafe));
+        try
+        {
+            using var engine = new DBreezeEngine(folder);
+
+            PutValue(engine, "idle-reuse", 1);
+            object firstTrie = GetIdleCachedTrie(engine, "idle-reuse");
+            Assert(firstTrie != null, "Released disk table was not retained in the idle cache.");
+
+            AssertEqual(1, GetValue(engine, "idle-reuse"), "Reacquired idle table lost data.");
+            object reusedTrie = GetIdleCachedTrie(engine, "idle-reuse");
+            Assert(ReferenceEquals(firstTrie, reusedTrie),
+                "A transaction inside the idle window reopened the physical table.");
+
+            Thread.Sleep(750);
+            Assert(GetIdleCachedTrie(engine, "idle-reuse") == null,
+                "Idle table was not evicted after the 250 ms expiry.");
+
+            AssertEqual(1, GetValue(engine, "idle-reuse"), "Expired table did not reopen correctly.");
+            object reopenedTrie = GetIdleCachedTrie(engine, "idle-reuse");
+            Assert(reopenedTrie != null && !ReferenceEquals(firstTrie, reopenedTrie),
+                "Expired table reused a disposed LTrie instance.");
+
+            for (int i = 0; i < 10; i++)
+                PutValue(engine, "idle-limit-" + i, i);
+            Assert(GetIdleCacheCount(engine) <= 8, "Idle disk table cache exceeded its eight-table limit.");
+
+            PutValue(engine, "idle-delete", 11);
+            string deletedPath = engine.Scheme.GetTablePathFromTableName("idle-delete");
+            engine.Scheme.DeleteTable("idle-delete");
+            Assert(GetIdleCachedTrie(engine, "idle-delete") == null,
+                "DeleteTable retained an idle table handle.");
+            Assert(!File.Exists(deletedPath), "DeleteTable left the idle table data file locked/present.");
+
+            PutValue(engine, "idle-rename", 12);
+            engine.Scheme.RenameTable("idle-rename", "idle-renamed");
+            Assert(GetIdleCachedTrie(engine, "idle-rename") == null,
+                "RenameTable retained the old idle table handle.");
+            AssertEqual(12, GetValue(engine, "idle-renamed"), "Renamed idle table lost data.");
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+        }
+    }
+
+    private static object GetIdleCachedTrie(DBreezeEngine engine, string userTableName)
+    {
+        var holderField = typeof(Scheme).GetField("_openTablesHolder",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var holder = (System.Collections.IDictionary)holderField.GetValue(engine.Scheme);
+        object openTable = holder["@ut" + userTableName];
+        if (openTable == null)
+            return null;
+        return openTable.GetType().GetField("Trie").GetValue(openTable);
+    }
+
+    private static int GetIdleCacheCount(DBreezeEngine engine)
+    {
+        var field = typeof(Scheme).GetField("_idleDiskTables",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        return ((System.Collections.IDictionary)field.GetValue(engine.Scheme)).Count;
     }
 
     private static void PutValue(DBreezeEngine engine, string table, int value)

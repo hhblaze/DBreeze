@@ -73,6 +73,7 @@ namespace DBreeze.Storage
         public int MaxRollbackFileSize = 131072;
 
         string _fileName = String.Empty;
+        readonly bool _isTransactionJournal;
         ulong ulFileName = 0;   //ulong file name, for backup purposes
         readonly ReaderWriterLockSlim lock_fs = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         FileStream _fsData = null;
@@ -98,6 +99,7 @@ namespace DBreeze.Storage
         MemoryMappedViewAccessor _committedMappedView;
         long _committedMappedLength;
         long _committedMappedReservation;
+        long _committedMappingAttemptVersion = -1;
         bool _committedMappingDisabledForTesting;
 
         [ThreadStatic]
@@ -190,6 +192,8 @@ namespace DBreeze.Storage
         public FSR(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
         {
             this._fileName = fileName;
+            _isTransactionJournal = Path.GetFileName(fileName)
+                .StartsWith("_DBreezeTranJrnl", StringComparison.Ordinal);
             this._configuration = configuration;
             _mappedReadBudget = CommittedMappedReadBudgetRegistry.Get(configuration);
             this._trieSettings = trieSettings;
@@ -333,7 +337,7 @@ namespace DBreeze.Storage
 
 
                 Volatile.Write(ref _storageFixTimeTicks, DateTime.UtcNow.Ticks);
-                RefreshCommittedMappedView();
+                InvalidateCommittedMappedView();
             }
             catch (Exception ex)
             {
@@ -395,7 +399,7 @@ namespace DBreeze.Storage
             byte[] marker = eofRollback.To_8_bytes_array_BigEndian();
             WriteAt(_fsRollbackHelper, marker, 0, marker.Length, 0);
             DurabilityTestHooks.Hit("storage.zero-marker.written");
-            NET_Flush(_fsRollbackHelper);
+            FlushFile(_fsRollbackHelper);
             DurabilityTestHooks.Hit("storage.zero-marker.flushed");
             DurabilityTestHooks.Hit("recovery.marker.flushed");
 
@@ -460,7 +464,7 @@ namespace DBreeze.Storage
                 ArrayPool<byte>.Shared.Return(copyBuffer);
             }
 
-            NET_Flush(_fsData);
+            FlushFile(_fsData);
             DurabilityTestHooks.Hit("recovery.data.flushed");
         }
 
@@ -524,7 +528,7 @@ namespace DBreeze.Storage
             {
                 if (GetLength(_fsRollback) == 0 && unchecked((int)eofRollback) == 0)
                 {
-                    NET_Flush(_fsData);
+                    FlushFile(_fsData);
                     DurabilityTestHooks.Hit("recovery.data.flushed");
                     return;
                 }
@@ -569,7 +573,7 @@ namespace DBreeze.Storage
                     if (pendingBufferedWrite != null)
                     {
                         WriteDataAt(pendingBufferedWrite, 0, pendingBufferedWrite.Length, pendingBufferedWriteOffset);
-                        NET_Flush(_fsData);
+                        FlushFile(_fsData);
                         pendingBufferedWrite = null;
                     }
 
@@ -595,7 +599,7 @@ namespace DBreeze.Storage
                             sourceOffset += chunk;
                             destinationOffset += chunk;
                         }
-                        NET_Flush(_fsData);
+                        FlushFile(_fsData);
                     }
 
                     rollbackPosition = recordEnd;
@@ -609,7 +613,7 @@ namespace DBreeze.Storage
                 ArrayPool<byte>.Shared.Return(copyBuffer);
             }
 
-            NET_Flush(_fsData);
+            FlushFile(_fsData);
             DurabilityTestHooks.Hit("recovery.data.flushed");
 
         }
@@ -622,6 +626,28 @@ namespace DBreeze.Storage
             RandomAccess.FlushToDisk(mfs.SafeFileHandle);
         }
 
+        private void FlushFile(FileStream stream)
+        {
+            long started = WritePathDiagnostics.FlushStarted();
+            try
+            {
+                NET_Flush(stream);
+#if DBREEZE_DURABILITY_TEST_HOOKS
+                Action<string, byte[]> durableFileHandler = DurabilityTestHooks.DurableFileHandler;
+                if (durableFileHandler != null)
+                {
+                    long length = GetLength(stream);
+                    if (length > Int32.MaxValue)
+                        throw new InvalidOperationException("Durability shadow fixture exceeds 2 GiB.");
+                    byte[] durableBytes = GC.AllocateUninitializedArray<byte>((int)length);
+                    ReadExactlyAt(stream, durableBytes, 0, durableBytes.Length, 0);
+                    durableFileHandler(stream.Name, durableBytes);
+                }
+#endif
+            }
+            finally { WritePathDiagnostics.FlushFinished(started, _isTransactionJournal); }
+        }
+
         private static FileStream OpenFile(string path)
         {
             return new FileStream(path, new FileStreamOptions
@@ -632,45 +658,72 @@ namespace DBreeze.Storage
                 BufferSize = 1,
                 // The shared read lane supplies the historical 8 KiB locality. Keeping the OS
                 // random-access hint here disables useful cache-manager read-ahead for trie walks.
-                Options = FileOptions.WriteThrough
+                // Explicit NET_Flush barriers define durability. WriteThrough duplicated those
+                // barriers for every positioned write and made small durable batches needlessly
+                // synchronous before their actual commit point.
+                Options = FileOptions.None
             });
         }
 
         private static long GetLength(FileStream stream) => RandomAccess.GetLength(stream.SafeFileHandle);
 
-        private void RefreshCommittedMappedView()
+        private void InvalidateCommittedMappedView()
         {
             DisposeCommittedMappedView();
+            _committedMappingAttemptVersion = -1;
+        }
 
-            long length = eofData;
-            if (_committedMappingDisabledForTesting || !Environment.Is64BitProcess ||
-                _fsData == null || length <= 0 ||
-                !_mappedReadBudget.TryReserve(length))
+        private void EnsureCommittedMappedView()
+        {
+            long mutationVersion = Volatile.Read(ref _mutationVersion);
+            if (_committedMappedView != null ||
+                Volatile.Read(ref _committedMappingAttemptVersion) == mutationVersion)
                 return;
 
-            _committedMappedReservation = length;
-            try
+            using (AcquireWriteLock())
             {
-                _committedMappedFile = MemoryMappedFile.CreateFromFile(_fsData, null, 0,
-                    MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
-                _committedMappedView = _committedMappedFile.CreateViewAccessor(0, length,
-                    MemoryMappedFileAccess.Read);
-                _committedMappedLength = length;
-            }
-            catch (Exception exception) when (exception is IOException ||
-                exception is UnauthorizedAccessException ||
-                exception is PlatformNotSupportedException ||
-                exception is NotSupportedException ||
-                exception is ArgumentException ||
-                exception is OutOfMemoryException)
-            {
-                CommittedReadDiagnostics.MappedCreateFailure();
-                DisposeCommittedMappedView();
+                mutationVersion = _mutationVersion;
+                if (_committedMappedView != null ||
+                    _committedMappingAttemptVersion == mutationVersion)
+                    return;
+
+                // Do not recreate a view after every write-only commit. The first committed
+                // point read creates it; failed/unsupported attempts are retried only after the
+                // next mutation invalidates this version.
+                _committedMappingAttemptVersion = mutationVersion;
+
+                long length = eofData;
+                if (_committedMappingDisabledForTesting || !Environment.Is64BitProcess ||
+                    _fsData == null || length <= 0 || _rollbackCache.Count != 0 ||
+                    TransactionalCommitIsStarted || !_mappedReadBudget.TryReserve(length))
+                    return;
+
+                _committedMappedReservation = length;
+                try
+                {
+                    _committedMappedFile = MemoryMappedFile.CreateFromFile(_fsData, null, 0,
+                        MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+                    _committedMappedView = _committedMappedFile.CreateViewAccessor(0, length,
+                        MemoryMappedFileAccess.Read);
+                    _committedMappedLength = length;
+                    WritePathDiagnostics.MappingCreated();
+                }
+                catch (Exception exception) when (exception is IOException ||
+                    exception is UnauthorizedAccessException ||
+                    exception is PlatformNotSupportedException ||
+                    exception is NotSupportedException ||
+                    exception is ArgumentException ||
+                    exception is OutOfMemoryException)
+                {
+                    CommittedReadDiagnostics.MappedCreateFailure();
+                    DisposeCommittedMappedView();
+                }
             }
         }
 
         private void DisposeCommittedMappedView()
         {
+            bool hadMapping = _committedMappedView != null || _committedMappedFile != null;
             _committedMappedView?.Dispose();
             _committedMappedView = null;
             _committedMappedFile?.Dispose();
@@ -681,12 +734,14 @@ namespace DBreeze.Storage
                 _mappedReadBudget.Release(_committedMappedReservation);
                 _committedMappedReservation = 0;
             }
+            if (hadMapping)
+                WritePathDiagnostics.MappingDisposed();
         }
 
         private void DisableCommittedMappingForTesting()
         {
             _committedMappingDisabledForTesting = true;
-            DisposeCommittedMappedView();
+            InvalidateCommittedMappedView();
         }
 
         private bool TryReadCommittedMapped(long offset, int count, out byte[] result)
@@ -696,6 +751,8 @@ namespace DBreeze.Storage
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count));
+
+            EnsureCommittedMappedView();
 
             using (AcquireReadLock())
             {
@@ -734,6 +791,8 @@ namespace DBreeze.Storage
 
         private bool TryReadCommittedMapped(long offset, scoped Span<byte> destination)
         {
+            EnsureCommittedMappedView();
+
             using (AcquireReadLock())
             {
                 if (_committedMappedView == null || _rollbackCache.Count != 0 ||
@@ -757,9 +816,11 @@ namespace DBreeze.Storage
             CommittedReadDiagnostics.MappedRead(destination.Length);
         }
 
-        private static void WriteAt(FileStream stream, byte[] buffer, int bufferOffset, int count, long fileOffset)
+        private static void WriteAt(FileStream stream, byte[] buffer, int bufferOffset, int count,
+            long fileOffset, bool rollback = false)
         {
             RandomAccess.Write(stream.SafeFileHandle, new ReadOnlySpan<byte>(buffer, bufferOffset, count), fileOffset);
+            WritePathDiagnostics.Write(count, rollback);
         }
 
         private void WriteDataAt(byte[] buffer, int bufferOffset, int count, long fileOffset)
@@ -1171,7 +1232,7 @@ namespace DBreeze.Storage
                 DurabilityTestHooks.Hit("storage.rollback.written");
 
                 //Flushing rollback
-                NET_Flush(_fsRollback);
+                FlushFile(_fsRollback);
                 DurabilityTestHooks.Hit("storage.rollback.flushed");
 
                 //Writing into helper
@@ -1180,7 +1241,7 @@ namespace DBreeze.Storage
                 DurabilityTestHooks.Hit("storage.active-marker.written");
 
                 //Flushing rollback helper
-                NET_Flush(_fsRollbackHelper);
+                FlushFile(_fsRollbackHelper);
                 DurabilityTestHooks.Hit("storage.active-marker.flushed");
 
 
@@ -1191,24 +1252,74 @@ namespace DBreeze.Storage
                 }
             }
 
-            //second loop for saving data
-            for (int i = 0; i < _randBuf.Count; i++)
-            {
-                ref readonly BufferedWriteSet.Segment segment = ref _randBuf.GetSegment(i);
-                WriteDataAt(segment.Buffer, segment.BufferOffset, segment.Length, segment.Offset);
-
-                if (_backupIsActive)
-                {
-                    _configuration.Backup.WriteBackupElement(ulFileName, 0, segment.Offset,
-                        segment.Buffer, segment.BufferOffset, segment.Length);
-                }
-            }
+            WriteRandomDataSegments();
             DurabilityTestHooks.Hit("storage.data.written");
 
             //No flush of data file, it will be done on Flush()
 
             _randBuf.Clear();
             usedBufferSize = 0;
+        }
+
+        private void WriteRandomDataSegments()
+        {
+            const int maximalCoalescedWrite = 1024 * 1024;
+            int index = 0;
+            while (index < _randBuf.Count)
+            {
+                ref readonly BufferedWriteSet.Segment first = ref _randBuf.GetSegment(index);
+                int endIndex = index + 1;
+                int totalLength = first.Length;
+                long expectedOffset = first.End;
+                while (endIndex < _randBuf.Count)
+                {
+                    ref readonly BufferedWriteSet.Segment next = ref _randBuf.GetSegment(endIndex);
+                    if (next.Offset != expectedOffset || totalLength > maximalCoalescedWrite - next.Length)
+                        break;
+                    totalLength += next.Length;
+                    expectedOffset = next.End;
+                    endIndex++;
+                }
+
+                if (endIndex == index + 1)
+                {
+                    WriteDataAt(first.Buffer, first.BufferOffset, first.Length, first.Offset);
+                }
+                else
+                {
+                    byte[] contiguous = ArrayPool<byte>.Shared.Rent(totalLength);
+                    try
+                    {
+                        int targetOffset = 0;
+                        for (int segmentIndex = index; segmentIndex < endIndex; segmentIndex++)
+                        {
+                            ref readonly BufferedWriteSet.Segment segment = ref _randBuf.GetSegment(segmentIndex);
+                            segment.Buffer.AsSpan(segment.BufferOffset, segment.Length)
+                                .CopyTo(contiguous.AsSpan(targetOffset));
+                            targetOffset += segment.Length;
+                        }
+                        WriteDataAt(contiguous, 0, totalLength, first.Offset);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(contiguous);
+                    }
+                }
+
+                // Backup retains the historical logical segment sequence even when adjacent
+                // physical writes were coalesced.
+                if (_backupIsActive)
+                {
+                    for (int segmentIndex = index; segmentIndex < endIndex; segmentIndex++)
+                    {
+                        ref readonly BufferedWriteSet.Segment segment = ref _randBuf.GetSegment(segmentIndex);
+                        _configuration.Backup.WriteBackupElement(ulFileName, 0, segment.Offset,
+                            segment.Buffer, segment.BufferOffset, segment.Length);
+                    }
+                }
+
+                index = endIndex;
+            }
         }
 
         private byte[] EncodePointer(long position)
@@ -1302,7 +1413,7 @@ namespace DBreeze.Storage
             ReadExactlyAt(_fsData, record, headerLength, length, dataOffset);
 
             long recordOffset = eofRollback;
-            WriteAt(_fsRollback, record, 0, record.Length, recordOffset);
+            WriteAt(_fsRollback, record, 0, record.Length, recordOffset, rollback: true);
             if (_backupIsActive)
                 _configuration.Backup.WriteBackupElement(ulFileName, 1, recordOffset, record);
 
@@ -1934,7 +2045,7 @@ namespace DBreeze.Storage
                 FlushSequentialBuffer();
                 FlushRandomBuffer();
 
-                NET_Flush(_fsData);
+                FlushFile(_fsData);
                 DurabilityTestHooks.Hit("storage.data.flushed");
 
                 if (_backupIsActive)
@@ -1951,7 +2062,7 @@ namespace DBreeze.Storage
                     WriteAt(_fsRollbackHelper, marker, 0, marker.Length, 0);
                     DurabilityTestHooks.Hit("storage.zero-marker.written");
 
-                    NET_Flush(_fsRollbackHelper);
+                    FlushFile(_fsRollbackHelper);
                     DurabilityTestHooks.Hit("storage.zero-marker.flushed");
 
                     if (_backupIsActive)
@@ -1964,7 +2075,7 @@ namespace DBreeze.Storage
                 _rollbackCache.Clear();
 
                 eofData = _physicalDataLength;
-                RefreshCommittedMappedView();
+                InvalidateCommittedMappedView();
 
             }
         }
@@ -1984,7 +2095,7 @@ namespace DBreeze.Storage
                 FlushSequentialBuffer();
                 FlushRandomBuffer();
 
-                NET_Flush(_fsData);
+                FlushFile(_fsData);
                 DurabilityTestHooks.Hit("storage.data.flushed");
 
                 TransactionalCommitIsStarted = true;
@@ -2013,7 +2124,7 @@ namespace DBreeze.Storage
                     WriteAt(_fsRollbackHelper, marker, 0, marker.Length, 0);
                     DurabilityTestHooks.Hit("storage.zero-marker.written");
 
-                    NET_Flush(_fsRollbackHelper);
+                    FlushFile(_fsRollbackHelper);
                     DurabilityTestHooks.Hit("storage.zero-marker.flushed");
 
                     if (_backupIsActive)
@@ -2028,7 +2139,7 @@ namespace DBreeze.Storage
                 eofData = _physicalDataLength;
 
                 TransactionalCommitIsStarted = false;
-                RefreshCommittedMappedView();
+                InvalidateCommittedMappedView();
             }
         }
 
@@ -2043,7 +2154,7 @@ namespace DBreeze.Storage
                 {
                     RollbackCore();
                     TransactionalCommitIsStarted = false;
-                    RefreshCommittedMappedView();
+                    InvalidateCommittedMappedView();
                 }
             }
             catch (Exception ex)
@@ -2063,7 +2174,7 @@ namespace DBreeze.Storage
                 using (AcquireWriteLock())
                 {
                     RollbackCore();
-                    RefreshCommittedMappedView();
+                    InvalidateCommittedMappedView();
                 }
             }
             catch (Exception ex)
@@ -2096,14 +2207,14 @@ namespace DBreeze.Storage
                     _configuration.Backup.WriteBackupElement(ulFileName, 0, rollback.Key, rollbackData);
             }
 
-            NET_Flush(_fsData);
+            FlushFile(_fsData);
             if (_backupIsActive)
                 _configuration.Backup.Flush();
 
             eofRollback = 0;
             byte[] marker = eofRollback.To_8_bytes_array_BigEndian();
             WriteAt(_fsRollbackHelper, marker, 0, marker.Length, 0);
-            NET_Flush(_fsRollbackHelper);
+            FlushFile(_fsRollbackHelper);
 
             if (_backupIsActive)
             {

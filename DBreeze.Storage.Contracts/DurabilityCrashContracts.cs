@@ -16,12 +16,17 @@ internal static class DurabilityCrashContracts
     private const string StressTableA = "kill_stress_a";
     private const string StressTableB = "kill_stress_b";
     private static Action<string> armedHandler;
+    private static Action<string, byte[]> durableFileHandler;
+
+    private sealed class DurableShadowCrashException : Exception { }
 
     internal static void RunAll()
     {
         if (!HooksAvailable())
             throw new InvalidOperationException(
                 "Crash contracts require -p:DBreezeDurabilityTestHooks=true on the referenced DBreeze project.");
+
+        RunDurableShadowModel();
 
         RunSingle("storage.rollback.written", 1, false, false);
         RunSingle("storage.rollback.flushed", 1, false, false);
@@ -50,6 +55,237 @@ internal static class DurabilityCrashContracts
         RunKillStress();
 
         Console.WriteLine("PASS DurabilityCrashContracts target=" + StorageTestSupport.TargetName);
+    }
+
+    private static void RunDurableShadowModel()
+    {
+        string[] singleCheckpoints =
+        {
+            "storage.rollback.written", "storage.rollback.flushed",
+            "storage.active-marker.written", "storage.active-marker.flushed",
+            "storage.data.written", "storage.data.flushed",
+            "storage.zero-marker.written", "storage.zero-marker.flushed"
+        };
+        for (int index = 0; index < singleCheckpoints.Length; index++)
+            RunSingleDurableShadow(singleCheckpoints[index],
+                String.Equals(singleCheckpoints[index], "storage.zero-marker.flushed", StringComparison.Ordinal));
+
+        RunMultiDurableShadow("journal.before-commit-marker", false, false);
+        RunMultiDurableShadow("journal.committed", true, false);
+        RunMultiDurableShadow("journal.participant-finalized", true, false);
+        RunMultiDurableShadow("journal.removed", true, false);
+        RunMultiDurableShadow("journal.before-commit-marker", false, true);
+        RunMultiDurableShadow("journal.committed", true, true);
+        RunMultiDurableShadow("journal.participant-finalized", true, true);
+        RunMultiDurableShadow("journal.removed", true, true);
+        Console.WriteLine("PASS explicit-flush durable shadow power-loss model");
+    }
+
+    private static void RunSingleDurableShadow(string checkpoint, bool expectNew)
+    {
+        string root = StorageTestSupport.CreateRoot("shadow-single");
+        string database = Path.Combine(root, "database");
+        string recovered = Path.Combine(root, "recovered");
+        Directory.CreateDirectory(database);
+        Dictionary<string, byte[]> durable = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, byte[]> crashImage = null;
+        StorageLayer storage = null;
+        long start = 0;
+        try
+        {
+            InstallDurableFileShadow(root, durable);
+            using (DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration())
+            {
+                storage = new StorageLayer(Path.Combine(database, "1"), new TrieSettings(), configuration);
+                byte[] original = StorageTestSupport.Bytes(32768, 8111);
+                start = StorageTestSupport.DecodePointer(storage.Table_WriteToTheEnd(original));
+                storage.Commit();
+                ArmShadow(checkpoint, 1, durable, delegate(Dictionary<string, byte[]> image) { crashImage = image; });
+                try
+                {
+                    storage.Table_WriteByOffset(start, StorageTestSupport.Bytes(original.Length, 8112));
+                    storage.Commit();
+                }
+                catch (DurableShadowCrashException) { }
+                finally
+                {
+                    ClearHooks();
+                    storage.Table_Dispose();
+                    storage = null;
+                }
+            }
+
+            StorageTestSupport.Assert(crashImage != null, "Durable shadow checkpoint was not reached: " + checkpoint);
+            RestoreDurableImage(crashImage, root, recovered);
+            using (DBreezeConfiguration verifyConfiguration = StorageTestSupport.CreateConfiguration())
+            {
+                StorageLayer verify = new StorageLayer(Path.Combine(recovered, "database", "1"),
+                    new TrieSettings(), verifyConfiguration);
+                byte[] actual = verify.Table_Read(true, start, 32768);
+                verify.Table_Dispose();
+                byte[] expected = StorageTestSupport.Bytes(32768, expectNew ? 8112 : 8111);
+                StorageTestSupport.Assert(Equal(actual, expected),
+                    "Durable shadow recovered the wrong single-table state at " + checkpoint + ".");
+            }
+        }
+        finally
+        {
+            ClearHooks();
+            if (storage != null) storage.Table_Dispose();
+            StorageTestSupport.DeleteRoot(root);
+        }
+    }
+
+    private static void RunMultiDurableShadow(string checkpoint, bool expectNew, bool alternativeStorage)
+    {
+        string root = StorageTestSupport.CreateRoot("shadow-multi");
+        string database = Path.Combine(root, "database");
+        string alternative = Path.Combine(root, "alternative");
+        string recovered = Path.Combine(root, "recovered");
+        Dictionary<string, byte[]> durable = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, byte[]> crashImage = null;
+        DBreezeEngine engine = null;
+        Transaction transaction = null;
+        try
+        {
+            InstallDurableFileShadow(root, durable);
+            engine = CreateShadowEngine(database, alternative, alternativeStorage);
+            using (Transaction baseline = engine.GetTransaction())
+            {
+                baseline.SynchronizeTables(TableA, TableB);
+                baseline.Insert(TableA, 1, 1);
+                baseline.Insert(TableB, 1, 1);
+                baseline.Commit();
+            }
+
+            ArmShadow(checkpoint, 1, durable, delegate(Dictionary<string, byte[]> image) { crashImage = image; });
+            try
+            {
+                transaction = engine.GetTransaction();
+                transaction.SynchronizeTables(TableA, TableB);
+                transaction.Insert(TableA, 1, 2);
+                transaction.Insert(TableB, 1, 2);
+                transaction.Commit();
+            }
+            catch (DurableShadowCrashException) { }
+            finally
+            {
+                ClearHooks();
+                if (transaction != null)
+                {
+                    try { transaction.Dispose(); }
+                    catch { if (crashImage == null) throw; }
+                }
+                transaction = null;
+                try { engine.Dispose(); }
+                catch { if (crashImage == null) throw; }
+                engine = null;
+            }
+
+            StorageTestSupport.Assert(crashImage != null, "Durable journal shadow checkpoint was not reached: " + checkpoint);
+            RestoreDurableImage(crashImage, root, recovered);
+            using (DBreezeEngine verify = CreateShadowEngine(Path.Combine(recovered, "database"),
+                Path.Combine(recovered, "alternative"), alternativeStorage))
+            using (Transaction read = verify.GetTransaction())
+            {
+                int expected = expectNew ? 2 : 1;
+                StorageTestSupport.Assert(read.Select<int, int>(TableA, 1).Value == expected &&
+                    read.Select<int, int>(TableB, 1).Value == expected,
+                    "Durable journal shadow produced split state at " + checkpoint +
+                    (alternativeStorage ? " (alternative)." : "."));
+            }
+        }
+        finally
+        {
+            ClearHooks();
+            if (transaction != null)
+            {
+                try { transaction.Dispose(); } catch { }
+            }
+            if (engine != null)
+            {
+                try { engine.Dispose(); } catch { }
+            }
+            StorageTestSupport.DeleteRoot(root);
+        }
+    }
+
+    private static DBreezeEngine CreateShadowEngine(string database, string alternative, bool useAlternative)
+    {
+        DBreezeConfiguration configuration = StorageTestSupport.CreateConfiguration();
+        configuration.DBreezeDataFolderName = database;
+        if (useAlternative)
+            configuration.AlternativeTablesLocations[TableB] = alternative;
+        return new DBreezeEngine(configuration);
+    }
+
+    private static void InstallDurableFileShadow(string root, Dictionary<string, byte[]> durable)
+    {
+        Type type = typeof(StorageLayer).Assembly.GetType("DBreeze.Storage.DurabilityTestHooks", true);
+        FieldInfo field = type.GetField("DurableFileHandler", BindingFlags.Static | BindingFlags.NonPublic);
+        if (field == null)
+            throw new InvalidOperationException("DurableFileHandler test hook is not enabled.");
+        durableFileHandler = delegate(string file, byte[] bytes)
+        {
+            string relative = MakeRelativePath(root, file);
+            durable[relative] = (byte[])bytes.Clone();
+        };
+        field.SetValue(null, durableFileHandler);
+    }
+
+    private static void ArmShadow(string checkpoint, int occurrence,
+        Dictionary<string, byte[]> durable, Action<Dictionary<string, byte[]>> capture)
+    {
+        Type type = typeof(StorageLayer).Assembly.GetType("DBreeze.Storage.DurabilityTestHooks", true);
+        FieldInfo field = type.GetField("Handler", BindingFlags.Static | BindingFlags.NonPublic);
+        int seen = 0;
+        armedHandler = delegate(string hit)
+        {
+            if (!String.Equals(hit, checkpoint, StringComparison.Ordinal)) return;
+            if (++seen != occurrence) return;
+            var image = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, byte[]> item in durable)
+                image[item.Key] = (byte[])item.Value.Clone();
+            capture(image);
+            throw new DurableShadowCrashException();
+        };
+        field.SetValue(null, armedHandler);
+    }
+
+    private static void ClearHooks()
+    {
+        Type type = typeof(StorageLayer).Assembly.GetType("DBreeze.Storage.DurabilityTestHooks", false);
+        if (type == null) return;
+        FieldInfo handler = type.GetField("Handler", BindingFlags.Static | BindingFlags.NonPublic);
+        FieldInfo durableHandler = type.GetField("DurableFileHandler", BindingFlags.Static | BindingFlags.NonPublic);
+        if (handler != null) handler.SetValue(null, null);
+        if (durableHandler != null) durableHandler.SetValue(null, null);
+        armedHandler = null;
+        durableFileHandler = null;
+    }
+
+    private static void RestoreDurableImage(Dictionary<string, byte[]> image, string sourceRoot, string targetRoot)
+    {
+        foreach (KeyValuePair<string, byte[]> file in image)
+        {
+            string target = Path.Combine(targetRoot, file.Key);
+            Directory.CreateDirectory(Path.GetDirectoryName(target));
+            File.WriteAllBytes(target, file.Value);
+        }
+    }
+
+    private static string MakeRelativePath(string root, string path)
+    {
+        Uri rootUri = new Uri(AppendDirectorySeparator(Path.GetFullPath(root)));
+        Uri pathUri = new Uri(Path.GetFullPath(path));
+        return Uri.UnescapeDataString(rootUri.MakeRelativeUri(pathUri).ToString())
+            .Replace('/', Path.DirectorySeparatorChar);
+    }
+
+    private static string AppendDirectorySeparator(string path)
+    {
+        return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+            ? path : path + Path.DirectorySeparatorChar;
     }
 
     internal static void RunWorker(string mode, string root, string checkpoint, int occurrence)

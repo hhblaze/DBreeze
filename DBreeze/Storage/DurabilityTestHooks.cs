@@ -16,6 +16,7 @@ namespace DBreeze.Storage
     {
 #if DBREEZE_DURABILITY_TEST_HOOKS
         internal static Action<string> Handler = null;
+        internal static Action<string, byte[]> DurableFileHandler = null;
 #endif
 
         [Conditional("DBREEZE_DURABILITY_TEST_HOOKS")]

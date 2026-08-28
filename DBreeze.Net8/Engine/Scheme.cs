@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 
 using System.IO;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 
 using DBreeze.Storage;
@@ -50,6 +51,21 @@ namespace DBreeze
         readonly Dictionary<string, OpenTable> _openTablesHolder =
             new Dictionary<string, OpenTable>(StringComparer.Ordinal);
 
+        const int IdleDiskTableLimit = 8;
+        const int IdleDiskTableMilliseconds = 250;
+
+        sealed class IdleDiskTable
+        {
+            internal OpenTable Table;
+            internal long IdleAt;
+            internal LinkedListNode<string> OrderNode;
+        }
+
+        readonly Dictionary<string, IdleDiskTable> _idleDiskTables =
+            new Dictionary<string, IdleDiskTable>(StringComparer.Ordinal);
+        readonly LinkedList<string> _idleDiskTableOrder = new LinkedList<string>();
+        Timer _idleDiskTableTimer;
+
         int _disposed;
         readonly object _tableUsageChanged = new object();
         long _tableUsageVersion;
@@ -59,6 +75,8 @@ namespace DBreeze
             Engine = DBreezeEngine;
 
             this.OpenSchema();
+            _idleDiskTableTimer = new Timer(SweepIdleDiskTables, null,
+                Timeout.Infinite, Timeout.Infinite);
         }
 
         public void Dispose()
@@ -66,45 +84,39 @@ namespace DBreeze
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
 
+            Interlocked.Exchange(ref _idleDiskTableTimer, null)?.Dispose();
             SignalTableUsageChanged();
 
             List<Exception> errors = null;
+            List<OpenTable> tablesToDispose = new List<OpenTable>();
+            LTrie schemaToDispose = null;
             _sync_openTablesHolder.EnterWriteLock();
             try
             {
                 foreach (var row in _openTablesHolder)
-                {
-                    //Disposes all Ltrie, with storages and rollbacks
-                    try
-                    {
-                        row.Value.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        (errors ??= new List<Exception>()).Add(ex);
-                    }
-                }
+                    tablesToDispose.Add(row.Value);
 
-                //Clear self
                 _openTablesHolder.Clear();
-
-                //Disposing Schema trie
-                if (LTrie != null)
-                {
-                    try
-                    {
-                        LTrie.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        (errors ??= new List<Exception>()).Add(ex);
-                    }
-                }
-                //LTrieStorage.Dispose();
+                _idleDiskTables.Clear();
+                _idleDiskTableOrder.Clear();
+                schemaToDispose = LTrie;
+                LTrie = null;
             }
             finally
             {
                 _sync_openTablesHolder.ExitWriteLock();
+            }
+
+            foreach (OpenTable table in tablesToDispose)
+            {
+                try { table.Dispose(); }
+                catch (Exception ex) { (errors ??= new List<Exception>()).Add(ex); }
+            }
+
+            if (schemaToDispose != null)
+            {
+                try { schemaToDispose.Dispose(); }
+                catch (Exception ex) { (errors ??= new List<Exception>()).Add(ex); }
             }
 
             if (errors == null)
@@ -114,6 +126,100 @@ namespace DBreeze
                 ExceptionDispatchInfo.Capture(errors[0]).Throw();
 
             throw new AggregateException("One or more DBreeze schema storages failed to dispose.", errors);
+        }
+
+        private static long IdleNow() => Stopwatch.GetTimestamp();
+
+        private static bool IdleExpired(long now, long idleAt)
+        {
+            return now - idleAt >= (Stopwatch.Frequency * IdleDiskTableMilliseconds) / 1000;
+        }
+
+        private void RemoveIdleTracking(string tableName)
+        {
+            if (!_idleDiskTables.TryGetValue(tableName, out IdleDiskTable idle))
+                return;
+
+            _idleDiskTables.Remove(tableName);
+            _idleDiskTableOrder.Remove(idle.OrderNode);
+        }
+
+        private void ScheduleIdleDiskTableSweep()
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
+            _idleDiskTableTimer?.Change(IdleDiskTableMilliseconds, Timeout.Infinite);
+        }
+
+        private void SweepIdleDiskTables(object state)
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
+            List<OpenTable> tablesToDispose = null;
+            bool scheduleAgain = false;
+            long now = IdleNow();
+
+            _sync_openTablesHolder.EnterWriteLock();
+            try
+            {
+                LinkedListNode<string> node = _idleDiskTableOrder.First;
+                while (node != null)
+                {
+                    LinkedListNode<string> next = node.Next;
+                    string tableName = node.Value;
+                    if (!_idleDiskTables.TryGetValue(tableName, out IdleDiskTable idle))
+                    {
+                        _idleDiskTableOrder.Remove(node);
+                        node = next;
+                        continue;
+                    }
+
+                    if (idle.Table.UsageCount != 0)
+                    {
+                        RemoveIdleTracking(tableName);
+                        node = next;
+                        continue;
+                    }
+
+                    if (!IdleExpired(now, idle.IdleAt))
+                    {
+                        scheduleAgain = true;
+                        node = next;
+                        continue;
+                    }
+
+                    RemoveIdleTracking(tableName);
+                    if (_openTablesHolder.TryGetValue(tableName, out OpenTable current) &&
+                        ReferenceEquals(current, idle.Table) && current.UsageCount == 0)
+                    {
+                        _openTablesHolder.Remove(tableName);
+                        (tablesToDispose ??= new List<OpenTable>()).Add(current);
+                    }
+                    node = next;
+                }
+            }
+            finally
+            {
+                _sync_openTablesHolder.ExitWriteLock();
+            }
+
+            if (tablesToDispose != null)
+            {
+                foreach (OpenTable table in tablesToDispose)
+                {
+                    try { table.Dispose(); }
+                    catch (Exception exception)
+                    {
+                        Engine.BackgroundNotify("SchemeIdleTableDisposeFailed", exception);
+                    }
+                }
+                SignalTableUsageChanged();
+            }
+
+            if (scheduleAgain && Volatile.Read(ref _disposed) == 0)
+                _idleDiskTableTimer?.Change(IdleDiskTableMilliseconds, Timeout.Infinite);
         }
 
         private void SignalTableUsageChanged()
@@ -619,6 +725,47 @@ namespace DBreeze
         /// Tables will be closed only in case of other threads don't use it.
         /// </summary>
         /// <param name="closeOpenTables"></param>
+        private void KeepIdleDiskTable(string tableName, OpenTable table,
+            ref List<OpenTable> tablesToDispose)
+        {
+            long now = IdleNow();
+            if (_idleDiskTables.TryGetValue(tableName, out IdleDiskTable existing))
+            {
+                existing.Table = table;
+                existing.IdleAt = now;
+                _idleDiskTableOrder.Remove(existing.OrderNode);
+                existing.OrderNode = _idleDiskTableOrder.AddLast(tableName);
+            }
+            else
+            {
+                _idleDiskTables.Add(tableName, new IdleDiskTable
+                {
+                    Table = table,
+                    IdleAt = now,
+                    OrderNode = _idleDiskTableOrder.AddLast(tableName)
+                });
+            }
+
+            while (_idleDiskTables.Count > IdleDiskTableLimit)
+            {
+                string oldestName = _idleDiskTableOrder.First.Value;
+                IdleDiskTable oldest = _idleDiskTables[oldestName];
+                RemoveIdleTracking(oldestName);
+
+                // A table can have been reacquired through the lock-free read path before its
+                // stale idle entry was swept. Active tables are never evicted.
+                if (oldest.Table.UsageCount != 0)
+                    continue;
+
+                if (_openTablesHolder.TryGetValue(oldestName, out OpenTable current) &&
+                    ReferenceEquals(current, oldest.Table) && current.UsageCount == 0)
+                {
+                    _openTablesHolder.Remove(oldestName);
+                    (tablesToDispose ??= new List<OpenTable>()).Add(current);
+                }
+            }
+        }
+
         internal void CloseTables(Dictionary<string, ulong?> closeOpenTables)
         {
             //if (Engine.Configuration.Storage == DBreezeConfiguration.eStorage.MEMORY)
@@ -627,6 +774,8 @@ namespace DBreeze
             string tableName = String.Empty;
             OpenTable ot = null;
             bool toClose = false;
+            bool hasIdleTables = false;
+            List<OpenTable> tablesToDispose = null;
 
             string alternativeTableLocation = String.Empty;
 
@@ -668,13 +817,11 @@ namespace DBreeze
                         {
                             if (toClose)
                             {
-                                //Closing table
-
-                                //Console.WriteLine("Closing: " + utn.Key);
-
-                                ot.Dispose();
-
-                                _openTablesHolder.Remove(tableName);
+                                // Keep a small disk-only working set for the next transaction.
+                                // Ownership is already released (UsageCount == 0); the timer only
+                                // retains physical handles and never an active transaction table.
+                                KeepIdleDiskTable(tableName, ot, ref tablesToDispose);
+                                hasIdleTables = true;
                             }
                         }
                     }
@@ -689,6 +836,15 @@ namespace DBreeze
             {
                 _sync_openTablesHolder.ExitWriteLock();
             }
+
+            if (tablesToDispose != null)
+            {
+                foreach (OpenTable table in tablesToDispose)
+                    table.Dispose();
+            }
+
+            if (hasIdleTables)
+                ScheduleIdleDiskTableSweep();
 
             SignalTableUsageChanged();
         }
@@ -834,6 +990,7 @@ namespace DBreeze
 
                 if (_openTablesHolder.TryGetValue(tableName, out OpenTable openTable))
                 {
+                    RemoveIdleTracking(tableName);
                     openTable.Dispose();
                     _openTablesHolder.Remove(tableName);
                 }
@@ -923,7 +1080,15 @@ namespace DBreeze
                 _openTablesHolder.TryGetValue(oldTableName, out OpenTable sourceOpenTable);
                 bool inMemory = oldRoute.Storage == DBreezeConfiguration.eStorage.MEMORY;
                 if (!inMemory && sourceOpenTable != null)
-                    return false;
+                {
+                    if (sourceOpenTable.UsageCount != 0)
+                        return false;
+
+                    RemoveIdleTracking(oldTableName);
+                    _openTablesHolder.Remove(oldTableName);
+                    sourceOpenTable.Dispose();
+                    sourceOpenTable = null;
+                }
 
                 ulong sourceFileNumber = ReadTableFileNumber(sourceRow.GetFullValue(false));
 
@@ -937,6 +1102,7 @@ namespace DBreeze
 
                 if (_openTablesHolder.TryGetValue(newTableName, out OpenTable destinationOpenTable))
                 {
+                    RemoveIdleTracking(newTableName);
                     destinationOpenTable.Dispose();
                     _openTablesHolder.Remove(newTableName);
                 }
@@ -950,6 +1116,7 @@ namespace DBreeze
 
                 if (inMemory && sourceOpenTable != null)
                 {
+                    RemoveIdleTracking(oldTableName);
                     _openTablesHolder.Remove(oldTableName);
                     sourceOpenTable.Trie.TableName = newUserTableName;
                     _openTablesHolder.Add(newTableName, sourceOpenTable);

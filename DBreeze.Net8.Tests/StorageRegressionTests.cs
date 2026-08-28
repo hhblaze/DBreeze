@@ -450,18 +450,22 @@ internal static class StorageRegressionTests
             long start = DecodePointer(storage.Table_WriteToTheEnd(initial));
             storage.Commit();
 
-            if (Environment.Is64BitProcess)
-                Assert(GetCommittedMappedLength(storage) == storage.Length,
-                    "Committed mapping did not cover the committed file after commit.");
+            Assert(GetCommittedMappedLength(storage) == 0,
+                "A write-only commit eagerly created a committed mapping.");
             AssertBytes(initial.AsSpan(31 * 1024 - 17, 4096).ToArray(),
                 ReadCommittedPoint(storage, start + 31 * 1024 - 17, 4096),
                 "Mapped cross-boundary read returned incorrect bytes.");
+            if (Environment.Is64BitProcess)
+                Assert(GetCommittedMappedLength(storage) == storage.Length,
+                    "First committed point read did not lazily map the committed file.");
 
             byte[] appended = Enumerable.Repeat((byte)0xA7, 521).ToArray();
             long appendOffset = DecodePointer(storage.Table_WriteToTheEnd(appended));
             Assert(ReadCommittedPoint(storage, appendOffset, appended.Length).Length == 0,
                 "Mapped committed view exposed an uncommitted append.");
             storage.Commit();
+            Assert(GetCommittedMappedLength(storage) == 0,
+                "Append commit eagerly recreated a committed mapping.");
             AssertBytes(appended, ReadCommittedPoint(storage, appendOffset, appended.Length),
                 "Mapped view was not extended after commit.");
 

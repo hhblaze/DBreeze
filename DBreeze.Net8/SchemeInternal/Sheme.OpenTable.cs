@@ -27,6 +27,8 @@ namespace DBreeze.SchemeInternal
         private long qOpen;
         private int disposed;
 
+        internal long UsageCount => Volatile.Read(ref qOpen);
+
 
         //public OpenTable()
         //{

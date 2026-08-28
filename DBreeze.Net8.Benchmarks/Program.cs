@@ -1,6 +1,12 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Any(static arg => string.Equals(arg, "--batched-insert-audit-self-test", StringComparison.OrdinalIgnoreCase)))
+    return BatchedInsertAuditSelfTests.Run();
+
+if (args.Any(static arg => string.Equals(arg, "--batched-insert-audit", StringComparison.OrdinalIgnoreCase)))
+    return BatchedInsertAudit.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--traversal-read-audit-self-test", StringComparison.OrdinalIgnoreCase)))
     return TraversalReadAuditSelfTests.Run();
 

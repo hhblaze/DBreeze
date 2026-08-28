@@ -546,9 +546,17 @@ internal sealed class SqliteComparisonSuite
             RunAlternating("Sequential bulk insert", round,
                 path => DbreezeInsert(path, _sequentialKeys, false, 0),
                 path => SqliteInsert(path, _sequentialKeys, 0));
-            RunAlternating("Sequential batched insert (1000/commit)", round,
-                path => DbreezeInsert(path, _sequentialKeys, false, 1000),
-                path => SqliteInsert(path, _sequentialKeys, 1000));
+            const string batchedScenario = "Sequential batched insert (1000 rows/transaction)";
+            var batchedActions = new List<(string Provider, Func<string, SqliteMeasuredOutcome> Action)>
+            {
+                (DBreezeSortedProvider, path => DbreezeBatchedInsert(path, _sequentialKeys, 1000, noOverwrite: false)),
+                (DBreezeSortedNoOverwriteProvider, path => DbreezeBatchedInsert(path, _sequentialKeys, 1000, noOverwrite: true)),
+                (SqliteProvider, path => SqliteInsert(path, _sequentialKeys, 1000)),
+            };
+            int batchedRotation = (round - 1) % batchedActions.Count;
+            foreach ((string provider, Func<string, SqliteMeasuredOutcome> action) in
+                batchedActions.Skip(batchedRotation).Concat(batchedActions.Take(batchedRotation)))
+                MeasureFresh(batchedScenario, provider, round, action);
 
             var actions = new List<(string Provider, Func<string, SqliteMeasuredOutcome> Action)>
             {
@@ -744,6 +752,35 @@ internal sealed class SqliteComparisonSuite
                 }
                 if (commitBatch == 0 || keys.Count % commitBatch != 0)
                     transaction.Commit();
+            }
+            stopwatch.Stop();
+            elapsed = stopwatch.Elapsed.TotalMilliseconds;
+            VerifyDbreezeMain(engine, keys.Count);
+        }
+        return new SqliteMeasuredOutcome(keys.Count, keys.Count, ExpectedMainChecksum(keys), elapsed);
+    }
+
+    private SqliteMeasuredOutcome DbreezeBatchedInsert(string path, IReadOnlyList<long> keys,
+        int batchSize, bool noOverwrite)
+    {
+        CreateEmptyDirectory(path);
+        double elapsed;
+        using (var engine = new DBreezeEngine(path))
+        {
+            var stopwatch = Stopwatch.StartNew();
+            for (int batchStart = 0; batchStart < keys.Count; batchStart += batchSize)
+            {
+                int batchEnd = Math.Min(batchStart + batchSize, keys.Count);
+                using var transaction = engine.GetTransaction();
+                if (noOverwrite)
+                    transaction.Technical_SetTable_OverwriteIsNotAllowed(MainTable);
+
+                for (int i = batchStart; i < batchEnd; i++)
+                {
+                    long key = keys[i];
+                    transaction.Insert(MainTable, key, Payload(key));
+                }
+                transaction.Commit();
             }
             stopwatch.Stop();
             elapsed = stopwatch.Elapsed.TotalMilliseconds;
@@ -1527,7 +1564,10 @@ internal sealed class SqliteComparisonSuite
         var expected = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
             ["Sequential bulk insert"] = new[] { DBreezeProvider, SqliteProvider },
-            ["Sequential batched insert (1000/commit)"] = new[] { DBreezeProvider, SqliteProvider },
+            ["Sequential batched insert (1000 rows/transaction)"] = new[]
+            {
+                DBreezeSortedProvider, DBreezeSortedNoOverwriteProvider, SqliteProvider
+            },
             ["Random bulk insert"] = new[] { DBreezeProvider, DBreezeRksProvider, SqliteProvider },
             ["Random point reads (hits)"] = new[] { DBreezeProvider, SqliteProvider },
             ["Mixed point reads (90% hits)"] = new[] { DBreezeProvider, SqliteProvider },
