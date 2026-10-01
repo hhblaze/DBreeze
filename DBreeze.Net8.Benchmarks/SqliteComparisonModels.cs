@@ -20,6 +20,7 @@ internal sealed class SqliteComparisonOptions
     internal int MultiTableBatchSize { get; private set; } = 50;
     internal string SqliteSynchronous { get; private set; } = "FULL";
     internal bool Smoke { get; private set; }
+    internal bool ReadsOnly { get; private set; }
     internal bool KeepDatabases { get; private set; }
 
     internal static SqliteComparisonOptions Parse(string[] args)
@@ -36,6 +37,9 @@ internal sealed class SqliteComparisonOptions
                     break;
                 case "--smoke":
                     options.Smoke = true;
+                    break;
+                case "--reads-only":
+                    options.ReadsOnly = true;
                     break;
                 case "--keep-databases":
                     options.KeepDatabases = true;
@@ -348,6 +352,7 @@ internal sealed class SqliteComparisonConfiguration
     public int MultiTableSqliteBusyTimeoutMilliseconds { get; set; } = 60_000;
     public int RandomSeed { get; set; } = 20260826;
     public bool Smoke { get; set; }
+    public bool ReadsOnly { get; set; }
     public bool KeepDatabases { get; set; }
     public string SqliteJournalMode { get; set; } = "WAL";
     public string SqliteSynchronous { get; set; }

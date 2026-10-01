@@ -10,6 +10,12 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Contains("--read-cache-intrusive"))
+        {
+            CommittedReadCacheLifetimeTests.IntrusiveRemovalPreservesBothOrders();
+            Console.WriteLine("PASS IntrusiveRemovalPreservesBothOrders");
+            return 0;
+        }
         if (args.Any(static arg => String.Equals(arg, "--read-cache-lifetime", StringComparison.OrdinalIgnoreCase)))
         {
             CommittedReadCacheLifetimeTests.EpochChurnReleasesNodes();

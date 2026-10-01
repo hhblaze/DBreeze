@@ -31,7 +31,53 @@ internal static class CommittedReadCacheLifetimeTests
         }
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference Capture(object manager) => new(Property(((IEnumerable)Field(manager, "_globalOrder")).Cast<object>().First(), "Node"));
+    private static WeakReference Capture(object manager) => new(Property(CacheOrderProbe.Global(manager).First(), "Node"));
+
+    internal static void IntrusiveRemovalPreservesBothOrders()
+    {
+        object manager = Activator.CreateInstance(Type("CommittedReadNodeCacheManager"), true)!;
+        Check(CacheOrderProbe.IsIntrusive(manager), "Intrusive DLL required.");
+        object firstTable = Call(manager, "CreateTableCache", (object)null);
+        object secondTable = Call(manager, "CreateTableCache", (object)null);
+        object sync = Field(manager, "_sync");
+        // Interleave tables to exercise different neighbours in the two orders.
+        for (ulong i = 0; i < 6; i++)
+        {
+            object node = Activator.CreateInstance(Type("CommittedReadNode"), Instance, null, new object[] { new ulong[257] }, null)!;
+            object key = Activator.CreateInstance(Type("CommittedReadNodeCacheKey"), Instance, null, new object[] { 0L, i }, null)!;
+            Call(manager, "Admit", i % 2 == 0 ? firstTable : secondTable, key, node);
+        }
+        object[] original = CacheOrderProbe.Global(manager);
+        var expected = original.ToList();
+        // Middle, first, last, then a table's sole entry, and the manager's sole entry.
+        foreach (int index in new[] { 2, 0, 5, 4, 1, 3 })
+        {
+            object entry = original[index], table = Property(entry, "Table");
+            long bytes = (long)Field(manager, "_retainedBytes");
+            lock (sync)
+            {
+                Check((bool)Call(table, "Remove", entry), "First removal failed.");
+                Check(!(bool)Call(table, "Remove", entry), "Repeated removal changed the cache.");
+            }
+            expected.Remove(entry);
+            Check((long)Field(manager, "_retainedBytes") == bytes - (int)Property(entry, "Weight"), "Removal accounting differs.");
+            foreach (string link in new[] { "GlobalPrevious", "GlobalNext", "TablePrevious", "TableNext" })
+                Check(Field(entry, link) == null, "Retired entry retains neighbours: " + link);
+            Check(CacheOrderProbe.Global(manager).SequenceEqual(expected), "Global FIFO order changed.");
+            foreach (object owner in new[] { firstTable, secondTable })
+            {
+                object[] order = CacheOrderProbe.Table(owner);
+                Check(order.SequenceEqual(expected.Where(e => ReferenceEquals(Property(e, "Table"), owner))), "Table FIFO order changed.");
+                Check(order.Length == Count(Field(owner, "_entries")), "Table FIFO and dictionary differ.");
+                object key = Property(entry, "Key");
+                int hash = (int)Property(key, "HotHash");
+                var front = (Array)Field(owner, "_hotFront");
+                Check(!ReferenceEquals(front.GetValue(hash & (front.Length - 1)), entry), "Removed entry remains in hot front.");
+            }
+        }
+        Call(firstTable, "Dispose"); Call(secondTable, "Dispose");
+        Check((long)Field(manager, "_retainedBytes") == 0, "Empty manager retains accounting.");
+    }
 
     internal static void EpochChurnReleasesNodes()
     {
@@ -56,7 +102,7 @@ internal static class CommittedReadCacheLifetimeTests
                 {
                     Collect();
                     long heap = GC.GetTotalMemory(false);
-                    Console.WriteLine($"After {cycle + 1} epochs: live heap {heap / 1048576.0:F1} MiB; global entries {Count(Field(manager, "_globalOrder"))}.");
+                    Console.WriteLine($"After {cycle + 1} epochs: live heap {heap / 1048576.0:F1} MiB; global entries {CacheOrderProbe.GlobalCount(manager)}.");
                     if (warmedHeap.HasValue)
                         Check(heap <= warmedHeap.Value + 8L * 1024 * 1024,
                             $"Live heap grew from {warmedHeap.Value} to {heap} bytes after another 20 epochs.");
@@ -65,7 +111,7 @@ internal static class CommittedReadCacheLifetimeTests
             }
             Collect();
             Check(!retired.IsAlive, "Retired epoch still roots its committed-read node.");
-            foreach (object entry in (IEnumerable)Field(manager, "_globalOrder"))
+            foreach (object entry in CacheOrderProbe.Global(manager))
                 Check((int)Field(entry, "Removed") == 0, "Global ordering retains removed entries.");
         }
         finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
@@ -81,7 +127,7 @@ internal static class CommittedReadCacheLifetimeTests
             using (var tx = engine.GetTransaction()) { tx.Insert("cache-lifetime", "key", new byte[100]); tx.Commit(); }
             Warm(engine, new[] { "key" });
             object manager = Manager(configuration);
-            object originalTable = Property(((IEnumerable)Field(manager, "_globalOrder")).Cast<object>().First(), "Table");
+            object originalTable = Property(CacheOrderProbe.Global(manager).First(), "Table");
             object tree = Field(originalTable, "_tree");
             var tables = new List<object>();
             WeakReference retired = Fill(manager, tree, tables);
@@ -91,11 +137,11 @@ internal static class CommittedReadCacheLifetimeTests
             foreach (object table in tables)
             {
                 int entries = Count(Field(table, "_entries"));
-                Check(Count(Field(table, "_order")) == entries, "Table FIFO retains globally or locally evicted entries.");
+                Check(CacheOrderProbe.Table(table).Length == entries, "Table FIFO retains globally or locally evicted entries.");
                 Check((long)Property(table, "RetainedBytes") <= 8L * 1024 * 1024, "Table cache exceeded its budget.");
                 active += entries;
             }
-            Check(Count(Field(manager, "_globalOrder")) == active, "Global FIFO retains locally evicted entries.");
+            Check(CacheOrderProbe.GlobalCount(manager) == active, "Global FIFO retains locally evicted entries.");
             Check((long)Field(manager, "_retainedBytes") <= 64L * 1024 * 1024, "Manager exceeded its budget.");
             foreach (object table in tables) Call(table, "Dispose");
         }
@@ -129,7 +175,7 @@ internal static class CommittedReadCacheLifetimeTests
             var (manager, retired) = DisposeEngine(configuration);
             Collect();
             Check(!retired.IsAlive, "Disposed table still roots read nodes through its manager.");
-            Check(Count(Field(manager, "_globalOrder")) == 0, "Disposed engine retains global cache entries.");
+            Check(CacheOrderProbe.GlobalCount(manager) == 0, "Disposed engine retains global cache entries.");
             Check((long)Field(manager, "_retainedBytes") == 0, "Disposed engine still accounts cache bytes.");
         }
         finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }

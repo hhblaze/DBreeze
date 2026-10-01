@@ -1,6 +1,12 @@
 using BenchmarkDotNet.Running;
 using DBreeze.Net8.Benchmarks;
 
+if (args.Contains("--cache-object-sizes"))
+    return CacheObjectSizes.Run(args);
+
+if (args.Any(static arg => string.Equals(arg, "--cache-stress-audit", StringComparison.OrdinalIgnoreCase)))
+    return CacheStressAudit.Run(args);
+
 if (args.Any(static arg => string.Equals(arg, "--batched-insert-audit-self-test", StringComparison.OrdinalIgnoreCase)))
     return BatchedInsertAuditSelfTests.Run();
 

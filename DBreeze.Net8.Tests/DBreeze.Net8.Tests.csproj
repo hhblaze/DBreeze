@@ -17,4 +17,8 @@
     <Reference Include="DBreeze" HintPath="$(DBreezeAssemblyReference)" Private="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\DBreeze.Net8.Benchmarks\CacheOrderProbe.cs" Link="CacheOrderProbe.cs" />
+  </ItemGroup>
+
 </Project>

@@ -123,12 +123,15 @@ internal static class SqliteComparisonArtifacts
             .Append(report.Succeeded ? "ok\">COMPLETE" : "fail\">INCOMPLETE")
             .Append("</strong><p>")
             .Append(report.Succeeded
-                ? "Every configured workload and correctness oracle completed."
+                ? configuration.ReadsOnly
+                    ? "All seven configured read workloads and correctness oracles completed. Insert and mutation benchmarks were excluded."
+                    : "Every configured workload and correctness oracle completed."
                 : "One or more workloads or correctness oracles failed; successful measurements remain visible.")
             .Append("</p></div>");
 
         builder.Append("<h2>Configuration</h2><div class=\"card\"><table><tbody>");
         Row(builder, "Records", configuration.Records.ToString("N0", CultureInfo.InvariantCulture));
+        Row(builder, "Coverage", configuration.ReadsOnly ? "Seven read workloads only" : "Full comparison");
         Row(builder, "Payload", configuration.PayloadBytes.ToString(CultureInfo.InvariantCulture) + " bytes; deterministic pool of " + configuration.PayloadPoolSize);
         Row(builder, "Measured rounds", configuration.Repetitions.ToString(CultureInfo.InvariantCulture));
         Row(builder, "Parallel readers", configuration.Parallelism.ToString(CultureInfo.InvariantCulture));
@@ -296,6 +299,12 @@ internal static class SqliteComparisonSelfTests
                 parsed.MultiTableCount == 20 && parsed.MultiTableBatchSize == 50 &&
                 parsed.Repetitions == 1, "Smoke limits");
             Check(failures, parsed.ReportPath.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase), "Default report containment");
+            SqliteComparisonOptions readsOnly = SqliteComparisonOptions.Parse(new[]
+            {
+                "--sqlite-compare", "--reads-only", "--root", root, "--run-id", "reads-only-options",
+            });
+            Check(failures, readsOnly.ReadsOnly && !parsed.ReadsOnly && readsOnly.Repetitions == 3,
+                "Read-only selection preserves default full comparison and repetition count");
 
             SqliteComparisonOptions multi = SqliteComparisonOptions.Parse(new[]
             {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -61,8 +60,9 @@ namespace DBreeze.LianaTrie
         internal const long TableLimitBytes = 8L * 1024 * 1024;
 
         private readonly object _sync = new object();
-        private readonly LinkedList<CommittedReadNodeCacheEntry> _globalOrder =
-            new LinkedList<CommittedReadNodeCacheEntry>();
+        private CommittedReadNodeCacheEntry _globalHead;
+        private CommittedReadNodeCacheEntry _globalTail;
+        private int _globalCount;
         private long _retainedBytes;
 
         internal CommittedReadNodeTableCache CreateTableCache(LTrie tree)
@@ -70,7 +70,7 @@ namespace DBreeze.LianaTrie
             lock (_sync)
             {
                 while (_retainedBytes + CommittedReadNodeTableCache.HotFrontBytes >
-                    ConfigurationLimitBytes && _globalOrder.Count != 0)
+                    ConfigurationLimitBytes && _globalCount != 0)
                     EvictGlobalOldest();
                 if (_retainedBytes + CommittedReadNodeTableCache.HotFrontBytes >
                     ConfigurationLimitBytes)
@@ -95,7 +95,13 @@ namespace DBreeze.LianaTrie
                 if (!table.TryAdd(entry))
                     return;
 
-                entry.GlobalOrderNode = _globalOrder.AddLast(entry);
+                entry.GlobalPrevious = _globalTail;
+                if (_globalTail == null)
+                    _globalHead = entry;
+                else
+                    _globalTail.GlobalNext = entry;
+                _globalTail = entry;
+                _globalCount++;
                 _retainedBytes += entry.Weight;
                 CommittedReadNodeCacheRegistry.ChangeRetained(entry.Weight);
                 table.Enqueue(entry);
@@ -121,11 +127,7 @@ namespace DBreeze.LianaTrie
 
         internal void Released(CommittedReadNodeCacheEntry entry)
         {
-            if (entry.GlobalOrderNode != null)
-            {
-                _globalOrder.Remove(entry.GlobalOrderNode);
-                entry.GlobalOrderNode = null;
-            }
+            UnlinkGlobal(entry);
             _retainedBytes -= entry.Weight;
             CommittedReadNodeCacheRegistry.ChangeRetained(-entry.Weight);
         }
@@ -139,14 +141,30 @@ namespace DBreeze.LianaTrie
 
         private void EvictGlobalOldest()
         {
-            while (_globalOrder.Count != 0)
+            while (_globalCount != 0)
             {
-                LinkedListNode<CommittedReadNodeCacheEntry> node = _globalOrder.First;
-                if (node.Value.Table.Remove(node.Value))
+                CommittedReadNodeCacheEntry entry = _globalHead;
+                if (entry.Table.Remove(entry))
                     return;
-                _globalOrder.Remove(node);
-                node.Value.GlobalOrderNode = null;
+                UnlinkGlobal(entry);
             }
+        }
+
+        // All FIFO mutations run under _sync. A retired entry may still be held by a reader;
+        // sever its links so that reader cannot keep the other cache entries alive.
+        private void UnlinkGlobal(CommittedReadNodeCacheEntry entry)
+        {
+            if (entry.GlobalPrevious == null)
+                _globalHead = entry.GlobalNext;
+            else
+                entry.GlobalPrevious.GlobalNext = entry.GlobalNext;
+            if (entry.GlobalNext == null)
+                _globalTail = entry.GlobalPrevious;
+            else
+                entry.GlobalNext.GlobalPrevious = entry.GlobalPrevious;
+            entry.GlobalPrevious = null;
+            entry.GlobalNext = null;
+            _globalCount--;
         }
     }
 
@@ -160,8 +178,9 @@ namespace DBreeze.LianaTrie
         private readonly LTrie _tree;
         private readonly ConcurrentDictionary<CommittedReadNodeCacheKey, CommittedReadNodeCacheEntry>
             _entries = new ConcurrentDictionary<CommittedReadNodeCacheKey, CommittedReadNodeCacheEntry>();
-        private readonly LinkedList<CommittedReadNodeCacheEntry> _order =
-            new LinkedList<CommittedReadNodeCacheEntry>();
+        private CommittedReadNodeCacheEntry _orderHead;
+        private CommittedReadNodeCacheEntry _orderTail;
+        private int _orderCount;
         private readonly long[] _admission = new long[AdmissionSlots];
         private readonly CommittedReadNodeCacheEntry[] _hotFront =
             new CommittedReadNodeCacheEntry[HotFrontSlots];
@@ -228,18 +247,25 @@ namespace DBreeze.LianaTrie
             return true;
         }
 
-        internal void Enqueue(CommittedReadNodeCacheEntry entry) =>
-            entry.TableOrderNode = _order.AddLast(entry);
+        internal void Enqueue(CommittedReadNodeCacheEntry entry)
+        {
+            entry.TablePrevious = _orderTail;
+            if (_orderTail == null)
+                _orderHead = entry;
+            else
+                _orderTail.TableNext = entry;
+            _orderTail = entry;
+            _orderCount++;
+        }
 
         internal void EvictOldest()
         {
-            while (_order.Count != 0)
+            while (_orderCount != 0)
             {
-                LinkedListNode<CommittedReadNodeCacheEntry> node = _order.First;
-                if (Remove(node.Value))
+                CommittedReadNodeCacheEntry entry = _orderHead;
+                if (Remove(entry))
                     return;
-                _order.Remove(node);
-                node.Value.TableOrderNode = null;
+                UnlinkTable(entry);
             }
         }
 
@@ -252,15 +278,26 @@ namespace DBreeze.LianaTrie
                 return false;
 
             _retainedBytes -= entry.Weight;
-            if (entry.TableOrderNode != null)
-            {
-                _order.Remove(entry.TableOrderNode);
-                entry.TableOrderNode = null;
-            }
+            UnlinkTable(entry);
             int hotIndex = entry.Key.HotHash & (HotFrontSlots - 1);
             Interlocked.CompareExchange(ref _hotFront[hotIndex], null, entry);
             _manager.Released(entry);
             return true;
+        }
+
+        private void UnlinkTable(CommittedReadNodeCacheEntry entry)
+        {
+            if (entry.TablePrevious == null)
+                _orderHead = entry.TableNext;
+            else
+                entry.TablePrevious.TableNext = entry.TableNext;
+            if (entry.TableNext == null)
+                _orderTail = entry.TablePrevious;
+            else
+                entry.TableNext.TablePrevious = entry.TablePrevious;
+            entry.TablePrevious = null;
+            entry.TableNext = null;
+            _orderCount--;
         }
 
         internal void AdvanceEpochUnderLock(long epoch)
@@ -269,7 +306,7 @@ namespace DBreeze.LianaTrie
                 return;
 
             _latestEpoch = epoch;
-            while (_order.Count != 0)
+            while (_orderCount != 0)
                 EvictOldest();
             Array.Clear(_admission, 0, _admission.Length);
         }
@@ -278,7 +315,7 @@ namespace DBreeze.LianaTrie
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
-            while (_order.Count != 0)
+            while (_orderCount != 0)
                 EvictOldest();
             _entries.Clear();
             Array.Clear(_hotFront, 0, _hotFront.Length);
@@ -335,8 +372,10 @@ namespace DBreeze.LianaTrie
             Table = table;
             Key = key;
             Node = node;
-            // Entry plus two linked-list nodes and dictionary bookkeeping.
-            Weight = node.RetainedBytes + 192;
+            // x64: immutable node object (24), entry including both FIFO link pairs (88),
+            // and ConcurrentDictionary node (56). The link array is in node.RetainedBytes.
+            // Fixed table arrays and dictionary bucket capacity are outside this entry estimate.
+            Weight = node.RetainedBytes + 168;
         }
 
         internal CommittedReadNodeTableCache Table { get; }
@@ -344,8 +383,10 @@ namespace DBreeze.LianaTrie
         internal CommittedReadNode Node { get; }
         internal int Weight { get; }
         internal int Removed;
-        internal LinkedListNode<CommittedReadNodeCacheEntry> GlobalOrderNode;
-        internal LinkedListNode<CommittedReadNodeCacheEntry> TableOrderNode;
+        internal CommittedReadNodeCacheEntry GlobalPrevious;
+        internal CommittedReadNodeCacheEntry GlobalNext;
+        internal CommittedReadNodeCacheEntry TablePrevious;
+        internal CommittedReadNodeCacheEntry TableNext;
     }
 
     /// <summary>Dense immutable node image. High bit marks a value link; zero means absent.</summary>

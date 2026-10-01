@@ -72,6 +72,7 @@ internal sealed class SqliteComparisonSuite
                 MultiTableCount = options.MultiTableCount,
                 MultiTableBatchSize = options.MultiTableBatchSize,
                 Smoke = options.Smoke,
+                ReadsOnly = options.ReadsOnly,
                 KeepDatabases = options.KeepDatabases,
                 SqliteSynchronous = options.SqliteSynchronous,
             },
@@ -141,7 +142,8 @@ internal sealed class SqliteComparisonSuite
             Persist();
 
             WarmUp();
-            RunInsertScenarios();
+            if (!_options.ReadsOnly)
+                RunInsertScenarios();
 
             string dbreezeFixture = Path.Combine(_layout.ScratchDirectory, "fixture-dbreeze-main");
             string sqliteFixture = Path.Combine(_layout.ScratchDirectory, "fixture-sqlite-main");
@@ -149,7 +151,8 @@ internal sealed class SqliteComparisonSuite
             string sqlitePrefixFixture = Path.Combine(_layout.ScratchDirectory, "fixture-sqlite-prefix");
             BuildFixtures(dbreezeFixture, sqliteFixture, dbreezePrefixFixture, sqlitePrefixFixture);
             RunReadScenarios(dbreezeFixture, sqliteFixture, dbreezePrefixFixture, sqlitePrefixFixture);
-            RunMutationScenarios(dbreezeFixture, sqliteFixture);
+            if (!_options.ReadsOnly)
+                RunMutationScenarios(dbreezeFixture, sqliteFixture);
 
             ValidateCompleteness();
         }
@@ -374,6 +377,7 @@ internal sealed class SqliteComparisonSuite
             source.Configuration.Parallelism != 4 ||
             source.Configuration.RandomSeed != 20260826 ||
             source.Configuration.Smoke ||
+            source.Configuration.ReadsOnly ||
             !String.Equals(source.Configuration.SqliteJournalMode, "WAL", StringComparison.OrdinalIgnoreCase) ||
             !String.Equals(source.Configuration.SqliteSynchronous, "FULL", StringComparison.OrdinalIgnoreCase) ||
             source.Configuration.SqliteBusyTimeoutMilliseconds != 5000)
@@ -1622,6 +1626,19 @@ internal sealed class SqliteComparisonSuite
             ["Prefix traversal"] = new[] { DBreezeProvider, SqliteProvider },
             ["Parallel point reads"] = new[] { DBreezeProvider, SqliteProvider },
         };
+
+        if (_options.ReadsOnly)
+        {
+            expected.Remove("Sequential bulk insert");
+            expected.Remove("Sequential batched insert (1000 rows/transaction)");
+            expected.Remove(ParallelTableInsertWorkload.Scenario);
+            expected.Remove("Random bulk insert");
+            expected.Remove("Random update");
+            expected.Remove("Random delete");
+            if (_report.Measurements.Any(value => !expected.ContainsKey(value.Scenario)) ||
+                _report.Measurements.Count != expected.Count * 2 * _options.Repetitions)
+                Fail("Read-only coverage must contain exactly seven DBreeze/SQLite pairs per round.");
+        }
 
         foreach ((string scenario, string[] providers) in expected)
         foreach (string provider in providers)
