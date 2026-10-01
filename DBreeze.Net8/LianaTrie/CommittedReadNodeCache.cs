@@ -61,8 +61,8 @@ namespace DBreeze.LianaTrie
         internal const long TableLimitBytes = 8L * 1024 * 1024;
 
         private readonly object _sync = new object();
-        private readonly Queue<CommittedReadNodeCacheEntry> _globalOrder =
-            new Queue<CommittedReadNodeCacheEntry>();
+        private readonly LinkedList<CommittedReadNodeCacheEntry> _globalOrder =
+            new LinkedList<CommittedReadNodeCacheEntry>();
         private long _retainedBytes;
 
         internal CommittedReadNodeTableCache CreateTableCache(LTrie tree)
@@ -95,7 +95,7 @@ namespace DBreeze.LianaTrie
                 if (!table.TryAdd(entry))
                     return;
 
-                _globalOrder.Enqueue(entry);
+                entry.GlobalOrderNode = _globalOrder.AddLast(entry);
                 _retainedBytes += entry.Weight;
                 CommittedReadNodeCacheRegistry.ChangeRetained(entry.Weight);
                 table.Enqueue(entry);
@@ -121,6 +121,11 @@ namespace DBreeze.LianaTrie
 
         internal void Released(CommittedReadNodeCacheEntry entry)
         {
+            if (entry.GlobalOrderNode != null)
+            {
+                _globalOrder.Remove(entry.GlobalOrderNode);
+                entry.GlobalOrderNode = null;
+            }
             _retainedBytes -= entry.Weight;
             CommittedReadNodeCacheRegistry.ChangeRetained(-entry.Weight);
         }
@@ -136,9 +141,11 @@ namespace DBreeze.LianaTrie
         {
             while (_globalOrder.Count != 0)
             {
-                CommittedReadNodeCacheEntry entry = _globalOrder.Dequeue();
-                if (entry.Table.Remove(entry))
+                LinkedListNode<CommittedReadNodeCacheEntry> node = _globalOrder.First;
+                if (node.Value.Table.Remove(node.Value))
                     return;
+                _globalOrder.Remove(node);
+                node.Value.GlobalOrderNode = null;
             }
         }
     }
@@ -153,8 +160,8 @@ namespace DBreeze.LianaTrie
         private readonly LTrie _tree;
         private readonly ConcurrentDictionary<CommittedReadNodeCacheKey, CommittedReadNodeCacheEntry>
             _entries = new ConcurrentDictionary<CommittedReadNodeCacheKey, CommittedReadNodeCacheEntry>();
-        private readonly Queue<CommittedReadNodeCacheEntry> _order =
-            new Queue<CommittedReadNodeCacheEntry>();
+        private readonly LinkedList<CommittedReadNodeCacheEntry> _order =
+            new LinkedList<CommittedReadNodeCacheEntry>();
         private readonly long[] _admission = new long[AdmissionSlots];
         private readonly CommittedReadNodeCacheEntry[] _hotFront =
             new CommittedReadNodeCacheEntry[HotFrontSlots];
@@ -221,14 +228,18 @@ namespace DBreeze.LianaTrie
             return true;
         }
 
-        internal void Enqueue(CommittedReadNodeCacheEntry entry) => _order.Enqueue(entry);
+        internal void Enqueue(CommittedReadNodeCacheEntry entry) =>
+            entry.TableOrderNode = _order.AddLast(entry);
 
         internal void EvictOldest()
         {
             while (_order.Count != 0)
             {
-                if (Remove(_order.Dequeue()))
+                LinkedListNode<CommittedReadNodeCacheEntry> node = _order.First;
+                if (Remove(node.Value))
                     return;
+                _order.Remove(node);
+                node.Value.TableOrderNode = null;
             }
         }
 
@@ -241,6 +252,13 @@ namespace DBreeze.LianaTrie
                 return false;
 
             _retainedBytes -= entry.Weight;
+            if (entry.TableOrderNode != null)
+            {
+                _order.Remove(entry.TableOrderNode);
+                entry.TableOrderNode = null;
+            }
+            int hotIndex = entry.Key.HotHash & (HotFrontSlots - 1);
+            Interlocked.CompareExchange(ref _hotFront[hotIndex], null, entry);
             _manager.Released(entry);
             return true;
         }
@@ -252,7 +270,7 @@ namespace DBreeze.LianaTrie
 
             _latestEpoch = epoch;
             while (_order.Count != 0)
-                Remove(_order.Dequeue());
+                EvictOldest();
             Array.Clear(_admission, 0, _admission.Length);
         }
 
@@ -261,7 +279,7 @@ namespace DBreeze.LianaTrie
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
             while (_order.Count != 0)
-                Remove(_order.Dequeue());
+                EvictOldest();
             _entries.Clear();
             Array.Clear(_hotFront, 0, _hotFront.Length);
             Array.Clear(_admission, 0, _admission.Length);
@@ -317,7 +335,8 @@ namespace DBreeze.LianaTrie
             Table = table;
             Key = key;
             Node = node;
-            Weight = node.RetainedBytes + 96;
+            // Entry plus two linked-list nodes and dictionary bookkeeping.
+            Weight = node.RetainedBytes + 192;
         }
 
         internal CommittedReadNodeTableCache Table { get; }
@@ -325,6 +344,8 @@ namespace DBreeze.LianaTrie
         internal CommittedReadNode Node { get; }
         internal int Weight { get; }
         internal int Removed;
+        internal LinkedListNode<CommittedReadNodeCacheEntry> GlobalOrderNode;
+        internal LinkedListNode<CommittedReadNodeCacheEntry> TableOrderNode;
     }
 
     /// <summary>Dense immutable node image. High bit marks a value link; zero means absent.</summary>

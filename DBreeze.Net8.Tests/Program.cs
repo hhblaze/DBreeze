@@ -10,6 +10,17 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Any(static arg => String.Equals(arg, "--read-cache-lifetime", StringComparison.OrdinalIgnoreCase)))
+        {
+            CommittedReadCacheLifetimeTests.EpochChurnReleasesNodes();
+            Console.WriteLine("PASS EpochChurnReleasesNodes");
+            CommittedReadCacheLifetimeTests.GlobalAndTableEvictionsUnlinkEntries();
+            Console.WriteLine("PASS GlobalAndTableEvictionsUnlinkEntries");
+            CommittedReadCacheLifetimeTests.EngineDisposeReleasesNodes();
+            Console.WriteLine("PASS EngineDisposeReleasesNodes");
+            return 0;
+        }
+
         if (args.Length == 2 && String.Equals(args[0], "--journal-invalid-recover", StringComparison.OrdinalIgnoreCase))
             return RunInvalidJournalRecoveryChild(args[1]);
 
@@ -142,6 +153,9 @@ internal static class Program
             (nameof(StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush), StorageRegressionTests.StorageViewsCommitRollbackAndAutoFlush),
             (nameof(StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle), StorageRegressionTests.CommittedReadCachesTrackStorageLifecycle),
             (nameof(StorageRegressionTests.CommittedReadCacheAdmissionIsLazy), StorageRegressionTests.CommittedReadCacheAdmissionIsLazy),
+            (nameof(CommittedReadCacheLifetimeTests.EpochChurnReleasesNodes), CommittedReadCacheLifetimeTests.EpochChurnReleasesNodes),
+            (nameof(CommittedReadCacheLifetimeTests.GlobalAndTableEvictionsUnlinkEntries), CommittedReadCacheLifetimeTests.GlobalAndTableEvictionsUnlinkEntries),
+            (nameof(CommittedReadCacheLifetimeTests.EngineDisposeReleasesNodes), CommittedReadCacheLifetimeTests.EngineDisposeReleasesNodes),
             (nameof(StorageRegressionTests.CommittedReadAheadSupportsBothDirections), StorageRegressionTests.CommittedReadAheadSupportsBothDirections),
             (nameof(StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits), StorageRegressionTests.CommittedReadCacheIsSafeDuringConcurrentCommits),
             (nameof(StorageRegressionTests.CommittedMappedReadsPreserveVisibilityAndLifecycle), StorageRegressionTests.CommittedMappedReadsPreserveVisibilityAndLifecycle),
