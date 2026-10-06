@@ -9,9 +9,9 @@
     <RootNamespace>DBreeze</RootNamespace>
     <ApplicationIcon />
     <Win32Resource />
-    <Version>1.140.2026.1001</Version>
-    <AssemblyVersion>1.140.2026.1001</AssemblyVersion>
-    <FileVersion>1.140.2026.1001</FileVersion>
+    <Version>1.141.2026.1006</Version>
+    <AssemblyVersion>1.141.2026.1006</AssemblyVersion>
+    <FileVersion>1.141.2026.1006</FileVersion>
     <Copyright>Copyright © dbreeze.tiesky.com / Alex Solovyov (hhblaze@gmail.com) / Ivars Sudmalis 2012</Copyright>
   </PropertyGroup>
 

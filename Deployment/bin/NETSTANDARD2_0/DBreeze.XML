@@ -280,6 +280,7 @@
             <summary>
             Returns partial value representation starting from specif index and specified length.
             <para>To get full value as byte[] use GetValuePart(0)</para>
+            <para>After the originating transaction ends, this only works when the full value is already loaded.</para>
             </summary>
             <param name="startIndex"></param>
             <param name="length"></param>
@@ -330,6 +331,7 @@
             Returns full value and converts it to the value data type.
             <para>To take full value or part of the value as byte[] use GetValuePart or GetBytes (for string types like DbAscii etc.)</para>
             <para>If your value contains serialized object inside or it's a string type (like DbAscii etc.), use Value.Get property.</para>
+            <para>Lazy reads require the originating transaction to be active. Already loaded values remain accessible after disposal.</para>
             </summary>
             <returns></returns>
         </member>
