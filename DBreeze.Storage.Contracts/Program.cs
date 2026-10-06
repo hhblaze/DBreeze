@@ -7,6 +7,16 @@ internal static class Program
     {
         try
         {
+            if (args.Length > 0 && EqualsArgument(args[0], "--transaction-lifetime"))
+            {
+                TransactionLifetimeContracts.RunAll();
+                return 0;
+            }
+            if (args.Length > 0 && EqualsArgument(args[0], "--transaction-lifetime-performance"))
+            {
+                TransactionLifetimeContracts.RunPerformance();
+                return 0;
+            }
             if (args.Length == 0 || EqualsArgument(args[0], "--storage-contracts"))
             {
                 StorageContractSuite.RunAll();

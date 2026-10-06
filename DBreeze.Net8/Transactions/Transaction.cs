@@ -29,9 +29,10 @@ namespace DBreeze.Transactions
         /// </summary>
         public int ManagedThreadId = 0;
         internal TransactionUnit _transactionUnit = null;
+        // The lifetime token also guards against repeated Dispose() calls.
+        internal readonly TransactionReadLifetime ReadLifetime = new TransactionReadLifetime();
 
         bool disposed = false;
-        readonly object sync_dispose = new object();
 
         /// <summary>
         /// DateTime.UtcNow.Ticks - time of transaction creation
@@ -114,13 +115,14 @@ namespace DBreeze.Transactions
         /// </summary>
         public void Dispose()
         {
-            lock (sync_dispose)
+            lock (ReadLifetime)
             {
                 if (disposed)
                     return;
                 disposed = true;
             }
 
+            ReadLifetime.Invalidate();
             Exception firstException = null;
 
             try
@@ -1620,6 +1622,7 @@ namespace DBreeze.Transactions
             LTrieRow row = table.GetKey(ref btKey, null, true);
                         
             var nt = table.GetTable(row,ref btKey, tableIndex, null, true, false); //<-masterTrie argument equals to null in case if it is a first level of nested tables
+            nt.ReadLifetime = ReadLifetime;
             nt.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
             
             return nt;
@@ -1646,7 +1649,7 @@ namespace DBreeze.Transactions
 
             if (table == null)
             {
-                return new NestedTable(null, false, false);
+                return new NestedTable(null, false, false) { ReadLifetime = ReadLifetime };
                 //return new NestedTableInternal(false, null, 0, false, 0, false); 
             }
             else
@@ -1660,6 +1663,7 @@ namespace DBreeze.Transactions
                  * (readRoot == null) ? WRITING TABLE TRANSACTION, doesn't use cache for getting value : READING TABLE TRANSACTION, always uses value via cache
                  */
                 var nt = table.GetTable(row, ref btKey, tableIndex, null, false, !(readRoot == null));
+                nt.ReadLifetime = ReadLifetime;
                 nt.ValuesLazyLoadingIsOn = this._valuesLazyLoadingIsOn;
                 return nt;
 
@@ -1949,7 +1953,7 @@ namespace DBreeze.Transactions
 
             if (table == null)
             {
-                return new Row<TKey, TValue>(null, null, false);
+                return new Row<TKey, TValue>(null, null, false, ReadLifetime);
                 //return new Row<TKey, TValue>(null, null, false, null,true);
             }
             else
@@ -1960,7 +1964,7 @@ namespace DBreeze.Transactions
                  * (readRoot == null) ? WRITING TABLE TRANSACTION, doesn't use cache for getting value : READING TABLE TRANSACTION, always uses value via cache
                  */
 
-                return new Row<TKey, TValue>(row, null, !(readRoot == null));
+                return new Row<TKey, TValue>(row, null, !(readRoot == null), ReadLifetime);
                 //return new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, !(readRoot == null));
                 
             }
@@ -1981,7 +1985,7 @@ namespace DBreeze.Transactions
 
             if (table == null)
             {
-                return new Row<TKey, TValue>(null, null, false);
+                return new Row<TKey, TValue>(null, null, false, ReadLifetime);
                 //return new Row<TKey, TValue>(null, null, false, null, true);
             }
             else
@@ -1992,7 +1996,7 @@ namespace DBreeze.Transactions
                  * (readRoot == null) ? WRITING TABLE TRANSACTION, doesn't use cache for getting value : READING TABLE TRANSACTION, always uses value via cache
                  */
 
-                return new Row<TKey, TValue>(row, null, !(readRoot == null));
+                return new Row<TKey, TValue>(row, null, !(readRoot == null), ReadLifetime);
                 //return new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, !(readRoot == null));
 
             }
@@ -2196,7 +2200,7 @@ namespace DBreeze.Transactions
 
             if (table == null)
             {
-                return new Row<TKey, TValue>(null, null, false);
+                return new Row<TKey, TValue>(null, null, false, ReadLifetime);
                 //return new Row<TKey, TValue>(null, null, false, null, true);
             }
             else
@@ -2209,7 +2213,7 @@ namespace DBreeze.Transactions
                  * (readRoot == null) ? WRITING TABLE TRANSACTION, doesn't use cache for getting value : READING TABLE TRANSACTION, always uses value via cache
                  */
 
-                return new Row<TKey, TValue>(row, null, !(readRoot == null));
+                return new Row<TKey, TValue>(row, null, !(readRoot == null), ReadLifetime);
                 //return new Row<TKey, TValue>(row._root, row.LinkToValue, row.Exists, row.Key, !(readRoot == null));
 
             }
@@ -2229,11 +2233,11 @@ namespace DBreeze.Transactions
             LTrie table = GetReadTableFromBuffer(tableName, out readRoot);
 
             if (table == null)
-                return new Row<TKey, TValue>(null, null, false);
+                return new Row<TKey, TValue>(null, null, false, ReadLifetime);
 
             if (refToInsertedValue == null)
             {
-                return new Row<TKey, TValue>(null, null, false);
+                return new Row<TKey, TValue>(null, null, false, ReadLifetime);
             }
             else
             {
@@ -2264,11 +2268,11 @@ namespace DBreeze.Transactions
                 //ltr.Key = table.Cache.ReadKey(!(readRoot == null), refToInsertedValue);                
                 //ltr.LinkToValue = refToInsertedValue;
 
-                return new Row<TKey, TValue>(ltr, null, !(readRoot == null));
+                return new Row<TKey, TValue>(ltr, null, !(readRoot == null), ReadLifetime);
                 
             }
 
-            return new Row<TKey, TValue>(null, null, false);
+            return new Row<TKey, TValue>(null, null, false, ReadLifetime);
         }
 
 
@@ -2304,7 +2308,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForward(readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2339,7 +2343,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackward(readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2378,7 +2382,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardStartFrom(btKey, includeStartFromKey, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2416,7 +2420,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardStartFrom(btKey, includeStartFromKey, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2458,7 +2462,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2531,14 +2535,14 @@ namespace DBreeze.Transactions
                     }
 
                     foreach (var xrow in rRows.OrderByDescending(r => r.Key))
-                        yield return new Row<TKey, TValue>(xrow.Value, null, !(readRoot == null));
+                        yield return new Row<TKey, TValue>(xrow.Value, null, !(readRoot == null), ReadLifetime);
                 }
 
                 //readRoot can be either filled or null
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2580,7 +2584,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2651,14 +2655,14 @@ namespace DBreeze.Transactions
                     }
 
                     foreach(var xrow in rRows.OrderByDescending(r=>r.Key))
-                        yield return new Row<TKey, TValue>(xrow.Value, null, !(readRoot == null));
+                        yield return new Row<TKey, TValue>(xrow.Value, null, !(readRoot == null), ReadLifetime);
                 }
 
                 //readRoot can be either filled or null
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardFromTo(btStartKey, btStopKey, includeStartKey, includeStopKey, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2696,7 +2700,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardStartsWith(btStartWithKeyPart, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2749,7 +2753,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardStartsWithClosestToPrefix(btStartWithKeyPart, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2802,7 +2806,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardStartsWithClosestToPrefix(btStartWithKeyPart, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2845,7 +2849,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardStartsWith(btStartWithKeyPart, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2885,7 +2889,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardSkip(skippingQuantity, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2920,7 +2924,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardSkip(skippingQuantity, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2959,7 +2963,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateForwardSkipFrom(btKey, skippingQuantity, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }
@@ -2998,7 +3002,7 @@ namespace DBreeze.Transactions
                 //if null it means that write root will be used (READ_SYNCHRO) if filled - this root will be used
                 foreach (var xrow in table.IterateBackwardSkipFrom(btKey, skippingQuantity, readRoot, this._valuesLazyLoadingIsOn))
                 {
-                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null));
+                    yield return new Row<TKey, TValue>(xrow, null, !(readRoot == null), ReadLifetime);
                     //yield return new Row<TKey, TValue>(xrow._root, xrow.LinkToValue, xrow.Exists, xrow.Key, !(readRoot == null));
                 }
             }

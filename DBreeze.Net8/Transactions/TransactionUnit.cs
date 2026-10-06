@@ -81,6 +81,7 @@ namespace DBreeze.Transactions
 
         public void Dispose()
         {
+            _transaction.ReadLifetime.Invalidate();
             
             _sync_transactionWriteTables.EnterReadLock();
             try

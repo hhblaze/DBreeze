@@ -71,10 +71,9 @@ namespace DBreeze.Transactions
             }
 
             if (existingTransaction)
-                UnregisterTransaction(transactionThreadId);
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_NESTED_NOT_ALLOWED);
 
-            // Construct locked transactions only after the previous transaction belonging to
-            // this thread has been removed. Otherwise AddSession can wait on its own lock.
+            // Reject nesting before construction: a locked transaction could wait on its own lock.
             TransactionUnit transactionUnit = new TransactionUnit(transactionType, this, lockType, tables);
 
             //Adding transaction to the list

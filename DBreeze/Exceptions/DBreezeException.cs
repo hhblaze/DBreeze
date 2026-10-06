@@ -141,7 +141,11 @@ namespace DBreeze.Exceptions
             /// <summary>
             /// The rest must be supplied via extra params
             /// </summary>
-            DBREEZE_RESOURCES_CONCERNING
+            DBREEZE_RESOURCES_CONCERNING,
+
+            // Append new values to preserve existing public enum numbers.
+            TRANSACTION_NESTED_NOT_ALLOWED,
+            ROW_TRANSACTION_IS_NOT_ACTIVE
         }
 
         public static Exception Throw(Exception innerException)
@@ -250,6 +254,10 @@ namespace DBreeze.Exceptions
 
 
                 //Transactions Coordinator
+                case eDBreezeExceptions.TRANSACTION_NESTED_NOT_ALLOWED:
+                    return new DBreezeException("NESTED TRANSACTIONS ARE NOT ALLOWED", innerException);
+                case eDBreezeExceptions.ROW_TRANSACTION_IS_NOT_ACTIVE:
+                    return new DBreezeException("ROW READ REQUIRES AN ACTIVE TRANSACTION. Load the required data before disposing the transaction.", innerException);
                 case eDBreezeExceptions.TRANSACTION_DOESNT_EXIST:
                     return new DBreezeException(String.Format("Transaction doesn't exist anymore!"), innerException);
                 case eDBreezeExceptions.TRANSACTION_CANBEUSED_FROM_ONE_THREAD:

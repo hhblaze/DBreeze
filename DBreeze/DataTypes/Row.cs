@@ -32,6 +32,7 @@ namespace DBreeze.DataTypes
         TKey _key;
         LTrie _masterTrie = null;
         LTrieRow _row = null;
+        readonly TransactionReadLifetime _readLifetime;
 
         //byte[] btKey = null; 
 
@@ -51,6 +52,18 @@ namespace DBreeze.DataTypes
 
             if (_exists)
                 _key = DataTypesConvertor.ConvertBack<TKey>(row.Key);
+        }
+
+        internal Row(LTrieRow row, LTrie masterTrie, bool useCache, TransactionReadLifetime readLifetime)
+            : this(row, masterTrie, useCache)
+        {
+            _readLifetime = readLifetime;
+        }
+
+        private void EnsureTransactionActive()
+        {
+            if (_readLifetime != null)
+                _readLifetime.EnsureActive();
         }
 
         ///// <summary>
@@ -105,7 +118,9 @@ namespace DBreeze.DataTypes
         public NestedTable GetTable(uint tableIndex)
         {
             if (!_exists)
-                return new NestedTable(null,false,false);
+                return new NestedTable(null,false,false) { ReadLifetime = _readLifetime };
+
+            EnsureTransactionActive();
 
             ///////////  FOR NOW allow insert from master is always false, later we have to change Transaction.Insert, and insertPart to return also a row???
 
@@ -114,6 +129,7 @@ namespace DBreeze.DataTypes
             {
                 //Master row select
                 var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, false, this._useCache);
+                nt.ReadLifetime = _readLifetime;
 
                 //if (_masterTrie != null)
                 //    nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
@@ -125,6 +141,7 @@ namespace DBreeze.DataTypes
                 
                 //Nested table
                 var nt = _row.Root.Tree.GetTable(_row, ref _row.Key, tableIndex, _masterTrie, nestedTable._insertAllowed, this._useCache);
+                nt.ReadLifetime = _readLifetime;
                 //nt.ValuesLazyLoadingIsOn = _masterTrie.ValuesLazyLoadingIsOn;
                 return nt;
             }
@@ -148,6 +165,7 @@ namespace DBreeze.DataTypes
         /// <summary>
         /// Returns partial value representation starting from specif index and specified length.
         /// <para>To get full value as byte[] use GetValuePart(0)</para>
+        /// <para>After the originating transaction ends, this only works when the full value is already loaded.</para>
         /// </summary>
         /// <param name="startIndex"></param>
         /// <param name="length"></param>
@@ -157,6 +175,8 @@ namespace DBreeze.DataTypes
             if (!_exists)
                 return null;
 
+            if (!_row.ValueIsReadOut)
+                EnsureTransactionActive();
             return _row.GetPartialValue(startIndex, length, _useCache);
         }
 
@@ -180,6 +200,7 @@ namespace DBreeze.DataTypes
             {
                 if (_exists)
                 {
+                    EnsureTransactionActive();
                     return this._row.LinkToValue.EnlargeByteArray_BigEndian(8);
                 }
 
@@ -201,6 +222,7 @@ namespace DBreeze.DataTypes
 
             if (_exists)
             {
+                EnsureTransactionActive();
                 if (_row.ValueIsReadOut)
                 {
                     if (_row.Value == null)
@@ -233,6 +255,7 @@ namespace DBreeze.DataTypes
 
             if (_exists)
             {
+                EnsureTransactionActive();
                 if (_row.ValueIsReadOut)
                 {
                     if (_row.Value == null)
@@ -280,6 +303,7 @@ namespace DBreeze.DataTypes
 
             if (_exists)
             {
+                EnsureTransactionActive();
                 if (_row.ValueIsReadOut)
                 {
                     if (_row.Value == null)
@@ -352,6 +376,7 @@ namespace DBreeze.DataTypes
         /// Returns full value and converts it to the value data type.
         /// <para>To take full value or part of the value as byte[] use GetValuePart or GetBytes (for string types like DbAscii etc.)</para>
         /// <para>If your value contains serialized object inside or it's a string type (like DbAscii etc.), use Value.Get property.</para>
+        /// <para>Lazy reads require the originating transaction to be active. Already loaded values remain accessible after disposal.</para>
         /// </summary>
         /// <returns></returns>
         public TValue Value
@@ -368,6 +393,7 @@ namespace DBreeze.DataTypes
                     // LTrieRow can retain the exact value extent discovered while the key record
                     // was parsed.  Net8 uses it to avoid reading and parsing the record header a
                     // second time; older targets retain their historical implementation here.
+                    EnsureTransactionActive();
                     byte[] res = this._row.GetFullValue(this._useCache);
                     //Console.WriteLine("Res " + res.ToBytesString(""));
 
@@ -416,5 +442,23 @@ namespace DBreeze.DataTypes
             }
         }
 
+    }
+
+    // Shared by the transaction's public rows/handles, without retaining their owner or engine.
+    internal sealed class TransactionReadLifetime
+    {
+        private volatile bool _active = true;
+
+        internal void EnsureActive()
+        {
+            if (!_active)
+                throw DBreeze.Exceptions.DBreezeException.Throw(
+                    DBreeze.Exceptions.DBreezeException.eDBreezeExceptions.ROW_TRANSACTION_IS_NOT_ACTIVE);
+        }
+
+        internal void Invalidate()
+        {
+            _active = false;
+        }
     }
 }

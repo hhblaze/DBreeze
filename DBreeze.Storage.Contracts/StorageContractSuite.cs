@@ -14,6 +14,7 @@ internal static class StorageContractSuite
     internal static void RunAll()
     {
         Run("BaselineArchitecture", BaselineArchitecture);
+        Run("TransactionLifetime", TransactionLifetimeContracts.RunAll);
         Run("TransactionJournalPayloadCodec", TransactionJournalPayloadCodec);
         Run("MalformedTransactionJournalFailsClosed", MalformedTransactionJournalFailsClosed);
         Run("BufferedWriteSetRandomizedModel", BufferedWriteSetRandomizedModel);

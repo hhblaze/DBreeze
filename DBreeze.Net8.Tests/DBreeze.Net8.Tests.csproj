@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\DBreeze.Storage.Contracts\TransactionLifetimeContracts.cs" Link="TransactionLifetimeContracts.cs" />
     <Compile Include="..\DBreeze.Net8.Benchmarks\CacheOrderProbe.cs" Link="CacheOrderProbe.cs" />
   </ItemGroup>
 

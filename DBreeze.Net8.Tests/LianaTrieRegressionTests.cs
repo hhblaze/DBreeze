@@ -1599,17 +1599,28 @@ internal static class LianaTrieRegressionTests
                     AssertSequenceEqual(new byte[] { 12 }, reader.Select<byte[], byte[]>(key1).Value,
                         "Committed reader initial value.");
 
-                    using (var writerTransaction = engine.GetTransaction())
+                    // Independent transactions belong to different threads, including read/write tests.
+                    using var writeReady = new ManualResetEventSlim();
+                    using var allowCommit = new ManualResetEventSlim();
+                    Task write = Task.Factory.StartNew(() =>
                     {
+                        using var writerTransaction = engine.GetTransaction();
                         NestedTable writer = writerTransaction.InsertTable(table, parent, 0);
                         writer.Insert(key1, new byte[] { 13 });
                         writer.Dispose();
-
+                        writeReady.Set();
+                        Assert(allowCommit.Wait(TimeSpan.FromSeconds(10)), "Reader did not release the writer.");
+                        writerTransaction.Commit();
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    try
+                    {
+                        Assert(writeReady.Wait(TimeSpan.FromSeconds(5)), "Writer did not prepare its uncommitted view.");
                         AssertSequenceEqual(new byte[] { 12 },
                             reader.Select<byte[], byte[]>(key1, true).Value,
                             "Committed reader observed the uncommitted writer view.");
-                        writerTransaction.Commit();
                     }
+                    finally { allowCommit.Set(); }
+                    Assert(write.Wait(TimeSpan.FromSeconds(10)), "Writer did not complete.");
 
                     AssertSequenceEqual(new byte[] { 13 },
                         reader.Select<byte[], byte[]>(key1, true).Value,

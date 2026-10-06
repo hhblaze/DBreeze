@@ -75,7 +75,7 @@ namespace DBreeze.Transactions
             }
 
             if (existingTransaction)
-                UnregisterTransaction(transactionThreadId);
+                throw DBreezeException.Throw(DBreezeException.eDBreezeExceptions.TRANSACTION_NESTED_NOT_ALLOWED);
 
             TransactionUnit transactionUnit = new TransactionUnit(transactionType, this, lockType, tables);
 

@@ -10,6 +10,16 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Contains("--transaction-lifetime"))
+        {
+            TransactionLifetimeContracts.RunAll();
+            return 0;
+        }
+        if (args.Contains("--transaction-lifetime-performance"))
+        {
+            TransactionLifetimeContracts.RunPerformance();
+            return 0;
+        }
         if (args.Contains("--read-cache-intrusive"))
         {
             CommittedReadCacheLifetimeTests.IntrusiveRemovalPreservesBothOrders();
@@ -145,6 +155,7 @@ internal static class Program
         (string Name, Action Test)[] tests =
         {
             (nameof(ModernSourceIsolationTests.ValidateCurrentRepository), ModernSourceIsolationTests.ValidateCurrentRepository),
+            (nameof(TransactionLifetimeContracts.RunAll), TransactionLifetimeContracts.RunAll),
             (nameof(TransactionJournalPayloadCodecSupportsAllPersistedFormats), TransactionJournalPayloadCodecSupportsAllPersistedFormats),
             // This test injects a durable journal marker directly and therefore must run before
             // the legacy process-global in-memory journal has been created and disposed.
@@ -2492,6 +2503,8 @@ internal static class Program
                 committed = candidate;
             }
 
+            // Verification opens a fresh transaction after this batch's lifetime ends.
+            transaction.Dispose();
             VerifyTable(engine, committed);
         }
     }

@@ -246,7 +246,7 @@ using (var tran = engine.GetTransaction())
 - Without `Commit()`, uncommitted changes are rolled back on disposal.
 - `Rollback()` explicitly reverts changes since the last successful `Commit()` and keeps the transaction usable.
 - A transaction may execute several modify/commit cycles.
-- Do not open a nested transaction on the same managed thread.
+- Only one transaction may be active per engine and managed thread. A second `GetTransaction()` throws `DBreezeException` with `NESTED TRANSACTIONS ARE NOT ALLOWED`, before acquiring locks, and leaves the first transaction usable. `Commit()` and `Rollback()` keep the transaction active; dispose it before opening the next one. Forgotten transactions are no longer automatically replaced.
 
 ### 3.2 Thread affinity and async
 
@@ -300,6 +300,24 @@ One write table cannot form a cross-table deadlock, so explicit synchronization 
 ### 3.4 Read visibility and lazy values
 
 `ValuesLazyLoadingIsOn` defaults to `true`: iterator rows carry the key plus a pointer and load `row.Value` on demand. Set it to `false` when nearly every value will be consumed or values must be materialized immediately during enumeration.
+
+`ToList()`/`ToArray()` collect rows without forcing their values to load. After their original transaction ends, an unloaded `Value`, a partial read requiring storage, `LinkToValue`, nested-table access, and datablock/object reads throw `DBreezeException` with `ROW READ REQUIRES AN ACTIVE TRANSACTION. Load the required data before disposing the transaction.` Opening another transaction does not revive old rows. Engine shutdown and coordinator termination (including deadlock) also end the row lifetime.
+
+Saved `Key`, `Exists`, and `TableName` remain accessible. Fully loaded values, including eager, null, and empty values, remain available from memory; `GetValuePart()` can slice a fully loaded value after disposal. Eager value loading does not load referenced datablocks or nested tables. Finish concurrent reads before disposal; this lifetime check does not provide snapshot isolation.
+
+To carry independent data outside the transaction, copy the required keys and values inside it:
+
+```csharp
+List<KeyValuePair<int, string>> snapshot;
+using (var tran = engine.GetTransaction())
+{
+    snapshot = tran.SelectForward<int, string>("events")
+        .Select(row => new KeyValuePair<int, string>(row.Key, row.Value))
+        .ToList();
+}
+```
+
+Alternatively, set `tran.ValuesLazyLoadingIsOn = false` before enumeration to keep eager `Row.Value` results after disposal. Fully loaded values are also reusable when explicitly read inside the transaction. No automatic loading takes place during disposal.
 
 `AsReadVisibilityScope: true` requests a read-visibility cursor isolated from subsequent writes made through the current transaction. This is useful when modifying the same table during traversal:
 
