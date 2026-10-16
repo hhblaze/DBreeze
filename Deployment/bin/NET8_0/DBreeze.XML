@@ -2136,25 +2136,6 @@
             read-ahead.  Iterators deliberately continue to use <see cref="M:DBreeze.LianaTrie.LTrieWriteCache.ReadKeyValue(System.Boolean,System.Byte[],System.Int64@,System.UInt32@,System.Byte[]@,System.Byte[]@)"/>.
             </summary>
         </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadKey(System.Boolean,System.Byte[])">
-            <summary>
-            Internal function for reading key only from DB storage
-            Is called from ReadKey
-            </summary>
-            <param name="useCache"></param>
-            <param name="pointer">ptr to KVP</param>
-            <returns></returns>
-        </member>
-        <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadValue(System.Byte[],System.Boolean,System.Int64@,System.UInt32@)">
-            <summary>
-            
-            </summary>
-            <param name="pointer">ptr to KVP</param>
-            <param name="useCache"></param>
-            <param name="valueStartPtr"></param>
-            <param name="valueLength"></param>
-            <returns></returns>
-        </member>
         <member name="M:DBreeze.LianaTrie.LTrieWriteCache.ReadValuePartially(System.Byte[],System.UInt32,System.UInt32,System.Boolean,System.Int64@,System.UInt32@)">
             <summary>
             
