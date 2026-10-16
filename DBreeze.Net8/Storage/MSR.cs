@@ -67,6 +67,8 @@ namespace DBreeze.Storage
         public int MaxRollbackFileSize = 1048576;
 
         readonly ReaderWriterLockSlim lock_fs = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        // Protected by lock_fs, including reads; no separate atomic fence is needed.
+        internal long CommittedReadEpoch = 1;
 
 
         MemoryStorage _fsData = null;
@@ -112,7 +114,11 @@ namespace DBreeze.Storage
         }
 
         private StorageLockScope AcquireReadLock() => new StorageLockScope(lock_fs, false);
-        private StorageLockScope AcquireWriteLock() => new StorageLockScope(lock_fs, true);
+        private StorageLockScope AcquireWriteLock()
+        {
+            DurabilityTestHooks.Hit("storage.write-admission");
+            return new StorageLockScope(lock_fs, true);
+        }
 
         public MSR(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
         {
@@ -179,6 +185,7 @@ namespace DBreeze.Storage
                 }
 
                 _randBuf.Clear();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofRollback = 0;
@@ -236,6 +243,7 @@ namespace DBreeze.Storage
                 _fsRollbackHelper.Clear(true);
 
                 _randBuf.Clear();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofRollback = 0;
@@ -461,41 +469,121 @@ namespace DBreeze.Storage
         {
             using (AcquireReadLock())
             {
-                if (offset < 0)
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                if (count < 0)
-                    throw new ArgumentOutOfRangeException(nameof(count));
-
+                // Keep the original writer read directly under its admission.
+                // It does not need the committed overlay/record machinery.
                 if (!useCache)
                 {
+                    if (offset < 0)
+                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    if (count < 0)
+                        throw new ArgumentOutOfRangeException(nameof(count));
                     int resultLength = GetReadLength(offset, count, _fsData.EOF);
                     if (resultLength == 0)
                         return Array.Empty<byte>();
-
                     byte[] result = _fsData.Read((int)offset, resultLength);
                     if (_randBuf.Count != 0)
                         _randBuf.Overlay(offset, result);
                     return result;
                 }
-
-                long visibleLength = offset > eofData && TransactionalCommitIsStarted ? _fsData.EOF : eofData;
-                int committedLength = GetReadLength(offset, count, visibleLength);
-                if (committedLength == 0)
-                    return Array.Empty<byte>();
-
-                byte[] committed = _fsData.Read((int)offset, committedLength);
-                foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
-                {
-                    long rollbackEnd = rollback.Key + rollback.Value.l;
-                    long resultEnd = offset + committed.Length;
-                    if (rollback.Key >= resultEnd || rollbackEnd <= offset)
-                        continue;
-
-                    byte[] rollbackData = _fsRollback.Read((int)rollback.Value.o, rollback.Value.l);
-                    CopyIntersection(rollback.Key, rollbackData, offset, committed);
-                }
-                return committed;
+                return ReadCommittedCore(offset, count);
             }
+        }
+
+        internal void EnterRecordRead() => lock_fs.EnterReadLock();
+        internal void ExitRecordRead() => lock_fs.ExitReadLock();
+        internal byte[] ReadRecord(long offset, int count) => ReadCommittedCore(offset, count);
+
+        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination, out long epoch)
+        {
+            using (AcquireReadLock())
+            {
+                epoch = CommittedReadEpoch;
+                return TryReadRecordInto(offset, destination);
+            }
+        }
+
+        internal bool TryReadRecordInto(long offset, scoped Span<byte> destination)
+        {
+            if (offset < 0 || offset > eofData - destination.Length ||
+                _rollbackCache.Count != 0 || TransactionalCommitIsStarted)
+                return false;
+            _fsData.ReadInto(checked((int)offset), destination);
+            return true;
+        }
+
+        internal byte[] ReadCommittedValue(DBreeze.LianaTrie.LTrieRow row, bool full, uint start, uint length)
+        {
+            using (AcquireReadLock())
+            {
+                row.EnsureStorageIncarnation(StorageFixTime);
+                if (CommittedValueRead.NeedsRefresh(row, CommittedReadEpoch))
+                    CommittedValueRead.Refresh(row, new CommittedRecordRead(this, CommittedReadEpoch));
+                return CommittedValueRead.Range(row, full, start, length, out long offset, out int count, out byte[] completed)
+                    ? ReadCommittedCore(offset, count) : completed;
+            }
+        }
+
+        internal byte[] ReadCommittedProbe(long offset, int count, out long epoch)
+        {
+            using (AcquireReadLock())
+            {
+                epoch = CommittedReadEpoch;
+                return ReadCommittedCore(offset, count);
+            }
+        }
+
+        internal byte[] ExpandCommittedRecord(long record, byte[] data, long epoch, ref ValueRecordHeader header)
+        {
+            using (AcquireReadLock())
+            {
+                if (epoch != CommittedReadEpoch)
+                {
+                    data = ReadCommittedCore(record, 111);
+                    header = new ValueRecordHeader(data);
+                }
+                DurabilityTestHooks.Hit("read.record-header");
+                return data == null || header.RecordSize > data.Length ? ReadCommittedCore(record, header.RecordSize) : data;
+            }
+        }
+
+        internal byte[] ReadCommittedPayload(long record, long epoch, ref ValueRecordHeader header, out byte[] refreshedKey)
+        {
+            using (AcquireReadLock())
+            {
+                refreshedKey = epoch != CommittedReadEpoch
+                    ? CommittedValueRead.RefreshKey(new CommittedRecordRead(this, CommittedReadEpoch), record, ref header) : null;
+                DurabilityTestHooks.Hit("read.record-header");
+                return header.IsNull ? null : header.ValueSize == 0 ? Array.Empty<byte>() :
+                    ReadCommittedCore(checked(record + header.Size + header.KeySize), header.ValueSize);
+            }
+        }
+
+        private byte[] ReadCommittedCore(long offset, int count)
+        {
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
+
+            long visibleLength = offset > eofData && TransactionalCommitIsStarted ? _fsData.EOF : eofData;
+            int committedLength = GetReadLength(offset, count, visibleLength);
+            if (committedLength == 0)
+                return Array.Empty<byte>();
+
+            byte[] committed = _fsData.Read((int)offset, committedLength);
+            if (_rollbackCache.Count == 0)
+                return committed;
+            foreach (KeyValuePair<long, RollbackRecord> rollback in _rollbackCache)
+            {
+                long rollbackEnd = rollback.Key + rollback.Value.l;
+                long resultEnd = offset + committed.Length;
+                if (rollback.Key >= resultEnd || rollbackEnd <= offset)
+                    continue;
+
+                byte[] rollbackData = _fsRollback.Read((int)rollback.Value.o, rollback.Value.l);
+                CopyIntersection(rollback.Key, rollbackData, offset, committed);
+            }
+            return committed;
         }
 
         private byte[] EncodePointer(long position)
@@ -769,6 +857,7 @@ namespace DBreeze.Storage
                     //  NET_Flush(_fsRollbackHelper);
                 }
 
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
 
                 eofData = this._fsData.EOF;
@@ -793,6 +882,8 @@ namespace DBreeze.Storage
 
                 TransactionalCommitIsStarted = true;
             }
+
+            DurabilityTestHooks.Hit("transaction.participant-prepared");
         }
 
         /// <summary>
@@ -815,6 +906,7 @@ namespace DBreeze.Storage
                     //NET_Flush(_fsRollbackHelper);
                 }
 
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
 
                 eofData = this._fsData.EOF;
@@ -883,6 +975,7 @@ namespace DBreeze.Storage
 
             eofRollback = 0;
             _fsRollbackHelper.Write_ByOffset(0, eofRollback.To_8_bytes_array_BigEndian());
+            unchecked { CommittedReadEpoch++; }
             _rollbackCache.Clear();
         }
 

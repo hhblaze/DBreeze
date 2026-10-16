@@ -4,6 +4,7 @@
 */
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -61,6 +62,30 @@ namespace DBreeze.LianaTrie
         {
             return this._masterStorage.Table_Read(useCache, offset, quantity);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal CommittedRecordRead BeginRecordRead(bool point, int countHint)
+        {
+            // Historically a nested table delegates to Table_Read, including
+            // point selections. Preserve its buffered/read-ahead route instead
+            // of promoting it to the master's direct-key mmap fast path.
+            return _masterStorage.BeginRecordRead(true, point: false, countHint);
+        }
+
+        internal byte[] ReadCommittedProbe(long offset, int count, out long epoch) =>
+            _masterStorage.ReadRecordProbe(true, offset, count, out epoch);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ExpandCommittedRecord(long record, byte[] data, long epoch, ref ValueRecordHeader header) =>
+            _masterStorage.ExpandCommittedRecord(record, data, epoch, point: false, ref header);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ReadCommittedPayload(long record, long epoch, ref ValueRecordHeader header, out byte[] refreshedKey) =>
+            _masterStorage.ReadCommittedPayload(record, epoch, point: false, ref header, out refreshedKey);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ReadCommittedValue(LTrieRow row, bool full, uint start, uint length) =>
+            _masterStorage.ReadCommittedValue(row, point: false, full, start, length);
 
         public byte[] Table_Read(bool useCache, byte[] offset, int quantity)
         {

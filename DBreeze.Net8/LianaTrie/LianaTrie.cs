@@ -676,6 +676,8 @@ namespace DBreeze.LianaTrie
 
 
                 rn.RemoveAll(withFileRecreation);
+                if (withFileRecreation)
+                    rn = new LTrieRootNode(this);
                 
 
 

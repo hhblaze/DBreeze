@@ -83,5 +83,36 @@ if (args.Any(static arg => string.Equals(arg, "--historical-core", StringCompari
         || string.Equals(arg, "--historical-random", StringComparison.OrdinalIgnoreCase)))
     return HistoricalBenchmarkSuite.Run(args);
 
+if (args.Contains("--lazy-read-performance"))
+    return LazyReadPerformanceProbe.Run(args);
+
+// Run an existing parameterized BDN case in its own process, without warming
+// unrelated storage/parameter combinations in the same tiered-PGO profile.
+int lianaCaseIndex = Array.IndexOf(args, "--liana-case");
+if (lianaCaseIndex >= 0)
+{
+    string[] selected = args[lianaCaseIndex + 1].Split(',');
+    if (selected.Length != 3)
+        throw new ArgumentException("--liana-case requires Storage,KeyLength,ValueLength.");
+    using (var process = System.Diagnostics.Process.GetCurrentProcess())
+    {
+        try { process.PriorityClass = System.Diagnostics.ProcessPriorityClass.AboveNormal; }
+        catch (System.ComponentModel.Win32Exception) { }
+        Console.WriteLine("Benchmark process priority: " + process.PriorityClass);
+    }
+    var config = BenchmarkDotNet.Configs.ManualConfig.Create(BenchmarkDotNet.Configs.DefaultConfig.Instance)
+        .AddFilter(new BenchmarkDotNet.Filters.SimpleFilter(benchmark =>
+            benchmark.Parameters.Items.All(parameter => parameter.Name switch
+            {
+                "Storage" => selected[0] == "*" || parameter.Value.ToString() == selected[0],
+                "KeyLength" => selected[1] == "*" || parameter.Value.ToString() == selected[1],
+                "ValueLength" => selected[2] == "*" || parameter.Value.ToString() == selected[2],
+                _ => true,
+            })));
+    string[] remaining = args.Where((_, index) => index != lianaCaseIndex && index != lianaCaseIndex + 1).ToArray();
+    BenchmarkSwitcher.FromTypes(new[] { typeof(LianaTrieBenchmarks) }).Run(remaining, config);
+    return 0;
+}
+
 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
 return 0;

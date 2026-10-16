@@ -3,6 +3,7 @@
   It's free software for those who think that it should be free.
 */
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -159,10 +160,80 @@ namespace DBreeze.Storage
             return _tableStorage.Table_Read(useCache, offset, quantity);
         }
 
-        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination)
+        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination, out long epoch, bool point = true)
         {
-            return _tableStorage is FSR fsr &&
-                fsr.TryTableReadCommittedInto(offset, destination);
+            epoch = 0;
+            if (_tableStorage is FSR fsr)
+                return fsr.TryTableReadCommittedInto(offset, destination, out epoch, point);
+            return _tableStorage is MSR memory &&
+                memory.TryTableReadCommittedInto(offset, destination, out epoch);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ReadCommittedProbe(long offset, int count, out long epoch)
+        {
+            if (_tableStorage is FSR disk)
+                return disk.ReadCommittedProbe(offset, count, out epoch);
+            if (_tableStorage is MSR memory)
+                return memory.ReadCommittedProbe(offset, count, out epoch);
+            return ReadOtherCommittedProbe(offset, count, out epoch);
+        }
+
+        private byte[] ReadOtherCommittedProbe(long offset, int count, out long epoch)
+        {
+            using var reader = new CommittedRecordRead(_tableStorage, true);
+            epoch = reader.Epoch;
+            return reader.Read(offset, count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ReadCommittedPointProbe(long offset, int count, out long epoch)
+        {
+            if (_tableStorage is FSR disk)
+                return disk.ReadCommittedProbe(offset, count, out epoch, point: true);
+            return ReadCommittedProbe(offset, count, out epoch);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ExpandCommittedRecord(long record, byte[] data, long epoch,
+            bool point, ref ValueRecordHeader header)
+        {
+            if (_tableStorage is FSR disk)
+                return disk.ExpandCommittedRecord(record, data, epoch, point, ref header);
+            if (_tableStorage is MSR memory)
+                return memory.ExpandCommittedRecord(record, data, epoch, ref header);
+            return CommittedValueRead.ExpandFallback(_tableStorage, record, data, epoch, ref header);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ReadCommittedPayload(long record, long epoch, bool point,
+            ref ValueRecordHeader header, out byte[] refreshedKey)
+        {
+            if (_tableStorage is FSR disk)
+                return disk.ReadCommittedPayload(record, epoch, point, ref header, out refreshedKey);
+            if (_tableStorage is MSR memory)
+                return memory.ReadCommittedPayload(record, epoch, ref header, out refreshedKey);
+            return CommittedValueRead.PayloadFallback(_tableStorage, record, epoch, ref header, out refreshedKey);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal byte[] ReadCommittedValue(DBreeze.LianaTrie.LTrieRow row, bool point, bool full, uint start, uint length)
+        {
+            if (_tableStorage is FSR disk)
+                return disk.ReadCommittedValue(row, point, full, start, length);
+            if (_tableStorage is MSR memory)
+                return memory.ReadCommittedValue(row, full, start, length);
+            return CommittedValueRead.Fallback(_tableStorage, row, full, start, length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal CommittedRecordRead BeginRecordRead(bool point, int countHint)
+        {
+            if (_tableStorage is FSR disk)
+                return new CommittedRecordRead(disk, point, countHint);
+            if (_tableStorage is MSR memory)
+                return new CommittedRecordRead(memory);
+            return new CommittedRecordRead(_tableStorage, true);
         }
 
         internal byte[] TableReadCommittedPoint(long offset, int quantity)

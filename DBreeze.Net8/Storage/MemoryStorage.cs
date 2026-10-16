@@ -171,6 +171,15 @@ namespace DBreeze.Storage
             return ret;
         }
 
+        // The owning MSR holds its existing storage read admission and validates
+        // the visible extent before using this allocation-free probe.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ReadInto(int offset, Span<byte> destination)
+        {
+            CheckDisposed();
+            _f.AsSpan(offset, destination.Length).CopyTo(destination);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Resize(int upTo)
         {

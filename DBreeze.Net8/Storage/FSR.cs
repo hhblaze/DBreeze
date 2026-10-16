@@ -93,6 +93,10 @@ namespace DBreeze.Storage
         static long _nextInstanceId;
         readonly long _instanceId = Interlocked.Increment(ref _nextInstanceId);
         long _mutationVersion = 1;
+        // Unlike the page-cache mutation version, this changes when rollback
+        // overlays are retired, even if no additional data-file write occurs.
+        // All accesses hold existing storage admission (or run before publication).
+        internal long CommittedReadEpoch = 1;
         long _physicalDataLength;
         readonly CommittedMappedReadBudgetRegistry.Budget _mappedReadBudget;
         MemoryMappedFile _committedMappedFile;
@@ -187,7 +191,11 @@ namespace DBreeze.Storage
         }
 
         private StorageLockScope AcquireReadLock() => new StorageLockScope(lock_fs, null, false);
-        private StorageLockScope AcquireWriteLock() => new StorageLockScope(lock_fs, _sharedReadLane, true);
+        private StorageLockScope AcquireWriteLock()
+        {
+            DurabilityTestHooks.Hit("storage.write-admission");
+            return new StorageLockScope(lock_fs, _sharedReadLane, true);
+        }
 
         public FSR(string fileName, TrieSettings trieSettings, DBreezeConfiguration configuration)
         {
@@ -275,6 +283,7 @@ namespace DBreeze.Storage
 
                 _seqBuf.Dispose();
                 _randBuf.Clear();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofData = 0;
@@ -789,8 +798,9 @@ namespace DBreeze.Storage
                 recordContinuation: false, recordOffset: 0);
         }
 
-        private bool TryReadCommittedMapped(long offset, scoped Span<byte> destination)
+        private bool TryReadCommittedMapped(long offset, scoped Span<byte> destination, out long epoch)
         {
+            epoch = 0;
             EnsureCommittedMappedView();
 
             using (AcquireReadLock())
@@ -805,6 +815,7 @@ namespace DBreeze.Storage
                 }
 
                 ReadCommittedMappedCore(offset, destination);
+                epoch = CommittedReadEpoch;
                 return true;
             }
         }
@@ -983,6 +994,7 @@ namespace DBreeze.Storage
         private void ResetBuffers()
         {
             _randBuf.Clear();
+            unchecked { CommittedReadEpoch++; }
             _rollbackCache.Clear();
             usedBufferSize = 0;
             eofRollback = 0;
@@ -1023,6 +1035,7 @@ namespace DBreeze.Storage
                 }
 
                 _randBuf.Clear();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofRollback = 0;
@@ -1452,14 +1465,15 @@ namespace DBreeze.Storage
             return Table_Read(useCache, offset, count, useCache, recordOffset);
         }
 
-        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination)
+        internal bool TryTableReadCommittedInto(long offset, scoped Span<byte> destination, out long epoch, bool point = true)
         {
+            epoch = 0;
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (destination.IsEmpty)
                 return true;
 
-            if (TryReadCommittedMapped(offset, destination))
+            if (point && TryReadCommittedMapped(offset, destination, out epoch))
                 return true;
 
             if (Monitor.TryEnter(_sharedReadLane))
@@ -1473,6 +1487,7 @@ namespace DBreeze.Storage
 
                     ReadFromSharedBuffer(offset, destination, eofData,
                         recordContinuation: false, recordOffset: 0);
+                    epoch = CommittedReadEpoch;
                     return true;
                 }
                 finally
@@ -1491,8 +1506,142 @@ namespace DBreeze.Storage
                 if (!TryReadContendedWindow(offset, destination, eofData,
                     recordContinuation: false, recordOffset: 0))
                     ReadExactlyAt(_fsData, destination, offset);
+                epoch = CommittedReadEpoch;
                 return true;
             }
+        }
+
+        internal byte[] ReadCommittedProbe(long offset, int count, out long epoch, bool point = false)
+        {
+            EnterRecordRead(point, count, out bool shared, out bool mapped);
+            try
+            {
+                epoch = CommittedReadEpoch;
+                return ReadRecord(offset, count, shared, mapped, -1);
+            }
+            finally { ExitRecordRead(shared); }
+        }
+
+        internal byte[] ExpandCommittedRecord(long record, byte[] data, long epoch,
+            bool point, ref ValueRecordHeader header)
+        {
+            EnterRecordRead(point, header.RecordSize, out bool shared, out bool mapped);
+            try
+            {
+                if (epoch != CommittedReadEpoch)
+                {
+                    data = ReadRecord(record, 111, shared, mapped, -1);
+                    header = new ValueRecordHeader(data);
+                }
+                DurabilityTestHooks.Hit("read.record-header");
+                return data == null || header.RecordSize > data.Length
+                    ? ReadRecord(record, header.RecordSize, shared, mapped, record) : data;
+            }
+            finally { ExitRecordRead(shared); }
+        }
+
+        internal byte[] ReadCommittedPayload(long record, long epoch, bool point,
+            ref ValueRecordHeader header, out byte[] refreshedKey)
+        {
+            EnterRecordRead(point, header.ValueSize, out bool shared, out bool mapped);
+            try
+            {
+                refreshedKey = epoch != CommittedReadEpoch
+                    ? CommittedValueRead.RefreshKey(new CommittedRecordRead(this, shared, mapped, CommittedReadEpoch), record, ref header) : null;
+                DurabilityTestHooks.Hit("read.record-header");
+                return header.IsNull ? null : header.ValueSize == 0 ? Array.Empty<byte>() :
+                    ReadRecord(checked(record + header.Size + header.KeySize), header.ValueSize, shared, mapped, record);
+            }
+            finally { ExitRecordRead(shared); }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        internal void EnterRecordRead(bool point, int countHint, out bool shared, out bool mapped)
+        {
+            shared = false;
+            mapped = false;
+            if (point)
+            {
+                EnsureCommittedMappedView();
+                if (_committedMappedView != null)
+                {
+                    lock_fs.EnterReadLock();
+                    mapped = _committedMappedView != null && _rollbackCache.Count == 0 &&
+                        !TransactionalCommitIsStarted;
+                    return;
+                }
+            }
+            if (countHint < SharedReadBufferSize && Monitor.TryEnter(_sharedReadLane))
+            {
+                shared = true;
+                CommittedReadDiagnostics.SharedRead();
+                return;
+            }
+            CommittedReadDiagnostics.ContendedRead();
+            lock_fs.EnterReadLock();
+        }
+
+        internal void ExitRecordRead(bool shared)
+        {
+            if (shared)
+                Monitor.Exit(_sharedReadLane);
+            else
+                lock_fs.ExitReadLock();
+        }
+
+        internal byte[] ReadCommittedValue(DBreeze.LianaTrie.LTrieRow row, bool point, bool full, uint start, uint length)
+        {
+            int hint = row.ValueFullLength <= Int32.MaxValue
+                ? (int)(full ? row.ValueFullLength : Math.Min(length, row.ValueFullLength)) : 111;
+            EnterRecordRead(point, hint, out bool shared, out bool mapped);
+            try
+            {
+                row.EnsureStorageIncarnation(StorageFixTime);
+                if (CommittedValueRead.NeedsRefresh(row, CommittedReadEpoch))
+                    CommittedValueRead.Refresh(row, new CommittedRecordRead(this, shared, mapped, CommittedReadEpoch));
+                if (!CommittedValueRead.Range(row, full, start, length, out long offset, out int count, out byte[] completed))
+                    return completed;
+                long record = row.PreferCommittedPointRead ? -1 :
+                    checked((long)row.RecordPointer.DynamicLength_To_UInt64_BigEndian());
+                return ReadRecord(offset, count, shared, mapped, record);
+            }
+            finally { ExitRecordRead(shared); }
+        }
+
+        internal byte[] ReadRecord(long offset, int count, bool shared, bool mapped, long recordOffset)
+        {
+            if (mapped && offset >= 0 && count >= 0)
+            {
+                int length = GetReadLength(offset, count, eofData);
+                if (offset <= _committedMappedLength - length)
+                {
+                    if (length == 0)
+                        return Array.Empty<byte>();
+                    byte[] result = GC.AllocateUninitializedArray<byte>(length);
+                    ReadCommittedMappedCore(offset, result);
+                    return result;
+                }
+            }
+            // A long key/eager value can outgrow the initial small probe. The
+            // shared gate still excludes writers, but its 8 KiB window cannot
+            // serve that expanded request.
+            return Table_ReadCore(true, offset, count, shared && count < SharedReadBufferSize,
+                !shared && count < SharedReadBufferSize, recordOffset >= 0, recordOffset,
+                lockAlreadyHeld: true);
+        }
+
+        internal bool TryReadRecordInto(long offset, scoped Span<byte> destination, bool shared, bool mapped)
+        {
+            if (offset < 0 || offset > eofData - destination.Length ||
+                _rollbackCache.Count != 0 || TransactionalCommitIsStarted)
+                return false;
+            if (mapped && offset <= _committedMappedLength - destination.Length)
+                ReadCommittedMappedCore(offset, destination);
+            else if (shared)
+                ReadFromSharedBuffer(offset, destination, eofData, false, 0);
+            else if (!TryReadContendedWindow(offset, destination, eofData, false, 0))
+                ReadExactlyAt(_fsData, destination, offset);
+            return true;
         }
 
         private byte[] Table_Read(bool useCache, long offset, int count,
@@ -1531,11 +1680,11 @@ namespace DBreeze.Storage
 
         private byte[] Table_ReadCore(bool useCache, long offset, int count,
             bool useSharedReadLane, bool useContendedReadWindow,
-            bool recordContinuation, long recordOffset)
+            bool recordContinuation, long recordOffset, bool lockAlreadyHeld = false)
         {
             // Small committed reads already own _sharedReadLane. Writers take the same gate before
             // their write lock, so a second per-read ReaderWriterLockSlim acquisition is redundant.
-            using (useSharedReadLane ? default : AcquireReadLock())
+            using (useSharedReadLane || lockAlreadyHeld ? default : AcquireReadLock())
             {
                 if (offset < 0)
                     throw new ArgumentOutOfRangeException(nameof(offset));
@@ -2072,6 +2221,7 @@ namespace DBreeze.Storage
                     }
                 }
 
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
 
                 eofData = _physicalDataLength;
@@ -2134,6 +2284,7 @@ namespace DBreeze.Storage
                     }
                 }
 
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
 
                 eofData = _physicalDataLength;
@@ -2222,6 +2373,7 @@ namespace DBreeze.Storage
                 _configuration.Backup.Flush();
             }
 
+            unchecked { CommittedReadEpoch++; }
             _rollbackCache.Clear();
         }
 

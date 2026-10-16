@@ -10,6 +10,11 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        if (args.Contains("--lazy-read-commit"))
+        {
+            try { LazyReadCommitTests.RunAll(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+        }
         if (args.Contains("--transaction-lifetime"))
         {
             TransactionLifetimeContracts.RunAll();
@@ -156,6 +161,7 @@ internal static class Program
         {
             (nameof(ModernSourceIsolationTests.ValidateCurrentRepository), ModernSourceIsolationTests.ValidateCurrentRepository),
             (nameof(TransactionLifetimeContracts.RunAll), TransactionLifetimeContracts.RunAll),
+            (nameof(LazyReadCommitTests.RunAll), LazyReadCommitTests.RunAll),
             (nameof(TransactionJournalPayloadCodecSupportsAllPersistedFormats), TransactionJournalPayloadCodecSupportsAllPersistedFormats),
             // This test injects a durable journal marker directly and therefore must run before
             // the legacy process-global in-memory journal has been created and disposed.

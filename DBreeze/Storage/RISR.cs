@@ -73,6 +73,10 @@ namespace DBreeze.Storage
         string _fileName = String.Empty;
         ulong ulFileName = 0;   //ulong file name, for backup purposes
         object lock_fs = new object();
+        // Used by modern record readers to keep a multi-request read within the
+        // same committed view. The wire protocol and existing monitor are reused.
+        internal object RecordReadGate { get { return lock_fs; } }
+        internal long CommittedReadEpoch = 1;
         //int _fileStreamBufferSize = 8192;
 
         //FileStream _fsData = null;
@@ -171,6 +175,7 @@ namespace DBreeze.Storage
                 RIC.CloseRemoteTable();
 
                 _randBuf.Clear();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofRollback = 0;
@@ -198,6 +203,7 @@ namespace DBreeze.Storage
                 //}
 
                 _seqBuf.Dispose();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
             }
                        
@@ -727,6 +733,7 @@ namespace DBreeze.Storage
                 //}
 
                 _randBuf.Clear();
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
                 usedBufferSize = 0;
                 eofRollback = 0;
@@ -1476,6 +1483,7 @@ namespace DBreeze.Storage
                     }
                 }
 
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
 
                 //eofData = this._fsData.Length;
@@ -1543,6 +1551,7 @@ namespace DBreeze.Storage
                     }
                 }
 
+                unchecked { CommittedReadEpoch++; }
                 _rollbackCache.Clear();
 
                 //eofData = this._fsData.Length;
@@ -1631,6 +1640,7 @@ namespace DBreeze.Storage
                 _configuration.Backup.Flush();
             }
 
+            unchecked { CommittedReadEpoch++; }
             _rollbackCache.Clear();
         }
 

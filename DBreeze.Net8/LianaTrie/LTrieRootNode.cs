@@ -11,6 +11,7 @@ using System.Text;
 using DBreeze.Utils;
 using DBreeze.Exceptions;
 using DBreeze.Tries;
+using DBreeze.Storage;
 
 namespace DBreeze.LianaTrie
 {
@@ -23,6 +24,10 @@ namespace DBreeze.LianaTrie
         ushort DefaultRootSize = 0;
         public byte[] EmptyPointer = null;
         private readonly long _committedReadEpoch;
+        // The physical incarnation is shared by all rows from this immutable
+        // root. Rows use their former per-row incarnation slot for an exact
+        // value epoch, keeping their allocation size unchanged.
+        internal readonly DateTime StorageIncarnation;
         private CommittedReadNode[] _committedReadPathNodes;
         private ulong[] _committedReadPathPointers;
         private byte[] _committedReadPathKey;
@@ -37,6 +42,7 @@ namespace DBreeze.LianaTrie
         public LTrieRootNode(LTrie tree)
         {
             Tree = tree;
+            StorageIncarnation = tree.Storage.StorageFixTime;
             DefaultPointerLen = Tree.Storage.TrieSettings.POINTER_LENGTH;
             DefaultRootSize = Tree.Storage.TrieSettings.ROOT_SIZE;
 
@@ -1021,12 +1027,13 @@ namespace DBreeze.LianaTrie
             byte[] storedKey;
             byte[] value = null;
             bool valueIsNull = false;
+            long valueEpoch = 0;
             byte[] pointerBytes = null;
 
             if (valuesLazyLoadingIsOn)
             {
                 if (!Tree.Cache.ReadKeyMatches(true, valuePointer, requestedKey,
-                    out valueStartPointer, out valueLength, out valueIsNull))
+                    out valueStartPointer, out valueLength, out valueIsNull, out valueEpoch))
                     return row;
                 storedKey = requestedKey;
             }
@@ -1052,6 +1059,7 @@ namespace DBreeze.LianaTrie
                 row.ValueStartPointer = valueStartPointer;
                 row.ValueFullLength = valueLength;
                 row.ValueIsNull = valueIsNull;
+                row.CommittedValueEpoch = valueEpoch;
             }
 
             row.LinkToValue = pointerBytes ??
@@ -1177,6 +1185,7 @@ namespace DBreeze.LianaTrie
                         long valueStartPtr = 0;
                         uint valueLength = 0;
                         bool valueIsNull = false;
+                        long valueEpoch = 0;
                         byte[] xValue = null;
                         byte[] storedKey = null;
 
@@ -1187,7 +1196,7 @@ namespace DBreeze.LianaTrie
                         else
                         {
                             storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr,
-                                out valueStartPtr, out valueLength, out valueIsNull);
+                                out valueStartPtr, out valueLength, out valueIsNull, out valueEpoch);
                         }
 
                        // byte[] storedKey = this.Tree.Cache.ReadKey(useCache, kidDef.Ptr);
@@ -1207,6 +1216,7 @@ namespace DBreeze.LianaTrie
                             kv.ValueStartPointer = valueStartPtr;
                             kv.ValueFullLength = valueLength;
                             kv.ValueIsNull = valueIsNull;
+                            kv.CommittedValueEpoch = valueEpoch;
                         }
                         kv.LinkToValue = kidDef.Ptr;
                         return kv;
