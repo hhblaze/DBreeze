@@ -283,7 +283,7 @@ using (var tran = engine.GetTransaction(
 - `GetTransaction(SHARED, tables)` allows other shared sessions but waits against an exclusive session.
 - `SynchronizeTables(...)` atomically reserves the complete future write set inside a transaction and prevents opposite table-acquisition order from deadlocking.
 
-Call `SynchronizeTables` exactly once, before the first modification, when a transaction may modify more than one intersecting table/pattern:
+Call `SynchronizeTables` exactly once with the complete write set, before the first modification, when a transaction may modify multiple tables/patterns:
 
 ```csharp
 using (var tran = engine.GetTransaction())
@@ -295,7 +295,20 @@ using (var tran = engine.GetTransaction())
 }
 ```
 
-One write table cannot form a cross-table deadlock, so explicit synchronization is normally unnecessary. Keep `NotifyAhead_WhenWriteTablePossibleDeadlock = true`: an unreserved second write table may throw before a deadlock becomes possible.
+Single-table writes independent of existing data need no explicit synchronization: the first modification reserves the table automatically. For **read–modify–write or check–then–write**, call `SynchronizeTables` **before the first dependent read**, even for one table. Otherwise concurrent transactions can read the same balance and overwrite each other's increment (lost update).
+
+```csharp
+using (var tran = engine.GetTransaction())
+{
+    tran.SynchronizeTables("account"); // Reserve before reading.
+    var row = tran.Select<string, decimal>("account", "balance");
+    decimal balance = row.Exists ? row.Value : 0m;
+    tran.Insert<string, decimal>("account", "balance", balance + 100m);
+    tran.Commit();
+}
+```
+
+All competing read–modify–write paths must reserve before reading. Keep `NotifyAhead_WhenWriteTablePossibleDeadlock = true`: it rejects an unreserved second write table, but does not detect this single-table race.
 
 ### 3.4 Read visibility and lazy values
 
@@ -1311,7 +1324,7 @@ Use Resources for small shared state/configuration, not as a substitute for high
 
 - One long-lived engine per physical database; many short transactions.
 - One state-changing transaction per managed thread; async work outside transaction scope.
-- Reserve the complete multi-table write set once with `SynchronizeTables`.
+- Reserve the complete multi-table write set once with `SynchronizeTables`; for read–modify–write, reserve before reading even one table.
 - Keep `NotifyAhead_WhenWriteTablePossibleDeadlock = true`.
 - Use ordered composite keys and bounded/prefix traversal instead of table scans.
 - Enumerate lazy results inside the transaction; dispose nested/vector enumerators early.

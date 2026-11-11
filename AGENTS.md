@@ -45,9 +45,10 @@ This repository's bundle targets OKF **0.2**, declared in its root `index.md`.
 
 ### Compact production skill: `Documentation/LLM/DBreeze_skill.md`
 
-- Keep this a compact, laconic, standalone reference for LLMs using DBreeze in
-  production. Update it whenever functionality changes how a consumer should use
-  DBreeze, including relevant fixes and deprecations.
+- Keep this a compact, standalone reference for LLMs using DBreeze in
+  production. Write precise, laconic guidance. Update it whenever functionality
+  changes how a consumer should use DBreeze, including relevant fixes and
+  deprecations.
 - Prefer exact API names, target availability, defaults, short examples, and
   actionable lifetime, threading, durability, or performance constraints.
 - Edit the existing section; avoid repetition, development history, exhaustive
